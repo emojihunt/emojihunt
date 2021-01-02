@@ -2,28 +2,34 @@ package drive
 
 import (
 	"context"
-	"flag"
 	"fmt"
 	"log"
 
 	"google.golang.org/api/sheets/v4"
 )
 
-var id = flag.String("sheet_id", "1SgvhTBeVdyTMrCR0wZixO3O0lErh4vqX0--nBpSfYT8", "the id of the sheet to use")
+type Drive struct {
+	// ID of the Google Sheet. From the sheets URL: docs.google.com/spreadsheets/d/[ID]/edit
+	sheetID string
 
-func ConnectToDrive(apiKey string) error {
-	ctx := context.Background()
+	svc *sheets.Service
+}
+
+func New(ctx context.Context, apiKey, sheetID string) (*Drive, error) {
 	sheetsService, err := sheets.NewService(ctx)
 	if err != nil {
-		return err
+		return nil, err
 	}
+	return &Drive{sheetID: sheetID, svc: sheetsService}, nil
+}
 
+func (d *Drive) DumpData() error {
 	// Get all data for the sheet.
 	req := &sheets.GetSpreadsheetByDataFilterRequest{
 		IncludeGridData: true,
 	}
 
-	s, err := sheetsService.Spreadsheets.GetByDataFilter(*id, req).Do()
+	s, err := d.svc.Spreadsheets.GetByDataFilter(d.sheetID, req).Do()
 	if err != nil {
 		return fmt.Errorf("error getting spreadsheet: %v", err)
 	}
