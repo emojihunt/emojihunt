@@ -59,6 +59,15 @@ func New(s *discordgo.Session, c Config) (*Client, error) {
 	}, nil
 }
 
+type NewMessageHandler func(*discordgo.Session, *discordgo.MessageCreate)
+
+func (c *Client) RegisterNewMessageHandler(h NewMessageHandler) {
+	// Only handle new guild messages.
+	// TODO: bitor with the current value.
+	c.s.Identify.Intents = discordgo.MakeIntent(discordgo.IntentsGuildMessages)
+	c.s.AddHandler(h)
+}
+
 func (c *Client) QMChannelSend(msg string) error {
 	_, err := c.s.ChannelMessageSend(c.qmChannelID, msg)
 	return err

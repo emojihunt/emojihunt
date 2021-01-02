@@ -19,6 +19,10 @@ func (h *HuntBot) CreatePuzzle() {
 
 func (h *HuntBot) StartWork() {
 	// register discord handlers to do work based on discord messages.
+	//registerHandlers(h.dis)
+	for _, handler := range discordHandlers {
+		h.dis.RegisterNewMessageHandler(handler)
+	}
 
 	// poll the sheet and trigger work based on the polling.
 	// Ideally, this would only look at changes, but we start with looking at everything.

@@ -1,15 +1,14 @@
-package handler
+package huntbot
 
 import (
 	"fmt"
 	"log"
 
 	"github.com/bwmarrin/discordgo"
+	"github.com/gauravjsingh/emojihunt/discord"
 )
 
-type Handler interface{}
-
-var DiscordHandlers = []Handler{
+var discordHandlers = []discord.NewMessageHandler{
 	testHandler,
 }
 

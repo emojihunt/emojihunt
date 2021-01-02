@@ -15,7 +15,6 @@ import (
 	"github.com/gauravjsingh/emojihunt/discord"
 	"github.com/gauravjsingh/emojihunt/drive"
 	"github.com/gauravjsingh/emojihunt/huntbot"
-	"github.com/gauravjsingh/emojihunt/huntbot/handler"
 )
 
 var (
@@ -40,15 +39,6 @@ func loadSecrets(path string) (secrets, error) {
 	return s, nil
 }
 
-// TODO: Move to huntbot.
-func registerHandlers(dg *discordgo.Session) {
-	// Only handle new guild messages.
-	dg.Identify.Intents = discordgo.MakeIntent(discordgo.IntentsGuildMessages)
-	for _, h := range handler.DiscordHandlers {
-		dg.AddHandler(h)
-	}
-}
-
 func main() {
 	secrets, err := loadSecrets(*secretsFile)
 	if err != nil {
@@ -65,9 +55,6 @@ func main() {
 		log.Fatalf("error opening discord connection: %v", err)
 	}
 
-	// TODO: Move to huntbot.
-	registerHandlers(dg)
-
 	dis, err := discord.New(dg, discord.Config{QMChannelName: "bot-testing", ArchiveChannelName: "archive"})
 	if err != nil {
 		log.Fatalf("error creating discord client: %v", err)
@@ -82,7 +69,8 @@ func main() {
 	if err != nil {
 		log.Fatalf("error creating test drive integration: %v", err)
 	}
-	huntbot.New(dis, d)
+	_ = huntbot.New(dis, d)
+	//h.StartWork()
 
 	log.Print("bot is running, press ctrl+C to exit")
 	// TODO: use a context instead, pass that along.
