@@ -11,6 +11,7 @@ import (
 	"syscall"
 
 	"github.com/bwmarrin/discordgo"
+	"github.com/gauravjsingh/emojihunt/discord/drive"
 	"github.com/gauravjsingh/emojihunt/discord/handler"
 	"github.com/gauravjsingh/emojihunt/discord/update"
 )
@@ -20,7 +21,8 @@ var (
 )
 
 type secrets struct {
-	DiscordToken string `json:"discord_token"`
+	DiscordToken      string `json:"discord_token"`
+	GoogleDriveAPIKey string `json:"google_drive_api_key"`
 }
 
 func loadSecrets(path string) (secrets, error) {
@@ -61,6 +63,10 @@ func main() {
 		log.Fatalf("error creating updater: %v", err)
 	}
 	_ = u
+
+	if err := drive.ConnectToDrive(secrets.GoogleDriveAPIKey); err != nil {
+		log.Fatalf("error creating test drive integration: %v", err)
+	}
 
 	log.Print("bot is running, press ctrl+C to exit")
 	sc := make(chan os.Signal, 1)

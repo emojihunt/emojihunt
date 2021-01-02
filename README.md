@@ -17,3 +17,12 @@ There are 3 parts to the permissisons of the discord bot in discord\_bots.
 1.  In the future, the bot will need Google Drive permssions. The bot does not
     use end user credentials, and so should only be used for the Emoji Hunt
     discord server.
+
+## Google Drive Setup
+
+This bot uses default Google credentials to authenticate to Google. This works
+magically in Google Cloud, but requires some effort to make it work locally. To
+do so, you will need to create a service account, and download the keypair for
+it. Then, you will need to export the path to the file (on Linux). For other
+operating systems, see the
+[official Google docs](https://cloud.google.com/docs/authentication/production#passing_variable).
