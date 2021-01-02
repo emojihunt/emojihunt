@@ -65,7 +65,7 @@ func (c *Client) RegisterNewMessageHandler(h NewMessageHandler) {
 	// Only handle new guild messages.
 	// TODO: bitor with the current value.
 	c.s.Identify.Intents = discordgo.MakeIntent(discordgo.IntentsGuildMessages)
-	c.s.AddHandler(h)
+	c.s.AddHandler(func(s *discordgo.Session, m *discordgo.MessageCreate) { h(s, m) })
 }
 
 func (c *Client) QMChannelSend(msg string) error {

@@ -9,7 +9,6 @@ import (
 	"log"
 	"os"
 	"os/signal"
-	"syscall"
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/gauravjsingh/emojihunt/discord"
@@ -64,18 +63,29 @@ func main() {
 
 	ctx := context.Background()
 
+	ctx, cancel := context.WithCancel(ctx)
+	ch := make(chan os.Signal, 1)
+	signal.Notify(ch, os.Interrupt)
+	defer func() {
+		signal.Stop(ch)
+		cancel()
+	}()
+	go func() {
+		select {
+		case <-ch:
+			cancel()
+		case <-ctx.Done():
+		}
+	}()
+
 	d, err := drive.New(ctx, *sheetID)
 	if err != nil {
 		log.Fatalf("error creating test drive integration: %v", err)
 	}
-	_ = huntbot.New(dis, d)
-	//h.StartWork()
+	h := huntbot.New(dis, d)
 
-	log.Print("bot is running, press ctrl+C to exit")
-	// TODO: use a context instead, pass that along.
-	sc := make(chan os.Signal, 1)
-	signal.Notify(sc, syscall.SIGINT, syscall.SIGTERM, os.Interrupt, os.Kill)
-	<-sc
+	log.Print("press ctrl+C to exit")
+	h.StartWork(ctx)
 }
 
 func init() {

@@ -1,6 +1,8 @@
 package huntbot
 
 import (
+	"context"
+
 	"github.com/gauravjsingh/emojihunt/discord"
 	"github.com/gauravjsingh/emojihunt/drive"
 )
@@ -17,7 +19,7 @@ func New(dis *discord.Client, drive *drive.Drive) *HuntBot {
 func (h *HuntBot) CreatePuzzle() {
 }
 
-func (h *HuntBot) StartWork() {
+func (h *HuntBot) StartWork(ctx context.Context) {
 	// register discord handlers to do work based on discord messages.
 	//registerHandlers(h.dis)
 	for _, handler := range discordHandlers {
@@ -26,4 +28,7 @@ func (h *HuntBot) StartWork() {
 
 	// poll the sheet and trigger work based on the polling.
 	// Ideally, this would only look at changes, but we start with looking at everything.
+	select {
+	case <-ctx.Done():
+	}
 }
