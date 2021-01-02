@@ -12,10 +12,10 @@ import (
 	"syscall"
 
 	"github.com/bwmarrin/discordgo"
-	"github.com/gauravjsingh/emojihunt/discord/discordclient"
-	"github.com/gauravjsingh/emojihunt/discord/drive"
-	"github.com/gauravjsingh/emojihunt/discord/handler"
-	"github.com/gauravjsingh/emojihunt/discord/huntbot"
+	"github.com/gauravjsingh/emojihunt/discord"
+	"github.com/gauravjsingh/emojihunt/drive"
+	"github.com/gauravjsingh/emojihunt/huntbot"
+	"github.com/gauravjsingh/emojihunt/huntbot/handler"
 )
 
 var (
@@ -66,7 +66,7 @@ func main() {
 	}
 
 	registerHandlers(dg)
-	dis, err := discordclient.New(dg, discordclient.Config{QMChannelName: "bot-testing", ArchiveChannelName: "archive"})
+	dis, err := discord.New(dg, discord.Config{QMChannelName: "bot-testing", ArchiveChannelName: "archive"})
 	if err != nil {
 		log.Fatalf("error creating discord client: %v", err)
 	}

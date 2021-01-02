@@ -1,16 +1,16 @@
 package huntbot
 
 import (
-	"github.com/gauravjsingh/emojihunt/discord/discordclient"
-	"github.com/gauravjsingh/emojihunt/discord/drive"
+	"github.com/gauravjsingh/emojihunt/discord"
+	"github.com/gauravjsingh/emojihunt/drive"
 )
 
 type HuntBot struct {
-	dis   *discordclient.DiscordClient
+	dis   *discord.Client
 	drive *drive.Drive
 }
 
-func New(dis *discordclient.DiscordClient, drive *drive.Drive) *HuntBot {
+func New(dis *discord.Client, drive *drive.Drive) *HuntBot {
 	return &HuntBot{dis, drive}
 }
 

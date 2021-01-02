@@ -1,4 +1,4 @@
-package discordclient
+package discord
 
 import (
 	"fmt"
@@ -10,7 +10,7 @@ type Config struct {
 	QMChannelName, ArchiveChannelName string
 }
 
-type DiscordClient struct {
+type Client struct {
 	s       *discordgo.Session
 	guildID string
 	// TODO: not a great idea to keep these channels around, could lead to inconsistency
@@ -28,7 +28,7 @@ func getGuildID(s *discordgo.Session) (string, error) {
 	return gs[0].ID, nil
 }
 
-func New(s *discordgo.Session, c Config) (*DiscordClient, error) {
+func New(s *discordgo.Session, c Config) (*Client, error) {
 	guildID, err := getGuildID(s)
 	if err != nil {
 		return nil, err
@@ -50,7 +50,7 @@ func New(s *discordgo.Session, c Config) (*DiscordClient, error) {
 		return nil, fmt.Errorf("archive %q not found", c.ArchiveChannelName)
 	}
 
-	return &DiscordClient{
+	return &Client{
 		s:               s,
 		guildID:         guildID,
 		qmChannelID:     qm,
@@ -59,13 +59,13 @@ func New(s *discordgo.Session, c Config) (*DiscordClient, error) {
 	}, nil
 }
 
-func (u *DiscordClient) QMChannelSend(msg string) error {
-	_, err := u.s.ChannelMessageSend(u.qmChannelID, msg)
+func (c *Client) QMChannelSend(msg string) error {
+	_, err := c.s.ChannelMessageSend(c.qmChannelID, msg)
 	return err
 }
 
-func (u *DiscordClient) SolvePuzzle(puzzleName string) error {
-	return u.QMChannelSend("hello")
+func (c *Client) SolvePuzzle(puzzleName string) error {
+	return c.QMChannelSend("hello")
 }
 
 type ChannelNotFoundError string
@@ -74,22 +74,22 @@ func (e ChannelNotFoundError) Error() string {
 	return fmt.Sprintf("channel %q not found", string(e))
 }
 
-func (u *DiscordClient) ArchiveChannel(name string) error {
-	chID, ok := u.channelNameToID[name]
+func (c *Client) ArchiveChannel(name string) error {
+	chID, ok := c.channelNameToID[name]
 	if !ok {
 		return ChannelNotFoundError(name)
 	}
-	arCh, err := u.s.Channel(u.archiveID)
+	arCh, err := c.s.Channel(c.archiveID)
 	if err != nil {
 		return fmt.Errorf("error looking up archive: %v", err)
 	}
 
-	_, err = u.s.ChannelEditComplex(chID, &discordgo.ChannelEdit{ParentID: u.archiveID, PermissionOverwrites: arCh.PermissionOverwrites})
+	_, err = c.s.ChannelEditComplex(chID, &discordgo.ChannelEdit{ParentID: c.archiveID, PermissionOverwrites: arCh.PermissionOverwrites})
 	if err != nil {
 		return fmt.Errorf("error moving channel: %v", err)
 	}
 	return err
 }
 
-func (u *DiscordClient) CreatePuzzle() {
+func (c *Client) CreatePuzzle() {
 }
