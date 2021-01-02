@@ -2,6 +2,7 @@ package discord
 
 import (
 	"fmt"
+	"log"
 
 	"github.com/bwmarrin/discordgo"
 )
@@ -59,13 +60,11 @@ func New(s *discordgo.Session, c Config) (*Client, error) {
 	}, nil
 }
 
-type NewMessageHandler func(*discordgo.Session, *discordgo.MessageCreate)
-
-func (c *Client) RegisterNewMessageHandler(h NewMessageHandler) {
+func (c *Client) RegisterNewMessageHandler(h func(*discordgo.Session, *discordgo.MessageCreate)) {
 	// Only handle new guild messages.
-	// TODO: bitor with the current value.
+	// TODO: bitOr with the current value.
 	c.s.Identify.Intents = discordgo.MakeIntent(discordgo.IntentsGuildMessages)
-	c.s.AddHandler(func(s *discordgo.Session, m *discordgo.MessageCreate) { h(s, m) })
+	c.s.AddHandler(h)
 }
 
 func (c *Client) QMChannelSend(msg string) error {
@@ -98,6 +97,16 @@ func (c *Client) ArchiveChannel(name string) error {
 		return fmt.Errorf("error moving channel: %v", err)
 	}
 	return err
+}
+
+func (c *Client) EchoHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
+	// Ignore self created messages.
+	// Only echo messages in the QM channel to avoid spam.
+	if m.Author.ID == s.State.User.ID || m.ChannelID != c.qmChannelID {
+		return
+	}
+	log.Printf("processing message: %v", m.Content)
+	s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("echo: %v", m.Content))
 }
 
 func (c *Client) CreatePuzzle() {

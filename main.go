@@ -85,6 +85,7 @@ func main() {
 	h := huntbot.New(dis, d)
 
 	log.Print("press ctrl+C to exit")
+	h.AddHandler(dis.EchoHandler)
 	h.StartWork(ctx)
 }
 
