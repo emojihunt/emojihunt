@@ -15,7 +15,7 @@ type Drive struct {
 	svc *sheets.Service
 }
 
-func New(ctx context.Context, apiKey, sheetID string) (*Drive, error) {
+func New(ctx context.Context, sheetID string) (*Drive, error) {
 	sheetsService, err := sheets.NewService(ctx)
 	if err != nil {
 		return nil, err

@@ -23,8 +23,7 @@ var (
 )
 
 type secrets struct {
-	DiscordToken      string `json:"discord_token"`
-	GoogleDriveAPIKey string `json:"google_drive_api_key"`
+	DiscordToken string `json:"discord_token"`
 }
 
 func loadSecrets(path string) (secrets, error) {
@@ -65,7 +64,7 @@ func main() {
 
 	ctx := context.Background()
 
-	d, err := drive.New(ctx, secrets.GoogleDriveAPIKey, *sheetID)
+	d, err := drive.New(ctx, *sheetID)
 	if err != nil {
 		log.Fatalf("error creating test drive integration: %v", err)
 	}

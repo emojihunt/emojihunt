@@ -26,3 +26,7 @@ do so, you will need to create a service account, and download the keypair for
 it. Then, you will need to export the path to the file (on Linux). For other
 operating systems, see the
 [official Google docs](https://cloud.google.com/docs/authentication/production#passing_variable).
+
+The service account will also need access to the sheet. Either the sheet can be
+public to the world, or the sheet can be shared with the service account email
+address.
