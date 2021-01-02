@@ -12,6 +12,7 @@ import (
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/gauravjsingh/emojihunt/discord/handler"
+	"github.com/gauravjsingh/emojihunt/discord/update"
 )
 
 var (
@@ -35,11 +36,11 @@ func loadSecrets(path string) (secrets, error) {
 }
 
 func main() {
-	s, err := loadSecrets(*secretsFile)
+	secrets, err := loadSecrets(*secretsFile)
 	if err != nil {
 		log.Fatalf("error loading secrets: %v", err)
 	}
-	dg, err := discordgo.New(s.DiscordToken)
+	dg, err := discordgo.New(secrets.DiscordToken)
 	if err != nil {
 		log.Fatalf("error creating discord client: %v", err)
 	}
@@ -54,6 +55,12 @@ func main() {
 	if err != nil {
 		log.Fatalf("error opening discord connection: %v", err)
 	}
+
+	u, err := update.New(dg, "bot-testing")
+	if err != nil {
+		log.Fatalf("error creating updater: %v", err)
+	}
+	_ = u
 
 	log.Print("bot is running, press ctrl+C to exit")
 	sc := make(chan os.Signal, 1)
