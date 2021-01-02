@@ -65,7 +65,9 @@ func main() {
 		log.Fatalf("error opening discord connection: %v", err)
 	}
 
+	// TODO: Move to huntbot.
 	registerHandlers(dg)
+
 	dis, err := discord.New(dg, discord.Config{QMChannelName: "bot-testing", ArchiveChannelName: "archive"})
 	if err != nil {
 		log.Fatalf("error creating discord client: %v", err)
