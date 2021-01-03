@@ -100,7 +100,6 @@ func (c *Client) ChannelSendAndPin(chanID, msg string) error {
 		return err
 	}
 	err = c.s.ChannelMessagePin(chanID, m.ID)
-	log.Printf("pinned message %s, %s, with err: %v", m.ID, chanID, err)
 	return err
 }
 
