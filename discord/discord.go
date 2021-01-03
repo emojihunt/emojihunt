@@ -8,7 +8,8 @@ import (
 )
 
 type Config struct {
-	QMChannelName, GeneralChannelName, ArchiveChannelName string
+	QMChannelName, GeneralChannelName      string
+	PuzzleCategoryName, SolvedCategoryName string
 }
 
 type Client struct {
@@ -19,8 +20,10 @@ type Client struct {
 	qmChannelID string
 	// The general channel has all users, and has announcements from the bot.
 	generalChannelID string
-	// archive is a category, ie. a discord channel that can have children.
-	archiveID string
+	// The puzzle channel category.
+	puzzleCategoryID string
+	// The category for solved puzzles.
+	solvedCategoryID string
 
 	// This might be a case where sync.Map makes sense.
 	mu              sync.Mutex
@@ -52,9 +55,9 @@ func New(s *discordgo.Session, c Config) (*Client, error) {
 	if !ok {
 		return nil, fmt.Errorf("QM Channel %q not found", c.QMChannelName)
 	}
-	ar, ok := chIDs[c.ArchiveChannelName]
+	ar, ok := chIDs[c.SolvedCategoryName]
 	if !ok {
-		return nil, fmt.Errorf("archive %q not found", c.ArchiveChannelName)
+		return nil, fmt.Errorf("archive %q not found", c.SolvedCategoryName)
 	}
 	gen, ok := chIDs[c.GeneralChannelName]
 	if !ok {
@@ -67,7 +70,7 @@ func New(s *discordgo.Session, c Config) (*Client, error) {
 		qmChannelID:      qm,
 		generalChannelID: gen,
 		channelNameToID:  chIDs,
-		archiveID:        ar,
+		solvedCategoryID: ar,
 	}, nil
 }
 
@@ -119,12 +122,12 @@ func (c *Client) ArchiveChannel(name string) error {
 	if !ok {
 		return ChannelNotFoundError(name)
 	}
-	arCh, err := c.s.Channel(c.archiveID)
+	arCh, err := c.s.Channel(c.solvedCategoryID)
 	if err != nil {
 		return fmt.Errorf("error looking up archive: %v", err)
 	}
 
-	_, err = c.s.ChannelEditComplex(chID, &discordgo.ChannelEdit{ParentID: c.archiveID, PermissionOverwrites: arCh.PermissionOverwrites})
+	_, err = c.s.ChannelEditComplex(chID, &discordgo.ChannelEdit{ParentID: c.solvedCategoryID, PermissionOverwrites: arCh.PermissionOverwrites})
 	if err != nil {
 		return fmt.Errorf("error moving channel: %v", err)
 	}
@@ -138,7 +141,11 @@ func (c *Client) CreateChannel(name string) (string, error) {
 	if id, ok := c.channelNameToID[name]; ok {
 		return id, nil
 	}
-	ch, err := c.s.GuildChannelCreate(c.guildID, name, discordgo.ChannelTypeGuildText)
+	ch, err := c.s.GuildChannelCreateComplex(c.guildID, discordgo.GuildChannelCreateData{
+		Name:     name,
+		Type:     discordgo.ChannelTypeGuildText,
+		ParentID: c.puzzleCategoryID,
+	})
 	if err != nil {
 		return "", fmt.Errorf("error creating channel %q: %v", name, err)
 	}

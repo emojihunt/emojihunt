@@ -31,16 +31,16 @@ func (h *HuntBot) NewPuzzle(ctx context.Context, name string) error {
 		return fmt.Errorf("error creating discord channel for %q: %v", name, err)
 	}
 	// Create Spreadsheet
-	sheetURL := "TODO: new puzzle URL"
+	sheetURL := "https://docs.google.com/spreadsheets/d/1SgvhTBeVdyTMrCR0wZixO3O0lErh4vqX0--nBpSfYT8/edit"
 	// If via bot, also take puzzle url as a param
-	puzzleURL := ""
+	puzzleURL := "https://en.wikipedia.org/wiki/Main_Page"
 	// Update Spreadsheet with channel URL, spreadsheet URL.
 
 	// Post a message in the general channel with a link to the puzzle.
-	h.dis.GeneralChannelSend(fmt.Sprintf("There is a new puzzle %s! [Puzzle](%s), channel [#%s](%s)",
+	h.dis.GeneralChannelSend(fmt.Sprintf("There is a new puzzle %s!\nPuzzle URL: %s\nChannel #%s: %s",
 		name, puzzleURL, name, h.dis.ChannelURL(id)))
 	// Pin a message with the spreadsheet URL to the channel
-	h.dis.ChannelSendAndPin(id, fmt.Sprintf("[Spreadsheet](%s), [Puzzle](%s)", sheetURL, puzzleURL))
+	h.dis.ChannelSendAndPin(id, fmt.Sprintf("Spreadsheet: %s\nPuzzle: %s", sheetURL, puzzleURL))
 	return nil
 }
 

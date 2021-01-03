@@ -55,7 +55,7 @@ func main() {
 		log.Fatalf("error opening discord connection: %v", err)
 	}
 
-	dis, err := discord.New(dg, discord.Config{QMChannelName: "bot-testing", ArchiveChannelName: "archive"})
+	dis, err := discord.New(dg, discord.Config{QMChannelName: "bot-testing", SolvedCategoryName: "solved", PuzzleCategoryName: "puzzles"})
 	if err != nil {
 		log.Fatalf("error creating discord client: %v", err)
 	}
