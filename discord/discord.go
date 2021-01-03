@@ -79,6 +79,19 @@ func (c *Client) RegisterNewMessageHandler(h func(*discordgo.Session, *discordgo
 	c.s.AddHandler(h)
 }
 
+// TODO: id or name?
+func (c *Client) ChannelURL(id string) string {
+	return fmt.Sprintf("https://discord.com/channels/%s/%s", c.guildID, id)
+}
+
+func (c *Client) ChannelSendAndPin(chanID, msg string) error {
+	m, err := c.s.ChannelMessageSend(chanID, msg)
+	if err != nil {
+		return err
+	}
+	return c.s.ChannelMessagePin(chanID, m.ID)
+}
+
 func (c *Client) QMChannelSend(msg string) error {
 	_, err := c.s.ChannelMessageSend(c.qmChannelID, msg)
 	return err
