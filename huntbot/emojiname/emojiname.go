@@ -61,22 +61,15 @@ func RandomEmoji(n int) ([]Emoji, error) {
 		totalWeight += e.weight()
 	}
 
-	exclude := make(map[string]bool)
 	for i := 0; i < n; i++ {
 		r := rand.Float64() * totalWeight
 		for _, e := range allEmoji {
 			w := e.weight()
 			if r < w {
-				if exclude[e.Unified] {
-					// just try again
-					i--
-					continue
-				}
 				ret = append(ret, e)
-				exclude[e.Unified] = true
 				break
 			}
-			totalWeight -= w
+			r -= w
 		}
 		log.Printf("fell off end of emoji list")
 		ret = append(ret, allEmoji[0])
