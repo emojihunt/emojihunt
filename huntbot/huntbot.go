@@ -37,10 +37,13 @@ func (h *HuntBot) NewPuzzle(ctx context.Context, name string) error {
 	// Update Spreadsheet with channel URL, spreadsheet URL.
 
 	// Post a message in the general channel with a link to the puzzle.
-	h.dis.GeneralChannelSend(fmt.Sprintf("There is a new puzzle %s!\nPuzzle URL: %s\nChannel #%s <#%s>",
-		name, puzzleURL, strings.ToLower(name), id))
+	if err := h.dis.GeneralChannelSend(fmt.Sprintf("There is a new puzzle %s!\nPuzzle URL: %s\nChannel <#%s>", name, puzzleURL, id)); err != nil {
+		return fmt.Errorf("error posting new puzzle announcement: %v", err)
+	}
 	// Pin a message with the spreadsheet URL to the channel
-	h.dis.ChannelSendAndPin(id, fmt.Sprintf("Spreadsheet: %s\nPuzzle: %s", sheetURL, puzzleURL))
+	if err := h.dis.ChannelSendAndPin(id, fmt.Sprintf("Spreadsheet: %s\nPuzzle: %s", sheetURL, puzzleURL)); err != nil {
+		return fmt.Errorf("error pinning puzzle info: %v", err)
+	}
 	return nil
 }
 
