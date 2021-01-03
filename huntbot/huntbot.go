@@ -3,6 +3,7 @@ package huntbot
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/gauravjsingh/emojihunt/discord"
@@ -24,7 +25,7 @@ func (h *HuntBot) AddHandler(handler func(*discordgo.Session, *discordgo.Message
 }
 
 // TODO: is calling this after polling the sheet okay? every typo will turn into a sheet + channel
-func (h *HuntBot) CreatePuzzle(ctx context.Context, name string) error {
+func (h *HuntBot) NewPuzzle(ctx context.Context, name string) error {
 	id, err := h.dis.CreateChannel(name)
 	if err != nil {
 		return fmt.Errorf("error creating discord channel for %q: %v", name, err)
@@ -41,6 +42,19 @@ func (h *HuntBot) CreatePuzzle(ctx context.Context, name string) error {
 	// Pin a message with the spreadsheet URL to the channel
 	h.dis.ChannelSendAndPin(id, fmt.Sprintf("[Spreadsheet](%s), [Puzzle](%s)", sheetURL, puzzleURL))
 	return nil
+}
+
+func (h *HuntBot) NewPuzzleHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
+	if m.Author.ID == s.State.User.ID || !strings.HasPrefix(m.Content, "!newpuzzle") {
+		return
+	}
+
+	parts := strings.Split(m.Content, " ")
+	if len(parts) < 2 {
+		// send a bad usage message to the channel
+		return
+	}
+	h.NewPuzzle(context.Background(), parts[1])
 }
 
 func (h *HuntBot) StartWork(ctx context.Context) {

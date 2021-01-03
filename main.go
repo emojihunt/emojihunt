@@ -89,6 +89,7 @@ func main() {
 	log.Print("press ctrl+C to exit")
 	h.AddHandler(emojiname.Handler)
 	h.AddHandler(huntyet.Handler)
+	h.AddHandler(h.NewPuzzleHandler)
 	h.StartWork(ctx)
 }
 
