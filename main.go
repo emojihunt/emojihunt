@@ -14,6 +14,8 @@ import (
 	"github.com/gauravjsingh/emojihunt/discord"
 	"github.com/gauravjsingh/emojihunt/drive"
 	"github.com/gauravjsingh/emojihunt/huntbot"
+	"github.com/gauravjsingh/emojihunt/huntbot/emojiname"
+	"github.com/gauravjsingh/emojihunt/huntbot/huntyet"
 )
 
 var (
@@ -86,6 +88,8 @@ func main() {
 
 	log.Print("press ctrl+C to exit")
 	h.AddHandler(dis.EchoHandler)
+	h.AddHandler(emojiname.Handler)
+	h.AddHandler(huntyet.Handler)
 	h.StartWork(ctx)
 }
 
