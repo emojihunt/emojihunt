@@ -2,6 +2,7 @@ package discord
 
 import (
 	"fmt"
+	"log"
 	"sync"
 
 	"github.com/bwmarrin/discordgo"
@@ -74,11 +75,18 @@ func New(s *discordgo.Session, c Config) (*Client, error) {
 	}, nil
 }
 
-func (c *Client) RegisterNewMessageHandler(h func(*discordgo.Session, *discordgo.MessageCreate)) {
+// TODO: Make this a struct with a name.
+type NewMessageHandler func(*discordgo.Session, *discordgo.MessageCreate) error
+
+func (c *Client) RegisterNewMessageHandler(name string, h NewMessageHandler) {
 	// Only handle new guild messages.
 	// TODO: bitOr with the current value.
 	c.s.Identify.Intents = discordgo.MakeIntent(discordgo.IntentsGuildMessages)
-	c.s.AddHandler(h)
+	c.s.AddHandler(func(s *discordgo.Session, m *discordgo.MessageCreate) {
+		if err := h(s, m); err != nil {
+			log.Printf("%s: %v", name, err)
+		}
+	})
 }
 
 // TODO: id or name?
@@ -91,7 +99,9 @@ func (c *Client) ChannelSendAndPin(chanID, msg string) error {
 	if err != nil {
 		return err
 	}
-	return c.s.ChannelMessagePin(chanID, m.ID)
+	err = c.s.ChannelMessagePin(chanID, m.ID)
+	log.Printf("pinned message %s, %s, with err: %v", m.ID, chanID, err)
+	return err
 }
 
 func (c *Client) QMChannelSend(msg string) error {

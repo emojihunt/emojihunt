@@ -36,19 +36,22 @@ func format(emoji []*Emoji) string {
 	)
 }
 
-func Handler(s *discordgo.Session, m *discordgo.MessageCreate) {
+func Handler(s *discordgo.Session, m *discordgo.MessageCreate) error {
 	if m.Author.ID == s.State.User.ID || !strings.HasPrefix(m.Content, "!name") {
-		return
+		return nil
 	}
 
-	reply := func(msg string) { s.ChannelMessageSend(m.ChannelID, msg) }
+	reply := func(msg string) error {
+		_, err := s.ChannelMessageSend(m.ChannelID, msg)
+		return err
+	}
 
 	emoji, err := RandomEmoji(3)
 	if err != nil {
-		log.Printf("failed to get name: %v", err)
+		// Ignore error with this reply since we are already in an error case.
 		reply(":grimacing: something went wrong, @tech can help")
-		return
+		return fmt.Errorf("failed to get name: %v", err)
 	}
 
-	reply(format(emoji))
+	return reply(format(emoji))
 }

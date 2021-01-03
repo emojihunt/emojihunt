@@ -37,10 +37,11 @@ func msg(now time.Time) string {
 	return "Gosh, I'm not sure! @tech can update the bot."
 }
 
-func Handler(s *discordgo.Session, m *discordgo.MessageCreate) {
+func Handler(s *discordgo.Session, m *discordgo.MessageCreate) error {
 	if m.Author.ID == s.State.User.ID || !strings.HasPrefix(m.Content, "!huntyet") {
-		return
+		return nil
 	}
 
 	s.ChannelMessageSend(m.ChannelID, msg(time.Now()))
+	return nil
 }

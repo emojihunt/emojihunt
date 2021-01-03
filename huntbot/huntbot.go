@@ -13,15 +13,15 @@ import (
 type HuntBot struct {
 	dis      *discord.Client
 	drive    *drive.Drive
-	handlers []func(*discordgo.Session, *discordgo.MessageCreate)
+	handlers map[string]discord.NewMessageHandler
 }
 
 func New(dis *discord.Client, drive *drive.Drive) *HuntBot {
-	return &HuntBot{dis: dis, drive: drive}
+	return &HuntBot{dis: dis, drive: drive, handlers: make(map[string]discord.NewMessageHandler)}
 }
 
-func (h *HuntBot) AddHandler(handler func(*discordgo.Session, *discordgo.MessageCreate)) {
-	h.handlers = append(h.handlers, handler)
+func (h *HuntBot) AddHandler(name string, handler discord.NewMessageHandler) {
+	h.handlers[name] = handler
 }
 
 // TODO: is calling this after polling the sheet okay? every typo will turn into a sheet + channel
@@ -47,24 +47,27 @@ func (h *HuntBot) NewPuzzle(ctx context.Context, name string) error {
 	return nil
 }
 
-func (h *HuntBot) NewPuzzleHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
+func (h *HuntBot) NewPuzzleHandler(s *discordgo.Session, m *discordgo.MessageCreate) error {
 	if m.Author.ID == s.State.User.ID || !strings.HasPrefix(m.Content, "!newpuzzle") {
-		return
+		return nil
 	}
 
 	parts := strings.Split(m.Content, " ")
 	if len(parts) < 2 {
 		// send a bad usage message to the channel
-		return
+		return fmt.Errorf("not able to find new puzzle name from %q", m.Content)
 	}
-	h.NewPuzzle(context.Background(), parts[1])
+	if err := h.NewPuzzle(context.Background(), parts[1]); err != nil {
+		return fmt.Errorf("error creating puzzle: %v", err)
+	}
+	return nil
 }
 
 func (h *HuntBot) StartWork(ctx context.Context) {
 	// register discord handlers to do work based on discord messages.
 	//registerHandlers(h.dis)
-	for _, handler := range h.handlers {
-		h.dis.RegisterNewMessageHandler(handler)
+	for name, handler := range h.handlers {
+		h.dis.RegisterNewMessageHandler(name, handler)
 	}
 
 	// poll the sheet and trigger work based on the polling.
