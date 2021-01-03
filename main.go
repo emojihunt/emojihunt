@@ -87,7 +87,6 @@ func main() {
 	h := huntbot.New(dis, d)
 
 	log.Print("press ctrl+C to exit")
-	h.AddHandler(dis.EchoHandler)
 	h.AddHandler(emojiname.Handler)
 	h.AddHandler(huntyet.Handler)
 	h.StartWork(ctx)
