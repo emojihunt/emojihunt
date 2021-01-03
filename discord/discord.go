@@ -3,22 +3,29 @@ package discord
 import (
 	"fmt"
 	"log"
+	"sync"
 
 	"github.com/bwmarrin/discordgo"
 )
 
 type Config struct {
-	QMChannelName, ArchiveChannelName string
+	QMChannelName, GeneralChannelName, ArchiveChannelName string
 }
 
 type Client struct {
 	s       *discordgo.Session
 	guildID string
-	// TODO: not a great idea to keep these channels around, could lead to inconsistency
-	qmChannelID     string
-	channelNameToID map[string]string
+	// The QM channel contains a central log of interesting bot actions, as well as the only place for
+	// advanced bot usage, such as puzzle or round creation.
+	qmChannelID string
+	// The general channel has all users, and has announcements from the bot.
+	generalChannelID string
 	// archive is a category, ie. a discord channel that can have children.
 	archiveID string
+
+	// This might be a case where sync.Map makes sense.
+	mu              sync.Mutex
+	channelNameToID map[string]string
 }
 
 func getGuildID(s *discordgo.Session) (string, error) {
@@ -50,13 +57,18 @@ func New(s *discordgo.Session, c Config) (*Client, error) {
 	if !ok {
 		return nil, fmt.Errorf("archive %q not found", c.ArchiveChannelName)
 	}
+	gen, ok := chIDs[c.GeneralChannelName]
+	if !ok {
+		gen = qm
+	}
 
 	return &Client{
-		s:               s,
-		guildID:         guildID,
-		qmChannelID:     qm,
-		channelNameToID: chIDs,
-		archiveID:       ar,
+		s:                s,
+		guildID:          guildID,
+		qmChannelID:      qm,
+		generalChannelID: gen,
+		channelNameToID:  chIDs,
+		archiveID:        ar,
 	}, nil
 }
 
@@ -72,6 +84,11 @@ func (c *Client) QMChannelSend(msg string) error {
 	return err
 }
 
+func (c *Client) GeneralChannelSend(msg string) error {
+	_, err := c.s.ChannelMessageSend(c.generalChannelID, msg)
+	return err
+}
+
 func (c *Client) SolvePuzzle(puzzleName string) error {
 	return c.QMChannelSend("hello")
 }
@@ -83,7 +100,10 @@ func (e ChannelNotFoundError) Error() string {
 }
 
 func (c *Client) ArchiveChannel(name string) error {
+	c.mu.Lock()
 	chID, ok := c.channelNameToID[name]
+	c.mu.Unlock()
+
 	if !ok {
 		return ChannelNotFoundError(name)
 	}
@@ -109,5 +129,17 @@ func (c *Client) EchoHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 	s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("echo: %v", m.Content))
 }
 
-func (c *Client) CreatePuzzle() {
+// CreateChannel ensures that a channel exists with the given name, and returns the channel ID.
+func (c *Client) CreateChannel(name string) (string, error) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	if id, ok := c.channelNameToID[name]; ok {
+		return id, nil
+	}
+	ch, err := c.s.GuildChannelCreate(c.guildID, name, discordgo.ChannelTypeGuildText)
+	if err != nil {
+		return "", fmt.Errorf("error creating channel %q: %v", name, err)
+	}
+	c.channelNameToID[name] = ch.ID
+	return ch.ID, nil
 }
