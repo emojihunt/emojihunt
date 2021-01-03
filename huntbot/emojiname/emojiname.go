@@ -92,7 +92,7 @@ func Load() ([]Emoji, error) {
 		return allEmoji, nil
 	}
 
-	f, err := os.Open("discord/emojiname/emoji-data/emoji.json")
+	f, err := os.Open("huntbot/emojiname/emoji-data/emoji.json")
 	if err != nil {
 		return nil, fmt.Errorf("error reading emoji data: %w", err)
 	}
