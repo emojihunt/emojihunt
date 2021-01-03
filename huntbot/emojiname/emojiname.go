@@ -66,7 +66,7 @@ func RandomEmoji(n int) ([]Emoji, error) {
 		for _, e := range allEmoji {
 			w := e.weight()
 			if r < w {
-				ret = append(ret, e)
+				ret[i] = e
 				break
 			}
 			r -= w
