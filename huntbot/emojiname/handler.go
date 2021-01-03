@@ -10,7 +10,7 @@ import (
 	"github.com/bwmarrin/discordgo"
 )
 
-func format(emoji []Emoji) string {
+func format(emoji []*Emoji) string {
 	var chars, shortcodes, names []string
 	for _, e := range emoji {
 		for _, hex := range strings.Split(e.Unified, "-") {

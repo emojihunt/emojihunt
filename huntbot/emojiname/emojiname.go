@@ -49,8 +49,8 @@ func (e *Emoji) weight() float64 {
 	}
 }
 
-func RandomEmoji(n int) ([]Emoji, error) {
-	ret := make([]Emoji, n)
+func RandomEmoji(n int) ([]*Emoji, error) {
+	ret := make([]*Emoji, n)
 	allEmoji, err := Load()
 	if err != nil {
 		return nil, err
@@ -71,16 +71,18 @@ func RandomEmoji(n int) ([]Emoji, error) {
 			}
 			r -= w
 		}
-		log.Printf("fell off end of emoji list")
-		ret = append(ret, allEmoji[0])
+		if ret[i] == nil {
+			log.Printf("fell off end of emoji list")
+			ret = append(ret, allEmoji[0])
+		}
 	}
 
 	return ret, nil
 }
 
-var allEmoji []Emoji
+var allEmoji []*Emoji
 
-func Load() ([]Emoji, error) {
+func Load() ([]*Emoji, error) {
 	if allEmoji != nil {
 		return allEmoji, nil
 	}
@@ -90,7 +92,7 @@ func Load() ([]Emoji, error) {
 		return nil, fmt.Errorf("error reading emoji data: %w", err)
 	}
 
-	var emoji []Emoji
+	var emoji []*Emoji
 	err = json.NewDecoder(f).Decode(&emoji)
 	if err != nil {
 		return nil, fmt.Errorf("error reading emoji data: %w", err)
