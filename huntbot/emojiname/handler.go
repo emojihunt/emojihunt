@@ -6,9 +6,12 @@ import (
 	"math/rand"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/bwmarrin/discordgo"
 )
+
+var rng = rand.New(rand.NewSource(time.Now().UnixNano()))
 
 func format(emoji []*Emoji) string {
 	var chars, shortcodes, names []string
@@ -22,7 +25,7 @@ func format(emoji []*Emoji) string {
 			chars = append(chars, string(rune(n)))
 		}
 		shortcodes = append(shortcodes,
-			fmt.Sprintf(":%v:", e.ShortNames[rand.Intn(len(e.ShortNames))]))
+			fmt.Sprintf(":%v:", e.ShortNames[rng.Intn(len(e.ShortNames))]))
 		names = append(names, e.Name)
 	}
 	return fmt.Sprintf(

@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
-	"math/rand"
 	"os"
 	"strings"
 )
@@ -62,7 +61,7 @@ func RandomEmoji(n int) ([]*Emoji, error) {
 	}
 
 	for i := 0; i < n; i++ {
-		r := rand.Float64() * totalWeight
+		r := rng.Float64() * totalWeight
 		for _, e := range allEmoji {
 			w := e.weight()
 			if r < w {
