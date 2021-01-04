@@ -30,12 +30,12 @@ func (h *HuntBot) notifyNewPuzzle(name, puzzleURL, sheetURL, channelID string) e
 	// TODO: also edit sheet to link to channel/puzzle
 
 	// Pin a message with the spreadsheet URL to the channel
-	if err := h.dis.ChannelSendAndPin(channelID, fmt.Sprintf("Spreadsheet: %s\nPuzzle: %s", sheetURL, puzzleURL)); err != nil {
+	if err := h.dis.ChannelSendAndPin(channelID, fmt.Sprintf("Spreadsheet: <%s>\nPuzzle: <%s>", sheetURL, puzzleURL)); err != nil {
 		return fmt.Errorf("error pinning puzzle info: %v", err)
 	}
 
 	// Post a message in the general channel with a link to the puzzle.
-	if err := h.dis.GeneralChannelSend(fmt.Sprintf("There is a new puzzle %s!\nPuzzle URL: %s\nChannel <#%s>", name, puzzleURL, channelID)); err != nil {
+	if err := h.dis.GeneralChannelSend(fmt.Sprintf("There is a new puzzle %s!\nPuzzle URL: <%s>\nChannel <#%s>", name, puzzleURL, channelID)); err != nil {
 		return fmt.Errorf("error posting new puzzle announcement: %v", err)
 	}
 
