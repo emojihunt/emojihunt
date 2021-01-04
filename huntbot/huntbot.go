@@ -66,7 +66,7 @@ func (h *HuntBot) NewPuzzle(ctx context.Context, name string) error {
 		return fmt.Errorf("error creating discord channel for %q: %v", name, err)
 	}
 	// Create Spreadsheet
-	sheetURL, err := h.drive.CreateSheet(ctx, name)
+	sheetURL, err := h.drive.CreateSheet(ctx, name, "Unknown Round") // TODO
 	if err != nil {
 		return fmt.Errorf("error creating spreadsheet for %q: %v", name, err)
 	}
@@ -100,9 +100,11 @@ func (h *HuntBot) pollAndUpdate(ctx context.Context) error {
 	}
 
 	for _, puzzle := range puzzles {
-		if puzzle.Name != "" && puzzle.PuzzleURL != "" {
+		if puzzle.Name != "" && puzzle.PuzzleURL != "" && puzzle.Round.Name != "" {
+			// TODO: warn if puzzle.Name is set but others haven't been for a
+			// while?
 			if puzzle.DocURL == "" {
-				puzzle.DocURL, err = h.drive.CreateSheet(ctx, puzzle.Name)
+				puzzle.DocURL, err = h.drive.CreateSheet(ctx, puzzle.Name, puzzle.Round.Name)
 				if err != nil {
 					return fmt.Errorf("error creating spreadsheet for %q: %v", puzzle.Name, err)
 				}
