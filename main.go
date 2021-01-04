@@ -9,7 +9,6 @@ import (
 	"log"
 	"os"
 	"os/signal"
-	"time"
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/gauravjsingh/emojihunt/discord"
@@ -92,16 +91,9 @@ func main() {
 	dis.RegisterNewMessageHandler("isithuntyet?", huntyet.Handler)
 	dis.RegisterNewMessageHandler("new puzzle", h.NewPuzzleHandler)
 
-	// we don't have a way to subscribe to updates, so we just poll the sheet
-	for {
-		select {
-		case <-ctx.Done():
-			log.Print("exiting due to signal")
-			return
-		case <-time.After(1 * time.Second):
-			h.PollSheet(ctx)
-		}
-	}
+	go h.WatchSheet(ctx)
+
+	<-ctx.Done()
 }
 
 func init() {

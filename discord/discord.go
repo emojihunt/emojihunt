@@ -9,8 +9,8 @@ import (
 )
 
 type Config struct {
-	QMChannelName, GeneralChannelName      string
-	PuzzleCategoryName, SolvedCategoryName string
+	QMChannelName, GeneralChannelName, TechChannelName string
+	PuzzleCategoryName, SolvedCategoryName             string
 }
 
 type Client struct {
@@ -21,6 +21,8 @@ type Client struct {
 	qmChannelID string
 	// The general channel has all users, and has announcements from the bot.
 	generalChannelID string
+	// The tech channel has error messages.
+	techChannelID string
 	// The puzzle channel category.
 	puzzleCategoryID string
 	// The category for solved puzzles.
@@ -64,12 +66,17 @@ func New(s *discordgo.Session, c Config) (*Client, error) {
 	if !ok {
 		gen = qm
 	}
+	tech, ok := chIDs[c.TechChannelName]
+	if !ok {
+		tech = qm
+	}
 
 	return &Client{
 		s:                s,
 		guildID:          guildID,
 		qmChannelID:      qm,
 		generalChannelID: gen,
+		techChannelID:    tech,
 		channelNameToID:  chIDs,
 		solvedCategoryID: ar,
 	}, nil
@@ -110,6 +117,11 @@ func (c *Client) QMChannelSend(msg string) error {
 
 func (c *Client) GeneralChannelSend(msg string) error {
 	_, err := c.s.ChannelMessageSend(c.generalChannelID, msg)
+	return err
+}
+
+func (c *Client) TechChannelSend(msg string) error {
+	_, err := c.s.ChannelMessageSend(c.techChannelID, msg)
 	return err
 }
 

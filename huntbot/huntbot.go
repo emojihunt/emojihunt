@@ -3,7 +3,9 @@ package huntbot
 import (
 	"context"
 	"fmt"
+	"log"
 	"strings"
+	"time"
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/gauravjsingh/emojihunt/discord"
@@ -19,17 +21,15 @@ func New(dis *discord.Client, drive *drive.Drive) *HuntBot {
 	return &HuntBot{dis: dis, drive: drive}
 }
 
-// TODO: is calling this after polling the sheet okay? every typo will turn into a sheet + channel
-func (h *HuntBot) NewPuzzle(ctx context.Context, name string) error {
+func (h *HuntBot) newPuzzle(ctx context.Context, name string, puzzleURL string) error {
 	id, err := h.dis.CreateChannel(name)
 	if err != nil {
 		return fmt.Errorf("error creating discord channel for %q: %v", name, err)
 	}
-	// Create Spreadsheet
+
+	// TODO: create Spreadsheet
 	sheetURL := "https://docs.google.com/spreadsheets/d/1SgvhTBeVdyTMrCR0wZixO3O0lErh4vqX0--nBpSfYT8/edit"
-	// If via bot, also take puzzle url as a param
-	puzzleURL := "https://en.wikipedia.org/wiki/Main_Page"
-	// Update Spreadsheet with channel URL, spreadsheet URL.
+	// TODO: Update Spreadsheet with channel URL, spreadsheet URL.
 
 	// Post a message in the general channel with a link to the puzzle.
 	if err := h.dis.GeneralChannelSend(fmt.Sprintf("There is a new puzzle %s!\nPuzzle URL: %s\nChannel <#%s>", name, puzzleURL, id)); err != nil {
@@ -40,6 +40,41 @@ func (h *HuntBot) NewPuzzle(ctx context.Context, name string) error {
 		return fmt.Errorf("error pinning puzzle info: %v", err)
 	}
 	return nil
+}
+
+func (h *HuntBot) notifyNewPuzzle(name, puzzleURL, sheetURL, channelID string) error {
+	log.Printf("Posting information about new puzzle %q", name)
+	// TODO: also edit sheet to link to channel/puzzle
+
+	// Pin a message with the spreadsheet URL to the channel
+	if err := h.dis.ChannelSendAndPin(channelID, fmt.Sprintf("Spreadsheet: %s\nPuzzle: %s", sheetURL, puzzleURL)); err != nil {
+		return fmt.Errorf("error pinning puzzle info: %v", err)
+	}
+
+	// Post a message in the general channel with a link to the puzzle.
+	if err := h.dis.GeneralChannelSend(fmt.Sprintf("There is a new puzzle %s!\nPuzzle URL: %s\nChannel <#%s>", name, puzzleURL, channelID)); err != nil {
+		return fmt.Errorf("error posting new puzzle announcement: %v", err)
+	}
+
+	return nil
+}
+
+// TODO: is calling this after polling the sheet okay? every typo will turn into a sheet + channel
+func (h *HuntBot) NewPuzzle(ctx context.Context, name string) error {
+	id, err := h.dis.CreateChannel(name)
+	if err != nil {
+		return fmt.Errorf("error creating discord channel for %q: %v", name, err)
+	}
+	// Create Spreadsheet
+	sheetURL, err := h.drive.CreateSheet(ctx, name)
+	if err != nil {
+		return fmt.Errorf("error creating spreadsheet for %q: %v", name, err)
+	}
+
+	// If via bot, also take puzzle url as a param
+	puzzleURL := "https://en.wikipedia.org/wiki/Main_Page"
+
+	return h.notifyNewPuzzle(name, puzzleURL, sheetURL, id)
 }
 
 func (h *HuntBot) NewPuzzleHandler(s *discordgo.Session, m *discordgo.MessageCreate) error {
@@ -58,6 +93,60 @@ func (h *HuntBot) NewPuzzleHandler(s *discordgo.Session, m *discordgo.MessageCre
 	return nil
 }
 
-func (h *HuntBot) PollSheet(ctx context.Context) {
-	// TODO
+func (h *HuntBot) pollAndUpdate(ctx context.Context) error {
+	puzzles, err := h.drive.ReadFullSheet()
+	if err != nil {
+		return err
+	}
+
+	for _, puzzle := range puzzles {
+		if puzzle.Name != "" && puzzle.PuzzleURL != "" {
+			if puzzle.DocURL == "" {
+				log.Printf("Adding doc for new puzzle %q", puzzle.Name)
+				puzzle.DocURL, err = h.drive.CreateSheet(ctx, puzzle.Name)
+				if err != nil {
+					return fmt.Errorf("error creating spreadsheet for %q: %v", puzzle.Name, err)
+				}
+			}
+
+			if puzzle.DiscordURL == "" {
+				log.Printf("Adding channel for new puzzle %q", puzzle.Name)
+				id, err := h.dis.CreateChannel(puzzle.Name)
+				if err != nil {
+					return fmt.Errorf("error creating discord channel for %q: %v", puzzle.Name, err)
+				}
+
+				puzzle.DiscordURL = h.dis.ChannelURL(id)
+
+				// Treat discord URL as the sentinel to also notify everyone
+				return h.notifyNewPuzzle(puzzle.Name, puzzle.PuzzleURL, puzzle.DocURL, id)
+			}
+		}
+	}
+
+	return nil
+}
+
+func (h *HuntBot) WatchSheet(ctx context.Context) {
+	// we don't have a way to subscribe to updates, so we just poll the sheet
+	failures := 0
+	for {
+		select {
+		case <-ctx.Done():
+			log.Print("exiting watcher due to signal")
+			return
+		case <-time.After(10 * time.Second):
+			err := h.pollAndUpdate(ctx)
+			if err != nil {
+				// log always, but ping after 3 consecutive failures, then every 10, to avoid spam
+				log.Printf("watching sheet failed: %v", err)
+				failures++
+				if failures%10 == 3 {
+					h.dis.TechChannelSend(fmt.Sprintf("watching sheet failed: %v", err))
+				}
+			} else {
+				failures = 0
+			}
+		}
+	}
 }

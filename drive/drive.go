@@ -3,6 +3,7 @@ package drive
 import (
 	"context"
 	"fmt"
+	"log"
 	"strings"
 
 	"google.golang.org/api/sheets/v4"
@@ -105,4 +106,10 @@ func (d *Drive) ReadFullSheet() ([]PuzzleInfo, error) {
 	}
 
 	return infos, nil
+}
+
+func (d *Drive) CreateSheet(ctx context.Context, name string) (url string, err error) {
+	log.Printf("would create sheet for %v", name)
+	// TODO: implement
+	return "https://docs.google.com/spreadsheets/d/1SgvhTBeVdyTMrCR0wZixO3O0lErh4vqX0--nBpSfYT8/edit", nil
 }
