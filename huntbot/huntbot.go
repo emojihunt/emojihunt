@@ -21,27 +21,6 @@ func New(dis *discord.Client, drive *drive.Drive) *HuntBot {
 	return &HuntBot{dis: dis, drive: drive}
 }
 
-func (h *HuntBot) newPuzzle(ctx context.Context, name string, puzzleURL string) error {
-	id, err := h.dis.CreateChannel(name)
-	if err != nil {
-		return fmt.Errorf("error creating discord channel for %q: %v", name, err)
-	}
-
-	// TODO: create Spreadsheet
-	sheetURL := "https://docs.google.com/spreadsheets/d/1SgvhTBeVdyTMrCR0wZixO3O0lErh4vqX0--nBpSfYT8/edit"
-	// TODO: Update Spreadsheet with channel URL, spreadsheet URL.
-
-	// Post a message in the general channel with a link to the puzzle.
-	if err := h.dis.GeneralChannelSend(fmt.Sprintf("There is a new puzzle %s!\nPuzzle URL: %s\nChannel <#%s>", name, puzzleURL, id)); err != nil {
-		return fmt.Errorf("error posting new puzzle announcement: %v", err)
-	}
-	// Pin a message with the spreadsheet URL to the channel
-	if err := h.dis.ChannelSendAndPin(id, fmt.Sprintf("Spreadsheet: %s\nPuzzle: %s", sheetURL, puzzleURL)); err != nil {
-		return fmt.Errorf("error pinning puzzle info: %v", err)
-	}
-	return nil
-}
-
 func (h *HuntBot) notifyNewPuzzle(name, puzzleURL, sheetURL, channelID string) error {
 	log.Printf("Posting information about new puzzle %q", name)
 	// TODO: also edit sheet to link to channel/puzzle
@@ -59,7 +38,6 @@ func (h *HuntBot) notifyNewPuzzle(name, puzzleURL, sheetURL, channelID string) e
 	return nil
 }
 
-// TODO: is calling this after polling the sheet okay? every typo will turn into a sheet + channel
 func (h *HuntBot) NewPuzzle(ctx context.Context, name string) error {
 	id, err := h.dis.CreateChannel(name)
 	if err != nil {
@@ -130,7 +108,7 @@ func (h *HuntBot) pollAndUpdate(ctx context.Context) error {
 
 func (h *HuntBot) WatchSheet(ctx context.Context) {
 	// we don't have a way to subscribe to updates, so we just poll the sheet
-	// TODO: could we use d.drive.Files.Watch?
+	// TODO: if sheet last-mod is since our last run, noop
 	failures := 0
 	for {
 		err := h.pollAndUpdate(ctx)
