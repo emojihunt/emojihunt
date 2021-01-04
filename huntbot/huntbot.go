@@ -75,7 +75,7 @@ func (h *HuntBot) NewPuzzleHandler(s *discordgo.Session, m *discordgo.MessageCre
 	return nil
 }
 
-func (h *HuntBot) maybeMarkSolved(ctx context.Context, puzzle drive.PuzzleInfo) error {
+func (h *HuntBot) maybeMarkSolved(ctx context.Context, puzzle *drive.PuzzleInfo) error {
 	h.mu.Lock()
 	defer h.mu.Unlock() // TODO: finer locking
 	if h.solvedPuzzles[puzzle.Name] {
@@ -83,16 +83,18 @@ func (h *HuntBot) maybeMarkSolved(ctx context.Context, puzzle drive.PuzzleInfo) 
 		return nil
 	}
 
-	log.Printf("Archiving channel for %q", puzzle.Name)
 	channelID, err := h.dis.ChannelID(puzzle.DiscordURL)
 	if err != nil {
 		return err
 	}
 
-	err = h.dis.ArchiveChannel(channelID)
-	if err != nil {
+	archived, err := h.dis.ArchiveChannel(channelID)
+	if !archived {
+		// Channel already archived.
+	} else if err != nil {
 		return fmt.Errorf("unable to archive channel for %q: %v", puzzle.Name, err)
 	} else {
+		log.Printf("Archiving channel for %q", puzzle.Name)
 		// post to relevant channels only if it was newly archived.
 		if err := h.dis.ChannelSend(channelID, fmt.Sprintf("Puzzle solved! The answer was %v. I'll archive this channel.", puzzle.Answer)); err != nil {
 			return fmt.Errorf("error posting new puzzle announcement: %v", err)
@@ -103,6 +105,7 @@ func (h *HuntBot) maybeMarkSolved(ctx context.Context, puzzle drive.PuzzleInfo) 
 		}
 	}
 
+	// TODO: check if it is already archived first.
 	log.Printf("Marking sheet solved for %q", puzzle.Name)
 	err = h.drive.MarkSheetSolved(ctx, puzzle.DocURL)
 	if err != nil {

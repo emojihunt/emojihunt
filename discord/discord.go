@@ -150,27 +150,28 @@ func (c *Client) SolvePuzzle(puzzleName string) error {
 
 var ChannelNotFound = fmt.Errorf("channel not found")
 
-func (c *Client) ArchiveChannel(chID string) error {
+// Returns whether a channel was archived.
+func (c *Client) ArchiveChannel(chID string) (bool, error) {
 	ch, err := c.s.Channel(chID)
 	if err != nil {
-		return fmt.Errorf("channel id %s not found: %w", chID, ChannelNotFound)
+		return false, fmt.Errorf("channel id %s not found: %w", chID, ChannelNotFound)
 	}
 
 	// Already archived.
 	if ch.ParentID == c.solvedCategoryID {
-		return nil
+		return false, nil
 	}
 
 	arCh, err := c.s.Channel(c.solvedCategoryID)
 	if err != nil {
-		return fmt.Errorf("error looking up archive: %v", err)
+		return false, fmt.Errorf("error looking up archive: %v", err)
 	}
 
 	_, err = c.s.ChannelEditComplex(chID, &discordgo.ChannelEdit{ParentID: c.solvedCategoryID, PermissionOverwrites: arCh.PermissionOverwrites})
 	if err != nil {
-		return fmt.Errorf("error moving channel: %v", err)
+		return false, fmt.Errorf("error moving channel: %v", err)
 	}
-	return err
+	return true, nil
 }
 
 // CreateChannel ensures that a channel exists with the given name, and returns the channel ID.

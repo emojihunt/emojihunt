@@ -87,11 +87,11 @@ type PuzzleInfo struct {
 	Row int
 }
 
-func (p PuzzleInfo) sheetRow() int {
+func (p *PuzzleInfo) sheetRow() int {
 	return p.Row + 1
 }
 
-func (p PuzzleInfo) metaFormula() string {
+func (p *PuzzleInfo) metaFormula() string {
 	if !p.Meta {
 		return ""
 	}
@@ -103,7 +103,7 @@ func formatURL(url, icon string) string {
 	return fmt.Sprintf(`=HYPERLINK("%s","%s")`, url, icon)
 }
 
-func (p PuzzleInfo) URLsAsValueRange(sheetName string) *sheets.ValueRange {
+func (p *PuzzleInfo) URLsAsValueRange(sheetName string) *sheets.ValueRange {
 	vr := &sheets.ValueRange{
 		Range: fmt.Sprintf("'%s'!E%d:G%d", sheetName, p.sheetRow(), p.sheetRow()),
 		Values: [][]interface{}{{
@@ -115,7 +115,7 @@ func (p PuzzleInfo) URLsAsValueRange(sheetName string) *sheets.ValueRange {
 	return vr
 }
 
-func (p PuzzleInfo) AsValueRange(sheetName string) *sheets.ValueRange {
+func (p *PuzzleInfo) AsValueRange(sheetName string) *sheets.ValueRange {
 	vr := &sheets.ValueRange{
 		Range: fmt.Sprintf("'%s'!A%d:I%d", sheetName, p.sheetRow(), p.sheetRow()),
 		Values: [][]interface{}{{
@@ -133,12 +133,12 @@ func (p PuzzleInfo) AsValueRange(sheetName string) *sheets.ValueRange {
 	return vr
 }
 
-func parsePuzzleInfo(row []*sheets.CellData, rowNum int) (PuzzleInfo, error) {
+func parsePuzzleInfo(row []*sheets.CellData, rowNum int) (*PuzzleInfo, error) {
 	if len(row) != 9 {
-		return PuzzleInfo{}, fmt.Errorf("wrong number of fields in row: %v", row)
+		return nil, fmt.Errorf("wrong number of fields in row: %v", row)
 	}
 
-	return PuzzleInfo{
+	return &PuzzleInfo{
 		// TODO: figure out how to decide the round name
 		Round:      Round{Emoji: row[0].FormattedValue, Name: row[0].FormattedValue},
 		Name:       row[1].FormattedValue,
@@ -153,7 +153,7 @@ func parsePuzzleInfo(row []*sheets.CellData, rowNum int) (PuzzleInfo, error) {
 	}, nil
 }
 
-func (d *Drive) ReadFullSheet() ([]PuzzleInfo, error) {
+func (d *Drive) ReadFullSheet() ([]*PuzzleInfo, error) {
 	req := &sheets.GetSpreadsheetByDataFilterRequest{
 		DataFilters:     []*sheets.DataFilter{{A1Range: fmt.Sprintf("'%s'!A2:I", d.sheetName)}},
 		IncludeGridData: true,
@@ -166,7 +166,7 @@ func (d *Drive) ReadFullSheet() ([]PuzzleInfo, error) {
 	if len(s.Sheets) != 1 || len(s.Sheets[0].Data) != 1 {
 		return nil, fmt.Errorf("unexpected number of sheets or data ranges returned: %v", s.Sheets)
 	}
-	var infos []PuzzleInfo
+	var infos []*PuzzleInfo
 	start := s.Sheets[0].Data[0].StartRow
 	for i, row := range s.Sheets[0].Data[0].RowData {
 		pi, err := parsePuzzleInfo(row.Values, int(start)+i)
@@ -219,19 +219,19 @@ func (d *Drive) UpdateCell(ctx context.Context, a1CellLocation string, value int
 	return err
 }
 
-func (d *Drive) SetDocURL(ctx context.Context, p PuzzleInfo) error {
+func (d *Drive) SetDocURL(ctx context.Context, p *PuzzleInfo) error {
 	a1Loc := fmt.Sprintf("F%d", p.Row+1)
 	hyperlink := fmt.Sprintf(`=HYPERLINK("%s","✏️")`, p.DocURL)
 	return d.UpdateCell(ctx, a1Loc, hyperlink)
 }
 
-func (d *Drive) SetDiscordURL(ctx context.Context, p PuzzleInfo) error {
+func (d *Drive) SetDiscordURL(ctx context.Context, p *PuzzleInfo) error {
 	a1Loc := fmt.Sprintf("G%d", p.Row+1)
 	hyperlink := fmt.Sprintf(`=HYPERLINK("%s","💬")`, p.DiscordURL)
 	return d.UpdateCell(ctx, a1Loc, hyperlink)
 }
 
-func (d *Drive) UpdatePuzzle(ctx context.Context, p PuzzleInfo) error {
+func (d *Drive) UpdatePuzzle(ctx context.Context, p *PuzzleInfo) error {
 	a1Range := fmt.Sprintf("A%d:I%d", p.Row+1, p.Row+1)
 
 	_, err := d.sheets.Spreadsheets.Values.Update(d.sheetID, fmt.Sprintf("'%s'!%s", d.sheetName, a1Range),
@@ -239,7 +239,7 @@ func (d *Drive) UpdatePuzzle(ctx context.Context, p PuzzleInfo) error {
 	return err
 }
 
-func (d *Drive) UpdateAllURLs(ctx context.Context, ps []PuzzleInfo) error {
+func (d *Drive) UpdateAllURLs(ctx context.Context, ps []*PuzzleInfo) error {
 	req := &sheets.BatchUpdateValuesRequest{ValueInputOption: "USER_ENTERED"}
 	for _, p := range ps {
 		req.Data = append(req.Data, p.URLsAsValueRange(d.sheetName))
