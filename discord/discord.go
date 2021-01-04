@@ -59,6 +59,10 @@ func New(s *discordgo.Session, c Config) (*Client, error) {
 	if !ok {
 		return nil, fmt.Errorf("QM Channel %q not found", c.QMChannelName)
 	}
+	puz, ok := chIDs[c.PuzzleCategoryName]
+	if !ok {
+		return nil, fmt.Errorf("puzzle category %q not found", c.PuzzleCategoryName)
+	}
 	ar, ok := chIDs[c.SolvedCategoryName]
 	if !ok {
 		return nil, fmt.Errorf("archive %q not found", c.SolvedCategoryName)
@@ -79,6 +83,7 @@ func New(s *discordgo.Session, c Config) (*Client, error) {
 		generalChannelID: gen,
 		techChannelID:    tech,
 		channelNameToID:  chIDs,
+		puzzleCategoryID: puz,
 		solvedCategoryID: ar,
 	}, nil
 }
