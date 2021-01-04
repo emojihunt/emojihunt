@@ -227,6 +227,40 @@ func (d *Drive) UpdatePuzzle(ctx context.Context, p PuzzleInfo) error {
 	return err
 }
 
+func (d *Drive) MarkSheetSolved(ctx context.Context, sheetURL string) error {
+	if !strings.HasPrefix(sheetURL, "https://docs.google.com/spreadsheets/d/") {
+		return fmt.Errorf("not a valid sheet URL: %q", sheetURL)
+	}
+	parts := strings.Split(sheetURL, "/")
+	id := parts[len(parts)-2]
+	sheet, err := d.sheets.Spreadsheets.Get(id).Context(ctx).Do()
+	if err != nil {
+		return fmt.Errorf("couldn't find sheet at %q: %v", sheetURL, err)
+	}
+
+	if strings.HasPrefix(sheet.Properties.Title, "[SOLVED]") {
+		return nil // nothing to do
+	}
+
+	req := &sheets.BatchUpdateSpreadsheetRequest{
+		Requests: []*sheets.Request{{
+			UpdateSpreadsheetProperties: &sheets.UpdateSpreadsheetPropertiesRequest{
+				Fields: "title",
+				Properties: &sheets.SpreadsheetProperties{
+					Title: "[SOLVED] " + sheet.Properties.Title,
+				},
+			},
+		}},
+	}
+
+	_, err = d.sheets.Spreadsheets.BatchUpdate(id, req).Context(ctx).Do()
+	if err != nil {
+		return fmt.Errorf("couldn't update sheet %q title: %v", sheet.Properties.Title, err)
+	}
+
+	return nil
+}
+
 const folderMimeType = "application/vnd.google-apps.folder"
 
 func (d *Drive) roundFolder(ctx context.Context, name string) (id string, err error) {

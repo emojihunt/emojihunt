@@ -3,6 +3,7 @@ package discord
 import (
 	"fmt"
 	"log"
+	"strings"
 	"sync"
 
 	"github.com/bwmarrin/discordgo"
@@ -101,6 +102,14 @@ func (c *Client) ChannelURL(id string) string {
 	return fmt.Sprintf("https://discord.com/channels/%s/%s", c.guildID, id)
 }
 
+func (c *Client) ChannelID(url string) (string, error) {
+	if !strings.HasPrefix(url, "https://discord.com/channels/"+c.guildID+"/") {
+		return "", fmt.Errorf("invalid channel URL: %q", url)
+	}
+	parts := strings.Split(url, "/")
+	return parts[len(parts)-1], nil
+}
+
 func (c *Client) ChannelSendAndPin(chanID, msg string) error {
 	m, err := c.s.ChannelMessageSend(chanID, msg)
 	if err != nil {
@@ -129,11 +138,7 @@ func (c *Client) SolvePuzzle(puzzleName string) error {
 	return c.QMChannelSend("hello")
 }
 
-type ChannelNotFoundError string
-
-func (e ChannelNotFoundError) Error() string {
-	return fmt.Sprintf("channel %q not found", string(e))
-}
+var ChannelNotFound = fmt.Errorf("channel not found")
 
 func (c *Client) ArchiveChannel(name string) error {
 	c.mu.Lock()
@@ -141,7 +146,7 @@ func (c *Client) ArchiveChannel(name string) error {
 	c.mu.Unlock()
 
 	if !ok {
-		return ChannelNotFoundError(name)
+		return fmt.Errorf("channel %q not found: %w", name, ChannelNotFound)
 	}
 	arCh, err := c.s.Channel(c.solvedCategoryID)
 	if err != nil {

@@ -2,9 +2,11 @@ package huntbot
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/bwmarrin/discordgo"
@@ -15,6 +17,9 @@ import (
 type HuntBot struct {
 	dis   *discord.Client
 	drive *drive.Drive
+
+	solvedPuzzles map[string]bool // set of names
+	mu            sync.Mutex      // hold while accessing solvedPuzzles
 }
 
 func New(dis *discord.Client, drive *drive.Drive) *HuntBot {
@@ -71,6 +76,40 @@ func (h *HuntBot) NewPuzzleHandler(s *discordgo.Session, m *discordgo.MessageCre
 	return nil
 }
 
+func (h *HuntBot) maybeMarkSolved(ctx context.Context, puzzle drive.PuzzleInfo) error {
+	h.mu.Lock()
+	defer h.mu.Unlock() // TODO: finer locking
+	if h.solvedPuzzles[puzzle.Name] {
+		// already marked this one solved
+		return nil
+	}
+
+	log.Printf("Archiving channel for %q", puzzle.Name)
+	channelID, err := h.dis.ChannelID(puzzle.DiscordURL)
+	if err != nil {
+		return err
+	}
+
+	err = h.dis.ArchiveChannel(channelID)
+	if errors.Is(err, discord.ChannelNotFound) {
+		// already archived
+	} else if err != nil {
+		return fmt.Errorf("unable to archive channel for %q: %v", puzzle.Name, err)
+	}
+
+	err = h.drive.MarkSheetSolved(ctx, puzzle.DocURL)
+	if err != nil {
+		return err
+	}
+
+	if err := h.dis.QMChannelSend(fmt.Sprintf("Puzzle %q was solved!", puzzle.Name)); err != nil {
+		return fmt.Errorf("error posting new puzzle announcement: %v", err)
+	}
+
+	h.solvedPuzzles[puzzle.Name] = true
+	return nil
+}
+
 func (h *HuntBot) pollAndUpdate(ctx context.Context) error {
 	puzzles, err := h.drive.ReadFullSheet()
 	if err != nil {
@@ -112,6 +151,13 @@ func (h *HuntBot) pollAndUpdate(ctx context.Context) error {
 				if err := h.drive.UpdatePuzzle(ctx, puzzle); err != nil {
 					return fmt.Errorf("error updating sheet info for puzzle %q: %v", puzzle.Name, err)
 				}
+			}
+		}
+
+		if puzzle.Answer != "" && puzzle.Status == drive.Solved {
+			err := h.maybeMarkSolved(ctx, puzzle)
+			if err != nil {
+				return fmt.Errorf("failed to mark puzzle %q solved: %v", puzzle.Name, err)
 			}
 		}
 	}
