@@ -63,16 +63,6 @@ func (h *HuntBot) NewPuzzleHandler(s *discordgo.Session, m *discordgo.MessageCre
 	return nil
 }
 
-func (h *HuntBot) StartWork(ctx context.Context) {
-	// register discord handlers to do work based on discord messages.
-	//registerHandlers(h.dis)
-	for name, handler := range h.handlers {
-		h.dis.RegisterNewMessageHandler(name, handler)
-	}
-
-	// poll the sheet and trigger work based on the polling.
-	// Ideally, this would only look at changes, but we start with looking at everything.
-	select {
-	case <-ctx.Done():
-	}
+func (h *HuntBot) PollSheet(ctx context.Context) {
+	// TODO
 }
