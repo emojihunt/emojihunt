@@ -60,9 +60,6 @@ func main() {
 	if err != nil {
 		log.Fatalf("error creating discord client: %v", err)
 	}
-	if err := dis.ArchiveChannel("to-be-archived"); err != nil {
-		log.Fatalf("error archiving channel: %v", err)
-	}
 
 	ctx := context.Background()
 

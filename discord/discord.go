@@ -145,14 +145,17 @@ func (c *Client) SolvePuzzle(puzzleName string) error {
 
 var ChannelNotFound = fmt.Errorf("channel not found")
 
-func (c *Client) ArchiveChannel(name string) error {
-	c.mu.Lock()
-	chID, ok := c.channelNameToID[name]
-	c.mu.Unlock()
-
-	if !ok {
-		return fmt.Errorf("channel %q not found: %w", name, ChannelNotFound)
+func (c *Client) ArchiveChannel(chID string) error {
+	ch, err := c.s.Channel(chID)
+	if err != nil {
+		return fmt.Errorf("channel id %s not found: %w", chID, ChannelNotFound)
 	}
+
+	// Already archived.
+	if ch.ParentID == c.solvedCategoryID {
+		return nil
+	}
+
 	arCh, err := c.s.Channel(c.solvedCategoryID)
 	if err != nil {
 		return fmt.Errorf("error looking up archive: %v", err)

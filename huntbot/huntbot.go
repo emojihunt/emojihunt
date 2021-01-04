@@ -2,7 +2,6 @@ package huntbot
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"log"
 	"strings"
@@ -91,9 +90,7 @@ func (h *HuntBot) maybeMarkSolved(ctx context.Context, puzzle drive.PuzzleInfo) 
 	}
 
 	err = h.dis.ArchiveChannel(channelID)
-	if errors.Is(err, discord.ChannelNotFound) {
-		// already archived
-	} else if err != nil {
+	if err != nil {
 		return fmt.Errorf("unable to archive channel for %q: %v", puzzle.Name, err)
 	} else {
 		// post to relevant channels only if it was newly archived.
