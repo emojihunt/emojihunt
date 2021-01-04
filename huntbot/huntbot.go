@@ -11,17 +11,12 @@ import (
 )
 
 type HuntBot struct {
-	dis      *discord.Client
-	drive    *drive.Drive
-	handlers map[string]discord.NewMessageHandler
+	dis   *discord.Client
+	drive *drive.Drive
 }
 
 func New(dis *discord.Client, drive *drive.Drive) *HuntBot {
-	return &HuntBot{dis: dis, drive: drive, handlers: make(map[string]discord.NewMessageHandler)}
-}
-
-func (h *HuntBot) AddHandler(name string, handler discord.NewMessageHandler) {
-	h.handlers[name] = handler
+	return &HuntBot{dis: dis, drive: drive}
 }
 
 // TODO: is calling this after polling the sheet okay? every typo will turn into a sheet + channel
