@@ -9,6 +9,8 @@ import (
 	"google.golang.org/api/sheets/v4"
 )
 
+const rootFolderID = "1wyezjKlIab6eBsF1_GzrHLl7Zrb3aORD"
+
 type Drive struct {
 	// ID of the Google Sheet. From the sheets URL: docs.google.com/spreadsheets/d/[ID]/edit
 	sheetID string
@@ -109,7 +111,18 @@ func (d *Drive) ReadFullSheet() ([]PuzzleInfo, error) {
 }
 
 func (d *Drive) CreateSheet(ctx context.Context, name string) (url string, err error) {
-	log.Printf("would create sheet for %v", name)
-	// TODO: implement
-	return "https://docs.google.com/spreadsheets/d/1SgvhTBeVdyTMrCR0wZixO3O0lErh4vqX0--nBpSfYT8/edit", nil
+	log.Printf("Creating sheet for %v", name)
+
+	// TODO: set sharing/folder
+	sheet := &sheets.Spreadsheet{
+		Properties: &sheets.SpreadsheetProperties{
+			Title: name,
+		},
+	}
+
+	sheet, err = d.svc.Spreadsheets.Create(sheet).Do()
+	if err != nil {
+		return "", fmt.Errorf("unable to create sheet for %q: %v", name, err)
+	}
+	return sheet.SpreadsheetUrl, nil
 }

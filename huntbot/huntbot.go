@@ -102,7 +102,6 @@ func (h *HuntBot) pollAndUpdate(ctx context.Context) error {
 	for _, puzzle := range puzzles {
 		if puzzle.Name != "" && puzzle.PuzzleURL != "" {
 			if puzzle.DocURL == "" {
-				log.Printf("Adding doc for new puzzle %q", puzzle.Name)
 				puzzle.DocURL, err = h.drive.CreateSheet(ctx, puzzle.Name)
 				if err != nil {
 					return fmt.Errorf("error creating spreadsheet for %q: %v", puzzle.Name, err)
@@ -129,24 +128,26 @@ func (h *HuntBot) pollAndUpdate(ctx context.Context) error {
 
 func (h *HuntBot) WatchSheet(ctx context.Context) {
 	// we don't have a way to subscribe to updates, so we just poll the sheet
+	// TODO: could we use d.drive.Files.Watch?
 	failures := 0
 	for {
+		err := h.pollAndUpdate(ctx)
+		if err != nil {
+			// log always, but ping after 3 consecutive failures, then every 10, to avoid spam
+			log.Printf("watching sheet failed: %v", err)
+			failures++
+			if failures%10 == 3 {
+				h.dis.TechChannelSend(fmt.Sprintf("watching sheet failed: %v", err))
+			}
+		} else {
+			failures = 0
+		}
+
 		select {
 		case <-ctx.Done():
 			log.Print("exiting watcher due to signal")
 			return
 		case <-time.After(10 * time.Second):
-			err := h.pollAndUpdate(ctx)
-			if err != nil {
-				// log always, but ping after 3 consecutive failures, then every 10, to avoid spam
-				log.Printf("watching sheet failed: %v", err)
-				failures++
-				if failures%10 == 3 {
-					h.dis.TechChannelSend(fmt.Sprintf("watching sheet failed: %v", err))
-				}
-			} else {
-				failures = 0
-			}
 		}
 	}
 }
