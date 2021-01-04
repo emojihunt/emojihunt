@@ -224,9 +224,11 @@ func (c *Client) QMHandler(s *discordgo.Session, m *discordgo.MessageCreate) err
 
 	switch parts[1] {
 	case "start":
-		c.s.GuildMemberRoleAdd(c.guildID, m.Member.User.ID, "qm role id")
+		s.GuildMemberRoleAdd(c.guildID, m.Author.ID, c.qmRoleID)
 	case "stop":
-		c.s.GuildMemberRoleRemove(c.guildID, m.Member.User.ID, "qm role id")
+		s.GuildMemberRoleRemove(c.guildID, m.Author.ID, c.qmRoleID)
+	default:
+		return fmt.Errorf("unexpected QM command: %q", parts[1])
 	}
 	return nil
 }
