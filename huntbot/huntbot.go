@@ -2,9 +2,11 @@ package huntbot
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/bwmarrin/discordgo"
@@ -15,10 +17,13 @@ import (
 type HuntBot struct {
 	dis   *discord.Client
 	drive *drive.Drive
+
+	solvedPuzzles map[string]bool // set of names
+	mu            sync.Mutex      // hold while accessing solvedPuzzles
 }
 
 func New(dis *discord.Client, drive *drive.Drive) *HuntBot {
-	return &HuntBot{dis: dis, drive: drive}
+	return &HuntBot{dis: dis, drive: drive, solvedPuzzles: map[string]bool{}}
 }
 
 func (h *HuntBot) notifyNewPuzzle(name, puzzleURL, sheetURL, channelID string) error {
@@ -71,6 +76,46 @@ func (h *HuntBot) NewPuzzleHandler(s *discordgo.Session, m *discordgo.MessageCre
 	return nil
 }
 
+func (h *HuntBot) maybeMarkSolved(ctx context.Context, puzzle drive.PuzzleInfo) error {
+	h.mu.Lock()
+	defer h.mu.Unlock() // TODO: finer locking
+	if h.solvedPuzzles[puzzle.Name] {
+		// already marked this one solved
+		return nil
+	}
+
+	log.Printf("Archiving channel for %q", puzzle.Name)
+	channelID, err := h.dis.ChannelID(puzzle.DiscordURL)
+	if err != nil {
+		return err
+	}
+
+	err = h.dis.ArchiveChannel(channelID)
+	if errors.Is(err, discord.ChannelNotFound) {
+		// already archived
+	} else if err != nil {
+		return fmt.Errorf("unable to archive channel for %q: %v", puzzle.Name, err)
+	} else {
+		// post to relevant channels only if it was newly archived.
+		if err := h.dis.ChannelSend(channelID, fmt.Sprintf("Puzzle solved! The answer was %v. I'll archive this channel.", puzzle.Answer)); err != nil {
+			return fmt.Errorf("error posting new puzzle announcement: %v", err)
+		}
+
+		if err := h.dis.QMChannelSend(fmt.Sprintf("Puzzle %q was solved!", puzzle.Name)); err != nil {
+			return fmt.Errorf("error posting new puzzle announcement: %v", err)
+		}
+	}
+
+	log.Printf("Marking sheet solved for %q", puzzle.Name)
+	err = h.drive.MarkSheetSolved(ctx, puzzle.DocURL)
+	if err != nil {
+		return err
+	}
+
+	h.solvedPuzzles[puzzle.Name] = true
+	return nil
+}
+
 func (h *HuntBot) pollAndUpdate(ctx context.Context) error {
 	puzzles, err := h.drive.ReadFullSheet()
 	if err != nil {
@@ -105,6 +150,13 @@ func (h *HuntBot) pollAndUpdate(ctx context.Context) error {
 			}
 			if err := h.drive.SetDiscordURL(ctx, puzzle); err != nil {
 				return fmt.Errorf("error setting discord URL for puzzle %q: %v", puzzle.Name, err)
+			}
+		}
+
+		if puzzle.Answer != "" && puzzle.Status == drive.Solved {
+			err := h.maybeMarkSolved(ctx, puzzle)
+			if err != nil {
+				return fmt.Errorf("failed to mark puzzle %q solved: %v", puzzle.Name, err)
 			}
 		}
 	}
