@@ -100,6 +100,9 @@ func (p *PuzzleInfo) metaFormula() string {
 }
 
 func formatURL(url, icon string) string {
+	if url == "" {
+		return ""
+	}
 	return fmt.Sprintf(`=HYPERLINK("%s","%s")`, url, icon)
 }
 
