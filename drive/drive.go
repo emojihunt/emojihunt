@@ -103,6 +103,18 @@ func formatURL(url, icon string) string {
 	return fmt.Sprintf(`=HYPERLINK("%s","%s")`, url, icon)
 }
 
+func (p PuzzleInfo) URLsAsValueRange(sheetName string) *sheets.ValueRange {
+	vr := &sheets.ValueRange{
+		Range: fmt.Sprintf("'%s'!E%d:G%d", sheetName, p.sheetRow(), p.sheetRow()),
+		Values: [][]interface{}{{
+			formatURL(p.PuzzleURL, puzzleIcon),
+			formatURL(p.DocURL, docIcon),
+			formatURL(p.DiscordURL, discordIcon),
+		}},
+	}
+	return vr
+}
+
 func (p PuzzleInfo) AsValueRange(sheetName string) *sheets.ValueRange {
 	vr := &sheets.ValueRange{
 		Range: fmt.Sprintf("'%s'!A%d:I%d", sheetName, p.sheetRow(), p.sheetRow()),
@@ -224,6 +236,15 @@ func (d *Drive) UpdatePuzzle(ctx context.Context, p PuzzleInfo) error {
 
 	_, err := d.sheets.Spreadsheets.Values.Update(d.sheetID, fmt.Sprintf("'%s'!%s", d.sheetName, a1Range),
 		p.AsValueRange(d.sheetName)).ValueInputOption("USER_ENTERED").Context(ctx).Do()
+	return err
+}
+
+func (d *Drive) UpdateAllURLs(ctx context.Context, ps []PuzzleInfo) error {
+	req := &sheets.BatchUpdateValuesRequest{ValueInputOption: "USER_ENTERED"}
+	for _, p := range ps {
+		req.Data = append(req.Data, p.URLsAsValueRange(d.sheetName))
+	}
+	_, err := d.sheets.Spreadsheets.Values.BatchUpdate(d.sheetID, req).Context(ctx).Do()
 	return err
 }
 

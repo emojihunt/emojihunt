@@ -78,42 +78,39 @@ func (h *HuntBot) pollAndUpdate(ctx context.Context) error {
 	}
 
 	for _, puzzle := range puzzles {
-		if puzzle.Name != "" && puzzle.PuzzleURL != "" && puzzle.Round.Name != "" {
-			// TODO: warn if puzzle.Name is set but others haven't been for a
-			// while?
-			requiresUpdate := false
-			if puzzle.DocURL == "" {
-				puzzle.DocURL, err = h.drive.CreateSheet(ctx, puzzle.Name, puzzle.Round.Name)
-				if err != nil {
-					return fmt.Errorf("error creating spreadsheet for %q: %v", puzzle.Name, err)
-				}
-				requiresUpdate = true
-			}
+		// TODO: warn if puzzle.Name is set but others haven't been for a while?
+		if puzzle.Name == "" || puzzle.PuzzleURL == "" || puzzle.Round.Name == "" {
+			continue
+		}
 
-			if puzzle.DiscordURL == "" {
-				log.Printf("Adding channel for new puzzle %q", puzzle.Name)
-				id, err := h.dis.CreateChannel(puzzle.Name)
-				if err != nil {
-					return fmt.Errorf("error creating discord channel for %q: %v", puzzle.Name, err)
-				}
-
-				puzzle.DiscordURL = h.dis.ChannelURL(id)
-
-				// Treat discord URL as the sentinel to also notify everyone
-				if err := h.notifyNewPuzzle(puzzle.Name, puzzle.PuzzleURL, puzzle.DocURL, id); err != nil {
-					return fmt.Errorf("error notifying channel about new puzzle %q: %v", puzzle.Name, err)
-				}
-				if err := h.drive.SetDiscordURL(ctx, puzzle); err != nil {
-					return fmt.Errorf("error setting discord URL for puzzle %q: %v", puzzle.Name, err)
-				}
-				requiresUpdate = true
-			}
-			if requiresUpdate {
-				if err := h.drive.UpdatePuzzle(ctx, puzzle); err != nil {
-					return fmt.Errorf("error updating sheet info for puzzle %q: %v", puzzle.Name, err)
-				}
+		if puzzle.DocURL == "" {
+			puzzle.DocURL, err = h.drive.CreateSheet(ctx, puzzle.Name, puzzle.Round.Name)
+			if err != nil {
+				return fmt.Errorf("error creating spreadsheet for %q: %v", puzzle.Name, err)
 			}
 		}
+
+		if puzzle.DiscordURL == "" {
+			log.Printf("Adding channel for new puzzle %q", puzzle.Name)
+			id, err := h.dis.CreateChannel(puzzle.Name)
+			if err != nil {
+				return fmt.Errorf("error creating discord channel for %q: %v", puzzle.Name, err)
+			}
+
+			puzzle.DiscordURL = h.dis.ChannelURL(id)
+
+			// Treat discord URL as the sentinel to also notify everyone
+			if err := h.notifyNewPuzzle(puzzle.Name, puzzle.PuzzleURL, puzzle.DocURL, id); err != nil {
+				return fmt.Errorf("error notifying channel about new puzzle %q: %v", puzzle.Name, err)
+			}
+			if err := h.drive.SetDiscordURL(ctx, puzzle); err != nil {
+				return fmt.Errorf("error setting discord URL for puzzle %q: %v", puzzle.Name, err)
+			}
+		}
+	}
+
+	if err := h.drive.UpdateAllURLs(ctx, puzzles); err != nil {
+		return fmt.Errorf("error updating URLs for puzzles: %v", err)
 	}
 
 	return nil
