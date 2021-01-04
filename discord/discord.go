@@ -12,6 +12,7 @@ import (
 type Config struct {
 	QMChannelName, GeneralChannelName, TechChannelName string
 	PuzzleCategoryName, SolvedCategoryName             string
+	QMRoleName                                         string
 }
 
 type Client struct {
@@ -28,6 +29,8 @@ type Client struct {
 	puzzleCategoryID string
 	// The category for solved puzzles.
 	solvedCategoryID string
+	// The Role ID for the QM role.
+	qmRoleID string
 
 	// This might be a case where sync.Map makes sense.
 	mu              sync.Mutex
@@ -75,6 +78,20 @@ func New(s *discordgo.Session, c Config) (*Client, error) {
 	if !ok {
 		tech = qm
 	}
+	roles, err := s.GuildRoles(guildID)
+	if err != nil {
+		return nil, fmt.Errorf("error fetching roles: %v", err)
+	}
+	var qmRoleID string
+	for _, r := range roles {
+		if r.Name == c.QMRoleName {
+			qmRoleID = r.ID
+			break
+		}
+	}
+	if qmRoleID == "" {
+		return nil, fmt.Errorf("QM role %q not found in roles: %v", c.QMRoleName, roles)
+	}
 
 	return &Client{
 		s:                s,
@@ -85,6 +102,7 @@ func New(s *discordgo.Session, c Config) (*Client, error) {
 		channelNameToID:  chIDs,
 		puzzleCategoryID: puz,
 		solvedCategoryID: ar,
+		qmRoleID:         qmRoleID,
 	}, nil
 }
 
@@ -191,4 +209,24 @@ func (c *Client) CreateChannel(name string) (string, error) {
 	}
 	c.channelNameToID[name] = ch.ID
 	return ch.ID, nil
+}
+
+func (c *Client) QMHandler(s *discordgo.Session, m *discordgo.MessageCreate) error {
+	if m.Author.ID == s.State.User.ID || !strings.HasPrefix(m.Content, "!qm") {
+		return nil
+	}
+
+	parts := strings.Split(m.Content, " ")
+	if len(parts) < 2 {
+		// send a bad usage message to the channel
+		return fmt.Errorf("not able to find qm command from %q", m.Content)
+	}
+
+	switch parts[1] {
+	case "start":
+		c.s.GuildMemberRoleAdd(c.guildID, m.Member.User.ID, "qm role id")
+	case "stop":
+		c.s.GuildMemberRoleRemove(c.guildID, m.Member.User.ID, "qm role id")
+	}
+	return nil
 }

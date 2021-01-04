@@ -56,7 +56,12 @@ func main() {
 		log.Fatalf("error opening discord connection: %v", err)
 	}
 
-	dis, err := discord.New(dg, discord.Config{QMChannelName: "bot-testing", SolvedCategoryName: "solved", PuzzleCategoryName: "puzzles"})
+	dis, err := discord.New(dg, discord.Config{
+		QMChannelName:      "bot-testing",
+		SolvedCategoryName: "solved",
+		PuzzleCategoryName: "puzzles",
+		QMRoleName:         "QM",
+	})
 	if err != nil {
 		log.Fatalf("error creating discord client: %v", err)
 	}
@@ -88,6 +93,7 @@ func main() {
 	dis.RegisterNewMessageHandler("emoji generator", emojiname.Handler)
 	dis.RegisterNewMessageHandler("isithuntyet?", huntyet.Handler)
 	dis.RegisterNewMessageHandler("new puzzle", h.NewPuzzleHandler)
+	dis.RegisterNewMessageHandler("qm manager", dis.QMHandler)
 
 	go h.WatchSheet(ctx)
 
