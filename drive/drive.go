@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"strings"
+	"sync"
 
 	"google.golang.org/api/drive/v3"
 	"google.golang.org/api/sheets/v4"
@@ -20,7 +21,10 @@ type Drive struct {
 	rootFolderID string
 
 	// cache of round name to folder ID
-	folderIDs map[string]string
+	roundFolderIDs map[string]string
+
+	// hold while accessing roundFolderIDs
+	mu sync.Mutex
 
 	sheets *sheets.Service
 	drive  *drive.Service
@@ -37,11 +41,11 @@ func New(ctx context.Context, sheetID, rootFolderID string) (*Drive, error) {
 	}
 
 	return &Drive{
-		sheetID:      sheetID,
-		rootFolderID: rootFolderID,
-		folderIDs:    make(map[string]string),
-		sheets:       sheetsService,
-		drive:        driveService,
+		sheetID:        sheetID,
+		rootFolderID:   rootFolderID,
+		roundFolderIDs: make(map[string]string),
+		sheets:         sheetsService,
+		drive:          driveService,
 	}, nil
 }
 
@@ -83,7 +87,8 @@ func parsePuzzleInfo(row []*sheets.CellData, rowNum int) (PuzzleInfo, error) {
 	}
 
 	return PuzzleInfo{
-		Round:      Round{Emoji: row[0].FormattedValue},
+		// TODO: figure out how to decide the round name
+		Round:      Round{Emoji: row[0].FormattedValue, Name: row[0].FormattedValue},
 		Name:       row[1].FormattedValue,
 		Answer:     row[2].FormattedValue,
 		Meta:       row[3].FormattedValue != "",
@@ -127,10 +132,9 @@ func (d *Drive) ReadFullSheet() ([]PuzzleInfo, error) {
 	return infos, nil
 }
 
-func (d *Drive) CreateSheet(ctx context.Context, name string) (url string, err error) {
+func (d *Drive) CreateSheet(ctx context.Context, name, roundName string) (url string, err error) {
 	log.Printf("Creating sheet for %v", name)
 
-	// TODO: set sharing/folder
 	sheet := &sheets.Spreadsheet{
 		Properties: &sheets.SpreadsheetProperties{
 			Title: name,
@@ -141,6 +145,19 @@ func (d *Drive) CreateSheet(ctx context.Context, name string) (url string, err e
 	if err != nil {
 		return "", fmt.Errorf("unable to create sheet for %q: %v", name, err)
 	}
+
+	folderID, err := d.roundFolder(ctx, roundName)
+	if err != nil {
+		return "", err
+	}
+
+	log.Println(folderID)
+
+	_, err = d.drive.Files.Update(sheet.SpreadsheetId, nil).AddParents(folderID).Context(ctx).Do()
+	if err != nil {
+		return "", fmt.Errorf("unable to add sheet for %q to folder for round %q: %v", name, roundName, err)
+	}
+
 	return sheet.SpreadsheetUrl, nil
 }
 
@@ -160,4 +177,44 @@ func (d *Drive) SetDiscordURL(ctx context.Context, p PuzzleInfo) error {
 	a1Loc := fmt.Sprintf("G%d", p.Row+1)
 	hyperlink := fmt.Sprintf(`=HYPERLINK("%s","💬")`, p.DiscordURL)
 	return d.UpdateCell(ctx, a1Loc, hyperlink)
+}
+
+const folderMimeType = "application/vnd.google-apps.folder"
+
+func (d *Drive) roundFolder(ctx context.Context, name string) (id string, err error) {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+
+	if id = d.roundFolderIDs[name]; id != "" {
+		return id, nil
+	}
+
+	query := "mimeType='" + folderMimeType + "' and " +
+		"'" + d.rootFolderID + "' in parents and " +
+		"name = '" + name + "'"
+	list, err := d.drive.Files.List().Q(query).Context(ctx).Do()
+	if err != nil {
+		return "", fmt.Errorf("couldn't query for existing folder for round %q: %v", name, err)
+	}
+
+	var file *drive.File
+	switch len(list.Files) {
+	case 0:
+		file = &drive.File{
+			Name:     name,
+			MimeType: folderMimeType,
+			Parents:  []string{d.rootFolderID},
+		}
+		file, err = d.drive.Files.Create(file).Context(ctx).Do()
+		if err != nil {
+			return "", fmt.Errorf("couldn't create folder for round %q: %v", name, err)
+		}
+	case 1:
+		file = list.Files[0]
+	default:
+		return "", fmt.Errorf("found multiple folders for round %q", name)
+	}
+
+	d.roundFolderIDs[name] = file.Id
+	return file.Id, nil
 }
