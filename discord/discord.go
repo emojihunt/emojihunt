@@ -110,6 +110,11 @@ func (c *Client) ChannelID(url string) (string, error) {
 	return parts[len(parts)-1], nil
 }
 
+func (c *Client) ChannelSend(chanID, msg string) error {
+	_, err := c.s.ChannelMessageSend(chanID, msg)
+	return err
+}
+
 func (c *Client) ChannelSendAndPin(chanID, msg string) error {
 	m, err := c.s.ChannelMessageSend(chanID, msg)
 	if err != nil {

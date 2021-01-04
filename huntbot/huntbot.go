@@ -23,7 +23,7 @@ type HuntBot struct {
 }
 
 func New(dis *discord.Client, drive *drive.Drive) *HuntBot {
-	return &HuntBot{dis: dis, drive: drive}
+	return &HuntBot{dis: dis, drive: drive, solvedPuzzles: map[string]bool{}}
 }
 
 func (h *HuntBot) notifyNewPuzzle(name, puzzleURL, sheetURL, channelID string) error {
@@ -97,9 +97,14 @@ func (h *HuntBot) maybeMarkSolved(ctx context.Context, puzzle drive.PuzzleInfo) 
 		return fmt.Errorf("unable to archive channel for %q: %v", puzzle.Name, err)
 	}
 
+	log.Printf("Marking sheet solved for %q", puzzle.Name)
 	err = h.drive.MarkSheetSolved(ctx, puzzle.DocURL)
 	if err != nil {
 		return err
+	}
+
+	if err := h.dis.ChannelSend(channelID, fmt.Sprintf("Puzzle solved! The answer was %v. I'll archive this channel.", puzzle.Answer)); err != nil {
+		return fmt.Errorf("error posting new puzzle announcement: %v", err)
 	}
 
 	if err := h.dis.QMChannelSend(fmt.Sprintf("Puzzle %q was solved!", puzzle.Name)); err != nil {
