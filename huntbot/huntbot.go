@@ -106,6 +106,9 @@ func (h *HuntBot) pollAndUpdate(ctx context.Context) error {
 				if err != nil {
 					return fmt.Errorf("error creating spreadsheet for %q: %v", puzzle.Name, err)
 				}
+				if err := h.drive.SetDocURL(ctx, puzzle); err != nil {
+					return fmt.Errorf("error setting doc URL for puzzle %q: %v", puzzle.Name, err)
+				}
 			}
 
 			if puzzle.DiscordURL == "" {
@@ -118,7 +121,12 @@ func (h *HuntBot) pollAndUpdate(ctx context.Context) error {
 				puzzle.DiscordURL = h.dis.ChannelURL(id)
 
 				// Treat discord URL as the sentinel to also notify everyone
-				return h.notifyNewPuzzle(puzzle.Name, puzzle.PuzzleURL, puzzle.DocURL, id)
+				if err := h.notifyNewPuzzle(puzzle.Name, puzzle.PuzzleURL, puzzle.DocURL, id); err != nil {
+					return fmt.Errorf("error notifying channel about new puzzle %q: %v", puzzle.Name, err)
+				}
+				if err := h.drive.SetDiscordURL(ctx, puzzle); err != nil {
+					return fmt.Errorf("error setting discord URL for puzzle %q: %v", puzzle.Name, err)
+				}
 			}
 		}
 	}

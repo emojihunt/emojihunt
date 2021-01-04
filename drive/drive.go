@@ -55,9 +55,9 @@ type Status string
 
 const (
 	Working    Status = "🏅Solved"
-	Abandoned  Status = "✍️Working,🗑️Abandoned,🏅Solved,🤦‍♀️Backsolved"
-	Solved     Status = "✍️Working,🗑️Abandoned,🏅Solved,🤦‍♀️Backsolved"
-	Backsolved Status = "✍️Working,🗑️Abandoned,🏅Solved,🤦‍♀️Backsolved"
+	Abandoned  Status = "🗑️Abandoned"
+	Solved     Status = "🏅Solved"
+	Backsolved Status = "🤦‍♀️Backsolved"
 )
 
 var allStatuses = []Status{Working, Abandoned, Solved, Backsolved}
@@ -142,4 +142,22 @@ func (d *Drive) CreateSheet(ctx context.Context, name string) (url string, err e
 		return "", fmt.Errorf("unable to create sheet for %q: %v", name, err)
 	}
 	return sheet.SpreadsheetUrl, nil
+}
+
+func (d *Drive) UpdateCell(ctx context.Context, a1CellLocation string, value interface{}) error {
+	_, err := d.sheets.Spreadsheets.Values.Update(d.sheetID, fmt.Sprintf("'%s'!%s", d.sheetName, a1CellLocation),
+		&sheets.ValueRange{Values: [][]interface{}{{value}}}).ValueInputOption("USER_ENTERED").Context(ctx).Do()
+	return err
+}
+
+func (d *Drive) SetDocURL(ctx context.Context, p PuzzleInfo) error {
+	a1Loc := fmt.Sprintf("F%d", p.Row+1)
+	hyperlink := fmt.Sprintf(`=HYPERLINK("%s","✏️")`, p.DocURL)
+	return d.UpdateCell(ctx, a1Loc, hyperlink)
+}
+
+func (d *Drive) SetDiscordURL(ctx context.Context, p PuzzleInfo) error {
+	a1Loc := fmt.Sprintf("G%d", p.Row+1)
+	hyperlink := fmt.Sprintf(`=HYPERLINK("%s","💬")`, p.DiscordURL)
+	return d.UpdateCell(ctx, a1Loc, hyperlink)
 }
