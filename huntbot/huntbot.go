@@ -95,20 +95,21 @@ func (h *HuntBot) maybeMarkSolved(ctx context.Context, puzzle drive.PuzzleInfo) 
 		// already archived
 	} else if err != nil {
 		return fmt.Errorf("unable to archive channel for %q: %v", puzzle.Name, err)
+	} else {
+		// post to relevant channels only if it was newly archived.
+		if err := h.dis.ChannelSend(channelID, fmt.Sprintf("Puzzle solved! The answer was %v. I'll archive this channel.", puzzle.Answer)); err != nil {
+			return fmt.Errorf("error posting new puzzle announcement: %v", err)
+		}
+
+		if err := h.dis.QMChannelSend(fmt.Sprintf("Puzzle %q was solved!", puzzle.Name)); err != nil {
+			return fmt.Errorf("error posting new puzzle announcement: %v", err)
+		}
 	}
 
 	log.Printf("Marking sheet solved for %q", puzzle.Name)
 	err = h.drive.MarkSheetSolved(ctx, puzzle.DocURL)
 	if err != nil {
 		return err
-	}
-
-	if err := h.dis.ChannelSend(channelID, fmt.Sprintf("Puzzle solved! The answer was %v. I'll archive this channel.", puzzle.Answer)); err != nil {
-		return fmt.Errorf("error posting new puzzle announcement: %v", err)
-	}
-
-	if err := h.dis.QMChannelSend(fmt.Sprintf("Puzzle %q was solved!", puzzle.Name)); err != nil {
-		return fmt.Errorf("error posting new puzzle announcement: %v", err)
 	}
 
 	h.solvedPuzzles[puzzle.Name] = true
