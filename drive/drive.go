@@ -6,26 +6,43 @@ import (
 	"log"
 	"strings"
 
+	"google.golang.org/api/drive/v3"
 	"google.golang.org/api/sheets/v4"
 )
 
-const rootFolderID = "1wyezjKlIab6eBsF1_GzrHLl7Zrb3aORD"
-
 type Drive struct {
-	// ID of the Google Sheet. From the sheets URL: docs.google.com/spreadsheets/d/[ID]/edit
+	// ID of the central tracking sheet. From the sheets URL:
+	// docs.google.com/spreadsheets/d/[ID]/edit
 	sheetID string
-	// Name of the sheet with puzzle metadata.
+	// Name of the sheet (tab) within that sheet with puzzle metadata.
 	sheetName string
+	// ID of this year's root folder (e.g. "emoji hunt/2021")
+	rootFolderID string
 
-	svc *sheets.Service
+	// cache of round name to folder ID
+	folderIDs map[string]string
+
+	sheets *sheets.Service
+	drive  *drive.Service
 }
 
-func New(ctx context.Context, sheetID string) (*Drive, error) {
+func New(ctx context.Context, sheetID, rootFolderID string) (*Drive, error) {
 	sheetsService, err := sheets.NewService(ctx)
 	if err != nil {
 		return nil, err
 	}
-	return &Drive{sheetID: sheetID, svc: sheetsService}, nil
+	driveService, err := drive.NewService(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	return &Drive{
+		sheetID:      sheetID,
+		rootFolderID: rootFolderID,
+		folderIDs:    make(map[string]string),
+		sheets:       sheetsService,
+		drive:        driveService,
+	}, nil
 }
 
 type Round struct {
@@ -85,7 +102,7 @@ func (d *Drive) ReadFullSheet() ([]PuzzleInfo, error) {
 		IncludeGridData: true,
 	}
 
-	s, err := d.svc.Spreadsheets.GetByDataFilter(d.sheetID, req).Do()
+	s, err := d.sheets.Spreadsheets.GetByDataFilter(d.sheetID, req).Do()
 	if err != nil {
 		return nil, fmt.Errorf("error getting spreadsheet: %v", err)
 	}
@@ -120,7 +137,7 @@ func (d *Drive) CreateSheet(ctx context.Context, name string) (url string, err e
 		},
 	}
 
-	sheet, err = d.svc.Spreadsheets.Create(sheet).Do()
+	sheet, err = d.sheets.Spreadsheets.Create(sheet).Context(ctx).Do()
 	if err != nil {
 		return "", fmt.Errorf("unable to create sheet for %q: %v", name, err)
 	}
