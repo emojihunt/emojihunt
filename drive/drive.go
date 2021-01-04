@@ -66,6 +66,12 @@ const (
 
 var allStatuses = []Status{Working, Abandoned, Solved, Backsolved}
 
+const (
+	puzzleIcon  string = "🌎"
+	docIcon     string = "✏️"
+	discordIcon string = "💬"
+)
+
 type PuzzleInfo struct {
 	Round      Round
 	Name       string
@@ -79,6 +85,40 @@ type PuzzleInfo struct {
 	Tags []string
 	// Row is 0-indexed, unlike A1 notation sheet rows (1-indexed).
 	Row int
+}
+
+func (p PuzzleInfo) sheetRow() int {
+	return p.Row + 1
+}
+
+func (p PuzzleInfo) metaFormula() string {
+	if !p.Meta {
+		return ""
+	}
+	return fmt.Sprintf(`=CONCATENATE(COUNTIFS($A$2:$A, $A%d, $C$2:$C, "<>0", $B$2:$B, "<>"&$B%d), "/", COUNTIF($A$2:$A, $A%d)-1)`,
+		p.sheetRow(), p.sheetRow(), p.sheetRow())
+}
+
+func formatURL(url, icon string) string {
+	return fmt.Sprintf(`=HYPERLINK("%s","%s")`, url, icon)
+}
+
+func (p PuzzleInfo) AsValueRange(sheetName string) *sheets.ValueRange {
+	vr := &sheets.ValueRange{
+		Range: fmt.Sprintf("'%s'!A%d:I%d", sheetName, p.sheetRow(), p.sheetRow()),
+		Values: [][]interface{}{{
+			p.Round.Emoji,
+			p.Name,
+			strings.ToUpper(p.Answer),
+			p.metaFormula(),
+			formatURL(p.PuzzleURL, puzzleIcon),
+			formatURL(p.DocURL, docIcon),
+			formatURL(p.DiscordURL, discordIcon),
+			p.Status,
+			strings.Join(p.Tags, ","),
+		}},
+	}
+	return vr
 }
 
 func parsePuzzleInfo(row []*sheets.CellData, rowNum int) (PuzzleInfo, error) {
@@ -177,6 +217,14 @@ func (d *Drive) SetDiscordURL(ctx context.Context, p PuzzleInfo) error {
 	a1Loc := fmt.Sprintf("G%d", p.Row+1)
 	hyperlink := fmt.Sprintf(`=HYPERLINK("%s","💬")`, p.DiscordURL)
 	return d.UpdateCell(ctx, a1Loc, hyperlink)
+}
+
+func (d *Drive) UpdatePuzzle(ctx context.Context, p PuzzleInfo) error {
+	a1Range := fmt.Sprintf("A%d:I%d", p.Row+1, p.Row+1)
+
+	_, err := d.sheets.Spreadsheets.Values.Update(d.sheetID, fmt.Sprintf("'%s'!%s", d.sheetName, a1Range),
+		p.AsValueRange(d.sheetName)).ValueInputOption("USER_ENTERED").Context(ctx).Do()
+	return err
 }
 
 const folderMimeType = "application/vnd.google-apps.folder"

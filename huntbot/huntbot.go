@@ -81,14 +81,13 @@ func (h *HuntBot) pollAndUpdate(ctx context.Context) error {
 		if puzzle.Name != "" && puzzle.PuzzleURL != "" && puzzle.Round.Name != "" {
 			// TODO: warn if puzzle.Name is set but others haven't been for a
 			// while?
+			requiresUpdate := false
 			if puzzle.DocURL == "" {
 				puzzle.DocURL, err = h.drive.CreateSheet(ctx, puzzle.Name, puzzle.Round.Name)
 				if err != nil {
 					return fmt.Errorf("error creating spreadsheet for %q: %v", puzzle.Name, err)
 				}
-				if err := h.drive.SetDocURL(ctx, puzzle); err != nil {
-					return fmt.Errorf("error setting doc URL for puzzle %q: %v", puzzle.Name, err)
-				}
+				requiresUpdate = true
 			}
 
 			if puzzle.DiscordURL == "" {
@@ -106,6 +105,12 @@ func (h *HuntBot) pollAndUpdate(ctx context.Context) error {
 				}
 				if err := h.drive.SetDiscordURL(ctx, puzzle); err != nil {
 					return fmt.Errorf("error setting discord URL for puzzle %q: %v", puzzle.Name, err)
+				}
+				requiresUpdate = true
+			}
+			if requiresUpdate {
+				if err := h.drive.UpdatePuzzle(ctx, puzzle); err != nil {
+					return fmt.Errorf("error updating sheet info for puzzle %q: %v", puzzle.Name, err)
 				}
 			}
 		}
