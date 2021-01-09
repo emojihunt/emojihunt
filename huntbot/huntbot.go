@@ -30,7 +30,7 @@ func (h *HuntBot) notifyNewPuzzle(name, puzzleURL, sheetURL, channelID string) e
 	// TODO: also edit sheet to link to channel/puzzle
 
 	// Pin a message with the spreadsheet URL to the channel
-	if err := h.dis.ChannelSendAndPin(channelID, fmt.Sprintf("Spreadsheet: <%s>\nPuzzle: <%s>", sheetURL, puzzleURL)); err != nil {
+	if _, err := h.dis.SetPinnedInfo(channelID, sheetURL, puzzleURL, ""); err != nil {
 		return fmt.Errorf("error pinning puzzle info: %v", err)
 	}
 
@@ -90,10 +90,17 @@ func (h *HuntBot) logStatus(ctx context.Context, puzzle *drive.PuzzleInfo) error
 		return err
 	}
 
-	err = h.dis.SetPinnedStatus(channelID, string(puzzle.Status))
+	didUpdate, err := h.dis.SetPinnedInfo(channelID, puzzle.DocURL, puzzle.DiscordURL, string(puzzle.Status))
 	if err != nil {
 		return fmt.Errorf("unable to set puzzle status message for %q: %w", puzzle.Name, err)
 	}
+
+	if didUpdate {
+		if err := h.dis.QMChannelSend(fmt.Sprintf("Puzzle %q is now %v.", puzzle.Name, puzzle.Status)); err != nil {
+			return fmt.Errorf("error posting puzzle status announcement: %v", err)
+		}
+	}
+
 	return nil
 }
 
