@@ -272,11 +272,13 @@ func (h *HuntBot) ControlHandler(s *discordgo.Session, m *discordgo.MessageCreat
 	h.mu.Lock()
 
 	reply := ""
+	info := ""
 	switch m.Content {
 	case "!huntbot kill":
 		if h.enabled {
 			h.enabled = false
 			reply = `Ok, I've disabled the bot for now.  Enable it with "!huntbot start".`
+			info = fmt.Sprintf("**bot disabled by %v**", m.Author.Mention())
 		} else {
 			reply = `The bot was already disabled.  Enable it with "!huntbot start".`
 		}
@@ -284,6 +286,7 @@ func (h *HuntBot) ControlHandler(s *discordgo.Session, m *discordgo.MessageCreat
 		if h.enabled {
 			h.enabled = false
 			reply = `Ok, I've enabled the bot for now.  Disable it with "!huntbot kill".`
+			info = fmt.Sprintf("**bot enabled by %v**", m.Author.Mention())
 		} else {
 			reply = `The bot was already enabled.  Disable it with "!huntbot kill".`
 		}
@@ -295,5 +298,9 @@ func (h *HuntBot) ControlHandler(s *discordgo.Session, m *discordgo.MessageCreat
 	h.mu.Unlock()
 
 	s.ChannelMessageSend(m.ChannelID, reply)
+	if info != "" {
+		h.dis.TechChannelSend(info)
+	}
+
 	return nil
 }
