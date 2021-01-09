@@ -17,12 +17,14 @@ type HuntBot struct {
 	dis   *discord.Client
 	drive *drive.Drive
 
+	enabled bool // global killswitch, toggle with !huntbot kill/!huntbot start
+
 	puzzleStatus map[string]drive.Status // name -> status (best-effort cache)
 	mu           sync.Mutex              // hold while accessing above maps
 }
 
 func New(dis *discord.Client, d *drive.Drive) *HuntBot {
-	return &HuntBot{dis: dis, drive: d, puzzleStatus: map[string]drive.Status{}}
+	return &HuntBot{dis: dis, drive: d, enabled: true, puzzleStatus: map[string]drive.Status{}}
 }
 
 func (h *HuntBot) notifyNewPuzzle(name, puzzleURL, sheetURL, channelID string) error {
@@ -207,16 +209,18 @@ func (h *HuntBot) WatchSheet(ctx context.Context) {
 	// TODO: if sheet last-mod is since our last run, noop
 	failures := 0
 	for {
-		err := h.pollAndUpdate(ctx)
-		if err != nil {
-			// log always, but ping after 3 consecutive failures, then every 10, to avoid spam
-			log.Printf("watching sheet failed: %v", err)
-			failures++
-			if failures%10 == 3 {
-				h.dis.TechChannelSend(fmt.Sprintf("watching sheet failed: %v", err))
+		if h.enabled {
+			err := h.pollAndUpdate(ctx)
+			if err != nil {
+				// log always, but ping after 3 consecutive failures, then every 10, to avoid spam
+				log.Printf("watching sheet failed: %v", err)
+				failures++
+				if failures%10 == 3 {
+					h.dis.TechChannelSend(fmt.Sprintf("watching sheet failed: %v", err))
+				}
+			} else {
+				failures = 0
 			}
-		} else {
-			failures = 0
 		}
 
 		select {
@@ -226,4 +230,34 @@ func (h *HuntBot) WatchSheet(ctx context.Context) {
 		case <-time.After(10 * time.Second):
 		}
 	}
+}
+
+func (h *HuntBot) ControlHandler(s *discordgo.Session, m *discordgo.MessageCreate) error {
+	if m.Author.ID == s.State.User.ID || !strings.HasPrefix(m.Content, "!huntbot") {
+		return nil
+	}
+
+	reply := ""
+	switch m.Content {
+	case "!huntbot kill":
+		if h.enabled {
+			h.enabled = false
+			reply = `Ok, I've disabled the bot for now.  Enable it with "!huntbot start".`
+		} else {
+			reply = `The bot was already disabled.  Enable it with "!huntbot start".`
+		}
+	case "!huntbot start":
+		if h.enabled {
+			h.enabled = false
+			reply = `Ok, I've enabled the bot for now.  Disable it with "!huntbot kill".`
+		} else {
+			reply = `The bot was already enabled.  Disable it with "!huntbot kill".`
+		}
+	default:
+		reply = `I'm not sure what you mean.  Disable the bot with "!huntbot kill" ` +
+			`or enable it with "!huntbot start".`
+	}
+
+	s.ChannelMessageSend(m.ChannelID, reply)
+	return nil
 }
