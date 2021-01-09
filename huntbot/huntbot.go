@@ -17,12 +17,12 @@ type HuntBot struct {
 	dis   *discord.Client
 	drive *drive.Drive
 
-	solvedPuzzles map[string]bool // set of names
-	mu            sync.Mutex      // hold while accessing solvedPuzzles
+	puzzleStatus map[string]drive.Status // name -> status (best-effort cache)
+	mu           sync.Mutex              // hold while accessing above maps
 }
 
 func New(dis *discord.Client, drive *drive.Drive) *HuntBot {
-	return &HuntBot{dis: dis, drive: drive, solvedPuzzles: map[string]bool{}}
+	return &HuntBot{dis: dis, drive: drive, puzzleStatus: map[string]drive.Status{}}
 }
 
 func (h *HuntBot) notifyNewPuzzle(name, puzzleURL, sheetURL, channelID string) error {
@@ -75,14 +75,15 @@ func (h *HuntBot) NewPuzzleHandler(s *discordgo.Session, m *discordgo.MessageCre
 	return nil
 }
 
-func (h *HuntBot) maybeMarkSolved(ctx context.Context, puzzle *drive.PuzzleInfo) error {
+func (h *HuntBot) setPuzzleStatus(name string, newStatus drive.Status) (oldStatus drive.Status) {
 	h.mu.Lock()
-	defer h.mu.Unlock() // TODO: finer locking
-	if h.solvedPuzzles[puzzle.Name] {
-		// already marked this one solved
-		return nil
-	}
+	defer h.mu.Unlock()
+	oldStatus = h.puzzleStatus[name]
+	h.puzzleStatus[name] = newStatus
+	return oldStatus
+}
 
+func (h *HuntBot) markSolved(ctx context.Context, puzzle *drive.PuzzleInfo) error {
 	channelID, err := h.dis.ChannelID(puzzle.DiscordURL)
 	if err != nil {
 		return err
@@ -90,7 +91,8 @@ func (h *HuntBot) maybeMarkSolved(ctx context.Context, puzzle *drive.PuzzleInfo)
 
 	archived, err := h.dis.ArchiveChannel(channelID)
 	if !archived {
-		// Channel already archived.
+		// Channel already archived (cache is best-effort -- this can happen
+		// after restart or if a human did it)
 	} else if err != nil {
 		return fmt.Errorf("unable to archive channel for %q: %v", puzzle.Name, err)
 	} else {
@@ -105,14 +107,12 @@ func (h *HuntBot) maybeMarkSolved(ctx context.Context, puzzle *drive.PuzzleInfo)
 		}
 	}
 
-	// TODO: check if it is already archived first.
 	log.Printf("Marking sheet solved for %q", puzzle.Name)
 	err = h.drive.MarkSheetSolved(ctx, puzzle.DocURL)
 	if err != nil {
 		return err
 	}
 
-	h.solvedPuzzles[puzzle.Name] = true
 	return nil
 }
 
@@ -153,10 +153,13 @@ func (h *HuntBot) pollAndUpdate(ctx context.Context) error {
 			}
 		}
 
-		if puzzle.Answer != "" && puzzle.Status == drive.Solved {
-			err := h.maybeMarkSolved(ctx, puzzle)
-			if err != nil {
-				return fmt.Errorf("failed to mark puzzle %q solved: %v", puzzle.Name, err)
+		if h.setPuzzleStatus(puzzle.Name, puzzle.Status) != puzzle.Status {
+			// (potential) status change
+			if puzzle.Answer != "" && puzzle.Status == drive.Solved {
+				err := h.markSolved(ctx, puzzle)
+				if err != nil {
+					return fmt.Errorf("failed to mark puzzle %q solved: %v", puzzle.Name, err)
+				}
 			}
 		}
 	}
