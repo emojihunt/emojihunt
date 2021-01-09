@@ -17,14 +17,20 @@ type HuntBot struct {
 	dis   *discord.Client
 	drive *drive.Drive
 
-	enabled bool // global killswitch, toggle with !huntbot kill/!huntbot start
-
+	mu           sync.Mutex              // hold while accessing everything below
+	enabled      bool                    // global killswitch, toggle with !huntbot kill/!huntbot start
 	puzzleStatus map[string]drive.Status // name -> status (best-effort cache)
-	mu           sync.Mutex              // hold while accessing above maps
+	archived     map[string]bool         // name -> channel was archived (best-effort cache)
 }
 
 func New(dis *discord.Client, d *drive.Drive) *HuntBot {
-	return &HuntBot{dis: dis, drive: d, enabled: true, puzzleStatus: map[string]drive.Status{}}
+	return &HuntBot{
+		dis:          dis,
+		drive:        d,
+		enabled:      true,
+		puzzleStatus: map[string]drive.Status{},
+		archived:     map[string]bool{},
+	}
 }
 
 func (h *HuntBot) notifyNewPuzzle(name, puzzleURL, sheetURL, channelID string) error {
@@ -148,7 +154,21 @@ func (h *HuntBot) markSolved(ctx context.Context, puzzle *drive.PuzzleInfo) erro
 		return err
 	}
 
+	h.archive(puzzle.Name)
+
 	return nil
+}
+
+func (h *HuntBot) isArchived(puzzleName string) bool {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	return h.archived[puzzleName]
+}
+
+func (h *HuntBot) archive(puzzleName string) {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	h.archived[puzzleName] = true
 }
 
 func (h *HuntBot) pollAndUpdate(ctx context.Context) error {
@@ -188,7 +208,8 @@ func (h *HuntBot) pollAndUpdate(ctx context.Context) error {
 			}
 		}
 
-		if h.setPuzzleStatus(puzzle.Name, puzzle.Status) != puzzle.Status {
+		if h.setPuzzleStatus(puzzle.Name, puzzle.Status) != puzzle.Status ||
+			puzzle.Answer != "" && puzzle.Status.IsSolved() && !h.isArchived(puzzle.Name) {
 			// (potential) status change
 			if puzzle.Status.IsSolved() {
 				if err := h.markSolved(ctx, puzzle); err != nil {
@@ -214,7 +235,7 @@ func (h *HuntBot) WatchSheet(ctx context.Context) {
 	// TODO: if sheet last-mod is since our last run, noop
 	failures := 0
 	for {
-		if h.enabled {
+		if h.isEnabled() {
 			err := h.pollAndUpdate(ctx)
 			if err != nil {
 				// log always, but ping after 3 consecutive failures, then every 10, to avoid spam
@@ -237,10 +258,18 @@ func (h *HuntBot) WatchSheet(ctx context.Context) {
 	}
 }
 
+func (h *HuntBot) isEnabled() bool {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	return h.enabled
+}
+
 func (h *HuntBot) ControlHandler(s *discordgo.Session, m *discordgo.MessageCreate) error {
 	if m.Author.ID == s.State.User.ID || !strings.HasPrefix(m.Content, "!huntbot") {
 		return nil
 	}
+
+	h.mu.Lock()
 
 	reply := ""
 	switch m.Content {
@@ -262,6 +291,8 @@ func (h *HuntBot) ControlHandler(s *discordgo.Session, m *discordgo.MessageCreat
 		reply = `I'm not sure what you mean.  Disable the bot with "!huntbot kill" ` +
 			`or enable it with "!huntbot start".`
 	}
+
+	h.mu.Unlock()
 
 	s.ChannelMessageSend(m.ChannelID, reply)
 	return nil
