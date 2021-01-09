@@ -286,7 +286,7 @@ func (h *HuntBot) ControlHandler(s *discordgo.Session, m *discordgo.MessageCreat
 		}
 	case "!huntbot start":
 		if !h.enabled {
-			h.enabled = false
+			h.enabled = true
 			reply = `Ok, I've enabled the bot for now.  Disable it with "!huntbot kill".`
 			info = fmt.Sprintf("**bot enabled by %v**", m.Author.Mention())
 		} else {
