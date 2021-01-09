@@ -247,6 +247,8 @@ func (h *HuntBot) WatchSheet(ctx context.Context) {
 			} else {
 				failures = 0
 			}
+		} else {
+			log.Printf("bot disabled, skipping update")
 		}
 
 		select {
@@ -283,7 +285,7 @@ func (h *HuntBot) ControlHandler(s *discordgo.Session, m *discordgo.MessageCreat
 			reply = `The bot was already disabled.  Enable it with "!huntbot start".`
 		}
 	case "!huntbot start":
-		if h.enabled {
+		if !h.enabled {
 			h.enabled = false
 			reply = `Ok, I've enabled the bot for now.  Disable it with "!huntbot kill".`
 			info = fmt.Sprintf("**bot enabled by %v**", m.Author.Mention())
@@ -300,6 +302,7 @@ func (h *HuntBot) ControlHandler(s *discordgo.Session, m *discordgo.MessageCreat
 	s.ChannelMessageSend(m.ChannelID, reply)
 	if info != "" {
 		h.dis.TechChannelSend(info)
+		log.Printf(info)
 	}
 
 	return nil
