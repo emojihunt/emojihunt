@@ -147,6 +147,36 @@ func (c *Client) ChannelSendAndPin(chanID, msg string) error {
 	return err
 }
 
+const statusPrefix = "Puzzle Status: "
+
+// Set the pinned status message, by posting one or editing the existing one.
+// No-op if the status was already set.
+func (c *Client) SetPinnedStatus(chanID, status string) error {
+	ms, err := c.s.ChannelMessagesPinned(chanID)
+	if err != nil {
+		return err
+	}
+	var statusMessage *discordgo.Message
+	for _, m := range ms {
+		if strings.HasPrefix(m.Content, statusPrefix) {
+			if statusMessage != nil {
+				log.Printf("Multiple status messages in %v, editing last one", chanID)
+			}
+			statusMessage = m
+		}
+	}
+
+	msg := statusPrefix + status
+	if statusMessage == nil {
+		return c.ChannelSendAndPin(chanID, msg)
+	} else if statusMessage.Content == msg {
+		return nil // no-op
+	}
+
+	_, err = c.s.ChannelMessageEdit(chanID, statusMessage.ID, msg)
+	return err
+}
+
 func (c *Client) QMChannelSend(msg string) error {
 	_, err := c.s.ChannelMessageSend(c.qmChannelID, msg)
 	return err

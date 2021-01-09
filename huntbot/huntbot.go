@@ -21,8 +21,8 @@ type HuntBot struct {
 	mu           sync.Mutex              // hold while accessing above maps
 }
 
-func New(dis *discord.Client, drive *drive.Drive) *HuntBot {
-	return &HuntBot{dis: dis, drive: drive, puzzleStatus: map[string]drive.Status{}}
+func New(dis *discord.Client, d *drive.Drive) *HuntBot {
+	return &HuntBot{dis: dis, drive: d, puzzleStatus: map[string]drive.Status{}}
 }
 
 func (h *HuntBot) notifyNewPuzzle(name, puzzleURL, sheetURL, channelID string) error {
@@ -83,10 +83,31 @@ func (h *HuntBot) setPuzzleStatus(name string, newStatus drive.Status) (oldStatu
 	return oldStatus
 }
 
+// logStatus marks the status; it is *not* called if the puzzle is solved
+func (h *HuntBot) logStatus(ctx context.Context, puzzle *drive.PuzzleInfo) error {
+	channelID, err := h.dis.ChannelID(puzzle.DiscordURL)
+	if err != nil {
+		return err
+	}
+
+	err = h.dis.SetPinnedStatus(channelID, string(puzzle.Status))
+	if err != nil {
+		return fmt.Errorf("unable to set puzzle status message for %q: %w", puzzle.Name, err)
+	}
+	return nil
+}
+
 func (h *HuntBot) markSolved(ctx context.Context, puzzle *drive.PuzzleInfo) error {
 	channelID, err := h.dis.ChannelID(puzzle.DiscordURL)
 	if err != nil {
 		return err
+	}
+
+	if puzzle.Answer == "" {
+		if err := h.dis.QMChannelSend(fmt.Sprintf("Puzzle %q marked solved, but has no answer, please add it to the sheet.", puzzle.Name)); err != nil {
+			return fmt.Errorf("error posting solved puzzle announcement: %v", err)
+		}
+		return nil // don't archive yet.
 	}
 
 	archived, err := h.dis.ArchiveChannel(channelID)
@@ -99,11 +120,11 @@ func (h *HuntBot) markSolved(ctx context.Context, puzzle *drive.PuzzleInfo) erro
 		log.Printf("Archiving channel for %q", puzzle.Name)
 		// post to relevant channels only if it was newly archived.
 		if err := h.dis.ChannelSend(channelID, fmt.Sprintf("Puzzle solved! The answer was %v. I'll archive this channel.", puzzle.Answer)); err != nil {
-			return fmt.Errorf("error posting new puzzle announcement: %v", err)
+			return fmt.Errorf("error posting solved puzzle announcement: %v", err)
 		}
 
 		if err := h.dis.QMChannelSend(fmt.Sprintf("Puzzle %q was solved!", puzzle.Name)); err != nil {
-			return fmt.Errorf("error posting new puzzle announcement: %v", err)
+			return fmt.Errorf("error posting solved puzzle announcement: %v", err)
 		}
 	}
 
@@ -155,10 +176,13 @@ func (h *HuntBot) pollAndUpdate(ctx context.Context) error {
 
 		if h.setPuzzleStatus(puzzle.Name, puzzle.Status) != puzzle.Status {
 			// (potential) status change
-			if puzzle.Answer != "" && puzzle.Status == drive.Solved {
-				err := h.markSolved(ctx, puzzle)
-				if err != nil {
+			if puzzle.Status == drive.Solved {
+				if err := h.markSolved(ctx, puzzle); err != nil {
 					return fmt.Errorf("failed to mark puzzle %q solved: %v", puzzle.Name, err)
+				}
+			} else {
+				if err := h.logStatus(ctx, puzzle); err != nil {
+					return fmt.Errorf("failed to mark puzzle %q %v: %v", puzzle.Name, puzzle.Status, err)
 				}
 			}
 		}
