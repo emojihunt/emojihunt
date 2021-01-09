@@ -113,10 +113,15 @@ func (h *HuntBot) markSolved(ctx context.Context, puzzle *drive.PuzzleInfo) erro
 	}
 
 	if puzzle.Answer == "" {
+		if err := h.dis.ChannelSend(channelID, fmt.Sprintf("Puzzle solved!  Please add the answer to the sheet.")); err != nil {
+			return fmt.Errorf("error posting solved puzzle announcement: %v", err)
+		}
+
 		if err := h.dis.QMChannelSend(fmt.Sprintf("Puzzle %q marked solved, but has no answer, please add it to the sheet.", puzzle.Name)); err != nil {
 			return fmt.Errorf("error posting solved puzzle announcement: %v", err)
 		}
-		return nil // don't archive yet.
+
+		return nil // don't archive until we have the answer.
 	}
 
 	archived, err := h.dis.ArchiveChannel(channelID)
@@ -185,7 +190,7 @@ func (h *HuntBot) pollAndUpdate(ctx context.Context) error {
 
 		if h.setPuzzleStatus(puzzle.Name, puzzle.Status) != puzzle.Status {
 			// (potential) status change
-			if puzzle.Status == drive.Solved {
+			if puzzle.Status.IsSolved() {
 				if err := h.markSolved(ctx, puzzle); err != nil {
 					return fmt.Errorf("failed to mark puzzle %q solved: %v", puzzle.Name, err)
 				}

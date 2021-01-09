@@ -64,6 +64,10 @@ const (
 	Backsolved Status = "🤦‍♀️Backsolved"
 )
 
+func (s Status) IsSolved() bool {
+	return s == Solved || s == Backsolved
+}
+
 var allStatuses = []Status{Working, Abandoned, Solved, Backsolved}
 
 const (
