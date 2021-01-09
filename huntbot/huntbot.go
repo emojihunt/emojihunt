@@ -171,6 +171,55 @@ func (h *HuntBot) archive(puzzleName string) {
 	h.archived[puzzleName] = true
 }
 
+func (h *HuntBot) updatePuzzle(ctx context.Context, puzzle *drive.PuzzleInfo) error {
+	// TODO: warn if puzzle.Name is set but others haven't been for a while?
+	if puzzle.Name == "" || puzzle.PuzzleURL == "" || puzzle.Round.Name == "" {
+		return nil
+	}
+
+	var err error
+	if puzzle.DocURL == "" {
+		puzzle.DocURL, err = h.drive.CreateSheet(ctx, puzzle.Name, puzzle.Round.Name)
+		if err != nil {
+			return fmt.Errorf("error creating spreadsheet for %q: %v", puzzle.Name, err)
+		}
+	}
+
+	if puzzle.DiscordURL == "" {
+		log.Printf("Adding channel for new puzzle %q", puzzle.Name)
+		id, err := h.dis.CreateChannel(puzzle.Name)
+		if err != nil {
+			return fmt.Errorf("error creating discord channel for %q: %v", puzzle.Name, err)
+		}
+
+		puzzle.DiscordURL = h.dis.ChannelURL(id)
+
+		// Treat discord URL as the sentinel to also notify everyone
+		if err := h.notifyNewPuzzle(puzzle.Name, puzzle.PuzzleURL, puzzle.DocURL, id); err != nil {
+			return fmt.Errorf("error notifying channel about new puzzle %q: %v", puzzle.Name, err)
+		}
+		if err := h.drive.SetDiscordURL(ctx, puzzle); err != nil {
+			return fmt.Errorf("error setting discord URL for puzzle %q: %v", puzzle.Name, err)
+		}
+	}
+
+	if h.setPuzzleStatus(puzzle.Name, puzzle.Status) != puzzle.Status ||
+		puzzle.Answer != "" && puzzle.Status.IsSolved() && !h.isArchived(puzzle.Name) {
+		// (potential) status change
+		if puzzle.Status.IsSolved() {
+			if err := h.markSolved(ctx, puzzle); err != nil {
+				return fmt.Errorf("failed to mark puzzle %q solved: %v", puzzle.Name, err)
+			}
+		} else {
+			if err := h.logStatus(ctx, puzzle); err != nil {
+				return fmt.Errorf("failed to mark puzzle %q %v: %v", puzzle.Name, puzzle.Status, err)
+			}
+		}
+	}
+
+	return nil
+}
+
 func (h *HuntBot) pollAndUpdate(ctx context.Context) error {
 	puzzles, err := h.drive.ReadFullSheet()
 	if err != nil {
@@ -178,48 +227,10 @@ func (h *HuntBot) pollAndUpdate(ctx context.Context) error {
 	}
 
 	for _, puzzle := range puzzles {
-		// TODO: warn if puzzle.Name is set but others haven't been for a while?
-		if puzzle.Name == "" || puzzle.PuzzleURL == "" || puzzle.Round.Name == "" {
-			continue
-		}
-
-		if puzzle.DocURL == "" {
-			puzzle.DocURL, err = h.drive.CreateSheet(ctx, puzzle.Name, puzzle.Round.Name)
-			if err != nil {
-				return fmt.Errorf("error creating spreadsheet for %q: %v", puzzle.Name, err)
-			}
-		}
-
-		if puzzle.DiscordURL == "" {
-			log.Printf("Adding channel for new puzzle %q", puzzle.Name)
-			id, err := h.dis.CreateChannel(puzzle.Name)
-			if err != nil {
-				return fmt.Errorf("error creating discord channel for %q: %v", puzzle.Name, err)
-			}
-
-			puzzle.DiscordURL = h.dis.ChannelURL(id)
-
-			// Treat discord URL as the sentinel to also notify everyone
-			if err := h.notifyNewPuzzle(puzzle.Name, puzzle.PuzzleURL, puzzle.DocURL, id); err != nil {
-				return fmt.Errorf("error notifying channel about new puzzle %q: %v", puzzle.Name, err)
-			}
-			if err := h.drive.SetDiscordURL(ctx, puzzle); err != nil {
-				return fmt.Errorf("error setting discord URL for puzzle %q: %v", puzzle.Name, err)
-			}
-		}
-
-		if h.setPuzzleStatus(puzzle.Name, puzzle.Status) != puzzle.Status ||
-			puzzle.Answer != "" && puzzle.Status.IsSolved() && !h.isArchived(puzzle.Name) {
-			// (potential) status change
-			if puzzle.Status.IsSolved() {
-				if err := h.markSolved(ctx, puzzle); err != nil {
-					return fmt.Errorf("failed to mark puzzle %q solved: %v", puzzle.Name, err)
-				}
-			} else {
-				if err := h.logStatus(ctx, puzzle); err != nil {
-					return fmt.Errorf("failed to mark puzzle %q %v: %v", puzzle.Name, puzzle.Status, err)
-				}
-			}
+		err := h.updatePuzzle(ctx, puzzle)
+		if err != nil {
+			// log, but proceed to the next puzzle.
+			log.Printf("updating puzzle failed: %v", err)
 		}
 	}
 
