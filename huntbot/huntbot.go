@@ -13,23 +13,33 @@ import (
 	"github.com/gauravjsingh/emojihunt/drive"
 )
 
+type Config struct {
+	// How often to warn in discord about badly formatted puzzles.
+	MinWarningFrequency time.Duration
+}
+
 type HuntBot struct {
-	dis   *discord.Client
-	drive *drive.Drive
+	dis                 *discord.Client
+	drive               *drive.Drive
+	minWarningFrequency time.Duration
 
 	mu           sync.Mutex              // hold while accessing everything below
 	enabled      bool                    // global killswitch, toggle with !huntbot kill/!huntbot start
 	puzzleStatus map[string]drive.Status // name -> status (best-effort cache)
 	archived     map[string]bool         // name -> channel was archived (best-effort cache)
+	// When we last warned about a malformed puzzle.
+	lastWarnTime map[string]time.Time
 }
 
-func New(dis *discord.Client, d *drive.Drive) *HuntBot {
+func New(dis *discord.Client, d *drive.Drive, c Config) *HuntBot {
 	return &HuntBot{
-		dis:          dis,
-		drive:        d,
-		enabled:      true,
-		puzzleStatus: map[string]drive.Status{},
-		archived:     map[string]bool{},
+		dis:                 dis,
+		drive:               d,
+		enabled:             true,
+		puzzleStatus:        map[string]drive.Status{},
+		archived:            map[string]bool{},
+		lastWarnTime:        map[string]time.Time{},
+		minWarningFrequency: c.MinWarningFrequency,
 	}
 }
 
@@ -190,9 +200,37 @@ func (h *HuntBot) archive(puzzleName string) {
 	h.archived[puzzleName] = true
 }
 
+func (h *HuntBot) warnPuzzle(ctx context.Context, puzzle *drive.PuzzleInfo) error {
+	h.mu.Lock()
+	if time.Now().Sub(h.lastWarnTime[puzzle.Name]) <= h.minWarningFrequency {
+		return nil
+	}
+	defer h.mu.Unlock()
+	var msgs []string
+	if puzzle.PuzzleURL == "" {
+		msgs = append(msgs, "missing a URL")
+	}
+	if puzzle.Round.Name == "" {
+		msgs = append(msgs, "missing a round")
+	}
+	if len(msgs) == 0 {
+		return fmt.Errorf("cannot warn about well-formatted puzzle %q: %v", puzzle.Name, puzzle)
+	}
+	if err := h.dis.QMChannelSend(fmt.Sprintf("puzzle %q is %s", puzzle.Name, strings.Join(msgs, " and "))); err != nil {
+		return err
+	}
+	h.lastWarnTime[puzzle.Name] = time.Now()
+	return nil
+}
+
 func (h *HuntBot) updatePuzzle(ctx context.Context, puzzle *drive.PuzzleInfo) error {
-	// TODO: warn if puzzle.Name is set but others haven't been for a while?
 	if puzzle.Name == "" || puzzle.PuzzleURL == "" || puzzle.Round.Name == "" {
+		// Occasionally warn the QM about puzzles that are missing fields.
+		if puzzle.Name != "" {
+			if err := h.warnPuzzle(ctx, puzzle); err != nil {
+				return fmt.Errorf("error warning about malformed puzzle %q: %v", puzzle.Name, err)
+			}
+		}
 		return nil
 	}
 
