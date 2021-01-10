@@ -104,7 +104,7 @@ func (h *HuntBot) logStatus(ctx context.Context, puzzle *drive.PuzzleInfo) error
 	}
 
 	if didUpdate {
-		if err := h.dis.GeneralChannelSend(fmt.Sprintf("Puzzle %q is now %v.", puzzle.Name, puzzle.Status)); err != nil {
+		if err := h.dis.StatusUpdateChannelSend(fmt.Sprintf("Puzzle %q is now %v.", puzzle.Name, puzzle.Status)); err != nil {
 			return fmt.Errorf("error posting puzzle status announcement: %v", err)
 		}
 	}

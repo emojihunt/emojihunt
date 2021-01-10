@@ -10,9 +10,9 @@ import (
 )
 
 type Config struct {
-	QMChannelName, GeneralChannelName, TechChannelName string
-	PuzzleCategoryName, SolvedCategoryName             string
-	QMRoleName                                         string
+	QMChannelName, GeneralChannelName, StatusUpdateChannelName, TechChannelName string
+	PuzzleCategoryName, SolvedCategoryName                                      string
+	QMRoleName                                                                  string
 }
 
 type Client struct {
@@ -23,6 +23,8 @@ type Client struct {
 	qmChannelID string
 	// The general channel has all users, and has announcements from the bot.
 	generalChannelID string
+	// The channel in which to post status updates.
+	statusUpdateChannelID string
 	// The tech channel has error messages.
 	techChannelID string
 	// The puzzle channel category.
@@ -74,6 +76,10 @@ func New(s *discordgo.Session, c Config) (*Client, error) {
 	if !ok {
 		gen = qm
 	}
+	st, ok := chIDs[c.StatusUpdateChannelName]
+	if !ok {
+		st = gen
+	}
 	tech, ok := chIDs[c.TechChannelName]
 	if !ok {
 		tech = qm
@@ -94,15 +100,16 @@ func New(s *discordgo.Session, c Config) (*Client, error) {
 	}
 
 	return &Client{
-		s:                s,
-		guildID:          guildID,
-		qmChannelID:      qm,
-		generalChannelID: gen,
-		techChannelID:    tech,
-		channelNameToID:  chIDs,
-		puzzleCategoryID: puz,
-		solvedCategoryID: ar,
-		qmRoleID:         qmRoleID,
+		s:                     s,
+		guildID:               guildID,
+		qmChannelID:           qm,
+		generalChannelID:      gen,
+		statusUpdateChannelID: st,
+		techChannelID:         tech,
+		channelNameToID:       chIDs,
+		puzzleCategoryID:      puz,
+		solvedCategoryID:      ar,
+		qmRoleID:              qmRoleID,
 	}, nil
 }
 
@@ -190,6 +197,11 @@ func (c *Client) QMChannelSend(msg string) error {
 
 func (c *Client) GeneralChannelSend(msg string) error {
 	_, err := c.s.ChannelMessageSend(c.generalChannelID, msg)
+	return err
+}
+
+func (c *Client) StatusUpdateChannelSend(msg string) error {
+	_, err := c.s.ChannelMessageSend(c.statusUpdateChannelID, msg)
 	return err
 }
 
