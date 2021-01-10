@@ -175,7 +175,7 @@ func (h *HuntBot) markSolved(ctx context.Context, puzzle *drive.PuzzleInfo) erro
 	} else {
 		log.Printf("Archiving channel for %q", puzzle.Name)
 		// post to relevant channels only if it was newly archived.
-		if err := h.dis.ChannelSend(channelID, fmt.Sprintf("Puzzle %s! The answer was %v. I'll archive this channel.", verb, puzzle.Answer)); err != nil {
+		if err := h.dis.ChannelSend(channelID, fmt.Sprintf("Puzzle %s! The answer was `%v`. I'll archive this channel.", verb, puzzle.Answer)); err != nil {
 			return fmt.Errorf("error posting solved puzzle announcement: %v", err)
 		}
 
