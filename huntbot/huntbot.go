@@ -97,22 +97,6 @@ func (h *HuntBot) NewPuzzle(ctx context.Context, name string) error {
 	return h.notifyNewPuzzle(puzzleInfo, id)
 }
 
-func (h *HuntBot) NewPuzzleHandler(s *discordgo.Session, m *discordgo.MessageCreate) error {
-	if m.Author.ID == s.State.User.ID || !strings.HasPrefix(m.Content, "!newpuzzle") {
-		return nil
-	}
-
-	parts := strings.Split(m.Content, " ")
-	if len(parts) < 2 {
-		// send a bad usage message to the channel
-		return fmt.Errorf("not able to find new puzzle name from %q", m.Content)
-	}
-	if err := h.NewPuzzle(context.Background(), parts[1]); err != nil {
-		return fmt.Errorf("error creating puzzle: %v", err)
-	}
-	return nil
-}
-
 func (h *HuntBot) setPuzzleStatus(name string, newStatus drive.Status) (oldStatus drive.Status) {
 	h.mu.Lock()
 	defer h.mu.Unlock()

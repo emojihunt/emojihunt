@@ -112,6 +112,7 @@ func (p *PuzzleInfo) sheetRow() int {
 	return p.Row + 1
 }
 
+// TODO: this might be more accurately named round formula; it counts # of unsolved puzzles in the round.
 func (p *PuzzleInfo) metaFormula() string {
 	if !p.Meta {
 		return ""
@@ -179,9 +180,10 @@ func parsePuzzleInfo(row []*sheets.CellData, rounds map[string]*Round, rowNum in
 	}
 
 	return &PuzzleInfo{
-		Round:      *round,
-		Name:       row[1].FormattedValue,
-		Answer:     row[2].FormattedValue,
+		Round:  *round,
+		Name:   row[1].FormattedValue,
+		Answer: row[2].FormattedValue,
+		// Metas have a formula for the number of unsolved puzzles in column D.
 		Meta:       row[3].FormattedValue != "",
 		PuzzleURL:  row[4].Hyperlink,
 		DocURL:     row[5].Hyperlink,
@@ -281,7 +283,7 @@ func (d *Drive) SetDiscordURL(ctx context.Context, p *PuzzleInfo) error {
 }
 
 func (d *Drive) UpdatePuzzle(ctx context.Context, p *PuzzleInfo) error {
-	a1Range := fmt.Sprintf("A%d:I%d", p.Row+1, p.Row+1)
+	a1Range := fmt.Sprintf("A%d:I%d", p.sheetRow(), p.sheetRow())
 
 	_, err := d.sheets.Spreadsheets.Values.Update(d.sheetID, fmt.Sprintf("'%s'!%s", d.puzzlesTab, a1Range),
 		p.AsValueRange(d.puzzlesTab)).ValueInputOption("USER_ENTERED").Context(ctx).Do()
@@ -341,9 +343,7 @@ func (d *Drive) roundFolder(ctx context.Context, name string) (id string, err er
 		return id, nil
 	}
 
-	query := "mimeType='" + folderMimeType + "' and " +
-		"'" + d.rootFolderID + "' in parents and " +
-		"name = '" + name + "'"
+	query := fmt.Sprintf("mimeType='%s' and '%s' in parents and name = '%s'", folderMimeType, d.rootFolderID, name)
 	list, err := d.drive.Files.List().Q(query).Context(ctx).Do()
 	if err != nil {
 		return "", fmt.Errorf("couldn't query for existing folder for round %q: %v", name, err)
