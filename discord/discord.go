@@ -265,13 +265,7 @@ func (c *Client) QMHandler(s *discordgo.Session, m *discordgo.MessageCreate) err
 		return nil
 	}
 
-	parts := strings.Split(m.Content, " ")
-	if len(parts) < 2 {
-		// send a bad usage message to the channel
-		return fmt.Errorf("not able to find qm command from %q", m.Content)
-	}
-
-	reply := ""
+	var reply string
 	var err error
 	switch m.Content {
 	case "!qm start":
@@ -287,8 +281,8 @@ func (c *Client) QMHandler(s *discordgo.Session, m *discordgo.MessageCreate) err
 		}
 		reply = fmt.Sprintf("%s is no longer a QM", m.Author.Mention())
 	default:
+		err = fmt.Errorf("unexpected QM command: %q", m.Content)
 		reply = fmt.Sprintf("unexpected command: %q\nsupported qm commands are \"!qm start\" and \"!qm stop\"", m.Content)
-		err = fmt.Errorf("unexpected QM command: %q", parts[1])
 	}
 	if err != nil {
 		log.Printf("error setting QM: %v", err)
