@@ -15,8 +15,14 @@ type Drive struct {
 	// ID of the central tracking sheet. From the sheets URL:
 	// docs.google.com/spreadsheets/d/[ID]/edit
 	sheetID string
+
 	// Name of the sheet (tab) within that sheet with puzzle metadata.
 	sheetName string
+
+	// Name of the sheet (tab) within the tracking spreadsheet
+	// with round metadata.
+	roundSheet string
+
 	// ID of this year's root folder (e.g. "emoji hunt/2021")
 	rootFolderID string
 
@@ -140,14 +146,29 @@ func (p *PuzzleInfo) AsValueRange(sheetName string) *sheets.ValueRange {
 	return vr
 }
 
-func parsePuzzleInfo(row []*sheets.CellData, rowNum int) (*PuzzleInfo, error) {
+func parseRoundInfo(row []*sheets.CellData) (*Round, error) {
+	if len(row) != 2 {
+		return nil, fmt.Errorf("wrong number of fields in round row: %v", row)
+	}
+
+	return &Round{
+		Emoji: row[0].FormattedValue,
+		Name:  row[1].FormattedValue,
+	}, nil
+}
+
+func parsePuzzleInfo(row []*sheets.CellData, rounds map[string]*Round, rowNum int) (*PuzzleInfo, error) {
 	if len(row) != 9 {
-		return nil, fmt.Errorf("wrong number of fields in row: %v", row)
+		return nil, fmt.Errorf("wrong number of fields in puzzle row: %v", row)
+	}
+
+	round, ok := rounds[row[0].FormattedValue]
+	if !ok {
+		round = &Round{Emoji: row[0].FormattedValue, Name: row[0].FormattedValue}
 	}
 
 	return &PuzzleInfo{
-		// TODO: figure out how to decide the round name
-		Round:      Round{Emoji: row[0].FormattedValue, Name: row[0].FormattedValue},
+		Round:      *round,
 		Name:       row[1].FormattedValue,
 		Answer:     row[2].FormattedValue,
 		Meta:       row[3].FormattedValue != "",
@@ -162,7 +183,10 @@ func parsePuzzleInfo(row []*sheets.CellData, rowNum int) (*PuzzleInfo, error) {
 
 func (d *Drive) ReadFullSheet() ([]*PuzzleInfo, error) {
 	req := &sheets.GetSpreadsheetByDataFilterRequest{
-		DataFilters:     []*sheets.DataFilter{{A1Range: fmt.Sprintf("'%s'!A2:I", d.sheetName)}},
+		DataFilters: []*sheets.DataFilter{
+			{A1Range: fmt.Sprintf("'%s'!A2:I", d.sheetName)},
+			{A1Range: fmt.Sprintf("'%s'!A2:B", d.roundSheet)},
+		},
 		IncludeGridData: true,
 	}
 
@@ -170,18 +194,25 @@ func (d *Drive) ReadFullSheet() ([]*PuzzleInfo, error) {
 	if err != nil {
 		return nil, fmt.Errorf("error getting spreadsheet: %v", err)
 	}
-	if len(s.Sheets) != 1 || len(s.Sheets[0].Data) != 1 {
+	if len(s.Sheets) != 2 || len(s.Sheets[0].Data) != 1 || len(s.Sheets[1].Data) != 1 {
 		return nil, fmt.Errorf("unexpected number of sheets or data ranges returned: %v", s.Sheets)
 	}
 	var infos []*PuzzleInfo
+
+	var rounds map[string]*Round
+	for _, row := range s.Sheets[1].Data[0].RowData {
+		if round, err := parseRoundInfo(row.Values); err != nil {
+			return nil, fmt.Errorf("error parsing round from row: %+v: %v", row, err)
+		} else {
+			rounds[round.Emoji] = round
+		}
+	}
+
 	start := s.Sheets[0].Data[0].StartRow
 	for i, row := range s.Sheets[0].Data[0].RowData {
-		pi, err := parsePuzzleInfo(row.Values, int(start)+i)
-		if len(row.Values) != 9 {
-			return nil, fmt.Errorf("unexpected row size %d: %v", len(row.Values), row.Values)
-		}
+		pi, err := parsePuzzleInfo(row.Values, rounds, int(start)+i)
 		if err != nil {
-			return nil, fmt.Errorf("error parsing puzzle from: %+v", row)
+			return nil, fmt.Errorf("error parsing puzzle from row: %+v: %v", row, err)
 		}
 		if pi.Name != "" {
 			infos = append(infos, pi)

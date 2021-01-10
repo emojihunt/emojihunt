@@ -33,7 +33,7 @@ func New(dis *discord.Client, d *drive.Drive) *HuntBot {
 	}
 }
 
-func (h *HuntBot) notifyNewPuzzle(name, puzzleURL, sheetURL, channelID string) error {
+func (h *HuntBot) notifyNewPuzzle(round drive.Round, name, puzzleURL, sheetURL, channelID string) error {
 	log.Printf("Posting information about new puzzle %q", name)
 	// TODO: also edit sheet to link to channel/puzzle
 
@@ -43,7 +43,7 @@ func (h *HuntBot) notifyNewPuzzle(name, puzzleURL, sheetURL, channelID string) e
 	}
 
 	// Post a message in the general channel with a link to the puzzle.
-	if err := h.dis.GeneralChannelSend(fmt.Sprintf("There is a new puzzle %s!\nPuzzle URL: <%s>\nChannel <#%s>", name, puzzleURL, channelID)); err != nil {
+	if err := h.dis.GeneralChannelSend(fmt.Sprintf("There is a new puzzle %s (%s %s)!\nPuzzle URL: <%s>\nChannel <#%s>", name, round.Emoji, round.Name, puzzleURL, channelID)); err != nil {
 		return fmt.Errorf("error posting new puzzle announcement: %v", err)
 	}
 
@@ -64,7 +64,7 @@ func (h *HuntBot) NewPuzzle(ctx context.Context, name string) error {
 	// If via bot, also take puzzle url as a param
 	puzzleURL := "https://en.wikipedia.org/wiki/Main_Page"
 
-	return h.notifyNewPuzzle(name, puzzleURL, sheetURL, id)
+	return h.notifyNewPuzzle(drive.Round{Emoji: "", Name: ""}, name, puzzleURL, sheetURL, id)
 }
 
 func (h *HuntBot) NewPuzzleHandler(s *discordgo.Session, m *discordgo.MessageCreate) error {
@@ -195,7 +195,7 @@ func (h *HuntBot) updatePuzzle(ctx context.Context, puzzle *drive.PuzzleInfo) er
 		puzzle.DiscordURL = h.dis.ChannelURL(id)
 
 		// Treat discord URL as the sentinel to also notify everyone
-		if err := h.notifyNewPuzzle(puzzle.Name, puzzle.PuzzleURL, puzzle.DocURL, id); err != nil {
+		if err := h.notifyNewPuzzle(puzzle.Round, puzzle.Name, puzzle.PuzzleURL, puzzle.DocURL, id); err != nil {
 			return fmt.Errorf("error notifying channel about new puzzle %q: %v", puzzle.Name, err)
 		}
 		if err := h.drive.SetDiscordURL(ctx, puzzle); err != nil {
