@@ -21,6 +21,8 @@ import (
 var (
 	secretsFile  = flag.String("secrets_file", "secrets.json", "path to the flie that contains secrets used by the application")
 	sheetID      = flag.String("sheet_id", "1SgvhTBeVdyTMrCR0wZixO3O0lErh4vqX0--nBpSfYT8", "the id of the puzzle tracking sheet to use")
+	puzzlesTab   = flag.String("puzzles_tab", "Puzzle List", "the name of the puzzles tab in the puzzle tracking sheet")
+	roundsTab    = flag.String("rounds_tab", "Round Information", "the name of the rounds tab in the puzzle tracking sheet")
 	rootFolderID = flag.String("root_folder_id", "1Mp8e1Sd7YXBwcgil62YCgslbQ6twmBlU", "the id of the google drive folder for this year")
 )
 
@@ -85,7 +87,7 @@ func main() {
 		}
 	}()
 
-	d, err := drive.New(ctx, *sheetID, *rootFolderID)
+	d, err := drive.New(ctx, *sheetID, *puzzlesTab, *roundsTab, *rootFolderID)
 	if err != nil {
 		log.Fatalf("error creating test drive integration: %v", err)
 	}

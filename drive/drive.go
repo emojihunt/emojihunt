@@ -16,12 +16,13 @@ type Drive struct {
 	// docs.google.com/spreadsheets/d/[ID]/edit
 	sheetID string
 
-	// Name of the sheet (tab) within that sheet with puzzle metadata.
-	sheetName string
+	// Name of the sheet (tab) within the tracking spreadsheet
+	// with puzzle metadata.
+	puzzlesTab string
 
 	// Name of the sheet (tab) within the tracking spreadsheet
 	// with round metadata.
-	roundSheet string
+	roundsTab string
 
 	// ID of this year's root folder (e.g. "emoji hunt/2021")
 	rootFolderID string
@@ -36,7 +37,7 @@ type Drive struct {
 	drive  *drive.Service
 }
 
-func New(ctx context.Context, sheetID, rootFolderID string) (*Drive, error) {
+func New(ctx context.Context, sheetID, puzzlesTab, roundsTab, rootFolderID string) (*Drive, error) {
 	sheetsService, err := sheets.NewService(ctx)
 	if err != nil {
 		return nil, err
@@ -48,6 +49,8 @@ func New(ctx context.Context, sheetID, rootFolderID string) (*Drive, error) {
 
 	return &Drive{
 		sheetID:        sheetID,
+		puzzlesTab:     puzzlesTab,
+		roundsTab:      roundsTab,
 		rootFolderID:   rootFolderID,
 		roundFolderIDs: make(map[string]string),
 		sheets:         sheetsService,
@@ -184,8 +187,8 @@ func parsePuzzleInfo(row []*sheets.CellData, rounds map[string]*Round, rowNum in
 func (d *Drive) ReadFullSheet() ([]*PuzzleInfo, error) {
 	req := &sheets.GetSpreadsheetByDataFilterRequest{
 		DataFilters: []*sheets.DataFilter{
-			{A1Range: fmt.Sprintf("'%s'!A2:I", d.sheetName)},
-			{A1Range: fmt.Sprintf("'%s'!A2:B", d.roundSheet)},
+			{A1Range: fmt.Sprintf("'%s'!A2:I", d.puzzlesTab)},
+			{A1Range: fmt.Sprintf("'%s'!A2:B", d.roundsTab)},
 		},
 		IncludeGridData: true,
 	}
@@ -199,11 +202,11 @@ func (d *Drive) ReadFullSheet() ([]*PuzzleInfo, error) {
 	}
 	var infos []*PuzzleInfo
 
-	var rounds map[string]*Round
+	rounds := make(map[string]*Round)
 	for _, row := range s.Sheets[1].Data[0].RowData {
 		if round, err := parseRoundInfo(row.Values); err != nil {
 			return nil, fmt.Errorf("error parsing round from row: %+v: %v", row, err)
-		} else {
+		} else if round.Emoji != "" && round.Name != "" {
 			rounds[round.Emoji] = round
 		}
 	}
@@ -252,7 +255,7 @@ func (d *Drive) CreateSheet(ctx context.Context, name, roundName string) (url st
 }
 
 func (d *Drive) UpdateCell(ctx context.Context, a1CellLocation string, value interface{}) error {
-	_, err := d.sheets.Spreadsheets.Values.Update(d.sheetID, fmt.Sprintf("'%s'!%s", d.sheetName, a1CellLocation),
+	_, err := d.sheets.Spreadsheets.Values.Update(d.sheetID, fmt.Sprintf("'%s'!%s", d.puzzlesTab, a1CellLocation),
 		&sheets.ValueRange{Values: [][]interface{}{{value}}}).ValueInputOption("USER_ENTERED").Context(ctx).Do()
 	return err
 }
@@ -272,15 +275,15 @@ func (d *Drive) SetDiscordURL(ctx context.Context, p *PuzzleInfo) error {
 func (d *Drive) UpdatePuzzle(ctx context.Context, p *PuzzleInfo) error {
 	a1Range := fmt.Sprintf("A%d:I%d", p.Row+1, p.Row+1)
 
-	_, err := d.sheets.Spreadsheets.Values.Update(d.sheetID, fmt.Sprintf("'%s'!%s", d.sheetName, a1Range),
-		p.AsValueRange(d.sheetName)).ValueInputOption("USER_ENTERED").Context(ctx).Do()
+	_, err := d.sheets.Spreadsheets.Values.Update(d.sheetID, fmt.Sprintf("'%s'!%s", d.puzzlesTab, a1Range),
+		p.AsValueRange(d.puzzlesTab)).ValueInputOption("USER_ENTERED").Context(ctx).Do()
 	return err
 }
 
 func (d *Drive) UpdateAllURLs(ctx context.Context, ps []*PuzzleInfo) error {
 	req := &sheets.BatchUpdateValuesRequest{ValueInputOption: "USER_ENTERED"}
 	for _, p := range ps {
-		req.Data = append(req.Data, p.URLsAsValueRange(d.sheetName))
+		req.Data = append(req.Data, p.URLsAsValueRange(d.puzzlesTab))
 	}
 	_, err := d.sheets.Spreadsheets.Values.BatchUpdate(d.sheetID, req).Context(ctx).Do()
 	return err
