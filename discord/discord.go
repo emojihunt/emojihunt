@@ -127,7 +127,6 @@ func (c *Client) RegisterNewMessageHandler(name string, h NewMessageHandler) {
 	})
 }
 
-// TODO: id or name?
 func (c *Client) ChannelURL(id string) string {
 	return fmt.Sprintf("https://discord.com/channels/%s/%s", c.guildID, id)
 }
@@ -173,6 +172,7 @@ func (c *Client) SetPinnedInfo(chanID, spreadsheetURL, puzzleURL, status string)
 		}
 	}
 
+	// TODO: embed
 	msg := fmt.Sprintf("%s\nSpreadsheet: <%s>\nPuzzle: <%s>",
 		statusPrefix, spreadsheetURL, puzzleURL)
 	if status != "" {
@@ -261,7 +261,7 @@ func (c *Client) CreateChannel(name string) (string, error) {
 }
 
 func (c *Client) QMHandler(s *discordgo.Session, m *discordgo.MessageCreate) error {
-	if m.Author.ID == s.State.User.ID || !strings.HasPrefix(m.Content, "!qm") {
+	if m.Author.ID == s.State.User.ID || !strings.HasPrefix(m.Content, "!qm") || m.ChannelID != c.qmChannelID {
 		return nil
 	}
 
@@ -271,13 +271,28 @@ func (c *Client) QMHandler(s *discordgo.Session, m *discordgo.MessageCreate) err
 		return fmt.Errorf("not able to find qm command from %q", m.Content)
 	}
 
-	switch parts[1] {
-	case "start":
-		s.GuildMemberRoleAdd(c.guildID, m.Author.ID, c.qmRoleID)
-	case "stop":
-		s.GuildMemberRoleRemove(c.guildID, m.Author.ID, c.qmRoleID)
+	reply := ""
+	var err error
+	switch m.Content {
+	case "!qm start":
+		if err = s.GuildMemberRoleAdd(c.guildID, m.Author.ID, c.qmRoleID); err != nil {
+			reply = fmt.Sprintf("unable to make %s a QM: %v", m.Author.Mention(), err)
+			break
+		}
+		reply = fmt.Sprintf("%s is now a QM", m.Author.Mention())
+	case "!qm stop":
+		if err = s.GuildMemberRoleRemove(c.guildID, m.Author.ID, c.qmRoleID); err != nil {
+			reply = fmt.Sprintf("unable to remove %s from QM role: %v", m.Author.Mention(), err)
+			break
+		}
+		reply = fmt.Sprintf("%s is no longer a QM", m.Author.Mention())
 	default:
-		return fmt.Errorf("unexpected QM command: %q", parts[1])
+		reply = fmt.Sprintf("unexpected command: %q\nsupported qm commands are \"!qm start\" and \"!qm stop\"", m.Content)
+		err = fmt.Errorf("unexpected QM command: %q", parts[1])
 	}
-	return nil
+	if err != nil {
+		log.Printf("error setting QM: %v", err)
+	}
+	_, err = s.ChannelMessageSend(m.ChannelID, reply)
+	return err
 }

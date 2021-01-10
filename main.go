@@ -89,7 +89,7 @@ func main() {
 
 	d, err := drive.New(ctx, *sheetID, *puzzlesTab, *roundsTab, *rootFolderID)
 	if err != nil {
-		log.Fatalf("error creating test drive integration: %v", err)
+		log.Fatalf("error creating drive integration: %v", err)
 	}
 	h := huntbot.New(dis, d)
 

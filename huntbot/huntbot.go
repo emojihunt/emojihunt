@@ -35,7 +35,6 @@ func New(dis *discord.Client, d *drive.Drive) *HuntBot {
 
 func (h *HuntBot) notifyNewPuzzle(puzzle *drive.PuzzleInfo, channelID string) error {
 	log.Printf("Posting information about new puzzle %q", puzzle.Name)
-	// TODO: also edit sheet to link to channel/puzzle
 
 	// Pin a message with the spreadsheet URL to the channel
 	if _, err := h.dis.SetPinnedInfo(channelID, puzzle.DocURL, puzzle.PuzzleURL, ""); err != nil {
@@ -51,17 +50,17 @@ func (h *HuntBot) notifyNewPuzzle(puzzle *drive.PuzzleInfo, channelID string) er
 		Title: puzzle.Name,
 		URL:   puzzle.PuzzleURL,
 		Fields: []*discordgo.MessageEmbedField{
-			&discordgo.MessageEmbedField{
+			{
 				Name:   "Channel",
 				Value:  fmt.Sprintf("<#%s>", channelID),
 				Inline: true,
 			},
-			&discordgo.MessageEmbedField{
+			{
 				Name:   "Puzzle",
 				Value:  fmt.Sprintf("[Link](%s)", puzzle.PuzzleURL),
 				Inline: true,
 			},
-			&discordgo.MessageEmbedField{
+			{
 				Name:   "Sheet",
 				Value:  fmt.Sprintf("[Link](%s)", puzzle.DocURL),
 				Inline: true,
