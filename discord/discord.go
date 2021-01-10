@@ -37,6 +37,8 @@ type Client struct {
 	// This might be a case where sync.Map makes sense.
 	mu              sync.Mutex
 	channelNameToID map[string]string
+	// The key is the common name of the channel, excluding the puzzles present there.
+	voiceChans map[string]string
 }
 
 func getGuildID(s *discordgo.Session) (string, error) {
@@ -45,6 +47,10 @@ func getGuildID(s *discordgo.Session) (string, error) {
 		return "", fmt.Errorf("expected exactly 1 guild, found %d", len(gs))
 	}
 	return gs[0].ID, nil
+}
+
+func roomName(fullName string) string {
+	return strings.Split(fullName, ":")[0]
 }
 
 func New(s *discordgo.Session, c Config) (*Client, error) {
@@ -57,9 +63,14 @@ func New(s *discordgo.Session, c Config) (*Client, error) {
 		return nil, fmt.Errorf("error creating channel ID cache: %v", err)
 	}
 	chIDs := make(map[string]string)
+	voiceChans := make(map[string]string)
 	for _, ch := range chs {
 		chIDs[ch.Name] = ch.ID
+		if ch.Bitrate != 0 {
+			voiceChans[roomName(ch.Name)] = ch.ID
+		}
 	}
+	log.Printf("found the following voice channels: %+v", voiceChans)
 	qm, ok := chIDs[c.QMChannelName]
 	if !ok {
 		return nil, fmt.Errorf("QM Channel %q not found", c.QMChannelName)
@@ -107,6 +118,7 @@ func New(s *discordgo.Session, c Config) (*Client, error) {
 		statusUpdateChannelID: st,
 		techChannelID:         tech,
 		channelNameToID:       chIDs,
+		voiceChans:            voiceChans,
 		puzzleCategoryID:      puz,
 		solvedCategoryID:      ar,
 		qmRoleID:              qmRoleID,
