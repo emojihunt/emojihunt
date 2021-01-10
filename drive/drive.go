@@ -63,6 +63,14 @@ type Round struct {
 	Emoji string
 }
 
+func (r *Round) TwemojiURL() string {
+	codePoints := make([]string, 0)
+	for _, runeValue := range r.Emoji {
+		codePoints = append(codePoints, fmt.Sprintf("%04x", runeValue))
+	}
+	return fmt.Sprintf("https://twemoji.maxcdn.com/2/72x72/%s.png", strings.Join(codePoints, "-"))
+}
+
 // TODO: how should we support extending Status?
 type Status string
 

@@ -44,15 +44,13 @@ func (h *HuntBot) notifyNewPuzzle(puzzle *drive.PuzzleInfo, channelID string) er
 
 	// Post a message in the general channel with a link to the puzzle.
 	embed := &discordgo.MessageEmbed{
-		Author: &discordgo.MessageEmbedAuthor{Name: "A new puzzle is available!"},
-		Title:  puzzle.Name,
-		URL:    puzzle.PuzzleURL,
+		Author: &discordgo.MessageEmbedAuthor{
+			Name:    "A new puzzle is available!",
+			IconURL: puzzle.Round.TwemojiURL(),
+		},
+		Title: puzzle.Name,
+		URL:   puzzle.PuzzleURL,
 		Fields: []*discordgo.MessageEmbedField{
-			&discordgo.MessageEmbedField{
-				Name:   "Round",
-				Value:  fmt.Sprintf("%s %s", puzzle.Round.Emoji, puzzle.Round.Name),
-				Inline: false,
-			},
 			&discordgo.MessageEmbedField{
 				Name:   "Channel",
 				Value:  fmt.Sprintf("<#%s>", channelID),
