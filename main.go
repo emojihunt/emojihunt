@@ -92,7 +92,6 @@ func main() {
 	log.Print("press ctrl+C to exit")
 	dis.RegisterNewMessageHandler("emoji generator", emojiname.Handler)
 	dis.RegisterNewMessageHandler("isithuntyet?", huntyet.Handler)
-	dis.RegisterNewMessageHandler("new puzzle", h.NewPuzzleHandler)
 	dis.RegisterNewMessageHandler("bot control", h.ControlHandler)
 	dis.RegisterNewMessageHandler("qm manager", dis.QMHandler)
 
