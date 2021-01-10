@@ -200,6 +200,11 @@ func (c *Client) GeneralChannelSend(msg string) error {
 	return err
 }
 
+func (c *Client) GeneralChannelSendEmbed(embed *discordgo.MessageEmbed) error {
+	_, err := c.s.ChannelMessageSendEmbed(c.generalChannelID, embed)
+	return err
+}
+
 func (c *Client) StatusUpdateChannelSend(msg string) error {
 	_, err := c.s.ChannelMessageSend(c.statusUpdateChannelID, msg)
 	return err
