@@ -59,6 +59,7 @@ func main() {
 	dis, err := discord.New(dg, discord.Config{
 		QMChannelName:      "qm",
 		GeneralChannelName: "whats-going-on",
+		TechChannelName:    "tech",
 		SolvedCategoryName: "solved",
 		PuzzleCategoryName: "puzzles",
 		QMRoleName:         "QM",
