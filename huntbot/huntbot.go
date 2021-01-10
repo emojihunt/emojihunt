@@ -118,12 +118,17 @@ func (h *HuntBot) markSolved(ctx context.Context, puzzle *drive.PuzzleInfo) erro
 		return err
 	}
 
+	verb := "solved"
+	if puzzle.Status == drive.Backsolved {
+		verb = "backsolved"
+	}
+
 	if puzzle.Answer == "" {
-		if err := h.dis.ChannelSend(channelID, fmt.Sprintf("Puzzle solved!  Please add the answer to the sheet.")); err != nil {
+		if err := h.dis.ChannelSend(channelID, fmt.Sprintf("Puzzle %s!  Please add the answer to the sheet.", verb)); err != nil {
 			return fmt.Errorf("error posting solved puzzle announcement: %v", err)
 		}
 
-		if err := h.dis.QMChannelSend(fmt.Sprintf("Puzzle %q marked solved, but has no answer, please add it to the sheet.", puzzle.Name)); err != nil {
+		if err := h.dis.QMChannelSend(fmt.Sprintf("Puzzle %q marked %s, but has no answer, please add it to the sheet.", puzzle.Name, verb)); err != nil {
 			return fmt.Errorf("error posting solved puzzle announcement: %v", err)
 		}
 
@@ -139,11 +144,11 @@ func (h *HuntBot) markSolved(ctx context.Context, puzzle *drive.PuzzleInfo) erro
 	} else {
 		log.Printf("Archiving channel for %q", puzzle.Name)
 		// post to relevant channels only if it was newly archived.
-		if err := h.dis.ChannelSend(channelID, fmt.Sprintf("Puzzle solved! The answer was %v. I'll archive this channel.", puzzle.Answer)); err != nil {
+		if err := h.dis.ChannelSend(channelID, fmt.Sprintf("Puzzle %s! The answer was %v. I'll archive this channel.", verb, puzzle.Answer)); err != nil {
 			return fmt.Errorf("error posting solved puzzle announcement: %v", err)
 		}
 
-		if err := h.dis.GeneralChannelSend(fmt.Sprintf("Puzzle %q was solved!", puzzle.Name)); err != nil {
+		if err := h.dis.GeneralChannelSend(fmt.Sprintf("Puzzle %q was %s!", puzzle.Name, verb)); err != nil {
 			return fmt.Errorf("error posting solved puzzle announcement: %v", err)
 		}
 	}
