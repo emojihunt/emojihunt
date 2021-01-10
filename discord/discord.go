@@ -198,10 +198,6 @@ func (c *Client) TechChannelSend(msg string) error {
 	return err
 }
 
-func (c *Client) SolvePuzzle(puzzleName string) error {
-	return c.QMChannelSend("hello")
-}
-
 var ChannelNotFound = fmt.Errorf("channel not found")
 
 // Returns whether a channel was archived.
