@@ -413,7 +413,6 @@ func (c *Client) VoiceChannelHandler(s *discordgo.Session, m *discordgo.MessageC
 	}(&reply)
 
 	var err error
-	_ = err
 	matches := voiceRE.FindStringSubmatch(m.Content)
 	if len(matches) != 3 {
 		// Not a command
@@ -425,6 +424,7 @@ func (c *Client) VoiceChannelHandler(s *discordgo.Session, m *discordgo.MessageC
 	puzzle, err := c.puzzleNameFromChannel(m.ChannelID)
 	if err != nil {
 		reply = fmt.Sprintf("Unable to get puzzle name for channel ID %q. Contact @tech.", m.ChannelID)
+		return err
 	}
 
 	rID, ok := c.closestRoomID(matches[2])
