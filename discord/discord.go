@@ -331,6 +331,7 @@ func (c *Client) closestRoomID(input string) (string, bool) {
 	for r := range c.roomsToID {
 		input = strings.ReplaceAll(strings.ReplaceAll(strings.ToLower(input), " ", ""), "-", "")
 		sanitized := strings.ReplaceAll(strings.ReplaceAll(strings.ToLower(r), " ", ""), "-", "")
+		log.Printf("input: %q, sanitized: %q, r: %q", input, sanitized, r)
 		if sanitized == input {
 			return r, true
 		}
