@@ -473,6 +473,9 @@ type room struct {
 }
 
 func (r room) VoiceChannelName() string {
+	if len(r.puzzles) == 0 {
+		return r.name
+	}
 	return fmt.Sprintf("%s: %s", r.name, strings.Join(r.puzzles, ", "))
 }
 
