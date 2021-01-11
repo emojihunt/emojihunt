@@ -72,7 +72,6 @@ func New(s *discordgo.Session, c Config) (*Client, error) {
 			rIDs[r.name] = ch.ID
 		}
 	}
-	log.Printf("found the following rooms: %+v", rIDs)
 	qm, ok := chIDs[c.QMChannelName]
 	if !ok {
 		return nil, fmt.Errorf("QM Channel %q not found", c.QMChannelName)
