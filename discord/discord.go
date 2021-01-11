@@ -329,13 +329,14 @@ func (c *Client) closestRoomID(input string) (string, bool) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	for r := range c.roomsToID {
-		input = strings.ReplaceAll(strings.ReplaceAll(strings.ToLower(input), " ", ""), "-", "")
-		sanitized := strings.ReplaceAll(strings.ReplaceAll(strings.ToLower(r), " ", ""), "-", "")
-		log.Printf("input: %q, sanitized: %q, r: %q", input, sanitized, r)
-		if sanitized == input {
+		sanitizedInput := strings.ReplaceAll(strings.ReplaceAll(strings.ToLower(input), " ", ""), "-", "")
+		sanitizedR := strings.ReplaceAll(strings.ReplaceAll(strings.ToLower(r), " ", ""), "-", "")
+		log.Printf("input: %q, sanitized: %q, r: %q", input, sanitizedR, r)
+		if sanitizedR == sanitizedInput {
 			return r, true
 		}
 	}
+	log.Printf("did not find a room for %q: %v", input, c.roomsToID)
 	return "", false
 }
 
