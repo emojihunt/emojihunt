@@ -16,12 +16,13 @@ import (
 type Config struct {
 	// How often to warn in discord about badly formatted puzzles.
 	MinWarningFrequency time.Duration
+	InitialWarningDelay time.Duration
 }
 
 type HuntBot struct {
-	dis                 *discord.Client
-	drive               *drive.Drive
-	minWarningFrequency time.Duration
+	dis   *discord.Client
+	drive *drive.Drive
+	cfg   Config
 
 	mu           sync.Mutex              // hold while accessing everything below
 	enabled      bool                    // global killswitch, toggle with !huntbot kill/!huntbot start
@@ -33,13 +34,13 @@ type HuntBot struct {
 
 func New(dis *discord.Client, d *drive.Drive, c Config) *HuntBot {
 	return &HuntBot{
-		dis:                 dis,
-		drive:               d,
-		enabled:             true,
-		puzzleStatus:        map[string]drive.Status{},
-		archived:            map[string]bool{},
-		lastWarnTime:        map[string]time.Time{},
-		minWarningFrequency: c.MinWarningFrequency,
+		dis:          dis,
+		drive:        d,
+		enabled:      true,
+		puzzleStatus: map[string]drive.Status{},
+		archived:     map[string]bool{},
+		lastWarnTime: map[string]time.Time{},
+		cfg:          c,
 	}
 }
 
@@ -202,7 +203,9 @@ func (h *HuntBot) archive(puzzleName string) {
 
 func (h *HuntBot) warnPuzzle(ctx context.Context, puzzle *drive.PuzzleInfo) error {
 	h.mu.Lock()
-	if time.Now().Sub(h.lastWarnTime[puzzle.Name]) <= h.minWarningFrequency {
+	if lastWarning, ok := h.lastWarnTime[puzzle.Name]; !ok {
+		h.lastWarnTime[puzzle.Name] = time.Now().Add(h.cfg.InitialWarningDelay - h.cfg.MinWarningFrequency)
+	} else if time.Now().Sub(lastWarning) <= h.cfg.MinWarningFrequency {
 		return nil
 	}
 	defer h.mu.Unlock()

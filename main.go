@@ -92,7 +92,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("error creating drive integration: %v", err)
 	}
-	h := huntbot.New(dis, d, huntbot.Config{MinWarningFrequency: 10 * time.Minute})
+	h := huntbot.New(dis, d, huntbot.Config{MinWarningFrequency: 10 * time.Minute, InitialWarningDelay: time.Minute})
 
 	log.Print("press ctrl+C to exit")
 	dis.RegisterNewMessageHandler("emoji generator", emojiname.Handler)
