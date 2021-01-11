@@ -437,6 +437,7 @@ func (c *Client) VoiceChannelHandler(s *discordgo.Session, m *discordgo.MessageC
 	roomCh, err := c.s.Channel(rID)
 	if err != nil {
 		reply = fmt.Sprintf("Error finding room %q. Contact @tech.", matches[2])
+		return err
 	}
 
 	switch matches[1] {
