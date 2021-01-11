@@ -328,11 +328,14 @@ func (c *Client) QMHandler(s *discordgo.Session, m *discordgo.MessageCreate) err
 func (c *Client) closestRoomID(input string) (string, bool) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	r, ok := c.roomsToID[input]
-	if !ok {
-		return "", false
+	for r := range c.roomsToID {
+		input = strings.ReplaceAll(strings.ReplaceAll(strings.ToLower(input), " ", ""), "-", "")
+		sanitized := strings.ReplaceAll(strings.ReplaceAll(strings.ToLower(r), " ", ""), "-", "")
+		if sanitized == input {
+			return r, true
+		}
 	}
-	return r, true
+	return "", false
 }
 
 func (c *Client) availableRooms() []string {
