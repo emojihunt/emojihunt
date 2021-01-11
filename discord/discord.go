@@ -3,6 +3,7 @@ package discord
 import (
 	"fmt"
 	"log"
+	"regexp"
 	"strings"
 	"sync"
 
@@ -37,8 +38,9 @@ type Client struct {
 	// This might be a case where sync.Map makes sense.
 	mu              sync.Mutex
 	channelNameToID map[string]string
-	// The key is the common name of the channel, excluding the puzzles present there.
-	voiceChans map[string]string
+	// A room is the common name of a voice channel, excluding the puzzles present there.
+	// For example, a voice channel "Patio: puzzle 1, puzzle 2", is named "Patio", and has 2 puzzles being worked on.
+	roomsToID map[string]string
 }
 
 func getGuildID(s *discordgo.Session) (string, error) {
@@ -47,10 +49,6 @@ func getGuildID(s *discordgo.Session) (string, error) {
 		return "", fmt.Errorf("expected exactly 1 guild, found %d", len(gs))
 	}
 	return gs[0].ID, nil
-}
-
-func roomName(fullName string) string {
-	return strings.Split(fullName, ":")[0]
 }
 
 func New(s *discordgo.Session, c Config) (*Client, error) {
@@ -63,14 +61,18 @@ func New(s *discordgo.Session, c Config) (*Client, error) {
 		return nil, fmt.Errorf("error creating channel ID cache: %v", err)
 	}
 	chIDs := make(map[string]string)
-	voiceChans := make(map[string]string)
+	rIDs := make(map[string]string)
 	for _, ch := range chs {
 		chIDs[ch.Name] = ch.ID
 		if ch.Bitrate != 0 {
-			voiceChans[roomName(ch.Name)] = ch.ID
+			r, err := parseRoom(ch.Name)
+			if err != nil {
+				return nil, err
+			}
+			rIDs[r.name] = ch.ID
 		}
 	}
-	log.Printf("found the following voice channels: %+v", voiceChans)
+	log.Printf("found the following rooms: %+v", rIDs)
 	qm, ok := chIDs[c.QMChannelName]
 	if !ok {
 		return nil, fmt.Errorf("QM Channel %q not found", c.QMChannelName)
@@ -118,7 +120,7 @@ func New(s *discordgo.Session, c Config) (*Client, error) {
 		statusUpdateChannelID: st,
 		techChannelID:         tech,
 		channelNameToID:       chIDs,
-		voiceChans:            voiceChans,
+		roomsToID:             rIDs,
 		puzzleCategoryID:      puz,
 		solvedCategoryID:      ar,
 		qmRoleID:              qmRoleID,
@@ -167,12 +169,11 @@ func (c *Client) ChannelSendAndPin(chanID, msg string) error {
 
 const statusPrefix = "**=== Puzzle Information ===**"
 
-// Set the pinned status message, by posting one or editing the existing one.
-// No-op if the status was already set.
-func (c *Client) SetPinnedInfo(chanID, spreadsheetURL, puzzleURL, status string) (didUpdate bool, err error) {
+// Returns last pinned status message, or nil if not found.
+func (c *Client) pinnedStatusMessage(chanID string) (*discordgo.Message, error) {
 	ms, err := c.s.ChannelMessagesPinned(chanID)
 	if err != nil {
-		return false, err
+		return nil, err
 	}
 	var statusMessage *discordgo.Message
 	for _, m := range ms {
@@ -182,6 +183,16 @@ func (c *Client) SetPinnedInfo(chanID, spreadsheetURL, puzzleURL, status string)
 			}
 			statusMessage = m
 		}
+	}
+	return statusMessage, nil
+}
+
+// Set the pinned status message, by posting one or editing the existing one.
+// No-op if the status was already set.
+func (c *Client) SetPinnedInfo(chanID, spreadsheetURL, puzzleURL, status string) (didUpdate bool, err error) {
+	statusMessage, err := c.pinnedStatusMessage(chanID)
+	if err != nil {
+		return false, err
 	}
 
 	// TODO: embed
@@ -200,6 +211,17 @@ func (c *Client) SetPinnedInfo(chanID, spreadsheetURL, puzzleURL, status string)
 
 	_, err = c.s.ChannelMessageEdit(chanID, statusMessage.ID, msg)
 	return err == nil, err
+}
+
+func (c *Client) puzzleNameFromChannel(chanID string) (string, error) {
+	m, err := c.pinnedStatusMessage(chanID)
+	if err != nil {
+		return "", fmt.Errorf("error getting pinned status message for channel ID %q: %v", chanID, err)
+	}
+	if m == nil {
+		return "", fmt.Errorf("no status message for channel ID %q", chanID)
+	}
+	return "TODO puzzle name", nil
 }
 
 func (c *Client) QMChannelSend(msg string) error {
@@ -301,4 +323,173 @@ func (c *Client) QMHandler(s *discordgo.Session, m *discordgo.MessageCreate) err
 	}
 	_, err = s.ChannelMessageSend(m.ChannelID, reply)
 	return err
+}
+
+func (c *Client) closestRoomID(input string) (string, bool) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	r, ok := c.roomsToID[input]
+	if !ok {
+		return "", false
+	}
+	return r, true
+}
+
+func (c *Client) availableRooms() []string {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	var rs []string
+	for r := range c.roomsToID {
+		rs = append(rs, r)
+	}
+	return rs
+}
+
+func (c *Client) updateRoom(r room) error {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	_, err := c.s.ChannelEdit(c.roomsToID[r.name], r.VoiceChannelName())
+	return err
+}
+
+// Returns whether a puzzle was added.
+func (c *Client) addPuzzleToRoom(puzzle string, roomCh *discordgo.Channel) (bool, error) {
+	r, err := parseRoom(roomCh.Name)
+	if err != nil {
+		return false, fmt.Errorf("error parsing room when adding puzzles: %v", err)
+	}
+	for _, p := range r.puzzles {
+		if p == puzzle {
+			return false, nil
+		}
+	}
+	r.puzzles = append(r.puzzles, puzzle)
+	if err := c.updateRoom(r); err != nil {
+		return false, err
+	}
+	return true, nil
+}
+
+// Returns whether a puzzle was removed.
+func (c *Client) removePuzzleFromRoom(puzzle string, roomCh *discordgo.Channel) (bool, error) {
+	r, err := parseRoom(roomCh.Name)
+	if err != nil {
+		return false, fmt.Errorf("error parsing room when removing puzzles: %v", err)
+	}
+	index := -1
+	for i, p := range r.puzzles {
+		if p == puzzle {
+			index = i
+		}
+	}
+	if index == -1 {
+		// puzzle is not in this voice channel.
+		return false, nil
+	}
+	r.puzzles = append(r.puzzles[:index], r.puzzles[index+1:]...)
+	if err := c.updateRoom(r); err != nil {
+		return false, err
+	}
+	return true, nil
+}
+
+var voiceRE = regexp.MustCompile(`!voice (start|stop) (.*)$`)
+
+func (c *Client) VoiceChannelHandler(s *discordgo.Session, m *discordgo.MessageCreate) error {
+	if m.Author.ID == s.State.User.ID || !strings.HasPrefix(m.Content, "!voice") {
+		return nil
+	}
+
+	// TODO: reply errors are not caught.
+	var reply string
+	defer func(reply *string) {
+		if *reply == "" {
+			return
+		}
+		s.ChannelMessageSend(m.ChannelID, *reply)
+	}(&reply)
+
+	var err error
+	_ = err
+	matches := voiceRE.FindStringSubmatch(m.Content)
+	if len(matches) != 3 {
+		// Not a command
+		reply = fmt.Sprintf("Invalid command %q. Voice command must be of the form \"!voice start $room\" or \"!voice stop $room\" where $room is a voice channel", m.Content)
+		return nil
+	}
+
+	// TODO: get name of the puzzle
+	puzzle, err := c.puzzleNameFromChannel(m.ChannelID)
+	if err != nil {
+		reply = fmt.Sprintf("Unable to get puzzle name for channel ID %q. Contact @tech.", m.ChannelID)
+	}
+
+	rID, ok := c.closestRoomID(matches[2])
+	if !ok {
+		reply = fmt.Sprintf("Unable to find room %q. Available rooms are: %v", matches[2], c.availableRooms())
+		return nil
+	}
+	roomCh, err := c.s.Channel(rID)
+	if err != nil {
+		reply = fmt.Sprintf("Error finding room %q. Contact @tech.", matches[2])
+	}
+
+	switch matches[1] {
+	case "start":
+		updated, err := c.addPuzzleToRoom(puzzle, roomCh)
+		if err != nil {
+			reply = "error updating room name, contact @tech."
+			return err
+		}
+		if !updated {
+			reply = fmt.Sprintf("Puzzle %q is already in room %s", puzzle, roomCh.Mention())
+			return nil
+		}
+		// TODO: Update status message
+		reply = fmt.Sprintf("Set the room for puzzle %q to %s", puzzle, roomCh.Mention())
+	case "stop":
+		updated, err := c.removePuzzleFromRoom(puzzle, roomCh)
+		if err != nil {
+			reply = "error updating room name, contact @tech."
+			return err
+		}
+		if !updated {
+			reply = fmt.Sprintf("Puzzle %q was already not in room %s", puzzle, roomCh.Mention())
+			return nil
+		}
+		// TODO: Update status message
+		reply = fmt.Sprintf("Removed the room for puzzle %q", puzzle)
+	default:
+		return fmt.Errorf("impossible voice bot action %q: %q", matches[1], m.Content)
+	}
+
+	return nil
+}
+
+type room struct {
+	// The name of the room, eg. "Patio". This excludes the puzzles that might be part of the channel name.
+	name    string
+	puzzles []string
+}
+
+func (r room) VoiceChannelName() string {
+	return fmt.Sprintf("%s: %s", r.name, strings.Join(r.puzzles, ", "))
+}
+
+func parseRoom(voiceChanName string) (room, error) {
+	parts := strings.Split(voiceChanName, ":")
+	if len(parts) == 1 {
+		return room{name: parts[0]}, nil
+	}
+	if len(parts) != 2 {
+		return room{}, fmt.Errorf("too many ':' in voice channel name: %q", voiceChanName)
+	}
+	puzzles := strings.Split(parts[1], ",")
+	for i, p := range puzzles {
+		puzzles[i] = strings.TrimSpace(p)
+	}
+	return room{
+		name:    parts[0],
+		puzzles: puzzles,
+	}, nil
 }
