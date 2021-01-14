@@ -50,7 +50,7 @@ func main() {
 	}
 	dg, err := discordgo.New(secrets.DiscordToken)
 	if err != nil {
-		log.Fatalf("error creating discord client: %v", err)
+		log.Fatalf("error creating discordgo client: %v", err)
 	}
 
 	err = dg.Open()
