@@ -183,14 +183,14 @@ func (c *Client) ChannelSendEmbedAndPin(chanID string, embed *discordgo.MessageE
 const statusTitle = "Puzzle Information"
 
 // Returns last pinned status message, or nil if not found.
-func (c *Client) pinnedStatusMessage(chanID string) (*discordgo.Message, error) {
+func (c *Client) pinnedStatusMessage(chanID, header string) (*discordgo.Message, error) {
 	ms, err := c.s.ChannelMessagesPinned(chanID)
 	if err != nil {
 		return nil, err
 	}
 	var statusMessage *discordgo.Message
 	for _, m := range ms {
-		if len(m.Embeds) > 0 && m.Embeds[0].Title == statusTitle {
+		if len(m.Embeds) > 0 && m.Embeds[0].Author.Name == header {
 			if statusMessage != nil {
 				log.Printf("Multiple status messages in %v, editing last one", chanID)
 			}
@@ -207,37 +207,10 @@ type statusMessage struct {
 
 // Set the pinned status message, by posting one or editing the existing one.
 // No-op if the status was already set.
-func (c *Client) SetPinnedInfo(chanID, spreadsheetURL, puzzleURL, status string) (didUpdate bool, err error) {
-	statusMessage, err := c.pinnedStatusMessage(chanID)
+func (c *Client) CreateUpdatePin(chanID, header string, embed *discordgo.MessageEmbed) (didUpdate bool, err error) {
+	statusMessage, err := c.pinnedStatusMessage(chanID, header)
 	if err != nil {
 		return false, err
-	}
-
-	formattedStatus := status
-	if status == "" {
-		formattedStatus = "Not Started"
-	}
-
-	embed := &discordgo.MessageEmbed{
-		Title: statusTitle,
-		URL:   puzzleURL,
-		Fields: []*discordgo.MessageEmbedField{
-			{
-				Name:   "Status",
-				Value:  formattedStatus,
-				Inline: true,
-			},
-			{
-				Name:   "Puzzle",
-				Value:  fmt.Sprintf("[Link](%s)", puzzleURL),
-				Inline: true,
-			},
-			{
-				Name:   "Sheet",
-				Value:  fmt.Sprintf("[Link](%s)", spreadsheetURL),
-				Inline: true,
-			},
-		},
 	}
 
 	if statusMessage == nil {

@@ -45,11 +45,45 @@ func New(dis *discord.Client, d *drive.Drive, c Config) *HuntBot {
 	}
 }
 
+const pinnedStatusHeader = "Puzzle Information"
+
+func (h *HuntBot) setPinnedInfo(puzzle *drive.PuzzleInfo, channelID string) (didUpdate bool, err error) {
+	formattedStatus := string(puzzle.Status)
+	if string(puzzle.Status) == "" {
+		formattedStatus = "Not Started"
+	}
+
+	embed := &discordgo.MessageEmbed{
+		Author: &discordgo.MessageEmbedAuthor{Name: pinnedStatusHeader},
+		Title:  puzzle.Name,
+		URL:    puzzle.PuzzleURL,
+		Fields: []*discordgo.MessageEmbedField{
+			{
+				Name:   "Status",
+				Value:  formattedStatus,
+				Inline: true,
+			},
+			{
+				Name:   "Puzzle",
+				Value:  fmt.Sprintf("[Link](%s)", puzzle.PuzzleURL),
+				Inline: true,
+			},
+			{
+				Name:   "Sheet",
+				Value:  fmt.Sprintf("[Link](%s)", puzzle.DocURL),
+				Inline: true,
+			},
+		},
+	}
+
+	return h.dis.CreateUpdatePin(channelID, pinnedStatusHeader, embed)
+}
+
 func (h *HuntBot) notifyNewPuzzle(puzzle *drive.PuzzleInfo, channelID string) error {
 	log.Printf("Posting information about new puzzle %q", puzzle.Name)
 
 	// Pin a message with the spreadsheet URL to the channel
-	if _, err := h.dis.SetPinnedInfo(channelID, puzzle.DocURL, puzzle.PuzzleURL, ""); err != nil {
+	if _, err := h.setPinnedInfo(puzzle, channelID); err != nil {
 		return fmt.Errorf("error pinning puzzle info: %v", err)
 	}
 
@@ -124,7 +158,7 @@ func (h *HuntBot) logStatus(ctx context.Context, puzzle *drive.PuzzleInfo) error
 		return err
 	}
 
-	didUpdate, err := h.dis.SetPinnedInfo(channelID, puzzle.DocURL, puzzle.DiscordURL, string(puzzle.Status))
+	didUpdate, err := h.setPinnedInfo(puzzle, channelID)
 	if err != nil {
 		return fmt.Errorf("unable to set puzzle status message for %q: %w", puzzle.Name, err)
 	}
