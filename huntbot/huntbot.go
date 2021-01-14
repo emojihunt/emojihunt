@@ -109,6 +109,7 @@ func (h *HuntBot) notifyNewPuzzle(puzzle *drive.PuzzleInfo, channelID string) er
 			Name:    "A new puzzle is available!",
 			IconURL: puzzle.Round.TwemojiURL(),
 		},
+		Color: puzzle.Round.IntColor(),
 		Title: puzzle.Name,
 		URL:   puzzle.PuzzleURL,
 		Fields: []*discordgo.MessageEmbedField{
@@ -229,6 +230,7 @@ func (h *HuntBot) markSolved(ctx context.Context, puzzle *drive.PuzzleInfo) erro
 				Name:    fmt.Sprintf("Puzzle %s!", verb),
 				IconURL: puzzle.Round.TwemojiURL(),
 			},
+			Color: puzzle.Round.IntColor(),
 			Fields: []*discordgo.MessageEmbedField{
 				{
 					Name:   "Channel",
