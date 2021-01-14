@@ -174,7 +174,26 @@ func (h *HuntBot) markSolved(ctx context.Context, puzzle *drive.PuzzleInfo) erro
 			return fmt.Errorf("error posting solved puzzle announcement: %v", err)
 		}
 
-		if err := h.dis.GeneralChannelSend(fmt.Sprintf("Puzzle %q was %s!", puzzle.Name, verb)); err != nil {
+		embed := &discordgo.MessageEmbed{
+			Author: &discordgo.MessageEmbedAuthor{
+				Name:    fmt.Sprintf("Puzzle %s!", verb),
+				IconURL: puzzle.Round.TwemojiURL(),
+			},
+			Fields: []*discordgo.MessageEmbedField{
+				{
+					Name:   "Puzzle",
+					Value:  fmt.Sprintf("<%s>", channelID),
+					Inline: true,
+				},
+				{
+					Name:   "Answer",
+					Value:  fmt.Sprintf("`%s`", puzzle.Answer),
+					Inline: true,
+				},
+			},
+		}
+
+		if err := h.dis.GeneralChannelSendEmbed(embed); err != nil {
 			return fmt.Errorf("error posting solved puzzle announcement: %v", err)
 		}
 	}
