@@ -186,6 +186,11 @@ func (c *Client) pinnedStatusMessage(chanID string) (*discordgo.Message, error) 
 	return statusMessage, nil
 }
 
+type statusMessage struct {
+	spreadsheetURL, puzzleURL string
+	status                    string
+}
+
 // Set the pinned status message, by posting one or editing the existing one.
 // No-op if the status was already set.
 func (c *Client) SetPinnedInfo(chanID, spreadsheetURL, puzzleURL, status string) (didUpdate bool, err error) {
@@ -324,7 +329,7 @@ func (c *Client) QMHandler(s *discordgo.Session, m *discordgo.MessageCreate) err
 	return err
 }
 
-func (c *Client) closestRoomID(input string) (string, bool) {
+func (c *Client) ClosestRoomID(input string) (string, bool) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	for r, id := range c.roomsToID {
@@ -337,7 +342,7 @@ func (c *Client) closestRoomID(input string) (string, bool) {
 	return "", false
 }
 
-func (c *Client) availableRooms() []string {
+func (c *Client) AvailableRooms() []string {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	var rs []string
@@ -355,7 +360,11 @@ func (c *Client) updateRoom(r room) error {
 }
 
 // Returns whether a puzzle was added.
-func (c *Client) addPuzzleToRoom(puzzle string, roomCh *discordgo.Channel) (bool, error) {
+func (c *Client) AddPuzzleToRoom(puzzle, roomID string) (bool, error) {
+	roomCh, err := c.s.Channel(roomID)
+	if err != nil {
+		return false, fmt.Errorf("error finding room ID %q: %v", roomID, err)
+	}
 	r, err := parseRoom(roomCh.Name)
 	if err != nil {
 		return false, fmt.Errorf("error parsing room when adding puzzles: %v", err)
@@ -373,7 +382,11 @@ func (c *Client) addPuzzleToRoom(puzzle string, roomCh *discordgo.Channel) (bool
 }
 
 // Returns whether a puzzle was removed.
-func (c *Client) removePuzzleFromRoom(puzzle string, roomCh *discordgo.Channel) (bool, error) {
+func (c *Client) RemovePuzzleFromRoom(puzzle, roomID string) (bool, error) {
+	roomCh, err := c.s.Channel(roomID)
+	if err != nil {
+		return false, fmt.Errorf("error finding room ID %q: %v", roomID, err)
+	}
 	r, err := parseRoom(roomCh.Name)
 	if err != nil {
 		return false, fmt.Errorf("error parsing room when removing puzzles: %v", err)
@@ -426,9 +439,9 @@ func (c *Client) VoiceChannelHandler(s *discordgo.Session, m *discordgo.MessageC
 		return err
 	}
 
-	rID, ok := c.closestRoomID(matches[2])
+	rID, ok := c.ClosestRoomID(matches[2])
 	if !ok {
-		reply = fmt.Sprintf("Unable to find room %q. Available rooms are: %v", matches[2], c.availableRooms())
+		reply = fmt.Sprintf("Unable to find room %q. Available rooms are: %v", matches[2], c.AvailableRooms())
 		return nil
 	}
 	roomCh, err := c.s.Channel(rID)
@@ -439,7 +452,7 @@ func (c *Client) VoiceChannelHandler(s *discordgo.Session, m *discordgo.MessageC
 
 	switch matches[1] {
 	case "start":
-		updated, err := c.addPuzzleToRoom(puzzle, roomCh)
+		updated, err := c.AddPuzzleToRoom(puzzle, rID)
 		if err != nil {
 			reply = "error updating room name, contact @tech."
 			return err
@@ -451,7 +464,7 @@ func (c *Client) VoiceChannelHandler(s *discordgo.Session, m *discordgo.MessageC
 		// TODO: Update status message
 		reply = fmt.Sprintf("Set the room for puzzle %q to %s", puzzle, roomCh.Mention())
 	case "stop":
-		updated, err := c.removePuzzleFromRoom(puzzle, roomCh)
+		updated, err := c.RemovePuzzleFromRoom(puzzle, rID)
 		if err != nil {
 			reply = "error updating room name, contact @tech."
 			return err
@@ -498,4 +511,8 @@ func parseRoom(voiceChanName string) (room, error) {
 		name:    parts[0],
 		puzzles: puzzles,
 	}, nil
+}
+
+func ChannelMention(chanID string) string {
+	return fmt.Sprintf("<#%s>", chanID)
 }

@@ -27,11 +27,12 @@ type Drive struct {
 	// ID of this year's root folder (e.g. "emoji hunt/2021")
 	rootFolderID string
 
+	// hold while accessing roundFolderIDs, puzzles maps
+	mu sync.Mutex
 	// cache of round name to folder ID
 	roundFolderIDs map[string]string
-
-	// hold while accessing roundFolderIDs
-	mu sync.Mutex
+	// map from channel URL to puzzle name
+	chanToPuzzles map[string]string
 
 	sheets *sheets.Service
 	drive  *drive.Service
@@ -232,6 +233,15 @@ func (d *Drive) ReadFullSheet() ([]*PuzzleInfo, error) {
 		}
 	}
 
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	chanToPuzzles := make(map[string]string)
+	for _, i := range infos {
+		if i.DiscordURL != "" {
+			chanToPuzzles[i.DiscordURL] = i.Name
+		}
+	}
+	d.chanToPuzzles = chanToPuzzles
 	return infos, nil
 }
 
@@ -369,4 +379,11 @@ func (d *Drive) roundFolder(ctx context.Context, name string) (id string, err er
 
 	d.roundFolderIDs[name] = file.Id
 	return file.Id, nil
+}
+
+func (d *Drive) PuzzleForChannelURL(chanURL string) (string, bool) {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	p, ok := d.chanToPuzzles[chanURL]
+	return p, ok
 }

@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"regexp"
 	"strings"
 	"sync"
 	"time"
@@ -374,6 +375,75 @@ func (h *HuntBot) ControlHandler(s *discordgo.Session, m *discordgo.MessageCreat
 	if info != "" {
 		h.dis.TechChannelSend(info)
 		log.Printf(info)
+	}
+
+	return nil
+}
+
+var voiceRE = regexp.MustCompile(`!voice (start|stop) (.*)$`)
+
+func (h *HuntBot) VoiceChannelHandler(s *discordgo.Session, m *discordgo.MessageCreate) error {
+	if m.Author.ID == s.State.User.ID || !strings.HasPrefix(m.Content, "!voice") {
+		return nil
+	}
+
+	// TODO: reply errors are not caught.
+	var reply string
+	defer func(reply *string) {
+		if *reply == "" {
+			return
+		}
+		s.ChannelMessageSend(m.ChannelID, *reply)
+	}(&reply)
+
+	var err error
+	matches := voiceRE.FindStringSubmatch(m.Content)
+	if len(matches) != 3 {
+		// Not a command
+		reply = fmt.Sprintf("Invalid command %q. Voice command must be of the form \"!voice start $room\" or \"!voice stop $room\" where $room is a voice channel", m.Content)
+		return nil
+	}
+
+	puzzle, ok := h.drive.PuzzleForChannelURL(h.dis.ChannelURL(m.ChannelID))
+	if !ok {
+		reply = fmt.Sprintf("Unable to get puzzle name for channel ID %q. Contact @tech.", m.ChannelID)
+		return err
+	}
+
+	rID, ok := h.dis.ClosestRoomID(matches[2])
+	if !ok {
+		reply = fmt.Sprintf("Unable to find room %q. Available rooms are: %v", matches[2], h.dis.AvailableRooms())
+		return nil
+	}
+
+	switch matches[1] {
+	case "start":
+		updated, err := h.dis.AddPuzzleToRoom(puzzle, rID)
+		if err != nil {
+			reply = "error updating room name, contact @tech."
+			return err
+		}
+		if !updated {
+			reply = fmt.Sprintf("Puzzle %q is already in room %s", puzzle, discord.ChannelMention(rID))
+			return nil
+		}
+		// TODO: Update status message
+		reply = fmt.Sprintf("Set the room for puzzle %q to %s", puzzle, discord.ChannelMention(rID))
+	case "stop":
+		updated, err := h.dis.RemovePuzzleFromRoom(puzzle, rID)
+		if err != nil {
+			reply = "error updating room name, contact @tech."
+			return err
+		}
+		if !updated {
+			reply = fmt.Sprintf("Puzzle %q was already not in room %s", puzzle, discord.ChannelMention(rID))
+			return nil
+		}
+		// TODO: Update status message
+		reply = fmt.Sprintf("Removed the room for puzzle %q", puzzle)
+	default:
+		reply = fmt.Sprintf("Unrecognized voice bot action %q. Valid commands are \"!voice start $RoomName\" or \"!voice start $RoomName\"", m.Content)
+		return fmt.Errorf("impossible voice bot action %q: %q", matches[1], m.Content)
 	}
 
 	return nil
