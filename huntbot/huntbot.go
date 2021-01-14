@@ -187,7 +187,7 @@ func (h *HuntBot) logStatus(ctx context.Context, puzzle *drive.PuzzleInfo) error
 	}
 
 	if didUpdate {
-		if err := h.dis.StatusUpdateChannelSend(fmt.Sprintf("Puzzle %q is now %v.", puzzle.Name, puzzle.Status.Pretty())); err != nil {
+		if err := h.dis.StatusUpdateChannelSend(fmt.Sprintf("%s Puzzle <#%s> is now %v.", puzzle.Round.Emoji, channelID, puzzle.Status.Pretty())); err != nil {
 			return fmt.Errorf("error posting puzzle status announcement: %v", err)
 		}
 	}
@@ -297,7 +297,7 @@ func (h *HuntBot) warnPuzzle(ctx context.Context, puzzle *drive.PuzzleInfo) erro
 	if len(msgs) == 0 {
 		return fmt.Errorf("cannot warn about well-formatted puzzle %q: %v", puzzle.Name, puzzle)
 	}
-	if err := h.dis.QMChannelSend(fmt.Sprintf("puzzle %q is %s", puzzle.Name, strings.Join(msgs, " and "))); err != nil {
+	if err := h.dis.QMChannelSend(fmt.Sprintf("Puzzle %q is %s", puzzle.Name, strings.Join(msgs, " and "))); err != nil {
 		return err
 	}
 	h.lastWarnTime[puzzle.Name] = time.Now()
