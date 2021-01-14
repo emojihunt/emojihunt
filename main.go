@@ -65,8 +65,8 @@ func main() {
 		QMChannelName:      "qm",
 		GeneralChannelName: "whats-going-on",
 		TechChannelName:    "tech",
-		SolvedCategoryName: "solved",
-		PuzzleCategoryName: "puzzles",
+		SolvedCategoryName: "Solved",
+		PuzzleCategoryName: "Puzzles",
 		QMRoleName:         "QM",
 	})
 	if err != nil {
