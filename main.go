@@ -101,6 +101,7 @@ func main() {
 	dis.RegisterNewMessageHandler("isithuntyet?", huntyet.Handler)
 	dis.RegisterNewMessageHandler("bot control", h.ControlHandler)
 	dis.RegisterNewMessageHandler("qm manager", dis.QMHandler)
+	dis.RegisterNewMessageHandler("voice channel helper", h.VoiceChannelHandler)
 
 	go h.WatchSheet(ctx)
 

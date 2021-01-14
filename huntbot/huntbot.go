@@ -18,6 +18,7 @@ type Config struct {
 	// How often to warn in discord about badly formatted puzzles.
 	MinWarningFrequency time.Duration
 	InitialWarningDelay time.Duration
+	UpdateRooms         bool
 }
 
 type HuntBot struct {
@@ -47,7 +48,7 @@ func New(dis *discord.Client, d *drive.Drive, c Config) *HuntBot {
 
 const pinnedStatusHeader = "Puzzle Information"
 
-func (h *HuntBot) setPinnedInfo(puzzle *drive.PuzzleInfo, channelID string) (didUpdate bool, err error) {
+func (h *HuntBot) setPinnedStatusInfo(puzzle *drive.PuzzleInfo, channelID string) (didUpdate bool, err error) {
 	formattedStatus := string(puzzle.Status)
 	if string(puzzle.Status) == "" {
 		formattedStatus = "Not Started"
@@ -79,11 +80,31 @@ func (h *HuntBot) setPinnedInfo(puzzle *drive.PuzzleInfo, channelID string) (did
 	return h.dis.CreateUpdatePin(channelID, pinnedStatusHeader, embed)
 }
 
+const voiceStatusHeader = "Working Voice Channel"
+
+func (h *HuntBot) setPinnedVoiceInfo(puzzleChannelID string, voiceChannelID *string) (didUpdate bool, err error) {
+	voiceChan := "No voice channel. \"!voice start $room\" to start working in $room."
+	if voiceChannelID != nil {
+		voiceChan = fmt.Sprintf("<#%s>", *voiceChannelID)
+	}
+	embed := &discordgo.MessageEmbed{
+		Author: &discordgo.MessageEmbedAuthor{Name: pinnedStatusHeader},
+		Fields: []*discordgo.MessageEmbedField{
+			{
+				Name:  "Voice Channel",
+				Value: voiceChan,
+			},
+		},
+	}
+
+	return h.dis.CreateUpdatePin(puzzleChannelID, voiceStatusHeader, embed)
+}
+
 func (h *HuntBot) notifyNewPuzzle(puzzle *drive.PuzzleInfo, channelID string) error {
 	log.Printf("Posting information about new puzzle %q", puzzle.Name)
 
 	// Pin a message with the spreadsheet URL to the channel
-	if _, err := h.setPinnedInfo(puzzle, channelID); err != nil {
+	if _, err := h.setPinnedStatusInfo(puzzle, channelID); err != nil {
 		return fmt.Errorf("error pinning puzzle info: %v", err)
 	}
 
@@ -158,7 +179,7 @@ func (h *HuntBot) logStatus(ctx context.Context, puzzle *drive.PuzzleInfo) error
 		return err
 	}
 
-	didUpdate, err := h.setPinnedInfo(puzzle, channelID)
+	didUpdate, err := h.setPinnedStatusInfo(puzzle, channelID)
 	if err != nil {
 		return fmt.Errorf("unable to set puzzle status message for %q: %w", puzzle.Name, err)
 	}
@@ -472,29 +493,32 @@ func (h *HuntBot) VoiceChannelHandler(s *discordgo.Session, m *discordgo.Message
 	// Note that discord only allows updating a channel name twice per 10 minutes, so this will often take 10+ minutes.
 	switch matches[1] {
 	case "start":
-		updated, err := h.dis.AddPuzzleToRoom(puzzle, rID)
-		if err != nil {
-			reply = "error updating room name, contact @tech."
-			return err
+		if h.cfg.UpdateRooms {
+			updated, err := h.dis.AddPuzzleToRoom(puzzle, rID)
+			if err != nil {
+				reply = "error updating room name, contact @tech."
+				return err
+			}
+			if !updated {
+				reply = fmt.Sprintf("Puzzle %q is already in room %s", puzzle, discord.ChannelMention(rID))
+				return nil
+			}
 		}
-		if !updated {
-			reply = fmt.Sprintf("Puzzle %q is already in room %s", puzzle, discord.ChannelMention(rID))
-			return nil
-		}
-		// TODO: Update status message
+		h.setPinnedVoiceInfo(m.ChannelID, &rID)
 		reply = fmt.Sprintf("Set the room for puzzle %q to %s", puzzle, discord.ChannelMention(rID))
 	case "stop":
-		log.Printf("removing %q from room %q (ID %q)", puzzle, matches[2], rID)
-		updated, err := h.dis.RemovePuzzleFromRoom(puzzle, rID)
-		if err != nil {
-			reply = "error updating room name, contact @tech."
-			return err
+		if h.cfg.UpdateRooms {
+			updated, err := h.dis.RemovePuzzleFromRoom(puzzle, rID)
+			if err != nil {
+				reply = "error updating room name, contact @tech."
+				return err
+			}
+			if !updated {
+				reply = fmt.Sprintf("Puzzle %q was already not in room %s", puzzle, discord.ChannelMention(rID))
+				return nil
+			}
 		}
-		if !updated {
-			reply = fmt.Sprintf("Puzzle %q was already not in room %s", puzzle, discord.ChannelMention(rID))
-			return nil
-		}
-		// TODO: Update status message
+		h.setPinnedVoiceInfo(m.ChannelID, nil)
 		reply = fmt.Sprintf("Removed the room for puzzle %q", puzzle)
 	default:
 		reply = fmt.Sprintf("Unrecognized voice bot action %q. Valid commands are \"!voice start $RoomName\" or \"!voice start $RoomName\"", m.Content)
