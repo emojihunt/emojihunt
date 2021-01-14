@@ -29,9 +29,8 @@ func format(emoji []*Emoji) string {
 		names = append(names, e.Name)
 	}
 	return fmt.Sprintf(
-		"Our team name is %v which you can type like so: `%v` or pronounce like so: %v.",
+		"Our team name is %v which you can pronounce like so: %v.",
 		strings.Join(chars, ""),
-		strings.Join(shortcodes, " "),
 		strings.Join(names, " — "),
 	)
 }

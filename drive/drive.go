@@ -86,6 +86,14 @@ func (s Status) IsSolved() bool {
 	return s == Solved || s == Backsolved
 }
 
+func (s Status) Pretty() string {
+	if string(s) == "" {
+		return "Not Started"
+	} else {
+		return string(s)
+	}
+}
+
 var allStatuses = []Status{Working, Abandoned, Solved, Backsolved}
 
 const (

@@ -49,11 +49,6 @@ func New(dis *discord.Client, d *drive.Drive, c Config) *HuntBot {
 const pinnedStatusHeader = "Puzzle Information"
 
 func (h *HuntBot) setPinnedStatusInfo(puzzle *drive.PuzzleInfo, channelID string) (didUpdate bool, err error) {
-	formattedStatus := string(puzzle.Status)
-	if string(puzzle.Status) == "" {
-		formattedStatus = "Not Started"
-	}
-
 	embed := &discordgo.MessageEmbed{
 		Author: &discordgo.MessageEmbedAuthor{Name: pinnedStatusHeader},
 		Title:  puzzle.Name,
@@ -61,7 +56,7 @@ func (h *HuntBot) setPinnedStatusInfo(puzzle *drive.PuzzleInfo, channelID string
 		Fields: []*discordgo.MessageEmbedField{
 			{
 				Name:   "Status",
-				Value:  formattedStatus,
+				Value:  puzzle.Status.Pretty(),
 				Inline: true,
 			},
 			{
@@ -185,7 +180,7 @@ func (h *HuntBot) logStatus(ctx context.Context, puzzle *drive.PuzzleInfo) error
 	}
 
 	if didUpdate {
-		if err := h.dis.StatusUpdateChannelSend(fmt.Sprintf("Puzzle %q is now %v.", puzzle.Name, puzzle.Status)); err != nil {
+		if err := h.dis.StatusUpdateChannelSend(fmt.Sprintf("Puzzle %q is now %v.", puzzle.Name, puzzle.Status.Pretty())); err != nil {
 			return fmt.Errorf("error posting puzzle status announcement: %v", err)
 		}
 	}
