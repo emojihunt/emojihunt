@@ -86,6 +86,7 @@ func (h *HuntBot) setPinnedVoiceInfo(puzzleChannelID string, voiceChannelID *str
 		Author: &discordgo.MessageEmbedAuthor{Name: roomStatusHeader},
 		Fields: []*discordgo.MessageEmbedField{
 			{
+				Name:  "Active Room",
 				Value: room,
 			},
 		},
