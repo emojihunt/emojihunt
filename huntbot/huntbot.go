@@ -223,12 +223,12 @@ func (h *HuntBot) archive(puzzleName string) {
 
 func (h *HuntBot) warnPuzzle(ctx context.Context, puzzle *drive.PuzzleInfo) error {
 	h.mu.Lock()
+	defer h.mu.Unlock()
 	if lastWarning, ok := h.lastWarnTime[puzzle.Name]; !ok {
 		h.lastWarnTime[puzzle.Name] = time.Now().Add(h.cfg.InitialWarningDelay - h.cfg.MinWarningFrequency)
 	} else if time.Now().Sub(lastWarning) <= h.cfg.MinWarningFrequency {
 		return nil
 	}
-	defer h.mu.Unlock()
 	var msgs []string
 	if puzzle.PuzzleURL == "" {
 		msgs = append(msgs, "missing a URL")

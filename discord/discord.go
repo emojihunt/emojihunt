@@ -427,6 +427,7 @@ func (c *Client) RemovePuzzleFromRoom(puzzle, roomID string) (bool, error) {
 	if err != nil {
 		return false, fmt.Errorf("error parsing room when removing puzzles: %v", err)
 	}
+	log.Printf("parsed room as %v", r)
 	index := -1
 	for i, p := range r.puzzles {
 		if p == puzzle {
@@ -439,6 +440,7 @@ func (c *Client) RemovePuzzleFromRoom(puzzle, roomID string) (bool, error) {
 		return false, nil
 	}
 	r.puzzles = append(r.puzzles[:index], r.puzzles[index+1:]...)
+	log.Printf("updated room: %v", r)
 	if err := c.updateRoom(r); err != nil {
 		return false, err
 	}
