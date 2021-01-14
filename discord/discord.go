@@ -378,12 +378,16 @@ func (c *Client) AvailableRooms() []string {
 func (c *Client) updateRoom(r room) error {
 	c.mu.Lock()
 	defer c.mu.Unlock()
+	log.Printf("channel update for room: %v ...", r)
+	defer log.Printf("channel update for room: %v ... done", r)
 	_, err := c.s.ChannelEdit(c.roomsToID[r.name], r.VoiceChannelName())
 	return err
 }
 
 // Returns whether a puzzle was added.
 func (c *Client) AddPuzzleToRoom(puzzle, roomID string) (bool, error) {
+	log.Printf("adding puzzle %q to room %q ...", puzzle, roomID)
+	defer log.Printf("adding puzzle %q to room %q ... done", puzzle, roomID)
 	roomCh, err := c.s.Channel(roomID)
 	if err != nil {
 		return false, fmt.Errorf("error finding room ID %q: %v", roomID, err)
