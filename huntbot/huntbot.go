@@ -435,6 +435,7 @@ func (h *HuntBot) VoiceChannelHandler(s *discordgo.Session, m *discordgo.Message
 		return nil
 	}
 
+	// Note that discord only allows updating a channel name twice per 10 minutes, so this will often take 10+ minutes.
 	switch matches[1] {
 	case "start":
 		updated, err := h.dis.AddPuzzleToRoom(puzzle, rID)
