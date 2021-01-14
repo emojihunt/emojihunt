@@ -78,7 +78,7 @@ func (h *HuntBot) setPinnedStatusInfo(puzzle *drive.PuzzleInfo, channelID string
 const voiceStatusHeader = "Working Voice Channel"
 
 func (h *HuntBot) setPinnedVoiceInfo(puzzleChannelID string, voiceChannelID *string) (didUpdate bool, err error) {
-	voiceChan := "No voice channel. \"!voice start $room\" to start working in $room."
+	voiceChan := "No voice channel. \"!room start $room\" to start working in $room."
 	if voiceChannelID != nil {
 		voiceChan = fmt.Sprintf("<#%s>", *voiceChannelID)
 	}
@@ -449,10 +449,10 @@ func (h *HuntBot) ControlHandler(s *discordgo.Session, m *discordgo.MessageCreat
 	return nil
 }
 
-var voiceRE = regexp.MustCompile(`!voice (start|stop) (.*)$`)
+var voiceRE = regexp.MustCompile(`!room (start|stop)(?: (.*))$`)
 
-func (h *HuntBot) VoiceChannelHandler(s *discordgo.Session, m *discordgo.MessageCreate) error {
-	if m.Author.ID == s.State.User.ID || !strings.HasPrefix(m.Content, "!voice") {
+func (h *HuntBot) RoomHandler(s *discordgo.Session, m *discordgo.MessageCreate) error {
+	if m.Author.ID == s.State.User.ID || !strings.HasPrefix(m.Content, "!room") {
 		return nil
 	}
 
@@ -465,30 +465,40 @@ func (h *HuntBot) VoiceChannelHandler(s *discordgo.Session, m *discordgo.Message
 		s.ChannelMessageSend(m.ChannelID, *reply)
 	}(&reply)
 
-	var err error
 	matches := voiceRE.FindStringSubmatch(m.Content)
 	if len(matches) != 3 {
 		// Not a command
-		reply = fmt.Sprintf("Invalid command %q. Voice command must be of the form \"!voice start $room\" or \"!voice stop $room\" where $room is a voice channel", m.Content)
+		reply = fmt.Sprintf("Invalid command %q. Voice command must be of the form \"!room start $room\" or \"!room stop $room\" where $room is a voice channel", m.Content)
 		return nil
 	}
 
 	puzzle, ok := h.drive.PuzzleForChannelURL(h.dis.ChannelURL(m.ChannelID))
 	if !ok {
 		reply = fmt.Sprintf("Unable to get puzzle name for channel ID %q. Contact @tech.", m.ChannelID)
-		return err
+		return fmt.Errorf("unable to get puzzle name for channel ID %q", m.ChannelID)
 	}
 
-	rID, ok := h.dis.ClosestRoomID(matches[2])
-	if !ok {
-		reply = fmt.Sprintf("Unable to find room %q. Available rooms are: %v", matches[2], strings.Join(h.dis.AvailableRooms(), ", "))
-		return nil
+	var rID string
+	if matches[2] != "" {
+		rID, ok = h.dis.ClosestRoomID(matches[2])
+		if !ok {
+			reply = fmt.Sprintf("Unable to find room %q. Available rooms are: %v", matches[2], strings.Join(h.dis.AvailableRooms(), ", "))
+			return nil
+		}
 	}
 
 	// Note that discord only allows updating a channel name twice per 10 minutes, so this will often take 10+ minutes.
 	switch matches[1] {
 	case "start":
+		if rID == "" {
+			reply = "!room start requires a room"
+			return fmt.Errorf("missing room ID from command: %s", m.Content)
+		}
 		if h.cfg.UpdateRooms {
+			if rID == "" {
+				reply = "!room start requires a room"
+				return fmt.Errorf("missing room ID from command: %s", m.Content)
+			}
 			updated, err := h.dis.AddPuzzleToRoom(puzzle, rID)
 			if err != nil {
 				reply = "error updating room name, contact @tech."
@@ -503,6 +513,10 @@ func (h *HuntBot) VoiceChannelHandler(s *discordgo.Session, m *discordgo.Message
 		reply = fmt.Sprintf("Set the room for puzzle %q to %s", puzzle, discord.ChannelMention(rID))
 	case "stop":
 		if h.cfg.UpdateRooms {
+			if rID == "" {
+				reply = "!room stop requires a room to update room names"
+				return fmt.Errorf("missing room ID from command: %s", m.Content)
+			}
 			updated, err := h.dis.RemovePuzzleFromRoom(puzzle, rID)
 			if err != nil {
 				reply = "error updating room name, contact @tech."
@@ -516,7 +530,7 @@ func (h *HuntBot) VoiceChannelHandler(s *discordgo.Session, m *discordgo.Message
 		h.setPinnedVoiceInfo(m.ChannelID, nil)
 		reply = fmt.Sprintf("Removed the room for puzzle %q", puzzle)
 	default:
-		reply = fmt.Sprintf("Unrecognized voice bot action %q. Valid commands are \"!voice start $RoomName\" or \"!voice start $RoomName\"", m.Content)
+		reply = fmt.Sprintf("Unrecognized voice bot action %q. Valid commands are \"!room start $RoomName\" or \"!room start $RoomName\"", m.Content)
 		return fmt.Errorf("impossible voice bot action %q: %q", matches[1], m.Content)
 	}
 
