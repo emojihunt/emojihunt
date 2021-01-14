@@ -83,7 +83,7 @@ func (h *HuntBot) setPinnedVoiceInfo(puzzleChannelID string, voiceChannelID *str
 		voiceChan = fmt.Sprintf("<#%s>", *voiceChannelID)
 	}
 	embed := &discordgo.MessageEmbed{
-		Author: &discordgo.MessageEmbedAuthor{Name: pinnedStatusHeader},
+		Author: &discordgo.MessageEmbedAuthor{Name: voiceStatusHeader},
 		Fields: []*discordgo.MessageEmbedField{
 			{
 				Name:  "Voice Channel",
