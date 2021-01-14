@@ -251,17 +251,6 @@ func (c *Client) SetPinnedInfo(chanID, spreadsheetURL, puzzleURL, status string)
 	return err == nil, err
 }
 
-func (c *Client) puzzleNameFromChannel(chanID string) (string, error) {
-	m, err := c.pinnedStatusMessage(chanID)
-	if err != nil {
-		return "", fmt.Errorf("error getting pinned status message for channel ID %q: %v", chanID, err)
-	}
-	if m == nil {
-		return "", fmt.Errorf("no status message for channel ID %q", chanID)
-	}
-	return "TODO puzzle name", nil
-}
-
 func (c *Client) QMChannelSend(msg string) error {
 	_, err := c.s.ChannelMessageSend(c.qmChannelID, msg)
 	return err
