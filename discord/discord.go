@@ -83,7 +83,7 @@ func New(s *discordgo.Session, c Config) (*Client, error) {
 	}
 	puz, ok := chIDs[c.PuzzleCategoryName]
 	if !ok {
-		return nil, fmt.Errorf("puzzle category %q not found", c.PuzzleCategoryName)
+		return nil, fmt.Errorf("puzzle category %q not found in channels: %v", c.PuzzleCategoryName, chIDs)
 	}
 	ar, ok := chIDs[c.SolvedCategoryName]
 	if !ok {
