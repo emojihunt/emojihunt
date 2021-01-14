@@ -181,8 +181,8 @@ func (h *HuntBot) markSolved(ctx context.Context, puzzle *drive.PuzzleInfo) erro
 			},
 			Fields: []*discordgo.MessageEmbedField{
 				{
-					Name:   "Puzzle",
-					Value:  fmt.Sprintf("<%s>", channelID),
+					Name:   "Channel",
+					Value:  fmt.Sprintf("<#%s>", channelID),
 					Inline: true,
 				},
 				{
