@@ -180,7 +180,7 @@ func (c *Client) ChannelSendEmbedAndPin(chanID string, embed *discordgo.MessageE
 	return err
 }
 
-const statusPrefix = "Puzzle Information"
+const statusTitle = "Puzzle Information"
 
 // Returns last pinned status message, or nil if not found.
 func (c *Client) pinnedStatusMessage(chanID string) (*discordgo.Message, error) {
@@ -190,7 +190,7 @@ func (c *Client) pinnedStatusMessage(chanID string) (*discordgo.Message, error) 
 	}
 	var statusMessage *discordgo.Message
 	for _, m := range ms {
-		if strings.HasPrefix(m.Content, statusPrefix) {
+		if len(m.Embeds) > 0 && m.Embeds[0].Title == statusTitle {
 			if statusMessage != nil {
 				log.Printf("Multiple status messages in %v, editing last one", chanID)
 			}
@@ -219,7 +219,7 @@ func (c *Client) SetPinnedInfo(chanID, spreadsheetURL, puzzleURL, status string)
 	}
 
 	embed := &discordgo.MessageEmbed{
-		Title: statusPrefix,
+		Title: statusTitle,
 		URL:   puzzleURL,
 		Fields: []*discordgo.MessageEmbedField{
 			{
@@ -243,7 +243,7 @@ func (c *Client) SetPinnedInfo(chanID, spreadsheetURL, puzzleURL, status string)
 	if statusMessage == nil {
 		err := c.ChannelSendEmbedAndPin(chanID, embed)
 		return err == nil, err
-	} else if statusMessage.Content == "" { // TODO: fixme
+	} else if statusMessage.Embeds[0] == embed {
 		return false, nil // no-op
 	}
 
