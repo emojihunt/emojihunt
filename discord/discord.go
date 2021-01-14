@@ -46,7 +46,7 @@ type Client struct {
 func getGuildID(s *discordgo.Session) (string, error) {
 	gs := s.State.Guilds
 	if len(gs) != 1 {
-		log.Printf("Session: %v\nState: %v", s, s.State)
+		log.Printf("discordgo Session: %+v", s)
 		return "", fmt.Errorf("expected exactly 1 guild, found %d", len(gs))
 	}
 	return gs[0].ID, nil
