@@ -417,6 +417,8 @@ func (c *Client) AddPuzzleToRoom(puzzle, roomID string) (bool, error) {
 
 // Returns whether a puzzle was removed.
 func (c *Client) RemovePuzzleFromRoom(puzzle, roomID string) (bool, error) {
+	log.Printf("removing %q from %q ...", puzzle, roomID)
+	defer log.Printf("removing %q from %q ... done", puzzle, roomID)
 	roomCh, err := c.s.Channel(roomID)
 	if err != nil {
 		return false, fmt.Errorf("error finding room ID %q: %v", roomID, err)

@@ -449,6 +449,7 @@ func (h *HuntBot) VoiceChannelHandler(s *discordgo.Session, m *discordgo.Message
 		// TODO: Update status message
 		reply = fmt.Sprintf("Set the room for puzzle %q to %s", puzzle, discord.ChannelMention(rID))
 	case "stop":
+		log.Printf("removing %q from room %q (ID %q)", puzzle, matches[2], rID)
 		updated, err := h.dis.RemovePuzzleFromRoom(puzzle, rID)
 		if err != nil {
 			reply = "error updating room name, contact @tech."
