@@ -167,7 +167,16 @@ func (c *Client) ChannelSendAndPin(chanID, msg string) error {
 	return err
 }
 
-const statusPrefix = "**=== Puzzle Information ===**"
+func (c *Client) ChannelSendEmbedAndPin(chanID string, embed *discordgo.MessageEmbed) error {
+	m, err := c.s.ChannelMessageSendEmbed(chanID, embed)
+	if err != nil {
+		return err
+	}
+	err = c.s.ChannelMessagePin(chanID, m.ID)
+	return err
+}
+
+const statusPrefix = "Puzzle Information"
 
 // Returns last pinned status message, or nil if not found.
 func (c *Client) pinnedStatusMessage(chanID string) (*discordgo.Message, error) {
@@ -200,21 +209,41 @@ func (c *Client) SetPinnedInfo(chanID, spreadsheetURL, puzzleURL, status string)
 		return false, err
 	}
 
-	// TODO: embed
-	msg := fmt.Sprintf("%s\nSpreadsheet: <%s>\nPuzzle: <%s>",
-		statusPrefix, spreadsheetURL, puzzleURL)
-	if status != "" {
-		msg = fmt.Sprintf("%s\nStatus: %s", msg, status)
+	formattedStatus := status
+	if status == "" {
+		formattedStatus = "Not Started"
+	}
+
+	embed := &discordgo.MessageEmbed{
+		Title: statusPrefix,
+		URL:   puzzleURL,
+		Fields: []*discordgo.MessageEmbedField{
+			{
+				Name:   "Status",
+				Value:  formattedStatus,
+				Inline: true,
+			},
+			{
+				Name:   "Puzzle",
+				Value:  fmt.Sprintf("[Link](%s)", puzzleURL),
+				Inline: true,
+			},
+			{
+				Name:   "Sheet",
+				Value:  fmt.Sprintf("[Link](%s)", spreadsheetURL),
+				Inline: true,
+			},
+		},
 	}
 
 	if statusMessage == nil {
-		err := c.ChannelSendAndPin(chanID, msg)
+		err := c.ChannelSendEmbedAndPin(chanID, embed)
 		return err == nil, err
-	} else if statusMessage.Content == msg {
+	} else if statusMessage.Content == "" { // TODO: fixme
 		return false, nil // no-op
 	}
 
-	_, err = c.s.ChannelMessageEdit(chanID, statusMessage.ID, msg)
+	_, err = c.s.ChannelMessageEditEmbed(chanID, statusMessage.ID, embed)
 	return err == nil, err
 }
 
