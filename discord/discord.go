@@ -11,6 +11,7 @@ import (
 )
 
 type Config struct {
+	GuildID                                                                     string
 	QMChannelName, GeneralChannelName, StatusUpdateChannelName, TechChannelName string
 	PuzzleCategoryName, SolvedCategoryName                                      string
 	QMRoleName                                                                  string
@@ -44,20 +45,23 @@ type Client struct {
 }
 
 func getGuildID(s *discordgo.Session) (string, error) {
+	log.Print("fetching GuildID from session")
 	gs := s.State.Guilds
 	if len(gs) != 1 {
-		log.Printf("discordgo Session: %+v", s)
 		return "", fmt.Errorf("expected exactly 1 guild, found %d", len(gs))
 	}
 	return gs[0].ID, nil
 }
 
 func New(s *discordgo.Session, c Config) (*Client, error) {
-	guildID, err := getGuildID(s)
-	if err != nil {
-		return nil, err
+	if c.GuildID == "" {
+		var err error
+		c.GuildID, err = getGuildID(s)
+		if err != nil {
+			return nil, err
+		}
 	}
-	chs, err := s.GuildChannels(guildID)
+	chs, err := s.GuildChannels(c.GuildID)
 	if err != nil {
 		return nil, fmt.Errorf("error creating channel ID cache: %v", err)
 	}
@@ -97,7 +101,7 @@ func New(s *discordgo.Session, c Config) (*Client, error) {
 	if !ok {
 		tech = qm
 	}
-	roles, err := s.GuildRoles(guildID)
+	roles, err := s.GuildRoles(c.GuildID)
 	if err != nil {
 		return nil, fmt.Errorf("error fetching roles: %v", err)
 	}
@@ -114,7 +118,7 @@ func New(s *discordgo.Session, c Config) (*Client, error) {
 
 	return &Client{
 		s:                     s,
-		guildID:               guildID,
+		guildID:               c.GuildID,
 		qmChannelID:           qm,
 		generalChannelID:      gen,
 		statusUpdateChannelID: st,

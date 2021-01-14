@@ -25,6 +25,7 @@ var (
 	puzzlesTab   = flag.String("puzzles_tab", "Puzzle List", "the name of the puzzles tab in the puzzle tracking sheet")
 	roundsTab    = flag.String("rounds_tab", "Round Information", "the name of the rounds tab in the puzzle tracking sheet")
 	rootFolderID = flag.String("root_folder_id", "1Mp8e1Sd7YXBwcgil62YCgslbQ6twmBlU", "the id of the google drive folder for this year")
+	guildID      = flag.String("discord_guild_id", "793599987694436374", "the id of the discord guild")
 )
 
 type secrets struct {
@@ -60,6 +61,7 @@ func main() {
 	}
 
 	dis, err := discord.New(dg, discord.Config{
+		GuildID:            *guildID,
 		QMChannelName:      "qm",
 		GeneralChannelName: "whats-going-on",
 		TechChannelName:    "tech",
