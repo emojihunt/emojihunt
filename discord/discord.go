@@ -433,6 +433,7 @@ func (c *Client) RemovePuzzleFromRoom(puzzle, roomID string) (bool, error) {
 	}
 	if index == -1 {
 		// puzzle is not in this voice channel.
+		log.Printf("REMOVE NOISY LOG: did not find puzzle %q in channelID %q", puzzle, roomID)
 		return false, nil
 	}
 	r.puzzles = append(r.puzzles[:index], r.puzzles[index+1:]...)

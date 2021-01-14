@@ -431,7 +431,7 @@ func (h *HuntBot) VoiceChannelHandler(s *discordgo.Session, m *discordgo.Message
 
 	rID, ok := h.dis.ClosestRoomID(matches[2])
 	if !ok {
-		reply = fmt.Sprintf("Unable to find room %q. Available rooms are: %v", matches[2], h.dis.AvailableRooms())
+		reply = fmt.Sprintf("Unable to find room %q. Available rooms are: %v", matches[2], strings.Join(h.dis.AvailableRooms(), ", "))
 		return nil
 	}
 
