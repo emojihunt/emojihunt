@@ -377,10 +377,11 @@ func (c *Client) AvailableRooms() []string {
 
 func (c *Client) updateRoom(r room) error {
 	c.mu.Lock()
-	defer c.mu.Unlock()
+	rID := c.roomsToID[r.name]
+	c.mu.Unlock()
 	log.Printf("channel update for room: %v ...", r)
 	defer log.Printf("channel update for room: %v ... done", r)
-	_, err := c.s.ChannelEdit(c.roomsToID[r.name], r.VoiceChannelName())
+	_, err := c.s.ChannelEdit(rID, r.VoiceChannelName())
 	return err
 }
 
