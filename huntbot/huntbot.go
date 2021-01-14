@@ -449,7 +449,7 @@ func (h *HuntBot) ControlHandler(s *discordgo.Session, m *discordgo.MessageCreat
 	return nil
 }
 
-var voiceRE = regexp.MustCompile(`!room (start|stop)(?: (.*))$`)
+var roomRE = regexp.MustCompile(`!room (start|stop)(?: (.*))?$`)
 
 func (h *HuntBot) RoomHandler(s *discordgo.Session, m *discordgo.MessageCreate) error {
 	if m.Author.ID == s.State.User.ID || !strings.HasPrefix(m.Content, "!room") {
@@ -465,7 +465,7 @@ func (h *HuntBot) RoomHandler(s *discordgo.Session, m *discordgo.MessageCreate) 
 		s.ChannelMessageSend(m.ChannelID, *reply)
 	}(&reply)
 
-	matches := voiceRE.FindStringSubmatch(m.Content)
+	matches := roomRE.FindStringSubmatch(m.Content)
 	if len(matches) != 3 {
 		// Not a command
 		reply = fmt.Sprintf("Invalid command %q. Voice command must be of the form \"!room start $room\" or \"!room stop $room\" where $room is a voice channel", m.Content)
