@@ -51,9 +51,15 @@ const pinnedStatusHeader = "Puzzle Information"
 func (h *HuntBot) setPinnedStatusInfo(puzzle *drive.PuzzleInfo, channelID string) (didUpdate bool, err error) {
 	embed := &discordgo.MessageEmbed{
 		Author: &discordgo.MessageEmbedAuthor{Name: pinnedStatusHeader},
+		Color:  puzzle.Round.IntColor(),
 		Title:  puzzle.Name,
 		URL:    puzzle.PuzzleURL,
 		Fields: []*discordgo.MessageEmbedField{
+			{
+				Name:   "Round",
+				Value:  fmt.Sprintf("%v %v", puzzle.Round.Emoji, puzzle.Round.Name),
+				Inline: false,
+			},
 			{
 				Name:   "Status",
 				Value:  puzzle.Status.Pretty(),
