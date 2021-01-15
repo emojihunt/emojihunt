@@ -62,6 +62,7 @@ func New(ctx context.Context, sheetID, puzzlesTab, roundsTab, rootFolderID strin
 type Round struct {
 	Name  string
 	Emoji string
+	Color *sheets.Color
 }
 
 func (r *Round) TwemojiURL() string {
@@ -70,6 +71,13 @@ func (r *Round) TwemojiURL() string {
 		codePoints = append(codePoints, fmt.Sprintf("%04x", runeValue))
 	}
 	return fmt.Sprintf("https://twemoji.maxcdn.com/2/72x72/%s.png", strings.Join(codePoints, "-"))
+}
+
+func (r *Round) IntColor() int {
+	red := int(r.Color.Red * 255)
+	green := int(r.Color.Green * 255)
+	blue := int(r.Color.Blue * 255)
+	return (red << 16) + (green << 8) + blue
 }
 
 // TODO: how should we support extending Status?
@@ -175,6 +183,7 @@ func parseRoundInfo(row []*sheets.CellData) (*Round, error) {
 	return &Round{
 		Emoji: row[0].FormattedValue,
 		Name:  row[1].FormattedValue,
+		Color: row[0].EffectiveFormat.BackgroundColor,
 	}, nil
 }
 
