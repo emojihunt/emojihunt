@@ -495,6 +495,7 @@ func (d *Drive) SetConditionalFormatting(ctx context.Context, rs map[string]*Rou
 		return err
 	}
 	req := &sheets.BatchUpdateSpreadsheetRequest{}
+	// Requests are applied in order so it is important that modifications happen before rule indices are changed.
 	var newFormats []*sheets.Request
 	for _, r := range rs {
 		indices, ok := existing[r.Emoji]
