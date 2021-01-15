@@ -410,6 +410,7 @@ func (d *Drive) AddConditionalFormatting(roundEmoji string, color string) error 
 	if err != nil {
 		return err
 	}
+	log.Printf("sheet: %v", s.Sheets[0])
 	for _, c := range s.Sheets[0].ConditionalFormats {
 		log.Printf("format: %+v", c)
 	}
