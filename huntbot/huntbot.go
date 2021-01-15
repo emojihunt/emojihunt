@@ -359,7 +359,7 @@ func (h *HuntBot) updatePuzzle(ctx context.Context, puzzle *drive.PuzzleInfo) er
 }
 
 func (h *HuntBot) pollAndUpdate(ctx context.Context) error {
-	puzzles, err := h.drive.ReadFullSheet()
+	puzzles, err := h.drive.ReadFullSheet(ctx)
 	if err != nil {
 		return err
 	}

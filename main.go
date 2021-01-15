@@ -105,10 +105,6 @@ func main() {
 
 	go h.WatchSheet(ctx)
 
-	if err := d.AddConditionalFormatting("emoji", "red"); err != nil {
-		log.Printf("conditional formatting error: %v", err)
-	}
-
 	<-ctx.Done()
 }
 

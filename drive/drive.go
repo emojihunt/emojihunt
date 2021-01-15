@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"regexp"
 	"strings"
 	"sync"
 
@@ -212,7 +213,7 @@ func parsePuzzleInfo(row []*sheets.CellData, rounds map[string]*Round, rowNum in
 	}, nil
 }
 
-func (d *Drive) ReadFullSheet() ([]*PuzzleInfo, error) {
+func (d *Drive) ReadFullSheet(ctx context.Context) ([]*PuzzleInfo, error) {
 	req := &sheets.GetSpreadsheetByDataFilterRequest{
 		DataFilters: []*sheets.DataFilter{
 			{A1Range: fmt.Sprintf("'%s'!A2:I", d.puzzlesTab)},
@@ -221,7 +222,7 @@ func (d *Drive) ReadFullSheet() ([]*PuzzleInfo, error) {
 		IncludeGridData: true,
 	}
 
-	s, err := d.sheets.Spreadsheets.GetByDataFilter(d.sheetID, req).Do()
+	s, err := d.sheets.Spreadsheets.GetByDataFilter(d.sheetID, req).Context(ctx).Do()
 	if err != nil {
 		return nil, fmt.Errorf("error getting spreadsheet: %v", err)
 	}
@@ -237,6 +238,10 @@ func (d *Drive) ReadFullSheet() ([]*PuzzleInfo, error) {
 		} else if round.Emoji != "" && round.Name != "" {
 			rounds[round.Emoji] = round
 		}
+	}
+
+	if err := d.SetConditionalFormatting(ctx, rounds); err != nil {
+		return nil, fmt.Errorf("error setting conditional formatting: %v", err)
 	}
 
 	start := s.Sheets[0].Data[0].StartRow
@@ -405,14 +410,117 @@ func (d *Drive) PuzzleForChannelURL(chanURL string) (string, bool) {
 	return p, ok
 }
 
-func (d *Drive) AddConditionalFormatting(roundEmoji string, color string) error {
-	s, err := d.sheets.Spreadsheets.Get(d.sheetID).Do()
+var formulaEmojiRE = regexp.MustCompile(`\$A2=\"(.*)\"`)
+
+func findConditionalFormattingIndices(s *sheets.Spreadsheet) (map[string][]int, error) {
+	indices := make(map[string][]int)
+	for i, c := range s.Sheets[0].ConditionalFormats {
+		if c.BooleanRule.Condition.Type == "CUSTOM_FORMULA" {
+			matches := formulaEmojiRE.FindStringSubmatch(c.BooleanRule.Condition.Values[0].UserEnteredValue)
+			if len(matches) == 0 {
+				continue
+			}
+			emoji := matches[1]
+			indices[emoji] = append(indices[emoji], i)
+		}
+	}
+
+	return indices, nil
+}
+
+func addConditionalFormattingRequests(r *Round) []*sheets.Request {
+	ranges := []*sheets.GridRange{{
+		// Skip the categories for round formatting.
+		StartRowIndex: 1,
+	}}
+	unsolvedRule := &sheets.BooleanRule{
+		Condition: &sheets.BooleanCondition{
+			Type: "CUSTOM_FORMULA",
+			Values: []*sheets.ConditionValue{{
+				UserEnteredValue: fmt.Sprintf(`=AND($A2="%s", ISBLANK($C2))`, r.Emoji),
+			}},
+		},
+		Format: &sheets.CellFormat{
+			BackgroundColor: r.Color,
+		},
+	}
+	solvedRule := &sheets.BooleanRule{
+		Condition: &sheets.BooleanCondition{
+			Type: "CUSTOM_FORMULA",
+			Values: []*sheets.ConditionValue{{
+				UserEnteredValue: fmt.Sprintf(`=AND($A2="%s", NOT(ISBLANK($C2)))`, r.Emoji),
+			}},
+		},
+		Format: &sheets.CellFormat{
+			BackgroundColor: r.Color,
+		},
+	}
+	reqs := []*sheets.Request{
+		{
+			AddConditionalFormatRule: &sheets.AddConditionalFormatRuleRequest{
+				Rule: &sheets.ConditionalFormatRule{
+					BooleanRule: unsolvedRule,
+					Ranges:      ranges,
+				},
+			},
+		},
+		{
+			AddConditionalFormatRule: &sheets.AddConditionalFormatRuleRequest{
+				Rule: &sheets.ConditionalFormatRule{
+					BooleanRule: solvedRule,
+					Ranges:      ranges,
+				},
+			},
+		},
+	}
+
+	return reqs
+}
+
+func colorEqual(c1, c2 *sheets.Color) bool {
+	return c1.Alpha == c2.Alpha && c1.Blue == c2.Blue && c1.Green == c2.Green && c1.Red == c2.Red
+}
+
+func (d *Drive) SetConditionalFormatting(ctx context.Context, rs map[string]*Round) error {
+	s, err := d.sheets.Spreadsheets.Get(d.sheetID).Context(ctx).Do()
 	if err != nil {
 		return err
 	}
-	log.Printf("sheet: %v", s.Sheets[0])
-	for _, c := range s.Sheets[0].ConditionalFormats {
-		log.Printf("rule format: %+v, condition: %+v, range: %+v", c.BooleanRule.Format, c.BooleanRule.Condition, c.Ranges)
+
+	existing, err := findConditionalFormattingIndices(s)
+	if err != nil {
+		return err
 	}
-	return nil
+	req := &sheets.BatchUpdateSpreadsheetRequest{}
+	var newFormats []*sheets.Request
+	for _, r := range rs {
+		indices, ok := existing[r.Emoji]
+		if !ok {
+			newFormats = append(newFormats, addConditionalFormattingRequests(r)...)
+			continue
+		}
+
+		for _, i := range indices {
+			rule := s.Sheets[0].ConditionalFormats[i]
+			if colorEqual(rule.BooleanRule.Format.BackgroundColorStyle.RgbColor, r.Color) {
+				continue
+			}
+			rule.BooleanRule.Format.BackgroundColorStyle.RgbColor = r.Color
+			update := &sheets.UpdateConditionalFormatRuleRequest{
+				Index: int64(i),
+				//NewIndex: int64(i),
+				Rule: rule,
+				//SheetId:  int64(0),
+			}
+			req.Requests = append(req.Requests, &sheets.Request{
+				UpdateConditionalFormatRule: update,
+			})
+		}
+	}
+	req.Requests = append(req.Requests, newFormats...)
+	if len(req.Requests) == 0 {
+		return nil
+	}
+	_, err = d.sheets.Spreadsheets.BatchUpdate(d.sheetID, req).Context(ctx).Do()
+	return err
 }
