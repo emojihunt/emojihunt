@@ -84,18 +84,13 @@ func (h *HuntBot) setPinnedStatusInfo(puzzle *drive.PuzzleInfo, channelID string
 const roomStatusHeader = "Working Room"
 
 func (h *HuntBot) setPinnedVoiceInfo(puzzleChannelID string, voiceChannelID *string) (didUpdate bool, err error) {
-	room := "No room set. \"!room start $room\" to start working in $room."
+	room := "No voice room set. \"!room start $room\" to start working in $room."
 	if voiceChannelID != nil {
-		room = fmt.Sprintf("<#%s>", *voiceChannelID)
+		room = fmt.Sprintf("Join us in <#%s>!", *voiceChannelID)
 	}
 	embed := &discordgo.MessageEmbed{
-		Author: &discordgo.MessageEmbedAuthor{Name: roomStatusHeader},
-		Fields: []*discordgo.MessageEmbedField{
-			{
-				Name:  "Active Room",
-				Value: room,
-			},
-		},
+		Author:      &discordgo.MessageEmbedAuthor{Name: roomStatusHeader},
+		Description: room,
 	}
 
 	return h.dis.CreateUpdatePin(puzzleChannelID, roomStatusHeader, embed)
