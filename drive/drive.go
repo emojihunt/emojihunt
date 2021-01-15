@@ -395,3 +395,12 @@ func (d *Drive) PuzzleForChannelURL(chanURL string) (string, bool) {
 	p, ok := d.chanToPuzzles[chanURL]
 	return p, ok
 }
+
+func (d *Drive) AddConditionalFormatting(roundEmoji string, color string) error {
+	s, err := d.sheets.Spreadsheets.Get(d.sheetID).Do()
+	if err != nil {
+		return err
+	}
+	log.Printf("existing conditional formats: %+v", s.Sheets[0].ConditionalFormats)
+	return nil
+}
