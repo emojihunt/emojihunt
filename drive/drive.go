@@ -412,7 +412,7 @@ func (d *Drive) AddConditionalFormatting(roundEmoji string, color string) error 
 	}
 	log.Printf("sheet: %v", s.Sheets[0])
 	for _, c := range s.Sheets[0].ConditionalFormats {
-		log.Printf("format: %+v", c)
+		log.Printf("rule: %+v, range: %v", c.BooleanRule, c.Ranges)
 	}
 	return nil
 }
