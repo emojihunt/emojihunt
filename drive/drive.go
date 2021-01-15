@@ -453,6 +453,9 @@ func addConditionalFormattingRequests(r *Round) []*sheets.Request {
 		},
 		Format: &sheets.CellFormat{
 			BackgroundColor: r.Color,
+			TextFormat: &sheets.TextFormat{
+				ForegroundColor: &sheets.Color{Red: 0.6, Green: 0.6, Blue: 0.6},
+			},
 		},
 	}
 	reqs := []*sheets.Request{
