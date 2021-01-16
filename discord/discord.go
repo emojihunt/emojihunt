@@ -259,8 +259,14 @@ func (c *Client) ArchiveChannel(chID string) (bool, error) {
 	}
 
 	// Already archived.
-	if ch.ParentID == c.solvedCategoryID {
-		return false, nil
+	if ch.ParentID != "" {
+		parentCh, err := c.s.Channel(ch.ParentID)
+		if err != nil {
+			return false, fmt.Errorf("parent channel id %s not found: %w", ch.ParentID, ChannelNotFound)
+		}
+		if strings.HasPrefix(parentCh.Name, "Solved") {
+			return false, nil
+		}
 	}
 
 	arCh, err := c.s.Channel(c.solvedCategoryID)
