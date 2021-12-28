@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/bwmarrin/discordgo"
+	"github.com/gauravjsingh/emojihunt/airtable"
 	"github.com/gauravjsingh/emojihunt/discord"
 	"github.com/gauravjsingh/emojihunt/drive"
 	"github.com/gauravjsingh/emojihunt/huntbot"
@@ -21,15 +22,15 @@ import (
 
 var (
 	secretsFile  = flag.String("secrets_file", "secrets.json", "path to the flie that contains secrets used by the application")
-	sheetID      = flag.String("sheet_id", "1SgvhTBeVdyTMrCR0wZixO3O0lErh4vqX0--nBpSfYT8", "the id of the puzzle tracking sheet to use")
-	puzzlesTab   = flag.String("puzzles_tab", "Puzzle List", "the name of the puzzles tab in the puzzle tracking sheet")
-	roundsTab    = flag.String("rounds_tab", "Round Information", "the name of the rounds tab in the puzzle tracking sheet")
 	rootFolderID = flag.String("root_folder_id", "1Mp8e1Sd7YXBwcgil62YCgslbQ6twmBlU", "the id of the google drive folder for this year")
 	guildID      = flag.String("discord_guild_id", "793599987694436374", "the id of the discord guild")
+	baseID       = flag.String("airtable_base_id", "appmjhGfZLui26Xow", "the id of the airtable base")
+	tableName    = flag.String("airtable_table_name", "Puzzle Tracker", "the name of the table in the airtable base")
 )
 
 type secrets struct {
-	DiscordToken string `json:"discord_token"`
+	AirtableToken string `json:"airtable_token"`
+	DiscordToken  string `json:"discord_token"`
 }
 
 func loadSecrets(path string) (secrets, error) {
@@ -73,6 +74,8 @@ func main() {
 		log.Fatalf("error creating discord client: %v", err)
 	}
 
+	air := airtable.New(secrets.AirtableToken, *baseID, *tableName)
+
 	ctx := context.Background()
 
 	ctx, cancel := context.WithCancel(ctx)
@@ -90,11 +93,11 @@ func main() {
 		}
 	}()
 
-	d, err := drive.New(ctx, *sheetID, *puzzlesTab, *roundsTab, *rootFolderID)
+	d, err := drive.New(ctx, *rootFolderID)
 	if err != nil {
 		log.Fatalf("error creating drive integration: %v", err)
 	}
-	h := huntbot.New(dis, d, huntbot.Config{MinWarningFrequency: 10 * time.Minute, InitialWarningDelay: time.Minute})
+	h := huntbot.New(dis, d, air, huntbot.Config{MinWarningFrequency: 10 * time.Minute, InitialWarningDelay: time.Minute})
 
 	log.Print("press ctrl+C to exit")
 	dis.RegisterNewMessageHandler("emoji generator", emojiname.Handler)

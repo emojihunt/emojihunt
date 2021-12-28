@@ -32,7 +32,7 @@ func (h *HuntBot) RoomHandler(s *discordgo.Session, m *discordgo.MessageCreate) 
 		return nil
 	}
 
-	puzzle, ok := h.drive.PuzzleForChannelURL(h.dis.ChannelURL(m.ChannelID))
+	puzzle, ok := h.drive.PuzzleForChannel(m.ChannelID)
 	if !ok {
 		reply = fmt.Sprintf("Unable to get puzzle name for channel ID %q. Contact @tech.", m.ChannelID)
 		return fmt.Errorf("unable to get puzzle name for channel ID %q", m.ChannelID)

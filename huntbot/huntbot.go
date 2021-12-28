@@ -9,8 +9,10 @@ import (
 	"time"
 
 	"github.com/bwmarrin/discordgo"
+	"github.com/gauravjsingh/emojihunt/airtable"
 	"github.com/gauravjsingh/emojihunt/discord"
 	"github.com/gauravjsingh/emojihunt/drive"
+	"github.com/gauravjsingh/emojihunt/schema"
 )
 
 type Config struct {
@@ -21,24 +23,26 @@ type Config struct {
 }
 
 type HuntBot struct {
-	dis   *discord.Client
-	drive *drive.Drive
-	cfg   Config
+	dis      *discord.Client
+	drive    *drive.Drive
+	airtable *airtable.Airtable
+	cfg      Config
 
-	mu           sync.Mutex              // hold while accessing everything below
-	enabled      bool                    // global killswitch, toggle with !huntbot kill/!huntbot start
-	puzzleStatus map[string]drive.Status // name -> status (best-effort cache)
-	archived     map[string]bool         // name -> channel was archived (best-effort cache)
+	mu           sync.Mutex               // hold while accessing everything below
+	enabled      bool                     // global killswitch, toggle with !huntbot kill/!huntbot start
+	puzzleStatus map[string]schema.Status // name -> status (best-effort cache)
+	archived     map[string]bool          // name -> channel was archived (best-effort cache)
 	// When we last warned about a malformed puzzle.
 	lastWarnTime map[string]time.Time
 }
 
-func New(dis *discord.Client, d *drive.Drive, c Config) *HuntBot {
+func New(dis *discord.Client, d *drive.Drive, airtable *airtable.Airtable, c Config) *HuntBot {
 	return &HuntBot{
 		dis:          dis,
 		drive:        d,
+		airtable:     airtable,
 		enabled:      true,
-		puzzleStatus: map[string]drive.Status{},
+		puzzleStatus: map[string]schema.Status{},
 		archived:     map[string]bool{},
 		lastWarnTime: map[string]time.Time{},
 		cfg:          c,
@@ -47,10 +51,10 @@ func New(dis *discord.Client, d *drive.Drive, c Config) *HuntBot {
 
 const pinnedStatusHeader = "Puzzle Information"
 
-func (h *HuntBot) setPinnedStatusInfo(puzzle *drive.PuzzleInfo, channelID string) (didUpdate bool, err error) {
+func (h *HuntBot) setPinnedStatusInfo(puzzle *schema.Puzzle, channelID string) (didUpdate bool, err error) {
 	embed := &discordgo.MessageEmbed{
 		Author: &discordgo.MessageEmbedAuthor{Name: pinnedStatusHeader},
-		Color:  puzzle.Round.IntColor(),
+		Color:  -1, // TODO
 		Title:  puzzle.Name,
 		URL:    puzzle.PuzzleURL,
 		Fields: []*discordgo.MessageEmbedField{
@@ -71,7 +75,7 @@ func (h *HuntBot) setPinnedStatusInfo(puzzle *drive.PuzzleInfo, channelID string
 			},
 			{
 				Name:   "Sheet",
-				Value:  fmt.Sprintf("[Link](%s)", puzzle.DocURL),
+				Value:  fmt.Sprintf("[Link](%s)", puzzle.SpreadsheetURL()),
 				Inline: true,
 			},
 		},
@@ -95,7 +99,7 @@ func (h *HuntBot) setPinnedVoiceInfo(puzzleChannelID string, voiceChannelID *str
 	return h.dis.CreateUpdatePin(puzzleChannelID, roomStatusHeader, embed)
 }
 
-func (h *HuntBot) notifyNewPuzzle(puzzle *drive.PuzzleInfo, channelID string) error {
+func (h *HuntBot) notifyNewPuzzle(puzzle *schema.Puzzle, channelID string) error {
 	log.Printf("Posting information about new puzzle %q", puzzle.Name)
 
 	// Pin a message with the spreadsheet URL to the channel
@@ -109,7 +113,7 @@ func (h *HuntBot) notifyNewPuzzle(puzzle *drive.PuzzleInfo, channelID string) er
 			Name:    "A new puzzle is available!",
 			IconURL: puzzle.Round.TwemojiURL(),
 		},
-		Color: puzzle.Round.IntColor(),
+		Color: -1, // TODO
 		Title: puzzle.Name,
 		URL:   puzzle.PuzzleURL,
 		Fields: []*discordgo.MessageEmbedField{
@@ -125,7 +129,7 @@ func (h *HuntBot) notifyNewPuzzle(puzzle *drive.PuzzleInfo, channelID string) er
 			},
 			{
 				Name:   "Sheet",
-				Value:  fmt.Sprintf("[Link](%s)", puzzle.DocURL),
+				Value:  fmt.Sprintf("[Link](%s)", puzzle.SpreadsheetURL()),
 				Inline: true,
 			},
 		},
@@ -143,7 +147,7 @@ func (h *HuntBot) NewPuzzle(ctx context.Context, name string) error {
 		return fmt.Errorf("error creating discord channel for %q: %v", name, err)
 	}
 	// Create Spreadsheet
-	sheetURL, err := h.drive.CreateSheet(ctx, name, "Unknown Round") // TODO
+	sheetID, err := h.drive.CreateSheet(ctx, name, "Unknown Round") // TODO
 	if err != nil {
 		return fmt.Errorf("error creating spreadsheet for %q: %v", name, err)
 	}
@@ -151,16 +155,16 @@ func (h *HuntBot) NewPuzzle(ctx context.Context, name string) error {
 	// If via bot, also take puzzle url as a param
 	puzzleURL := "https://en.wikipedia.org/wiki/Main_Page"
 
-	puzzleInfo := &drive.PuzzleInfo{
-		Name:      name,
-		Round:     drive.Round{Emoji: "", Name: "(Unknown)"},
-		PuzzleURL: puzzleURL,
-		DocURL:    sheetURL,
+	puzzleInfo := &schema.Puzzle{
+		Name:          name,
+		Round:         schema.Round{Emoji: "", Name: "(Unknown)"},
+		PuzzleURL:     puzzleURL,
+		SpreadsheetID: sheetID,
 	}
 	return h.notifyNewPuzzle(puzzleInfo, id)
 }
 
-func (h *HuntBot) setPuzzleStatus(name string, newStatus drive.Status) (oldStatus drive.Status) {
+func (h *HuntBot) setPuzzleStatus(name string, newStatus schema.Status) (oldStatus schema.Status) {
 	h.mu.Lock()
 	defer h.mu.Unlock()
 	oldStatus = h.puzzleStatus[name]
@@ -169,19 +173,14 @@ func (h *HuntBot) setPuzzleStatus(name string, newStatus drive.Status) (oldStatu
 }
 
 // logStatus marks the status; it is *not* called if the puzzle is solved
-func (h *HuntBot) logStatus(ctx context.Context, puzzle *drive.PuzzleInfo) error {
-	channelID, err := h.dis.ChannelID(puzzle.DiscordURL)
-	if err != nil {
-		return err
-	}
-
-	didUpdate, err := h.setPinnedStatusInfo(puzzle, channelID)
+func (h *HuntBot) logStatus(ctx context.Context, puzzle *schema.Puzzle) error {
+	didUpdate, err := h.setPinnedStatusInfo(puzzle, puzzle.DiscordChannel)
 	if err != nil {
 		return fmt.Errorf("unable to set puzzle status message for %q: %w", puzzle.Name, err)
 	}
 
 	if didUpdate {
-		if err := h.dis.StatusUpdateChannelSend(fmt.Sprintf("%s Puzzle <#%s> is now %v.", puzzle.Round.Emoji, channelID, puzzle.Status.Pretty())); err != nil {
+		if err := h.dis.StatusUpdateChannelSend(fmt.Sprintf("%s Puzzle <#%s> is now %v.", puzzle.Round.Emoji, puzzle.DiscordChannel, puzzle.Status.Pretty())); err != nil {
 			return fmt.Errorf("error posting puzzle status announcement: %v", err)
 		}
 	}
@@ -189,19 +188,14 @@ func (h *HuntBot) logStatus(ctx context.Context, puzzle *drive.PuzzleInfo) error
 	return nil
 }
 
-func (h *HuntBot) markSolved(ctx context.Context, puzzle *drive.PuzzleInfo) error {
-	channelID, err := h.dis.ChannelID(puzzle.DiscordURL)
-	if err != nil {
-		return err
-	}
-
+func (h *HuntBot) markSolved(ctx context.Context, puzzle *schema.Puzzle) error {
 	verb := "solved"
-	if puzzle.Status == drive.Backsolved {
+	if puzzle.Status == schema.Backsolved {
 		verb = "backsolved"
 	}
 
 	if puzzle.Answer == "" {
-		if err := h.dis.ChannelSend(channelID, fmt.Sprintf("Puzzle %s!  Please add the answer to the sheet.", verb)); err != nil {
+		if err := h.dis.ChannelSend(puzzle.DiscordChannel, fmt.Sprintf("Puzzle %s!  Please add the answer to the sheet.", verb)); err != nil {
 			return fmt.Errorf("error posting solved puzzle announcement: %v", err)
 		}
 
@@ -212,7 +206,7 @@ func (h *HuntBot) markSolved(ctx context.Context, puzzle *drive.PuzzleInfo) erro
 		return nil // don't archive until we have the answer.
 	}
 
-	archived, err := h.dis.ArchiveChannel(channelID)
+	archived, err := h.dis.ArchiveChannel(puzzle.DiscordChannel)
 	if !archived {
 		// Channel already archived (cache is best-effort -- this can happen
 		// after restart or if a human did it)
@@ -221,7 +215,7 @@ func (h *HuntBot) markSolved(ctx context.Context, puzzle *drive.PuzzleInfo) erro
 	} else {
 		log.Printf("Archiving channel for %q", puzzle.Name)
 		// post to relevant channels only if it was newly archived.
-		if err := h.dis.ChannelSend(channelID, fmt.Sprintf("Puzzle %s! The answer was `%v`. I'll archive this channel.", verb, puzzle.Answer)); err != nil {
+		if err := h.dis.ChannelSend(puzzle.DiscordChannel, fmt.Sprintf("Puzzle %s! The answer was `%v`. I'll archive this channel.", verb, puzzle.Answer)); err != nil {
 			return fmt.Errorf("error posting solved puzzle announcement: %v", err)
 		}
 
@@ -230,11 +224,11 @@ func (h *HuntBot) markSolved(ctx context.Context, puzzle *drive.PuzzleInfo) erro
 				Name:    fmt.Sprintf("Puzzle %s!", verb),
 				IconURL: puzzle.Round.TwemojiURL(),
 			},
-			Color: puzzle.Round.IntColor(),
+			Color: -1, // TODO
 			Fields: []*discordgo.MessageEmbedField{
 				{
 					Name:   "Channel",
-					Value:  fmt.Sprintf("<#%s>", channelID),
+					Value:  fmt.Sprintf("<#%s>", puzzle.DiscordChannel),
 					Inline: true,
 				},
 				{
@@ -251,7 +245,7 @@ func (h *HuntBot) markSolved(ctx context.Context, puzzle *drive.PuzzleInfo) erro
 	}
 
 	log.Printf("Marking sheet solved for %q", puzzle.Name)
-	err = h.drive.MarkSheetSolved(ctx, puzzle.DocURL)
+	err = h.drive.MarkSheetSolved(ctx, puzzle.SpreadsheetID)
 	if err != nil {
 		return err
 	}
@@ -273,7 +267,7 @@ func (h *HuntBot) archive(puzzleName string) {
 	h.archived[puzzleName] = true
 }
 
-func (h *HuntBot) warnPuzzle(ctx context.Context, puzzle *drive.PuzzleInfo) error {
+func (h *HuntBot) warnPuzzle(ctx context.Context, puzzle *schema.Puzzle) error {
 	h.mu.Lock()
 	defer h.mu.Unlock()
 	if lastWarning, ok := h.lastWarnTime[puzzle.Name]; !ok {
@@ -298,7 +292,7 @@ func (h *HuntBot) warnPuzzle(ctx context.Context, puzzle *drive.PuzzleInfo) erro
 	return nil
 }
 
-func (h *HuntBot) updatePuzzle(ctx context.Context, puzzle *drive.PuzzleInfo) error {
+func (h *HuntBot) updatePuzzle(ctx context.Context, puzzle *schema.Puzzle) error {
 	if puzzle.Name == "" || puzzle.PuzzleURL == "" || puzzle.Round.Name == "" {
 		// Occasionally warn the QM about puzzles that are missing fields.
 		if puzzle.Name != "" {
@@ -310,29 +304,30 @@ func (h *HuntBot) updatePuzzle(ctx context.Context, puzzle *drive.PuzzleInfo) er
 	}
 
 	var err error
-	if puzzle.DocURL == "" {
-		puzzle.DocURL, err = h.drive.CreateSheet(ctx, puzzle.Name, puzzle.Round.Name)
+	if puzzle.SpreadsheetID == "" {
+		puzzle.SpreadsheetID, err = h.drive.CreateSheet(ctx, puzzle.Name, puzzle.Round.Name)
 		if err != nil {
 			return fmt.Errorf("error creating spreadsheet for %q: %v", puzzle.Name, err)
 		}
 	}
 
-	if puzzle.DiscordURL == "" {
+	if puzzle.DiscordChannel == "" {
 		log.Printf("Adding channel for new puzzle %q", puzzle.Name)
-		id, err := h.dis.CreateChannel(puzzle.Name)
+		puzzle.DiscordChannel, err = h.dis.CreateChannel(puzzle.Name)
 		if err != nil {
 			return fmt.Errorf("error creating discord channel for %q: %v", puzzle.Name, err)
 		}
 
-		puzzle.DiscordURL = h.dis.ChannelURL(id)
-
 		// Treat discord URL as the sentinel to also notify everyone
-		if err := h.notifyNewPuzzle(puzzle, id); err != nil {
+		if err := h.notifyNewPuzzle(puzzle, puzzle.DiscordChannel); err != nil {
 			return fmt.Errorf("error notifying channel about new puzzle %q: %v", puzzle.Name, err)
 		}
-		if err := h.drive.SetDiscordURL(ctx, puzzle); err != nil {
-			return fmt.Errorf("error setting discord URL for puzzle %q: %v", puzzle.Name, err)
-		}
+
+		// TODO: commit update to Airtable!
+
+		// if err := h.drive.SetDiscordURL(ctx, puzzle); err != nil {
+		// 	return fmt.Errorf("error setting discord URL for puzzle %q: %v", puzzle.Name, err)
+		// }
 	}
 
 	if h.setPuzzleStatus(puzzle.Name, puzzle.Status) != puzzle.Status ||
@@ -353,22 +348,24 @@ func (h *HuntBot) updatePuzzle(ctx context.Context, puzzle *drive.PuzzleInfo) er
 }
 
 func (h *HuntBot) pollAndUpdate(ctx context.Context) error {
-	puzzles, err := h.drive.ReadFullSheet(ctx)
+	puzzles, err := h.airtable.ListRecords()
 	if err != nil {
 		return err
 	}
 
 	for _, puzzle := range puzzles {
-		err := h.updatePuzzle(ctx, puzzle)
+		err := h.updatePuzzle(ctx, &puzzle)
 		if err != nil {
 			// log, but proceed to the next puzzle.
 			log.Printf("updating puzzle failed: %v", err)
 		}
 	}
 
-	if err := h.drive.UpdateAllURLs(ctx, puzzles); err != nil {
-		return fmt.Errorf("error updating URLs for puzzles: %v", err)
-	}
+	// TODO: commit updates to Airtable!
+
+	// if err := h.drive.UpdateAllURLs(ctx, puzzles); err != nil {
+	// 	return fmt.Errorf("error updating URLs for puzzles: %v", err)
+	// }
 
 	return nil
 }

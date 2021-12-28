@@ -145,18 +145,6 @@ func (c *Client) RegisterNewMessageHandler(name string, h NewMessageHandler) {
 	})
 }
 
-func (c *Client) ChannelURL(id string) string {
-	return fmt.Sprintf("https://discord.com/channels/%s/%s", c.guildID, id)
-}
-
-func (c *Client) ChannelID(url string) (string, error) {
-	if !strings.HasPrefix(url, "https://discord.com/channels/"+c.guildID+"/") {
-		return "", fmt.Errorf("invalid channel URL: %q", url)
-	}
-	parts := strings.Split(url, "/")
-	return parts[len(parts)-1], nil
-}
-
 func (c *Client) ChannelSend(chanID, msg string) error {
 	_, err := c.s.ChannelMessageSend(chanID, msg)
 	return err
