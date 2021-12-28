@@ -44,7 +44,7 @@ func (h *HuntBot) ControlHandler(s *discordgo.Session, m *discordgo.MessageCreat
 	s.ChannelMessageSend(m.ChannelID, reply)
 	if info != "" {
 		h.dis.TechChannelSend(info)
-		log.Printf(info)
+		log.Print(info)
 	}
 
 	return nil

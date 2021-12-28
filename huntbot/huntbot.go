@@ -249,7 +249,7 @@ func (h *HuntBot) warnPuzzle(ctx context.Context, puzzle *schema.Puzzle) error {
 	defer h.mu.Unlock()
 	if lastWarning, ok := h.lastWarnTime[puzzle.Name]; !ok {
 		h.lastWarnTime[puzzle.Name] = time.Now().Add(h.cfg.InitialWarningDelay - h.cfg.MinWarningFrequency)
-	} else if time.Now().Sub(lastWarning) <= h.cfg.MinWarningFrequency {
+	} else if time.Since(lastWarning) <= h.cfg.MinWarningFrequency {
 		return nil
 	}
 	var msgs []string
