@@ -97,3 +97,18 @@ func (h *HuntBot) VoiceRoomHandler(s *discordgo.Session, m *discordgo.MessageCre
 
 	return nil
 }
+
+const roomStatusHeader = "Working Room"
+
+func (h *HuntBot) setPinnedVoiceInfo(puzzleChannelID string, voiceChannelID *string) (didUpdate bool, err error) {
+	room := "No voice room set. \"!room start $room\" to start working in $room."
+	if voiceChannelID != nil {
+		room = fmt.Sprintf("Join us in <#%s>!", *voiceChannelID)
+	}
+	embed := &discordgo.MessageEmbed{
+		Author:      &discordgo.MessageEmbedAuthor{Name: roomStatusHeader},
+		Description: room,
+	}
+
+	return h.discord.CreateUpdatePin(puzzleChannelID, roomStatusHeader, embed)
+}

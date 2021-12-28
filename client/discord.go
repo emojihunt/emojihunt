@@ -144,6 +144,11 @@ func (c *Discord) RegisterNewMessageHandler(name string, h NewMessageHandler) {
 	})
 }
 
+func (c *Discord) ChannelSend(chanID, msg string) error {
+	_, err := c.s.ChannelMessageSend(chanID, msg)
+	return err
+}
+
 func (c *Discord) ChannelSendEmbedAndPin(chanID string, embed *discordgo.MessageEmbed) error {
 	m, err := c.s.ChannelMessageSendEmbed(chanID, embed)
 	if err != nil {
