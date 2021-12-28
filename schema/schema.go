@@ -3,6 +3,8 @@ package schema
 import (
 	"fmt"
 	"strings"
+
+	"github.com/mehanizm/airtable"
 )
 
 type Puzzle struct {
@@ -11,7 +13,7 @@ type Puzzle struct {
 	Round  Round
 	Status Status
 
-	AirtableID     string
+	AirtableRecord *airtable.Record
 	PuzzleURL      string
 	SpreadsheetID  string
 	DiscordChannel string

@@ -25,7 +25,7 @@ type Config struct {
 type HuntBot struct {
 	dis      *discord.Client
 	drive    *drive.Drive
-	airtable *airtable.Airtable
+	airtable *airtable.Client
 	cfg      Config
 
 	mu           sync.Mutex               // hold while accessing everything below
@@ -36,7 +36,7 @@ type HuntBot struct {
 	lastWarnTime map[string]time.Time
 }
 
-func New(dis *discord.Client, d *drive.Drive, airtable *airtable.Airtable, c Config) *HuntBot {
+func New(dis *discord.Client, d *drive.Drive, airtable *airtable.Client, c Config) *HuntBot {
 	return &HuntBot{
 		dis:          dis,
 		drive:        d,
@@ -139,29 +139,6 @@ func (h *HuntBot) notifyNewPuzzle(puzzle *schema.Puzzle, channelID string) error
 	}
 
 	return nil
-}
-
-func (h *HuntBot) NewPuzzle(ctx context.Context, name string) error {
-	id, err := h.dis.CreateChannel(name)
-	if err != nil {
-		return fmt.Errorf("error creating discord channel for %q: %v", name, err)
-	}
-	// Create Spreadsheet
-	sheetID, err := h.drive.CreateSheet(ctx, name, "Unknown Round") // TODO
-	if err != nil {
-		return fmt.Errorf("error creating spreadsheet for %q: %v", name, err)
-	}
-
-	// If via bot, also take puzzle url as a param
-	puzzleURL := "https://en.wikipedia.org/wiki/Main_Page"
-
-	puzzleInfo := &schema.Puzzle{
-		Name:          name,
-		Round:         schema.Round{Emoji: "", Name: "(Unknown)"},
-		PuzzleURL:     puzzleURL,
-		SpreadsheetID: sheetID,
-	}
-	return h.notifyNewPuzzle(puzzleInfo, id)
 }
 
 func (h *HuntBot) setPuzzleStatus(name string, newStatus schema.Status) (oldStatus schema.Status) {
@@ -303,17 +280,21 @@ func (h *HuntBot) updatePuzzle(ctx context.Context, puzzle *schema.Puzzle) error
 		return nil
 	}
 
-	var err error
 	if puzzle.SpreadsheetID == "" {
-		puzzle.SpreadsheetID, err = h.drive.CreateSheet(ctx, puzzle.Name, puzzle.Round.Name)
+		spreadsheet, err := h.drive.CreateSheet(ctx, puzzle.Name, puzzle.Round.Name)
 		if err != nil {
 			return fmt.Errorf("error creating spreadsheet for %q: %v", puzzle.Name, err)
+		}
+
+		puzzle, err = h.airtable.UpdateSpreadsheetID(puzzle, spreadsheet)
+		if err != nil {
+			return fmt.Errorf("error setting spreadsheet id for puzzle %q: %v", puzzle.Name, err)
 		}
 	}
 
 	if puzzle.DiscordChannel == "" {
 		log.Printf("Adding channel for new puzzle %q", puzzle.Name)
-		puzzle.DiscordChannel, err = h.dis.CreateChannel(puzzle.Name)
+		channel, err := h.dis.CreateChannel(puzzle.Name)
 		if err != nil {
 			return fmt.Errorf("error creating discord channel for %q: %v", puzzle.Name, err)
 		}
@@ -323,11 +304,10 @@ func (h *HuntBot) updatePuzzle(ctx context.Context, puzzle *schema.Puzzle) error
 			return fmt.Errorf("error notifying channel about new puzzle %q: %v", puzzle.Name, err)
 		}
 
-		// TODO: commit update to Airtable!
-
-		// if err := h.drive.SetDiscordURL(ctx, puzzle); err != nil {
-		// 	return fmt.Errorf("error setting discord URL for puzzle %q: %v", puzzle.Name, err)
-		// }
+		puzzle, err = h.airtable.UpdateDiscordChannel(puzzle, channel)
+		if err != nil {
+			return fmt.Errorf("error setting discord channel for puzzle %q: %v", puzzle.Name, err)
+		}
 	}
 
 	if h.setPuzzleStatus(puzzle.Name, puzzle.Status) != puzzle.Status ||
@@ -360,12 +340,6 @@ func (h *HuntBot) pollAndUpdate(ctx context.Context) error {
 			log.Printf("updating puzzle failed: %v", err)
 		}
 	}
-
-	// TODO: commit updates to Airtable!
-
-	// if err := h.drive.UpdateAllURLs(ctx, puzzles); err != nil {
-	// 	return fmt.Errorf("error updating URLs for puzzles: %v", err)
-	// }
 
 	return nil
 }

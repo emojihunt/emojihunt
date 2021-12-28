@@ -5,7 +5,7 @@ import (
 	"github.com/mehanizm/airtable"
 )
 
-type Airtable struct {
+type Client struct {
 	table *airtable.Table
 }
 
@@ -16,13 +16,13 @@ const pageSize = 100 // most records returned per list request
 // requests-per-second limit, which is important because if we break that limit
 // we get suspended for 30 seconds.
 
-func New(apiKey, dbName, tableName string) *Airtable {
+func New(apiKey, dbName, tableName string) *Client {
 	client := airtable.NewClient(apiKey)
 	table := client.GetTable(dbName, tableName)
-	return &Airtable{table}
+	return &Client{table}
 }
 
-func (air *Airtable) ListRecords() ([]schema.Puzzle, error) {
+func (air *Client) ListRecords() ([]schema.Puzzle, error) {
 	var infos []schema.Puzzle
 	var offset = ""
 	for {
@@ -40,17 +40,7 @@ func (air *Airtable) ListRecords() ([]schema.Puzzle, error) {
 				// response to DELETE requests, but let's check it just in case.
 				continue
 			}
-			infos = append(infos, schema.Puzzle{
-				Name:   record.Fields["Name"].(string),
-				Answer: record.Fields["Answer"].(string),
-				Round:  schema.ParseRound(record.Fields["Round"].(string)),
-				Status: schema.ParseStatus(record.Fields["Status"].(string)),
-
-				AirtableID:     record.ID,
-				PuzzleURL:      record.Fields["Puzzle URL"].(string),
-				SpreadsheetID:  record.Fields["Spreadsheet ID"].(string),
-				DiscordChannel: record.Fields["Discord Channel ID"].(string),
-			})
+			infos = append(infos, *parseRecord(record))
 		}
 
 		if response.Offset != "" {
@@ -60,5 +50,39 @@ func (air *Airtable) ListRecords() ([]schema.Puzzle, error) {
 			// All done, return all records
 			return infos, nil
 		}
+	}
+}
+
+func (air *Client) UpdateDiscordChannel(puz *schema.Puzzle, channel string) (*schema.Puzzle, error) {
+	record, err := puz.AirtableRecord.UpdateRecordPartial(map[string]interface{}{
+		"Discord Channel": channel,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return parseRecord(record), nil
+}
+
+func (air *Client) UpdateSpreadsheetID(puz *schema.Puzzle, spreadsheet string) (*schema.Puzzle, error) {
+	record, err := puz.AirtableRecord.UpdateRecordPartial(map[string]interface{}{
+		"Spreadsheet ID": spreadsheet,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return parseRecord(record), nil
+}
+
+func parseRecord(record *airtable.Record) *schema.Puzzle {
+	return &schema.Puzzle{
+		Name:   record.Fields["Name"].(string),
+		Answer: record.Fields["Answer"].(string),
+		Round:  schema.ParseRound(record.Fields["Round"].(string)),
+		Status: schema.ParseStatus(record.Fields["Status"].(string)),
+
+		AirtableRecord: record,
+		PuzzleURL:      record.Fields["Puzzle URL"].(string),
+		SpreadsheetID:  record.Fields["Spreadsheet ID"].(string),
+		DiscordChannel: record.Fields["Discord Channel"].(string),
 	}
 }
