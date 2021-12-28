@@ -1,11 +1,11 @@
-package airtable
+package client
 
 import (
 	"github.com/gauravjsingh/emojihunt/schema"
 	"github.com/mehanizm/airtable"
 )
 
-type Client struct {
+type Airtable struct {
 	table *airtable.Table
 }
 
@@ -16,13 +16,13 @@ const pageSize = 100 // most records returned per list request
 // requests-per-second limit, which is important because if we break that limit
 // we get suspended for 30 seconds.
 
-func New(apiKey, dbName, tableName string) *Client {
+func NewAirtable(apiKey, dbName, tableName string) *Airtable {
 	client := airtable.NewClient(apiKey)
 	table := client.GetTable(dbName, tableName)
-	return &Client{table}
+	return &Airtable{table}
 }
 
-func (air *Client) ListRecords() ([]schema.Puzzle, error) {
+func (air *Airtable) ListRecords() ([]schema.Puzzle, error) {
 	var infos []schema.Puzzle
 	var offset = ""
 	for {
@@ -40,7 +40,7 @@ func (air *Client) ListRecords() ([]schema.Puzzle, error) {
 				// response to DELETE requests, but let's check it just in case.
 				continue
 			}
-			infos = append(infos, *parseRecord(record))
+			infos = append(infos, *air.parseRecord(record))
 		}
 
 		if response.Offset != "" {
@@ -53,27 +53,27 @@ func (air *Client) ListRecords() ([]schema.Puzzle, error) {
 	}
 }
 
-func (air *Client) UpdateDiscordChannel(puz *schema.Puzzle, channel string) (*schema.Puzzle, error) {
+func (air *Airtable) UpdateDiscordChannel(puz *schema.Puzzle, channel string) (*schema.Puzzle, error) {
 	record, err := puz.AirtableRecord.UpdateRecordPartial(map[string]interface{}{
 		"Discord Channel": channel,
 	})
 	if err != nil {
 		return nil, err
 	}
-	return parseRecord(record), nil
+	return air.parseRecord(record), nil
 }
 
-func (air *Client) UpdateSpreadsheetID(puz *schema.Puzzle, spreadsheet string) (*schema.Puzzle, error) {
+func (air *Airtable) UpdateSpreadsheetID(puz *schema.Puzzle, spreadsheet string) (*schema.Puzzle, error) {
 	record, err := puz.AirtableRecord.UpdateRecordPartial(map[string]interface{}{
 		"Spreadsheet ID": spreadsheet,
 	})
 	if err != nil {
 		return nil, err
 	}
-	return parseRecord(record), nil
+	return air.parseRecord(record), nil
 }
 
-func parseRecord(record *airtable.Record) *schema.Puzzle {
+func (air *Airtable) parseRecord(record *airtable.Record) *schema.Puzzle {
 	return &schema.Puzzle{
 		Name:   record.Fields["Name"].(string),
 		Answer: record.Fields["Answer"].(string),

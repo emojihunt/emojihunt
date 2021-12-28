@@ -1,4 +1,4 @@
-package drive
+package client
 
 import (
 	"context"
@@ -24,7 +24,7 @@ type Drive struct {
 	drive  *drive.Service
 }
 
-func New(ctx context.Context, rootFolderID string) (*Drive, error) {
+func NewDrive(ctx context.Context, rootFolderID string) (*Drive, error) {
 	sheetsService, err := sheets.NewService(ctx)
 	if err != nil {
 		return nil, err

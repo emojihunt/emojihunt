@@ -12,9 +12,7 @@ import (
 	"time"
 
 	"github.com/bwmarrin/discordgo"
-	"github.com/gauravjsingh/emojihunt/airtable"
-	"github.com/gauravjsingh/emojihunt/discord"
-	"github.com/gauravjsingh/emojihunt/drive"
+	"github.com/gauravjsingh/emojihunt/client"
 	"github.com/gauravjsingh/emojihunt/huntbot"
 	"github.com/gauravjsingh/emojihunt/huntbot/emojiname"
 	"github.com/gauravjsingh/emojihunt/huntbot/huntyet"
@@ -61,7 +59,7 @@ func main() {
 		log.Fatalf("error opening discord connection: %v", err)
 	}
 
-	dis, err := discord.New(dg, discord.Config{
+	dis, err := client.NewDiscord(dg, client.DiscordConfig{
 		GuildID:            *guildID,
 		QMChannelName:      "qm",
 		GeneralChannelName: "whats-going-on",
@@ -74,7 +72,7 @@ func main() {
 		log.Fatalf("error creating discord client: %v", err)
 	}
 
-	air := airtable.New(secrets.AirtableToken, *baseID, *tableName)
+	air := client.NewAirtable(secrets.AirtableToken, *baseID, *tableName)
 
 	ctx := context.Background()
 
@@ -93,7 +91,7 @@ func main() {
 		}
 	}()
 
-	d, err := drive.New(ctx, *rootFolderID)
+	d, err := client.NewDrive(ctx, *rootFolderID)
 	if err != nil {
 		log.Fatalf("error creating drive integration: %v", err)
 	}
@@ -103,7 +101,7 @@ func main() {
 	dis.RegisterNewMessageHandler("emoji generator", emojiname.Handler)
 	dis.RegisterNewMessageHandler("isithuntyet?", huntyet.Handler)
 	dis.RegisterNewMessageHandler("bot control", h.ControlHandler)
-	dis.RegisterNewMessageHandler("qm manager", dis.QMHandler)
+	dis.RegisterNewMessageHandler("qm manager", huntbot.GetQMHandler(dis))
 	dis.RegisterNewMessageHandler("voice channel helper", h.RoomHandler)
 
 	go h.PollDatabase(ctx)

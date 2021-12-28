@@ -1,28 +1,27 @@
-package discord
+package client
 
 import (
 	"fmt"
 	"log"
-	"regexp"
 	"strings"
 	"sync"
 
 	"github.com/bwmarrin/discordgo"
 )
 
-type Config struct {
+type DiscordConfig struct {
 	GuildID                                                                     string
 	QMChannelName, GeneralChannelName, StatusUpdateChannelName, TechChannelName string
 	PuzzleCategoryName, SolvedCategoryName                                      string
 	QMRoleName                                                                  string
 }
 
-type Client struct {
+type Discord struct {
 	s       *discordgo.Session
-	guildID string
+	GuildID string
 	// The QM channel contains a central log of interesting bot actions, as well as the only place for
 	// advanced bot usage, such as puzzle or round creation.
-	qmChannelID string
+	QMChannelID string
 	// The general channel has all users, and has announcements from the bot.
 	generalChannelID string
 	// The channel in which to post status updates.
@@ -34,7 +33,7 @@ type Client struct {
 	// The category for solved puzzles.
 	solvedCategoryID string
 	// The Role ID for the QM role.
-	qmRoleID string
+	QMRoleID string
 
 	// This might be a case where sync.Map makes sense.
 	mu              sync.Mutex
@@ -53,7 +52,7 @@ func getGuildID(s *discordgo.Session) (string, error) {
 	return gs[0].ID, nil
 }
 
-func New(s *discordgo.Session, c Config) (*Client, error) {
+func NewDiscord(s *discordgo.Session, c DiscordConfig) (*Discord, error) {
 	if c.GuildID == "" {
 		var err error
 		c.GuildID, err = getGuildID(s)
@@ -116,10 +115,10 @@ func New(s *discordgo.Session, c Config) (*Client, error) {
 		return nil, fmt.Errorf("QM role %q not found in roles: %v", c.QMRoleName, roles)
 	}
 
-	return &Client{
+	return &Discord{
 		s:                     s,
-		guildID:               c.GuildID,
-		qmChannelID:           qm,
+		GuildID:               c.GuildID,
+		QMChannelID:           qm,
 		generalChannelID:      gen,
 		statusUpdateChannelID: st,
 		techChannelID:         tech,
@@ -127,14 +126,14 @@ func New(s *discordgo.Session, c Config) (*Client, error) {
 		roomsToID:             rIDs,
 		puzzleCategoryID:      puz,
 		solvedCategoryID:      ar,
-		qmRoleID:              qmRoleID,
+		QMRoleID:              qmRoleID,
 	}, nil
 }
 
 // TODO: Make this a struct with a name.
 type NewMessageHandler func(*discordgo.Session, *discordgo.MessageCreate) error
 
-func (c *Client) RegisterNewMessageHandler(name string, h NewMessageHandler) {
+func (c *Discord) RegisterNewMessageHandler(name string, h NewMessageHandler) {
 	// Only handle new guild messages.
 	// TODO: bitOr with the current value.
 	c.s.Identify.Intents = discordgo.MakeIntent(discordgo.IntentsGuildMessages)
@@ -145,12 +144,12 @@ func (c *Client) RegisterNewMessageHandler(name string, h NewMessageHandler) {
 	})
 }
 
-func (c *Client) ChannelSend(chanID, msg string) error {
+func (c *Discord) ChannelSend(chanID, msg string) error {
 	_, err := c.s.ChannelMessageSend(chanID, msg)
 	return err
 }
 
-func (c *Client) ChannelSendAndPin(chanID, msg string) error {
+func (c *Discord) ChannelSendAndPin(chanID, msg string) error {
 	m, err := c.s.ChannelMessageSend(chanID, msg)
 	if err != nil {
 		return err
@@ -159,7 +158,7 @@ func (c *Client) ChannelSendAndPin(chanID, msg string) error {
 	return err
 }
 
-func (c *Client) ChannelSendEmbedAndPin(chanID string, embed *discordgo.MessageEmbed) error {
+func (c *Discord) ChannelSendEmbedAndPin(chanID string, embed *discordgo.MessageEmbed) error {
 	m, err := c.s.ChannelMessageSendEmbed(chanID, embed)
 	if err != nil {
 		return err
@@ -171,7 +170,7 @@ func (c *Client) ChannelSendEmbedAndPin(chanID string, embed *discordgo.MessageE
 const statusTitle = "Puzzle Information"
 
 // Returns last pinned status message, or nil if not found.
-func (c *Client) pinnedStatusMessage(chanID, header string) (*discordgo.Message, error) {
+func (c *Discord) pinnedStatusMessage(chanID, header string) (*discordgo.Message, error) {
 	ms, err := c.s.ChannelMessagesPinned(chanID)
 	if err != nil {
 		return nil, err
@@ -195,7 +194,7 @@ type statusMessage struct {
 
 // Set the pinned status message, by posting one or editing the existing one.
 // No-op if the status was already set.
-func (c *Client) CreateUpdatePin(chanID, header string, embed *discordgo.MessageEmbed) (didUpdate bool, err error) {
+func (c *Discord) CreateUpdatePin(chanID, header string, embed *discordgo.MessageEmbed) (didUpdate bool, err error) {
 	statusMessage, err := c.pinnedStatusMessage(chanID, header)
 	if err != nil {
 		return false, err
@@ -212,27 +211,27 @@ func (c *Client) CreateUpdatePin(chanID, header string, embed *discordgo.Message
 	return err == nil, err
 }
 
-func (c *Client) QMChannelSend(msg string) error {
-	_, err := c.s.ChannelMessageSend(c.qmChannelID, msg)
+func (c *Discord) QMChannelSend(msg string) error {
+	_, err := c.s.ChannelMessageSend(c.QMChannelID, msg)
 	return err
 }
 
-func (c *Client) GeneralChannelSend(msg string) error {
+func (c *Discord) GeneralChannelSend(msg string) error {
 	_, err := c.s.ChannelMessageSend(c.generalChannelID, msg)
 	return err
 }
 
-func (c *Client) GeneralChannelSendEmbed(embed *discordgo.MessageEmbed) error {
+func (c *Discord) GeneralChannelSendEmbed(embed *discordgo.MessageEmbed) error {
 	_, err := c.s.ChannelMessageSendEmbed(c.generalChannelID, embed)
 	return err
 }
 
-func (c *Client) StatusUpdateChannelSend(msg string) error {
+func (c *Discord) StatusUpdateChannelSend(msg string) error {
 	_, err := c.s.ChannelMessageSend(c.statusUpdateChannelID, msg)
 	return err
 }
 
-func (c *Client) TechChannelSend(msg string) error {
+func (c *Discord) TechChannelSend(msg string) error {
 	_, err := c.s.ChannelMessageSend(c.techChannelID, msg)
 	return err
 }
@@ -240,7 +239,7 @@ func (c *Client) TechChannelSend(msg string) error {
 var ChannelNotFound = fmt.Errorf("channel not found")
 
 // Returns whether a channel was archived.
-func (c *Client) ArchiveChannel(chID string) (bool, error) {
+func (c *Discord) ArchiveChannel(chID string) (bool, error) {
 	ch, err := c.s.Channel(chID)
 	if err != nil {
 		return false, fmt.Errorf("channel id %s not found: %w", chID, ChannelNotFound)
@@ -270,13 +269,13 @@ func (c *Client) ArchiveChannel(chID string) (bool, error) {
 }
 
 // CreateChannel ensures that a channel exists with the given name, and returns the channel ID.
-func (c *Client) CreateChannel(name string) (string, error) {
+func (c *Discord) CreateChannel(name string) (string, error) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	if id, ok := c.channelNameToID[name]; ok {
 		return id, nil
 	}
-	ch, err := c.s.GuildChannelCreateComplex(c.guildID, discordgo.GuildChannelCreateData{
+	ch, err := c.s.GuildChannelCreateComplex(c.GuildID, discordgo.GuildChannelCreateData{
 		Name:     name,
 		Type:     discordgo.ChannelTypeGuildText,
 		ParentID: c.puzzleCategoryID,
@@ -288,7 +287,7 @@ func (c *Client) CreateChannel(name string) (string, error) {
 	return ch.ID, nil
 }
 
-func (c *Client) ClosestRoomID(input string) (string, bool) {
+func (c *Discord) ClosestRoomID(input string) (string, bool) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	for r, id := range c.roomsToID {
@@ -301,7 +300,7 @@ func (c *Client) ClosestRoomID(input string) (string, bool) {
 	return "", false
 }
 
-func (c *Client) AvailableRooms() []string {
+func (c *Discord) AvailableRooms() []string {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	var rs []string
@@ -311,7 +310,7 @@ func (c *Client) AvailableRooms() []string {
 	return rs
 }
 
-func (c *Client) updateRoom(r room) error {
+func (c *Discord) updateRoom(r room) error {
 	c.mu.Lock()
 	rID := c.roomsToID[r.name]
 	c.mu.Unlock()
@@ -322,7 +321,7 @@ func (c *Client) updateRoom(r room) error {
 }
 
 // Returns whether a puzzle was added.
-func (c *Client) AddPuzzleToRoom(puzzle, roomID string) (bool, error) {
+func (c *Discord) AddPuzzleToRoom(puzzle, roomID string) (bool, error) {
 	log.Printf("adding puzzle %q to room %q ...", puzzle, roomID)
 	defer log.Printf("adding puzzle %q to room %q ... done", puzzle, roomID)
 	roomCh, err := c.s.Channel(roomID)
@@ -346,7 +345,7 @@ func (c *Client) AddPuzzleToRoom(puzzle, roomID string) (bool, error) {
 }
 
 // Returns whether a puzzle was removed.
-func (c *Client) RemovePuzzleFromRoom(puzzle, roomID string) (bool, error) {
+func (c *Discord) RemovePuzzleFromRoom(puzzle, roomID string) (bool, error) {
 	log.Printf("removing %q from %q ...", puzzle, roomID)
 	defer log.Printf("removing %q from %q ... done", puzzle, roomID)
 	roomCh, err := c.s.Channel(roomID)
@@ -376,8 +375,6 @@ func (c *Client) RemovePuzzleFromRoom(puzzle, roomID string) (bool, error) {
 	}
 	return true, nil
 }
-
-var voiceRE = regexp.MustCompile(`!voice (start|stop) (.*)$`)
 
 type room struct {
 	// The name of the room, eg. "Patio". This excludes the puzzles that might be part of the channel name.
@@ -410,6 +407,6 @@ func parseRoom(voiceChanName string) (room, error) {
 	}, nil
 }
 
-func ChannelMention(chanID string) string {
+func (c *Discord) ChannelMention(chanID string) string {
 	return fmt.Sprintf("<#%s>", chanID)
 }

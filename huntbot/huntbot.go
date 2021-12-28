@@ -9,9 +9,7 @@ import (
 	"time"
 
 	"github.com/bwmarrin/discordgo"
-	"github.com/gauravjsingh/emojihunt/airtable"
-	"github.com/gauravjsingh/emojihunt/discord"
-	"github.com/gauravjsingh/emojihunt/drive"
+	"github.com/gauravjsingh/emojihunt/client"
 	"github.com/gauravjsingh/emojihunt/schema"
 )
 
@@ -23,9 +21,9 @@ type Config struct {
 }
 
 type HuntBot struct {
-	dis      *discord.Client
-	drive    *drive.Drive
-	airtable *airtable.Client
+	discord  *client.Discord
+	drive    *client.Drive
+	airtable *client.Airtable
 	cfg      Config
 
 	mu              sync.Mutex               // hold while accessing everything below
@@ -37,10 +35,10 @@ type HuntBot struct {
 	lastWarnTime map[string]time.Time
 }
 
-func New(dis *discord.Client, d *drive.Drive, airtable *airtable.Client, c Config) *HuntBot {
+func New(discord *client.Discord, drive *client.Drive, airtable *client.Airtable, c Config) *HuntBot {
 	return &HuntBot{
-		dis:          dis,
-		drive:        d,
+		discord:      discord,
+		drive:        drive,
 		airtable:     airtable,
 		enabled:      true,
 		puzzleStatus: map[string]schema.Status{},
@@ -82,7 +80,7 @@ func (h *HuntBot) setPinnedStatusInfo(puzzle *schema.Puzzle, channelID string) (
 		},
 	}
 
-	return h.dis.CreateUpdatePin(channelID, pinnedStatusHeader, embed)
+	return h.discord.CreateUpdatePin(channelID, pinnedStatusHeader, embed)
 }
 
 const roomStatusHeader = "Working Room"
@@ -97,7 +95,7 @@ func (h *HuntBot) setPinnedVoiceInfo(puzzleChannelID string, voiceChannelID *str
 		Description: room,
 	}
 
-	return h.dis.CreateUpdatePin(puzzleChannelID, roomStatusHeader, embed)
+	return h.discord.CreateUpdatePin(puzzleChannelID, roomStatusHeader, embed)
 }
 
 func (h *HuntBot) notifyNewPuzzle(puzzle *schema.Puzzle, channelID string) error {
@@ -135,7 +133,7 @@ func (h *HuntBot) notifyNewPuzzle(puzzle *schema.Puzzle, channelID string) error
 			},
 		},
 	}
-	if err := h.dis.GeneralChannelSendEmbed(embed); err != nil {
+	if err := h.discord.GeneralChannelSendEmbed(embed); err != nil {
 		return fmt.Errorf("error posting new puzzle announcement: %v", err)
 	}
 
@@ -158,7 +156,7 @@ func (h *HuntBot) logStatus(ctx context.Context, puzzle *schema.Puzzle) error {
 	}
 
 	if didUpdate {
-		if err := h.dis.StatusUpdateChannelSend(fmt.Sprintf("%s Puzzle <#%s> is now %v.", puzzle.Round.Emoji, puzzle.DiscordChannel, puzzle.Status.Pretty())); err != nil {
+		if err := h.discord.StatusUpdateChannelSend(fmt.Sprintf("%s Puzzle <#%s> is now %v.", puzzle.Round.Emoji, puzzle.DiscordChannel, puzzle.Status.Pretty())); err != nil {
 			return fmt.Errorf("error posting puzzle status announcement: %v", err)
 		}
 	}
@@ -173,18 +171,18 @@ func (h *HuntBot) markSolved(ctx context.Context, puzzle *schema.Puzzle) error {
 	}
 
 	if puzzle.Answer == "" {
-		if err := h.dis.ChannelSend(puzzle.DiscordChannel, fmt.Sprintf("Puzzle %s!  Please add the answer to the sheet.", verb)); err != nil {
+		if err := h.discord.ChannelSend(puzzle.DiscordChannel, fmt.Sprintf("Puzzle %s!  Please add the answer to the sheet.", verb)); err != nil {
 			return fmt.Errorf("error posting solved puzzle announcement: %v", err)
 		}
 
-		if err := h.dis.QMChannelSend(fmt.Sprintf("Puzzle %q marked %s, but has no answer, please add it to the sheet.", puzzle.Name, verb)); err != nil {
+		if err := h.discord.QMChannelSend(fmt.Sprintf("Puzzle %q marked %s, but has no answer, please add it to the sheet.", puzzle.Name, verb)); err != nil {
 			return fmt.Errorf("error posting solved puzzle announcement: %v", err)
 		}
 
 		return nil // don't archive until we have the answer.
 	}
 
-	archived, err := h.dis.ArchiveChannel(puzzle.DiscordChannel)
+	archived, err := h.discord.ArchiveChannel(puzzle.DiscordChannel)
 	if !archived {
 		// Channel already archived (cache is best-effort -- this can happen
 		// after restart or if a human did it)
@@ -193,7 +191,7 @@ func (h *HuntBot) markSolved(ctx context.Context, puzzle *schema.Puzzle) error {
 	} else {
 		log.Printf("Archiving channel for %q", puzzle.Name)
 		// post to relevant channels only if it was newly archived.
-		if err := h.dis.ChannelSend(puzzle.DiscordChannel, fmt.Sprintf("Puzzle %s! The answer was `%v`. I'll archive this channel.", verb, puzzle.Answer)); err != nil {
+		if err := h.discord.ChannelSend(puzzle.DiscordChannel, fmt.Sprintf("Puzzle %s! The answer was `%v`. I'll archive this channel.", verb, puzzle.Answer)); err != nil {
 			return fmt.Errorf("error posting solved puzzle announcement: %v", err)
 		}
 
@@ -217,7 +215,7 @@ func (h *HuntBot) markSolved(ctx context.Context, puzzle *schema.Puzzle) error {
 			},
 		}
 
-		if err := h.dis.GeneralChannelSendEmbed(embed); err != nil {
+		if err := h.discord.GeneralChannelSendEmbed(embed); err != nil {
 			return fmt.Errorf("error posting solved puzzle announcement: %v", err)
 		}
 	}
@@ -263,7 +261,7 @@ func (h *HuntBot) warnPuzzle(ctx context.Context, puzzle *schema.Puzzle) error {
 	if len(msgs) == 0 {
 		return fmt.Errorf("cannot warn about well-formatted puzzle %q: %v", puzzle.Name, puzzle)
 	}
-	if err := h.dis.QMChannelSend(fmt.Sprintf("Puzzle %q is %s", puzzle.Name, strings.Join(msgs, " and "))); err != nil {
+	if err := h.discord.QMChannelSend(fmt.Sprintf("Puzzle %q is %s", puzzle.Name, strings.Join(msgs, " and "))); err != nil {
 		return err
 	}
 	h.lastWarnTime[puzzle.Name] = time.Now()
@@ -295,7 +293,7 @@ func (h *HuntBot) updatePuzzle(ctx context.Context, puzzle *schema.Puzzle) error
 
 	if puzzle.DiscordChannel == "" {
 		log.Printf("Adding channel for new puzzle %q", puzzle.Name)
-		channel, err := h.dis.CreateChannel(puzzle.Name)
+		channel, err := h.discord.CreateChannel(puzzle.Name)
 		if err != nil {
 			return fmt.Errorf("error creating discord channel for %q: %v", puzzle.Name, err)
 		}

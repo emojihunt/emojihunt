@@ -22,7 +22,7 @@ func (h *HuntBot) PollDatabase(ctx context.Context) {
 				log.Printf("polling sheet failed: %v", err)
 				failures++
 				if failures%10 == 3 {
-					h.dis.TechChannelSend(fmt.Sprintf("polling sheet failed: %v", err))
+					h.discord.TechChannelSend(fmt.Sprintf("polling sheet failed: %v", err))
 				}
 			} else {
 				failures = 0

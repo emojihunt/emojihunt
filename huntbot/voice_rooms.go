@@ -6,7 +6,6 @@ import (
 	"strings"
 
 	"github.com/bwmarrin/discordgo"
-	"github.com/gauravjsingh/emojihunt/discord"
 )
 
 var roomRE = regexp.MustCompile(`!room (start|stop)(?: (.*))?$`)
@@ -42,9 +41,9 @@ func (h *HuntBot) RoomHandler(s *discordgo.Session, m *discordgo.MessageCreate) 
 
 	var rID string
 	if matches[2] != "" {
-		rID, ok = h.dis.ClosestRoomID(matches[2])
+		rID, ok = h.discord.ClosestRoomID(matches[2])
 		if !ok {
-			reply = fmt.Sprintf("Unable to find room %q. Available rooms are: %v", matches[2], strings.Join(h.dis.AvailableRooms(), ", "))
+			reply = fmt.Sprintf("Unable to find room %q. Available rooms are: %v", matches[2], strings.Join(h.discord.AvailableRooms(), ", "))
 			return nil
 		}
 	}
@@ -61,31 +60,31 @@ func (h *HuntBot) RoomHandler(s *discordgo.Session, m *discordgo.MessageCreate) 
 				reply = "!room start requires a room"
 				return fmt.Errorf("missing room ID from command: %s", m.Content)
 			}
-			updated, err := h.dis.AddPuzzleToRoom(puzzle, rID)
+			updated, err := h.discord.AddPuzzleToRoom(puzzle, rID)
 			if err != nil {
 				reply = "error updating room name, contact @tech."
 				return err
 			}
 			if !updated {
-				reply = fmt.Sprintf("Puzzle %q is already in room %s", puzzle, discord.ChannelMention(rID))
+				reply = fmt.Sprintf("Puzzle %q is already in room %s", puzzle, h.discord.ChannelMention(rID))
 				return nil
 			}
 		}
 		h.setPinnedVoiceInfo(m.ChannelID, &rID)
-		reply = fmt.Sprintf("Set the room for puzzle %q to %s", puzzle, discord.ChannelMention(rID))
+		reply = fmt.Sprintf("Set the room for puzzle %q to %s", puzzle, h.discord.ChannelMention(rID))
 	case "stop":
 		if h.cfg.UpdateRooms {
 			if rID == "" {
 				reply = "!room stop requires a room to update room names"
 				return fmt.Errorf("missing room ID from command: %s", m.Content)
 			}
-			updated, err := h.dis.RemovePuzzleFromRoom(puzzle, rID)
+			updated, err := h.discord.RemovePuzzleFromRoom(puzzle, rID)
 			if err != nil {
 				reply = "error updating room name, contact @tech."
 				return err
 			}
 			if !updated {
-				reply = fmt.Sprintf("Puzzle %q was already not in room %s", puzzle, discord.ChannelMention(rID))
+				reply = fmt.Sprintf("Puzzle %q was already not in room %s", puzzle, h.discord.ChannelMention(rID))
 				return nil
 			}
 		}
