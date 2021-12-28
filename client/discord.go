@@ -43,15 +43,6 @@ type Discord struct {
 	roomsToID map[string]string
 }
 
-func getGuildID(s *discordgo.Session) (string, error) {
-	log.Print("fetching GuildID from session")
-	gs := s.State.Guilds
-	if len(gs) != 1 {
-		return "", fmt.Errorf("expected exactly 1 guild, found %d", len(gs))
-	}
-	return gs[0].ID, nil
-}
-
 func NewDiscord(s *discordgo.Session, c DiscordConfig) (*Discord, error) {
 	if c.GuildID == "" {
 		var err error
@@ -130,6 +121,15 @@ func NewDiscord(s *discordgo.Session, c DiscordConfig) (*Discord, error) {
 	}, nil
 }
 
+func getGuildID(s *discordgo.Session) (string, error) {
+	log.Print("fetching GuildID from session")
+	gs := s.State.Guilds
+	if len(gs) != 1 {
+		return "", fmt.Errorf("expected exactly 1 guild, found %d", len(gs))
+	}
+	return gs[0].ID, nil
+}
+
 // TODO: Make this a struct with a name.
 type NewMessageHandler func(*discordgo.Session, *discordgo.MessageCreate) error
 
@@ -144,20 +144,6 @@ func (c *Discord) RegisterNewMessageHandler(name string, h NewMessageHandler) {
 	})
 }
 
-func (c *Discord) ChannelSend(chanID, msg string) error {
-	_, err := c.s.ChannelMessageSend(chanID, msg)
-	return err
-}
-
-func (c *Discord) ChannelSendAndPin(chanID, msg string) error {
-	m, err := c.s.ChannelMessageSend(chanID, msg)
-	if err != nil {
-		return err
-	}
-	err = c.s.ChannelMessagePin(chanID, m.ID)
-	return err
-}
-
 func (c *Discord) ChannelSendEmbedAndPin(chanID string, embed *discordgo.MessageEmbed) error {
 	m, err := c.s.ChannelMessageSendEmbed(chanID, embed)
 	if err != nil {
@@ -166,8 +152,6 @@ func (c *Discord) ChannelSendEmbedAndPin(chanID string, embed *discordgo.Message
 	err = c.s.ChannelMessagePin(chanID, m.ID)
 	return err
 }
-
-const statusTitle = "Puzzle Information"
 
 // Returns last pinned status message, or nil if not found.
 func (c *Discord) pinnedStatusMessage(chanID, header string) (*discordgo.Message, error) {
@@ -185,11 +169,6 @@ func (c *Discord) pinnedStatusMessage(chanID, header string) (*discordgo.Message
 		}
 	}
 	return statusMessage, nil
-}
-
-type statusMessage struct {
-	spreadsheetURL, puzzleURL string
-	status                    string
 }
 
 // Set the pinned status message, by posting one or editing the existing one.
@@ -236,20 +215,20 @@ func (c *Discord) TechChannelSend(msg string) error {
 	return err
 }
 
-var ChannelNotFound = fmt.Errorf("channel not found")
+var ErrChannelNotFound = fmt.Errorf("channel not found")
 
 // Returns whether a channel was archived.
 func (c *Discord) ArchiveChannel(chID string) (bool, error) {
 	ch, err := c.s.Channel(chID)
 	if err != nil {
-		return false, fmt.Errorf("channel id %s not found: %w", chID, ChannelNotFound)
+		return false, fmt.Errorf("channel id %s not found: %w", chID, ErrChannelNotFound)
 	}
 
 	// Already archived.
 	if ch.ParentID != "" {
 		parentCh, err := c.s.Channel(ch.ParentID)
 		if err != nil {
-			return false, fmt.Errorf("parent channel id %s not found: %w", ch.ParentID, ChannelNotFound)
+			return false, fmt.Errorf("parent channel id %s not found: %w", ch.ParentID, ErrChannelNotFound)
 		}
 		if strings.HasPrefix(parentCh.Name, "Solved") {
 			return false, nil
@@ -310,7 +289,7 @@ func (c *Discord) AvailableRooms() []string {
 	return rs
 }
 
-func (c *Discord) updateRoom(r room) error {
+func (c *Discord) updateRoom(r voiceRoom) error {
 	c.mu.Lock()
 	rID := c.roomsToID[r.name]
 	c.mu.Unlock()
@@ -376,32 +355,32 @@ func (c *Discord) RemovePuzzleFromRoom(puzzle, roomID string) (bool, error) {
 	return true, nil
 }
 
-type room struct {
+type voiceRoom struct {
 	// The name of the room, eg. "Patio". This excludes the puzzles that might be part of the channel name.
 	name    string
 	puzzles []string
 }
 
-func (r room) VoiceChannelName() string {
+func (r voiceRoom) VoiceChannelName() string {
 	if len(r.puzzles) == 0 {
 		return r.name
 	}
 	return fmt.Sprintf("%s: %s", r.name, strings.Join(r.puzzles, ", "))
 }
 
-func parseRoom(voiceChanName string) (room, error) {
+func parseRoom(voiceChanName string) (voiceRoom, error) {
 	parts := strings.Split(voiceChanName, ":")
 	if len(parts) == 1 {
-		return room{name: parts[0]}, nil
+		return voiceRoom{name: parts[0]}, nil
 	}
 	if len(parts) != 2 {
-		return room{}, fmt.Errorf("too many ':' in voice channel name: %q", voiceChanName)
+		return voiceRoom{}, fmt.Errorf("too many ':' in voice channel name: %q", voiceChanName)
 	}
 	puzzles := strings.Split(parts[1], ",")
 	for i, p := range puzzles {
 		puzzles[i] = strings.TrimSpace(p)
 	}
-	return room{
+	return voiceRoom{
 		name:    parts[0],
 		puzzles: puzzles,
 	}, nil
