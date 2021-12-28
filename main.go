@@ -13,9 +13,9 @@ import (
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/gauravjsingh/emojihunt/client"
+	"github.com/gauravjsingh/emojihunt/emojiname"
 	"github.com/gauravjsingh/emojihunt/huntbot"
-	"github.com/gauravjsingh/emojihunt/huntbot/emojiname"
-	"github.com/gauravjsingh/emojihunt/huntbot/huntyet"
+	"github.com/gauravjsingh/emojihunt/huntyet"
 )
 
 var (
@@ -95,16 +95,16 @@ func main() {
 	if err != nil {
 		log.Fatalf("error creating drive integration: %v", err)
 	}
-	h := huntbot.New(dis, d, air, huntbot.Config{MinWarningFrequency: 10 * time.Minute, InitialWarningDelay: time.Minute})
+	bot := huntbot.New(dis, d, air, huntbot.Config{MinWarningFrequency: 10 * time.Minute, InitialWarningDelay: time.Minute})
 
 	log.Print("press ctrl+C to exit")
 	dis.RegisterNewMessageHandler("emoji generator", emojiname.Handler)
 	dis.RegisterNewMessageHandler("isithuntyet?", huntyet.Handler)
-	dis.RegisterNewMessageHandler("bot control", h.ControlHandler)
-	dis.RegisterNewMessageHandler("qm manager", huntbot.GetQMHandler(dis))
-	dis.RegisterNewMessageHandler("voice channel helper", h.RoomHandler)
+	dis.RegisterNewMessageHandler("bot control", bot.ControlHandler)
+	dis.RegisterNewMessageHandler("qm manager", bot.QMHandler)
+	dis.RegisterNewMessageHandler("voice channel helper", bot.VoiceRoomHandler)
 
-	go h.PollDatabase(ctx)
+	go bot.PollDatabase(ctx)
 
 	<-ctx.Done()
 }

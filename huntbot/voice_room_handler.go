@@ -10,7 +10,7 @@ import (
 
 var roomRE = regexp.MustCompile(`!room (start|stop)(?: (.*))?$`)
 
-func (h *HuntBot) RoomHandler(s *discordgo.Session, m *discordgo.MessageCreate) error {
+func (h *HuntBot) VoiceRoomHandler(s *discordgo.Session, m *discordgo.MessageCreate) error {
 	if m.Author.ID == s.State.User.ID || !strings.HasPrefix(m.Content, "!room") {
 		return nil
 	}
