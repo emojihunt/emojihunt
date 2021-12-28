@@ -42,7 +42,11 @@ func (air *Airtable) ListRecords() ([]schema.Puzzle, error) {
 				// response to DELETE requests, but let's check it just in case.
 				continue
 			}
-			infos = append(infos, *air.parseRecord(record))
+			info, err := air.parseRecord(record)
+			if err != nil {
+				return nil, err
+			}
+			infos = append(infos, *info)
 		}
 
 		if response.Offset != "" {
@@ -65,7 +69,7 @@ func (air *Airtable) FindByDiscordChannel(channel string) (*schema.Puzzle, error
 	if len(response.Records) != 1 {
 		return nil, fmt.Errorf("expected 1 record, got: %#v", response.Records)
 	}
-	return air.parseRecord(response.Records[0]), nil
+	return air.parseRecord(response.Records[0])
 }
 
 func (air *Airtable) UpdateDiscordChannel(puz *schema.Puzzle, channel string) (*schema.Puzzle, error) {
@@ -75,7 +79,7 @@ func (air *Airtable) UpdateDiscordChannel(puz *schema.Puzzle, channel string) (*
 	if err != nil {
 		return nil, err
 	}
-	return air.parseRecord(record), nil
+	return air.parseRecord(record)
 }
 
 func (air *Airtable) UpdateSpreadsheetID(puz *schema.Puzzle, spreadsheet string) (*schema.Puzzle, error) {
@@ -85,19 +89,33 @@ func (air *Airtable) UpdateSpreadsheetID(puz *schema.Puzzle, spreadsheet string)
 	if err != nil {
 		return nil, err
 	}
-	return air.parseRecord(record), nil
+	return air.parseRecord(record)
 }
 
-func (air *Airtable) parseRecord(record *airtable.Record) *schema.Puzzle {
+func (air *Airtable) parseRecord(record *airtable.Record) (*schema.Puzzle, error) {
+	round := schema.ParseRound(air.stringField(record, "Round"))
+	status, err := schema.ParseStatus(air.stringField(record, "Status"))
+	if err != nil {
+		return nil, err
+	}
+
 	return &schema.Puzzle{
-		Name:   record.Fields["Name"].(string),
-		Answer: record.Fields["Answer"].(string),
-		Round:  schema.ParseRound(record.Fields["Round"].(string)),
-		Status: schema.ParseStatus(record.Fields["Status"].(string)),
+		Name:   air.stringField(record, "Name"),
+		Answer: air.stringField(record, "Answer"),
+		Round:  round,
+		Status: status,
 
 		AirtableRecord: record,
-		PuzzleURL:      record.Fields["Puzzle URL"].(string),
-		SpreadsheetID:  record.Fields["Spreadsheet ID"].(string),
-		DiscordChannel: record.Fields["Discord Channel"].(string),
+		PuzzleURL:      air.stringField(record, "Puzzle URL"),
+		SpreadsheetID:  air.stringField(record, "Spreadsheet ID"),
+		DiscordChannel: air.stringField(record, "Discord Channel"),
+	}, nil
+}
+
+func (air *Airtable) stringField(record *airtable.Record, field string) string {
+	if value, ok := record.Fields[field]; !ok {
+		return ""
+	} else {
+		return value.(string)
 	}
 }

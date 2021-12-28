@@ -45,27 +45,38 @@ func (r Round) TwemojiURL() string {
 	return fmt.Sprintf("https://twemoji.maxcdn.com/2/72x72/%s.png", strings.Join(codePoints, "-"))
 }
 
-type Status string
+type Status int
 
 const (
-	Working    Status = "✍️Working"
-	Abandoned  Status = "🗑️Abandoned"
-	Solved     Status = "🏅Solved"
-	Backsolved Status = "🤦‍♀️Backsolved"
+	NotStarted Status = iota
+	Working
+	Abandoned
+	Solved
+	Backsolved
 )
 
-func ParseStatus(s string) Status {
-	if s == string(Working) {
-		return Working
-	} else if s == string(Abandoned) {
-		return Abandoned
-	} else if s == string(Solved) {
-		return Solved
-	} else if s == string(Backsolved) {
-		return Backsolved
-	} else {
-		err := fmt.Errorf("unknown status %v", s)
+func ParseStatus(raw string) (Status, error) {
+	if raw == "" {
+		return NotStarted, nil
+	}
+
+	parts := strings.SplitN(raw, " ", 2)
+	if len(parts) != 2 {
+		err := fmt.Errorf("couldn't extract emoji and status from %#v", raw)
 		panic(err)
+	}
+
+	switch parts[1] {
+	case "Working":
+		return Working, nil
+	case "Abandoned":
+		return Abandoned, nil
+	case "Solved":
+		return Solved, nil
+	case "Backsolved":
+		return Backsolved, nil
+	default:
+		return NotStarted, fmt.Errorf("unknown status %v", raw)
 	}
 }
 
@@ -74,9 +85,19 @@ func (s Status) IsSolved() bool {
 }
 
 func (s Status) Pretty() string {
-	if string(s) == "" {
+	switch s {
+	case NotStarted:
 		return "Not Started"
-	} else {
-		return string(s)
+	case Working:
+		return "✍️Working"
+	case Abandoned:
+		return "🗑️Abandoned"
+	case Solved:
+		return "🏅Solved"
+	case Backsolved:
+		return "🤦‍♀️Backsolved"
+	default:
+		err := fmt.Errorf("unknown status %#v", s)
+		panic(err)
 	}
 }
