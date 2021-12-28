@@ -106,7 +106,7 @@ func main() {
 	dis.RegisterNewMessageHandler("qm manager", dis.QMHandler)
 	dis.RegisterNewMessageHandler("voice channel helper", h.RoomHandler)
 
-	go h.WatchSheet(ctx)
+	go h.PollDatabase(ctx)
 
 	<-ctx.Done()
 }
