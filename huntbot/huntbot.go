@@ -12,7 +12,6 @@ type Config struct {
 	// How often to warn in discord about badly formatted puzzles.
 	MinWarningFrequency time.Duration
 	InitialWarningDelay time.Duration
-	UpdateRooms         bool
 }
 
 type HuntBot struct {

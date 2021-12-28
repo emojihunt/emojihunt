@@ -1,6 +1,8 @@
 package client
 
 import (
+	"fmt"
+
 	"github.com/gauravjsingh/emojihunt/schema"
 	"github.com/mehanizm/airtable"
 )
@@ -51,6 +53,19 @@ func (air *Airtable) ListRecords() ([]schema.Puzzle, error) {
 			return infos, nil
 		}
 	}
+}
+
+func (air *Airtable) FindByDiscordChannel(channel string) (*schema.Puzzle, error) {
+	response, err := air.table.GetRecords().
+		WithFilterFormula(fmt.Sprintf("{Discord Channel}='%s'", channel)).
+		Do()
+	if err != nil {
+		return nil, err
+	}
+	if len(response.Records) != 1 {
+		return nil, fmt.Errorf("expected 1 record, got: %#v", response.Records)
+	}
+	return air.parseRecord(response.Records[0]), nil
 }
 
 func (air *Airtable) UpdateDiscordChannel(puz *schema.Puzzle, channel string) (*schema.Puzzle, error) {

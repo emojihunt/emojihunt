@@ -8,7 +8,7 @@ import (
 	"github.com/bwmarrin/discordgo"
 )
 
-func (h *HuntBot) ControlHandler(s *discordgo.Session, m *discordgo.MessageCreate) error {
+func (h *HuntBot) Handler(s *discordgo.Session, m *discordgo.MessageCreate) error {
 	if m.Author.ID == s.State.User.ID || !strings.HasPrefix(m.Content, "!huntbot") {
 		return nil
 	}

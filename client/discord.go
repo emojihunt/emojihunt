@@ -130,10 +130,9 @@ func getGuildID(s *discordgo.Session) (string, error) {
 	return gs[0].ID, nil
 }
 
-// TODO: Make this a struct with a name.
-type NewMessageHandler func(*discordgo.Session, *discordgo.MessageCreate) error
+type DiscordMessageHandler func(*discordgo.Session, *discordgo.MessageCreate) error
 
-func (c *Discord) RegisterNewMessageHandler(name string, h NewMessageHandler) {
+func (c *Discord) RegisterNewMessageHandler(name string, h DiscordMessageHandler) {
 	// Only handle new guild messages.
 	// TODO: bitOr with the current value.
 	c.s.Identify.Intents = discordgo.MakeIntent(discordgo.IntentsGuildMessages)

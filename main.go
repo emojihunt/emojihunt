@@ -16,6 +16,8 @@ import (
 	"github.com/gauravjsingh/emojihunt/emojiname"
 	"github.com/gauravjsingh/emojihunt/huntbot"
 	"github.com/gauravjsingh/emojihunt/huntyet"
+	"github.com/gauravjsingh/emojihunt/qm"
+	"github.com/gauravjsingh/emojihunt/voiceroom"
 )
 
 var (
@@ -100,9 +102,9 @@ func main() {
 	log.Print("press ctrl+C to exit")
 	dis.RegisterNewMessageHandler("emoji generator", emojiname.Handler)
 	dis.RegisterNewMessageHandler("isithuntyet?", huntyet.Handler)
-	dis.RegisterNewMessageHandler("bot control", bot.ControlHandler)
-	dis.RegisterNewMessageHandler("qm manager", bot.QMHandler)
-	dis.RegisterNewMessageHandler("voice channel helper", bot.VoiceRoomHandler)
+	dis.RegisterNewMessageHandler("bot control", bot.Handler)
+	dis.RegisterNewMessageHandler("qm manager", qm.MakeQMHandler(dis))
+	dis.RegisterNewMessageHandler("voice channel helper", voiceroom.MakeVoiceRoomHandler(air, dis))
 
 	go bot.PollDatabase(ctx)
 
