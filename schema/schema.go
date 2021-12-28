@@ -45,18 +45,10 @@ func (r Round) TwemojiURL() string {
 	return fmt.Sprintf("https://twemoji.maxcdn.com/2/72x72/%s.png", strings.Join(codePoints, "-"))
 }
 
-// func (r *Round) IntColor() int {
-// 	red := int(r.Color.Red * 255)
-// 	green := int(r.Color.Green * 255)
-// 	blue := int(r.Color.Blue * 255)
-// 	return (red << 16) + (green << 8) + blue
-// }
-
-// TODO: how should we support extending Status?
 type Status string
 
 const (
-	Working    Status = "🏅Solved" // TODO: wait what?
+	Working    Status = "✍️Working"
 	Abandoned  Status = "🗑️Abandoned"
 	Solved     Status = "🏅Solved"
 	Backsolved Status = "🤦‍♀️Backsolved"
