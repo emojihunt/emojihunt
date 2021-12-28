@@ -19,8 +19,6 @@ type Drive struct {
 	mu sync.Mutex
 	// cache of round name to folder ID
 	roundFolderIDs map[string]string
-	// map from channel ID to puzzle name
-	chanToPuzzles map[string]string
 
 	sheets *sheets.Service
 	drive  *drive.Service
@@ -138,12 +136,4 @@ func (d *Drive) roundFolder(ctx context.Context, name string) (id string, err er
 
 	d.roundFolderIDs[name] = file.Id
 	return file.Id, nil
-}
-
-func (d *Drive) PuzzleForChannel(chanID string) (string, bool) {
-	d.mu.Lock()
-	defer d.mu.Unlock()
-	panic("TODO: popupate chanToPuzzles")
-	p, ok := d.chanToPuzzles[chanID]
-	return p, ok
 }

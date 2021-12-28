@@ -28,6 +28,13 @@ func (h *HuntBot) PollDatabase(ctx context.Context) {
 				failures = 0
 			}
 
+			h.mu.Lock()
+			h.channelToPuzzle = make(map[string]string)
+			for _, puzzle := range puzzles {
+				h.channelToPuzzle[puzzle.DiscordChannel] = puzzle.Name
+			}
+			h.mu.Unlock()
+
 			for _, puzzle := range puzzles {
 				err := h.updatePuzzle(ctx, &puzzle)
 				if err != nil {
