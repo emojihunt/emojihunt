@@ -59,7 +59,6 @@ const (
 	Abandoned
 	Solved
 	Backsolved
-	Archived
 )
 
 func ParseStatus(raw string) (Status, error) {
@@ -82,8 +81,6 @@ func ParseStatus(raw string) (Status, error) {
 		return Solved, nil
 	case "Backsolved":
 		return Backsolved, nil
-	case "Archived":
-		return Archived, nil
 	default:
 		return NotStarted, fmt.Errorf("unknown status %v", raw)
 	}
@@ -114,8 +111,6 @@ func (s Status) Serialize() string {
 		return "🏅 Solved"
 	case Backsolved:
 		return "🤦‍♀️ Backsolved"
-	case Archived:
-		return "📦 Archived"
 	default:
 		err := fmt.Errorf("unknown status %#v", s)
 		panic(err)

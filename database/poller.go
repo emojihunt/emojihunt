@@ -24,11 +24,9 @@ type Poller struct {
 	discord  *client.Discord
 	syncer   *syncer.Syncer
 
-	mu           sync.Mutex               // hold while accessing everything below
-	enabled      bool                     // global killswitch, toggle with !huntbot kill/!huntbot start
-	puzzleStatus map[string]schema.Status // name -> status (best-effort cache)
-	archived     map[string]bool          // name -> channel was archived (best-effort cache)
-	lastWarnTime map[string]time.Time     // name -> when we last warned about a malformed puzzle
+	mu           sync.Mutex           // hold while accessing everything below
+	enabled      bool                 // global killswitch, toggle with !huntbot kill/!huntbot start
+	lastWarnTime map[string]time.Time // airtable id -> when we last warned about a malformed puzzle
 }
 
 func NewPoller(airtable *client.Airtable, discord *client.Discord, syncer *syncer.Syncer) *Poller {
@@ -37,8 +35,6 @@ func NewPoller(airtable *client.Airtable, discord *client.Discord, syncer *synce
 		discord:      discord,
 		syncer:       syncer,
 		enabled:      true,
-		puzzleStatus: map[string]schema.Status{},
-		archived:     map[string]bool{},
 		lastWarnTime: map[string]time.Time{},
 	}
 }
@@ -116,25 +112,15 @@ func (p *Poller) processPuzzle(ctx context.Context, puzzle *schema.Puzzle) error
 		return err
 	}
 
-	if p.setPuzzleStatus(puzzle.Name, puzzle.Status) != puzzle.Status ||
-		puzzle.Answer != "" && puzzle.Status.IsSolved() && !p.isArchived(puzzle.Name) {
-		// (potential) status change
-		if err := p.syncer.ProcessStatusUpdate(ctx, puzzle); err != nil {
-			return err
-		}
-		if puzzle.Status.IsSolved() {
-			p.archive(puzzle.Name)
-		}
-	}
-
-	return nil
+	_, err = p.syncer.IdempotentUpdate(ctx, puzzle)
+	return err
 }
 
 func (p *Poller) warnPuzzle(ctx context.Context, puzzle *schema.Puzzle) error {
 	p.mu.Lock()
 	defer p.mu.Unlock()
-	if lastWarning, ok := p.lastWarnTime[puzzle.Name]; !ok {
-		p.lastWarnTime[puzzle.Name] = time.Now().Add(InitialWarningDelay - MinWarningFrequency)
+	if lastWarning, ok := p.lastWarnTime[puzzle.AirtableRecord.ID]; !ok {
+		p.lastWarnTime[puzzle.AirtableRecord.ID] = time.Now().Add(InitialWarningDelay - MinWarningFrequency)
 	} else if time.Since(lastWarning) <= MinWarningFrequency {
 		return nil
 	}
@@ -151,26 +137,6 @@ func (p *Poller) warnPuzzle(ctx context.Context, puzzle *schema.Puzzle) error {
 	if err := p.discord.QMChannelSend(fmt.Sprintf("Puzzle %q is %s", puzzle.Name, strings.Join(msgs, " and "))); err != nil {
 		return err
 	}
-	p.lastWarnTime[puzzle.Name] = time.Now()
+	p.lastWarnTime[puzzle.AirtableRecord.ID] = time.Now()
 	return nil
-}
-
-func (p *Poller) isArchived(puzzleName string) bool {
-	p.mu.Lock()
-	defer p.mu.Unlock()
-	return p.archived[puzzleName]
-}
-
-func (p *Poller) archive(puzzleName string) {
-	p.mu.Lock()
-	defer p.mu.Unlock()
-	p.archived[puzzleName] = true
-}
-
-func (p *Poller) setPuzzleStatus(name string, newStatus schema.Status) (oldStatus schema.Status) {
-	p.mu.Lock()
-	defer p.mu.Unlock()
-	oldStatus = p.puzzleStatus[name]
-	p.puzzleStatus[name] = newStatus
-	return oldStatus
 }

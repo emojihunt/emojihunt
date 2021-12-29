@@ -80,8 +80,8 @@ func (air *Airtable) FindByDiscordChannel(channel string) (*schema.Puzzle, error
 	return air.parseRecord(response.Records[0])
 }
 
-func (air *Airtable) UpdateDiscordChannel(puz *schema.Puzzle, channel string) (*schema.Puzzle, error) {
-	record, err := puz.AirtableRecord.UpdateRecordPartial(map[string]interface{}{
+func (air *Airtable) UpdateDiscordChannel(puzzle *schema.Puzzle, channel string) (*schema.Puzzle, error) {
+	record, err := puzzle.AirtableRecord.UpdateRecordPartial(map[string]interface{}{
 		"Discord Channel": channel,
 	})
 	if err != nil {
@@ -90,9 +90,19 @@ func (air *Airtable) UpdateDiscordChannel(puz *schema.Puzzle, channel string) (*
 	return air.parseRecord(record)
 }
 
-func (air *Airtable) UpdateSpreadsheetID(puz *schema.Puzzle, spreadsheet string) (*schema.Puzzle, error) {
-	record, err := puz.AirtableRecord.UpdateRecordPartial(map[string]interface{}{
+func (air *Airtable) UpdateSpreadsheetID(puzzle *schema.Puzzle, spreadsheet string) (*schema.Puzzle, error) {
+	record, err := puzzle.AirtableRecord.UpdateRecordPartial(map[string]interface{}{
 		"Spreadsheet ID": spreadsheet,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return air.parseRecord(record)
+}
+
+func (air *Airtable) UpdateLastBotStatus(puzzle *schema.Puzzle, lastBotStatus schema.Status) (*schema.Puzzle, error) {
+	record, err := puzzle.AirtableRecord.UpdateRecordPartial(map[string]interface{}{
+		"Last Bot Status": lastBotStatus.Serialize(),
 	})
 	if err != nil {
 		return nil, err
