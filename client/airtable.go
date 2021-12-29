@@ -138,8 +138,9 @@ func (air *Airtable) parseRecord(record *airtable.Record) (*schema.Puzzle, error
 
 func (air *Airtable) stringField(record *airtable.Record, field string) string {
 	if value, ok := record.Fields[field]; !ok {
-		err := fmt.Errorf("couldn't find field in Airtable reponse: %q", field)
-		panic(err)
+		// Airtable omits empty records from their JSON responses, so we can't
+		// actually tell if we've typo'd the field name.
+		return ""
 	} else {
 		return value.(string)
 	}
