@@ -7,6 +7,7 @@ import (
 	"sync"
 
 	"google.golang.org/api/drive/v3"
+	"google.golang.org/api/option"
 	"google.golang.org/api/sheets/v4"
 )
 
@@ -23,12 +24,12 @@ type Drive struct {
 	drive  *drive.Service
 }
 
-func NewDrive(ctx context.Context, rootFolderID string) (*Drive, error) {
-	sheetsService, err := sheets.NewService(ctx)
+func NewDrive(ctx context.Context, rootFolderID string, credentials []byte) (*Drive, error) {
+	sheetsService, err := sheets.NewService(ctx, option.WithCredentialsJSON(credentials))
 	if err != nil {
 		return nil, err
 	}
-	driveService, err := drive.NewService(ctx)
+	driveService, err := drive.NewService(ctx, option.WithCredentialsJSON(credentials))
 	if err != nil {
 		return nil, err
 	}

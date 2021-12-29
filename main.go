@@ -29,9 +29,10 @@ var (
 )
 
 type secrets struct {
-	AirtableToken string `json:"airtable_token"`
-	DiscordToken  string `json:"discord_token"`
-	HuntboxToken  string `json:"huntbox_token"`
+	AirtableToken        string      `json:"airtable_token"`
+	DiscordToken         string      `json:"discord_token"`
+	HuntboxToken         string      `json:"huntbox_token"`
+	GoogleServiceAccount interface{} `json:"google_service_account"`
 }
 
 func loadSecrets(path string) (secrets, error) {
@@ -94,7 +95,11 @@ func main() {
 		}
 	}()
 
-	d, err := client.NewDrive(ctx, *rootFolderID)
+	rawServiceAccount, err := json.Marshal(secrets.GoogleServiceAccount)
+	if err != nil {
+		panic(err)
+	}
+	d, err := client.NewDrive(ctx, *rootFolderID, rawServiceAccount)
 	if err != nil {
 		log.Fatalf("error creating drive integration: %v", err)
 	}
