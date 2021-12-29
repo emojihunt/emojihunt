@@ -2,7 +2,6 @@ package syncer
 
 import (
 	"fmt"
-	"log"
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/gauravjsingh/emojihunt/schema"
@@ -10,14 +9,6 @@ import (
 
 // notifyNewPuzzle sends the "A new puzzle is available!" message to #general.
 func (s *Syncer) notifyNewPuzzle(puzzle *schema.Puzzle) error {
-	log.Printf("Posting information about new puzzle %q", puzzle.Name)
-
-	// Pin a message with the spreadsheet URL to the channel
-	if err := s.discordCreateUpdatePin(puzzle); err != nil {
-		return fmt.Errorf("error pinning puzzle info: %v", err)
-	}
-
-	// Post a message in the general channel with a link to the puzzle.
 	embed := &discordgo.MessageEmbed{
 		Author: &discordgo.MessageEmbedAuthor{
 			Name:    "A new puzzle is available!",
@@ -43,22 +34,18 @@ func (s *Syncer) notifyNewPuzzle(puzzle *schema.Puzzle) error {
 			},
 		},
 	}
-	if err := s.discord.GeneralChannelSendEmbed(embed); err != nil {
-		return fmt.Errorf("error posting new puzzle announcement: %v", err)
-	}
-
-	return nil
+	return s.discord.GeneralChannelSendEmbed(embed)
 }
 
-// notifyPuzzleSolved sends the two "Puzzle solved!" (or "Puzzle backsolved!")
-// messages: one to the puzzle channel, and another to #general.
-func (s *Syncer) notifyPuzzleSolved(puzzle *schema.Puzzle) error {
+// notifyPuzzleFullySolved sends the two "Puzzle solved!" (or "Puzzle
+// backsolved!") messages: one to the puzzle channel, and another to #general.
+func (s *Syncer) notifyPuzzleFullySolved(puzzle *schema.Puzzle) error {
 	msg := fmt.Sprintf(
 		"Puzzle %s! The answer was `%v`. I'll archive this channel.",
 		puzzle.Status.SolvedVerb(), puzzle.Answer,
 	)
 	if err := s.discord.ChannelSend(puzzle.DiscordChannel, msg); err != nil {
-		return fmt.Errorf("error posting solved puzzle announcement: %v", err)
+		return err
 	}
 
 	embed := &discordgo.MessageEmbed{
@@ -79,8 +66,33 @@ func (s *Syncer) notifyPuzzleSolved(puzzle *schema.Puzzle) error {
 			},
 		},
 	}
-	if err := s.discord.GeneralChannelSendEmbed(embed); err != nil {
-		return fmt.Errorf("error posting solved puzzle announcement: %v", err)
+	return s.discord.GeneralChannelSendEmbed(embed)
+}
+
+// notifyPuzzleSolvedMissingAnswer sends messages to the puzzle channel and to
+// #qm asking for the answer to be entered into Airtable.
+func (s *Syncer) notifyPuzzleSolvedMissingAnswer(puzzle *schema.Puzzle) error {
+	puzMsg := fmt.Sprintf(
+		"Puzzle %s! Please add the answer to Airtable.",
+		puzzle.Status.SolvedVerb(),
+	)
+	if err := s.discord.ChannelSend(puzzle.DiscordChannel, puzMsg); err != nil {
+		return err
 	}
-	return nil
+
+	qmMsg := fmt.Sprintf(
+		"Puzzle %q marked %s, but has no answer, please add it to Airtable.",
+		puzzle.Name, puzzle.Status.SolvedVerb(),
+	)
+	return s.discord.QMChannelSend(qmMsg)
+}
+
+// notifyPuzzleStatusChange sends messages about ordinary puzzle status changes
+// (i.e. everything except when a puzzle is solved).
+func (s *Syncer) notifyPuzzleStatusChange(puzzle *schema.Puzzle) error {
+	msg := fmt.Sprintf(
+		"%s Puzzle <#%s> is now %v.",
+		puzzle.Round.Emoji, puzzle.DiscordChannel, puzzle.Status.Pretty(),
+	)
+	return s.discord.StatusUpdateChannelSend(msg)
 }

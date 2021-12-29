@@ -33,6 +33,12 @@ func (p Puzzle) IsValid() bool {
 	return p.Name != "" && p.Round.Name != "" && p.PuzzleURL != ""
 }
 
+func (p Puzzle) ShouldArchive() bool {
+	// We shouldn't archive the channel until the answer has been filled in on
+	// Airtable
+	return p.Status.IsSolved() && p.Answer != ""
+}
+
 type Round struct {
 	Name  string
 	Emoji string

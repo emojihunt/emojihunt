@@ -44,3 +44,17 @@ func (s *Syncer) discordCreateUpdatePin(puzzle *schema.Puzzle) error {
 
 	return s.discord.CreateUpdatePin(puzzle.DiscordChannel, pinnedStatusHeader, embed)
 }
+
+// discordUpdateChannelCategory sets or updates the category of the puzzle
+// channel, either "Puzzles" (for open puzzles) or "Solved" (for solved
+// puzzles). It needs to be called when the puzzle status changes.
+func (s *Syncer) discordUpdateChannelCategory(puzzle *schema.Puzzle) error {
+	var category string
+	if puzzle.ShouldArchive() {
+		category = s.discord.SolvedCategoryID
+	} else {
+		category = s.discord.PuzzleCategoryID
+	}
+
+	return s.discord.SetChannelCategory(puzzle.DiscordChannel, category)
+}

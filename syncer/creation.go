@@ -39,7 +39,10 @@ func (s *Syncer) IdempotentCreate(ctx context.Context, puzzle *schema.Puzzle) (*
 			return nil, fmt.Errorf("error setting discord channel for puzzle %q: %v", puzzle.Name, err)
 		}
 
-		// TODO: set pinned status message
+		err = s.discordCreateUpdatePin(puzzle)
+		if err != nil {
+			return nil, fmt.Errorf("error pinning info for puzzle %q: %v", puzzle.Name, err)
+		}
 
 		// Treat Discord channel creation as the sentinel to also notify the
 		// team about the new puzzle.
