@@ -168,25 +168,24 @@ func (c *Discord) pinnedStatusMessage(chanID, header string) (*discordgo.Message
 
 // Set the pinned status message, by posting one or editing the existing one.
 // No-op if the status was already set.
-func (c *Discord) CreateUpdatePin(chanID, header string, embed *discordgo.MessageEmbed) (didUpdate bool, err error) {
+func (c *Discord) CreateUpdatePin(chanID, header string, embed *discordgo.MessageEmbed) error {
 	statusMessage, err := c.pinnedStatusMessage(chanID, header)
 	if err != nil {
-		return false, err
+		return err
 	}
 
 	if statusMessage == nil {
 		m, err := c.s.ChannelMessageSendEmbed(chanID, embed)
 		if err != nil {
-			return false, err
+			return err
 		}
-		err = c.s.ChannelMessagePin(chanID, m.ID)
-		return err == nil, err
+		return c.s.ChannelMessagePin(chanID, m.ID)
 	} else if statusMessage.Embeds[0] == embed {
-		return false, nil // no-op
+		return nil // no-op
 	}
 
 	_, err = c.s.ChannelMessageEditEmbed(chanID, statusMessage.ID, embed)
-	return err == nil, err
+	return err
 }
 
 func (c *Discord) QMChannelSend(msg string) error {
@@ -217,33 +216,33 @@ func (c *Discord) TechChannelSend(msg string) error {
 var ErrChannelNotFound = fmt.Errorf("channel not found")
 
 // Returns whether a channel was archived.
-func (c *Discord) ArchiveChannel(chID string) (bool, error) {
+func (c *Discord) ArchiveChannel(chID string) error {
 	ch, err := c.s.Channel(chID)
 	if err != nil {
-		return false, fmt.Errorf("channel id %s not found: %w", chID, ErrChannelNotFound)
+		return fmt.Errorf("channel id %s not found: %w", chID, ErrChannelNotFound)
 	}
 
 	// Already archived.
 	if ch.ParentID != "" {
 		parentCh, err := c.s.Channel(ch.ParentID)
 		if err != nil {
-			return false, fmt.Errorf("parent channel id %s not found: %w", ch.ParentID, ErrChannelNotFound)
+			return fmt.Errorf("parent channel id %s not found: %w", ch.ParentID, ErrChannelNotFound)
 		}
 		if strings.HasPrefix(parentCh.Name, "Solved") {
-			return false, nil
+			return nil
 		}
 	}
 
 	arCh, err := c.s.Channel(c.solvedCategoryID)
 	if err != nil {
-		return false, fmt.Errorf("error looking up archive: %v", err)
+		return fmt.Errorf("error looking up archive: %v", err)
 	}
 
 	_, err = c.s.ChannelEditComplex(chID, &discordgo.ChannelEdit{ParentID: c.solvedCategoryID, PermissionOverwrites: arCh.PermissionOverwrites})
 	if err != nil {
-		return false, fmt.Errorf("error moving channel: %v", err)
+		return fmt.Errorf("error moving channel: %v", err)
 	}
-	return true, nil
+	return nil
 }
 
 // CreateChannel ensures that a channel exists with the given name, and returns the channel ID.

@@ -71,7 +71,7 @@ func MakeVoiceRoomHandler(air *client.Airtable, dis *client.Discord) client.Disc
 	}
 }
 
-func setPinnedVoiceInfo(dis *client.Discord, puzzleChannelID string, voiceChannelID *string) (didUpdate bool, err error) {
+func setPinnedVoiceInfo(dis *client.Discord, puzzleChannelID string, voiceChannelID *string) error {
 	room := "No voice room set. \"!room start $room\" to start working in $room."
 	if voiceChannelID != nil {
 		room = fmt.Sprintf("Join us in <#%s>!", *voiceChannelID)

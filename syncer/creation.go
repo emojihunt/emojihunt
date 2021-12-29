@@ -50,7 +50,7 @@ func (s *Syncer) notifyNewPuzzle(puzzle *schema.Puzzle) error {
 	log.Printf("Posting information about new puzzle %q", puzzle.Name)
 
 	// Pin a message with the spreadsheet URL to the channel
-	if _, err := s.SetPinnedStatusInfo(puzzle); err != nil {
+	if err := s.DiscordCreateUpdatePin(puzzle); err != nil {
 		return fmt.Errorf("error pinning puzzle info: %v", err)
 	}
 

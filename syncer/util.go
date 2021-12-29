@@ -9,7 +9,7 @@ import (
 
 const pinnedStatusHeader = "Puzzle Information"
 
-func (s *Syncer) SetPinnedStatusInfo(puzzle *schema.Puzzle) (didUpdate bool, err error) {
+func (s *Syncer) DiscordCreateUpdatePin(puzzle *schema.Puzzle) error {
 	embed := &discordgo.MessageEmbed{
 		Author: &discordgo.MessageEmbedAuthor{Name: pinnedStatusHeader},
 		Title:  puzzle.Name,
