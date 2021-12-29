@@ -240,6 +240,15 @@ func (c *Discord) SetChannelCategory(chID, categoryID string) error {
 	return nil
 }
 
+func (c *Discord) SetChannelName(chID, name string) error {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.channelNameToID[name] = chID
+
+	_, err := c.s.ChannelEdit(chID, name)
+	return err
+}
+
 // CreateChannel ensures that a channel exists with the given name, and returns the channel ID.
 func (c *Discord) CreateChannel(name string) (string, error) {
 	c.mu.Lock()

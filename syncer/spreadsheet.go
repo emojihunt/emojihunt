@@ -14,7 +14,7 @@ import (
 func (s *Syncer) driveUpdateSpreadsheet(ctx context.Context, puzzle *schema.Puzzle) error {
 	var title = puzzle.Name
 	if puzzle.Status.IsSolved() {
-		title = "✅ " + title
+		title = "[SOLVED] " + title
 	}
 	if err := s.drive.SetSheetTitle(ctx, puzzle.SpreadsheetID, title); err != nil {
 		return err
