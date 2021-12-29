@@ -6,6 +6,7 @@ import (
 
 	"github.com/gauravjsingh/emojihunt/client"
 	"github.com/gauravjsingh/emojihunt/schema"
+	"github.com/gauravjsingh/emojihunt/syncer"
 )
 
 type Config struct {
@@ -15,9 +16,9 @@ type Config struct {
 }
 
 type HuntBot struct {
-	discord  *client.Discord
-	drive    *client.Drive
 	airtable *client.Airtable
+	discord  *client.Discord
+	syncer   *syncer.Syncer
 	cfg      Config
 
 	mu              sync.Mutex               // hold while accessing everything below
@@ -29,11 +30,11 @@ type HuntBot struct {
 	lastWarnTime map[string]time.Time
 }
 
-func New(discord *client.Discord, drive *client.Drive, airtable *client.Airtable, c Config) *HuntBot {
+func New(airtable *client.Airtable, discord *client.Discord, syncer *syncer.Syncer, c Config) *HuntBot {
 	return &HuntBot{
-		discord:      discord,
-		drive:        drive,
 		airtable:     airtable,
+		discord:      discord,
+		syncer:       syncer,
 		enabled:      true,
 		puzzleStatus: map[string]schema.Status{},
 		archived:     map[string]bool{},

@@ -18,6 +18,7 @@ import (
 	"github.com/gauravjsingh/emojihunt/huntyet"
 	"github.com/gauravjsingh/emojihunt/qm"
 	"github.com/gauravjsingh/emojihunt/server"
+	"github.com/gauravjsingh/emojihunt/syncer"
 	"github.com/gauravjsingh/emojihunt/voiceroom"
 )
 
@@ -101,7 +102,8 @@ func main() {
 	if err != nil {
 		log.Fatalf("error creating drive integration: %v", err)
 	}
-	bot := huntbot.New(dis, d, air, huntbot.Config{MinWarningFrequency: 10 * time.Minute, InitialWarningDelay: time.Minute})
+	syn := syncer.New(air, dis, d)
+	bot := huntbot.New(air, dis, syn, huntbot.Config{MinWarningFrequency: 10 * time.Minute, InitialWarningDelay: time.Minute})
 
 	log.Print("press ctrl+C to exit")
 	dis.RegisterNewMessageHandler("emoji generator", emojiname.Handler)
