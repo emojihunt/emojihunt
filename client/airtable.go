@@ -107,6 +107,11 @@ func (air *Airtable) parseRecord(record *airtable.Record) (*schema.Puzzle, error
 		return nil, err
 	}
 
+	lastBotStatus, err := schema.ParseStatus(air.stringField(record, "Last Bot Status"))
+	if err != nil {
+		return nil, err
+	}
+
 	return &schema.Puzzle{
 		Name:   air.stringField(record, "Name"),
 		Answer: air.stringField(record, "Answer"),
@@ -117,12 +122,14 @@ func (air *Airtable) parseRecord(record *airtable.Record) (*schema.Puzzle, error
 		PuzzleURL:      air.stringField(record, "Puzzle URL"),
 		SpreadsheetID:  air.stringField(record, "Spreadsheet ID"),
 		DiscordChannel: air.stringField(record, "Discord Channel"),
+		LastBotStatus:  lastBotStatus,
 	}, nil
 }
 
 func (air *Airtable) stringField(record *airtable.Record, field string) string {
 	if value, ok := record.Fields[field]; !ok {
-		return ""
+		err := fmt.Errorf("couldn't find field in Airtable reponse: %q", field)
+		panic(err)
 	} else {
 		return value.(string)
 	}

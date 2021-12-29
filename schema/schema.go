@@ -17,6 +17,7 @@ type Puzzle struct {
 	PuzzleURL      string
 	SpreadsheetID  string
 	DiscordChannel string
+	LastBotStatus  Status
 }
 
 func (p Puzzle) SpreadsheetURL() string {
@@ -53,6 +54,7 @@ const (
 	Abandoned
 	Solved
 	Backsolved
+	Archived
 )
 
 func ParseStatus(raw string) (Status, error) {
@@ -75,6 +77,8 @@ func ParseStatus(raw string) (Status, error) {
 		return Solved, nil
 	case "Backsolved":
 		return Backsolved, nil
+	case "Archived":
+		return Archived, nil
 	default:
 		return NotStarted, fmt.Errorf("unknown status %v", raw)
 	}
@@ -88,14 +92,25 @@ func (s Status) Pretty() string {
 	switch s {
 	case NotStarted:
 		return "Not Started"
+	default:
+		return s.Serialize()
+	}
+}
+
+func (s Status) Serialize() string {
+	switch s {
+	case NotStarted:
+		return ""
 	case Working:
-		return "✍️Working"
+		return "✍️ Working"
 	case Abandoned:
-		return "🗑️Abandoned"
+		return "🗑️ Abandoned"
 	case Solved:
-		return "🏅Solved"
+		return "🏅 Solved"
 	case Backsolved:
-		return "🤦‍♀️Backsolved"
+		return "🤦‍♀️ Backsolved"
+	case Archived:
+		return "📦 Archived"
 	default:
 		err := fmt.Errorf("unknown status %#v", s)
 		panic(err)
