@@ -21,11 +21,10 @@ type HuntBot struct {
 	syncer   *syncer.Syncer
 	cfg      Config
 
-	mu              sync.Mutex               // hold while accessing everything below
-	enabled         bool                     // global killswitch, toggle with !huntbot kill/!huntbot start
-	puzzleStatus    map[string]schema.Status // name -> status (best-effort cache)
-	channelToPuzzle map[string]string        // discord channel -> puzzle name (populated by database loop)
-	archived        map[string]bool          // name -> channel was archived (best-effort cache)
+	mu           sync.Mutex               // hold while accessing everything below
+	enabled      bool                     // global killswitch, toggle with !huntbot kill/!huntbot start
+	puzzleStatus map[string]schema.Status // name -> status (best-effort cache)
+	archived     map[string]bool          // name -> channel was archived (best-effort cache)
 	// When we last warned about a malformed puzzle.
 	lastWarnTime map[string]time.Time
 }
