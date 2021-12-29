@@ -20,7 +20,7 @@ func (s *Syncer) IdempotentUpdate(ctx context.Context, puzzle *schema.Puzzle) (*
 			return nil, fmt.Errorf("failed to mark puzzle %q solved: %v", puzzle.Name, err)
 		}
 	} else {
-		if err := s.DiscordCreateUpdatePin(puzzle); err != nil {
+		if err := s.discordCreateUpdatePin(puzzle); err != nil {
 			return nil, fmt.Errorf("unable to set puzzle status message for %q: %w", puzzle.Name, err)
 		}
 		if err := s.discord.StatusUpdateChannelSend(fmt.Sprintf("%s Puzzle <#%s> is now %v.", puzzle.Round.Emoji, puzzle.DiscordChannel, puzzle.Status.Pretty())); err != nil {

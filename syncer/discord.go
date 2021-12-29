@@ -9,11 +9,11 @@ import (
 
 const pinnedStatusHeader = "Puzzle Information"
 
-// DiscordCreateUpdatePin creates or updates the pinned message at the top of
+// discordCreateUpdatePin creates or updates the pinned message at the top of
 // the puzzle channel. This message contains information about the puzzle status
 // as well as links to the puzzle and the spreadsheet. It needs to be updated
 // when the puzzle status changes.
-func (s *Syncer) DiscordCreateUpdatePin(puzzle *schema.Puzzle) error {
+func (s *Syncer) discordCreateUpdatePin(puzzle *schema.Puzzle) error {
 	embed := &discordgo.MessageEmbed{
 		Author: &discordgo.MessageEmbedAuthor{Name: pinnedStatusHeader},
 		Title:  puzzle.Name,
