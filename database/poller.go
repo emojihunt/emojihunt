@@ -106,13 +106,7 @@ func (p *Poller) processPuzzle(ctx context.Context, puzzle *schema.Puzzle) error
 		return nil
 	}
 
-	var err error
-	puzzle, err = p.syncer.IdempotentCreate(ctx, puzzle)
-	if err != nil {
-		return err
-	}
-
-	_, err = p.syncer.IdempotentUpdate(ctx, puzzle)
+	_, err := p.syncer.IdempotentCreateUpdate(ctx, puzzle)
 	return err
 }
 
