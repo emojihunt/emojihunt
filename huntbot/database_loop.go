@@ -40,7 +40,7 @@ func (h *HuntBot) PollDatabase(ctx context.Context) {
 			h.mu.Unlock()
 
 			for _, puzzle := range puzzles {
-				err := h.updatePuzzle(ctx, &puzzle)
+				err := h.processPuzzle(ctx, &puzzle)
 				if err != nil {
 					// Log errors and keep going.
 					log.Printf("updating puzzle failed: %v", err)
@@ -59,7 +59,7 @@ func (h *HuntBot) PollDatabase(ctx context.Context) {
 	}
 }
 
-func (h *HuntBot) updatePuzzle(ctx context.Context, puzzle *schema.Puzzle) error {
+func (h *HuntBot) processPuzzle(ctx context.Context, puzzle *schema.Puzzle) error {
 	if puzzle.Name == "" || puzzle.PuzzleURL == "" || puzzle.Round.Name == "" {
 		// Occasionally warn the QM about puzzles that are missing fields.
 		if puzzle.Name != "" {
@@ -178,7 +178,6 @@ func (h *HuntBot) markSolved(ctx context.Context, puzzle *schema.Puzzle) error {
 				Name:    fmt.Sprintf("Puzzle %s!", verb),
 				IconURL: puzzle.Round.TwemojiURL(),
 			},
-			Color: -1, // TODO
 			Fields: []*discordgo.MessageEmbedField{
 				{
 					Name:   "Channel",
@@ -223,7 +222,6 @@ func (h *HuntBot) notifyNewPuzzle(puzzle *schema.Puzzle, channelID string) error
 			Name:    "A new puzzle is available!",
 			IconURL: puzzle.Round.TwemojiURL(),
 		},
-		Color: -1, // TODO
 		Title: puzzle.Name,
 		URL:   puzzle.PuzzleURL,
 		Fields: []*discordgo.MessageEmbedField{
@@ -292,7 +290,6 @@ const pinnedStatusHeader = "Puzzle Information"
 func (h *HuntBot) setPinnedStatusInfo(puzzle *schema.Puzzle, channelID string) (didUpdate bool, err error) {
 	embed := &discordgo.MessageEmbed{
 		Author: &discordgo.MessageEmbedAuthor{Name: pinnedStatusHeader},
-		Color:  -1, // TODO
 		Title:  puzzle.Name,
 		URL:    puzzle.PuzzleURL,
 		Fields: []*discordgo.MessageEmbedField{
