@@ -12,11 +12,11 @@ import (
 	"time"
 
 	"github.com/bwmarrin/discordgo"
+	"github.com/gauravjsingh/emojihunt/bot"
 	"github.com/gauravjsingh/emojihunt/client"
 	"github.com/gauravjsingh/emojihunt/emojiname"
 	"github.com/gauravjsingh/emojihunt/huntbot"
 	"github.com/gauravjsingh/emojihunt/huntyet"
-	"github.com/gauravjsingh/emojihunt/qm"
 	"github.com/gauravjsingh/emojihunt/server"
 	"github.com/gauravjsingh/emojihunt/syncer"
 	"github.com/gauravjsingh/emojihunt/voiceroom"
@@ -103,16 +103,16 @@ func main() {
 		log.Fatalf("error creating drive integration: %v", err)
 	}
 	syn := syncer.New(air, dis, d)
-	bot := huntbot.New(air, dis, syn, huntbot.Config{MinWarningFrequency: 10 * time.Minute, InitialWarningDelay: time.Minute})
+	hunt := huntbot.New(air, dis, syn, huntbot.Config{MinWarningFrequency: 10 * time.Minute, InitialWarningDelay: time.Minute})
 
 	log.Print("press ctrl+C to exit")
 	dis.RegisterNewMessageHandler("emoji generator", emojiname.Handler)
 	dis.RegisterNewMessageHandler("isithuntyet?", huntyet.Handler)
-	dis.RegisterNewMessageHandler("bot control", bot.Handler)
-	dis.RegisterNewMessageHandler("qm manager", qm.MakeQMHandler(dis))
+	dis.RegisterNewMessageHandler("bot control", hunt.Handler)
+	dis.RegisterNewMessageHandler("qm manager", bot.MakeQMHandler(dis))
 	dis.RegisterNewMessageHandler("voice channel helper", voiceroom.MakeVoiceRoomHandler(air, dis))
 
-	go bot.PollDatabase(ctx)
+	go hunt.PollDatabase(ctx)
 
 	server := server.New(air, dis, d, secrets.HuntboxToken)
 	server.Start(*certFile, *keyFile)
