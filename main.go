@@ -14,7 +14,6 @@ import (
 	"github.com/bwmarrin/discordgo"
 	"github.com/gauravjsingh/emojihunt/bot"
 	"github.com/gauravjsingh/emojihunt/client"
-	"github.com/gauravjsingh/emojihunt/emojiname"
 	"github.com/gauravjsingh/emojihunt/huntbot"
 	"github.com/gauravjsingh/emojihunt/huntyet"
 	"github.com/gauravjsingh/emojihunt/server"
@@ -106,7 +105,7 @@ func main() {
 	hunt := huntbot.New(air, dis, syn, huntbot.Config{MinWarningFrequency: 10 * time.Minute, InitialWarningDelay: time.Minute})
 
 	log.Print("press ctrl+C to exit")
-	dis.RegisterNewMessageHandler("emoji generator", emojiname.Handler)
+	dis.RegisterNewMessageHandler("emoji generator", bot.MakeEmojiNameHandler())
 	dis.RegisterNewMessageHandler("isithuntyet?", huntyet.Handler)
 	dis.RegisterNewMessageHandler("bot control", hunt.Handler)
 	dis.RegisterNewMessageHandler("qm manager", bot.MakeQMHandler(dis))

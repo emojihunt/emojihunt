@@ -4,9 +4,15 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"math/rand"
 	"os"
 	"strings"
+	"time"
 )
+
+var allEmoji []*Emoji
+
+var rng = rand.New(rand.NewSource(time.Now().UnixNano()))
 
 type Emoji struct {
 	// e.g. "THUMBS UP SIGN"
@@ -78,8 +84,6 @@ func RandomEmoji(n int) ([]*Emoji, error) {
 
 	return ret, nil
 }
-
-var allEmoji []*Emoji
 
 func Load() ([]*Emoji, error) {
 	if allEmoji != nil {
