@@ -6,17 +6,17 @@ import (
 	"net/http"
 
 	"github.com/gauravjsingh/emojihunt/client"
+	"github.com/gauravjsingh/emojihunt/syncer"
 )
 
 type Server struct {
-	air    *client.Airtable
-	dis    *client.Discord
-	drive  *client.Drive
-	secret string
+	airtable *client.Airtable
+	syncer   *syncer.Syncer
+	secret   string
 }
 
-func New(air *client.Airtable, dis *client.Discord, drive *client.Drive, secret string) Server {
-	return Server{air, dis, drive, secret}
+func New(airtable *client.Airtable, syncer *syncer.Syncer, secret string) Server {
+	return Server{airtable, syncer, secret}
 }
 
 func (s *Server) Start(certFile, keyFile string) {
@@ -55,12 +55,19 @@ func (s *Server) resync(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	record, err := s.air.FindByID(id)
+	puzzle, err := s.airtable.FindByID(id)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		fmt.Fprintf(w, "error: %#v\n", err)
 		return
 	}
 
-	fmt.Fprintf(w, "Hi there! %#v\n", record)
+	puzzle, err = s.syncer.IdempotentCreateUpdate(r.Context(), puzzle)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		fmt.Fprintf(w, "error: %#v\n", err)
+		return
+	}
+
+	fmt.Fprintf(w, "Update succeeded! %#v\n", puzzle)
 }

@@ -110,7 +110,7 @@ func main() {
 
 	go poller.Poll(ctx)
 
-	server := server.New(air, dis, d, secrets.HuntboxToken)
+	server := server.New(air, syn, secrets.HuntboxToken)
 	server.Start(*certFile, *keyFile)
 
 	<-ctx.Done()
