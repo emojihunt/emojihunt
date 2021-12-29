@@ -49,3 +49,38 @@ func (s *Syncer) notifyNewPuzzle(puzzle *schema.Puzzle) error {
 
 	return nil
 }
+
+// notifyPuzzleSolved sends the two "Puzzle solved!" (or "Puzzle backsolved!")
+// messages: one to the puzzle channel, and another to #general.
+func (s *Syncer) notifyPuzzleSolved(puzzle *schema.Puzzle) error {
+	msg := fmt.Sprintf(
+		"Puzzle %s! The answer was `%v`. I'll archive this channel.",
+		puzzle.Status.SolvedVerb(), puzzle.Answer,
+	)
+	if err := s.discord.ChannelSend(puzzle.DiscordChannel, msg); err != nil {
+		return fmt.Errorf("error posting solved puzzle announcement: %v", err)
+	}
+
+	embed := &discordgo.MessageEmbed{
+		Author: &discordgo.MessageEmbedAuthor{
+			Name:    fmt.Sprintf("Puzzle %s!", puzzle.Status.SolvedVerb()),
+			IconURL: puzzle.Round.TwemojiURL(),
+		},
+		Fields: []*discordgo.MessageEmbedField{
+			{
+				Name:   "Channel",
+				Value:  fmt.Sprintf("<#%s>", puzzle.DiscordChannel),
+				Inline: true,
+			},
+			{
+				Name:   "Answer",
+				Value:  fmt.Sprintf("`%s`", puzzle.Answer),
+				Inline: true,
+			},
+		},
+	}
+	if err := s.discord.GeneralChannelSendEmbed(embed); err != nil {
+		return fmt.Errorf("error posting solved puzzle announcement: %v", err)
+	}
+	return nil
+}

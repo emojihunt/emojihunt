@@ -100,6 +100,17 @@ func (s Status) IsSolved() bool {
 	return s == Solved || s == Backsolved
 }
 
+func (s Status) SolvedVerb() string {
+	switch s {
+	case Solved:
+		return "solved"
+	case Backsolved:
+		return "backsolved"
+	default:
+		panic("called SolvedVerb() on an unsolved puzzle")
+	}
+}
+
 func (s Status) Pretty() string {
 	switch s {
 	case NotStarted:

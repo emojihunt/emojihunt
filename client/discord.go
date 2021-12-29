@@ -29,9 +29,9 @@ type Discord struct {
 	// The tech channel has error messages.
 	techChannelID string
 	// The puzzle channel category.
-	puzzleCategoryID string
+	PuzzleCategoryID string
 	// The category for solved puzzles.
-	solvedCategoryID string
+	SolvedCategoryID string
 	// The Role ID for the QM role.
 	QMRoleID string
 
@@ -115,8 +115,8 @@ func NewDiscord(s *discordgo.Session, c DiscordConfig) (*Discord, error) {
 		techChannelID:         tech,
 		channelNameToID:       chIDs,
 		roomsToID:             rIDs,
-		puzzleCategoryID:      puz,
-		solvedCategoryID:      ar,
+		PuzzleCategoryID:      puz,
+		SolvedCategoryID:      ar,
 		QMRoleID:              qmRoleID,
 	}, nil
 }
@@ -215,30 +215,25 @@ func (c *Discord) TechChannelSend(msg string) error {
 
 var ErrChannelNotFound = fmt.Errorf("channel not found")
 
-// Returns whether a channel was archived.
-func (c *Discord) ArchiveChannel(chID string) error {
+func (c *Discord) SetChannelCategory(chID, categoryID string) error {
 	ch, err := c.s.Channel(chID)
 	if err != nil {
 		return fmt.Errorf("channel id %s not found: %w", chID, ErrChannelNotFound)
 	}
 
-	// Already archived.
-	if ch.ParentID != "" {
-		parentCh, err := c.s.Channel(ch.ParentID)
-		if err != nil {
-			return fmt.Errorf("parent channel id %s not found: %w", ch.ParentID, ErrChannelNotFound)
-		}
-		if strings.HasPrefix(parentCh.Name, "Solved") {
-			return nil
-		}
+	if ch.ParentID == categoryID {
+		return nil // no-op
 	}
 
-	arCh, err := c.s.Channel(c.solvedCategoryID)
+	category, err := c.s.Channel(categoryID)
 	if err != nil {
-		return fmt.Errorf("error looking up archive: %v", err)
+		return fmt.Errorf("category channel id %s not found: %w", categoryID, ErrChannelNotFound)
 	}
 
-	_, err = c.s.ChannelEditComplex(chID, &discordgo.ChannelEdit{ParentID: c.solvedCategoryID, PermissionOverwrites: arCh.PermissionOverwrites})
+	_, err = c.s.ChannelEditComplex(chID, &discordgo.ChannelEdit{
+		ParentID:             categoryID,
+		PermissionOverwrites: category.PermissionOverwrites,
+	})
 	if err != nil {
 		return fmt.Errorf("error moving channel: %v", err)
 	}
@@ -255,7 +250,7 @@ func (c *Discord) CreateChannel(name string) (string, error) {
 	ch, err := c.s.GuildChannelCreateComplex(c.GuildID, discordgo.GuildChannelCreateData{
 		Name:     name,
 		Type:     discordgo.ChannelTypeGuildText,
-		ParentID: c.puzzleCategoryID,
+		ParentID: c.PuzzleCategoryID,
 	})
 	if err != nil {
 		return "", fmt.Errorf("error creating channel %q: %v", name, err)
