@@ -1,6 +1,7 @@
 package server
 
 import (
+	"crypto/subtle"
 	"fmt"
 	"net/http"
 
@@ -8,13 +9,14 @@ import (
 )
 
 type Server struct {
-	air   *client.Airtable
-	dis   *client.Discord
-	drive *client.Drive
+	air    *client.Airtable
+	dis    *client.Discord
+	drive  *client.Drive
+	secret string
 }
 
-func New(air *client.Airtable, dis *client.Discord, drive *client.Drive) Server {
-	return Server{air, dis, drive}
+func New(air *client.Airtable, dis *client.Discord, drive *client.Drive, secret string) Server {
+	return Server{air, dis, drive, secret}
 }
 
 func (s *Server) Start(certFile, keyFile string) {
@@ -38,5 +40,27 @@ func (s *Server) Start(certFile, keyFile string) {
 }
 
 func (s *Server) resync(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintln(w, "Hi there!")
+	if subtle.ConstantTimeCompare(
+		[]byte(s.secret),
+		[]byte(r.URL.Query().Get("token"))) == 0 {
+		w.WriteHeader(http.StatusForbidden)
+		w.Write([]byte("incorrect token"))
+		return
+	}
+
+	id := r.URL.Query().Get("record")
+	if id == "" {
+		w.WriteHeader(http.StatusBadRequest)
+		fmt.Fprintf(w, "error: record is required\n")
+		return
+	}
+
+	record, err := s.air.FindByID(id)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		fmt.Fprintf(w, "error: %#v\n", err)
+		return
+	}
+
+	fmt.Fprintf(w, "Hi there! %#v\n", record)
 }

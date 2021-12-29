@@ -59,6 +59,14 @@ func (air *Airtable) ListRecords() ([]schema.Puzzle, error) {
 	}
 }
 
+func (air *Airtable) FindByID(id string) (*schema.Puzzle, error) {
+	record, err := air.table.GetRecord(id)
+	if err != nil {
+		return nil, err
+	}
+	return air.parseRecord(record)
+}
+
 func (air *Airtable) FindByDiscordChannel(channel string) (*schema.Puzzle, error) {
 	response, err := air.table.GetRecords().
 		WithFilterFormula(fmt.Sprintf("{Discord Channel}='%s'", channel)).

@@ -34,6 +34,7 @@ var (
 type secrets struct {
 	AirtableToken string `json:"airtable_token"`
 	DiscordToken  string `json:"discord_token"`
+	HuntboxToken  string `json:"huntbox_token"`
 }
 
 func loadSecrets(path string) (secrets, error) {
@@ -111,7 +112,7 @@ func main() {
 
 	go bot.PollDatabase(ctx)
 
-	server := server.New(air, dis, d)
+	server := server.New(air, dis, d, secrets.HuntboxToken)
 	server.Start(*certFile, *keyFile)
 
 	<-ctx.Done()
