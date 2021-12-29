@@ -62,7 +62,7 @@ func (s *Server) resync(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	puzzle, err = s.syncer.IdempotentCreateUpdate(r.Context(), puzzle)
+	_, err = s.syncer.ForceUpdate(r.Context(), puzzle)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		fmt.Fprintf(w, "error: %#v\n", err)

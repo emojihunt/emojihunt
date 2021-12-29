@@ -113,3 +113,30 @@ func (s *Syncer) IdempotentCreateUpdate(ctx context.Context, puzzle *schema.Puzz
 
 	return puzzle, nil
 }
+
+func (s *Syncer) ForceUpdate(ctx context.Context, puzzle *schema.Puzzle) (*schema.Puzzle, error) {
+	var err error
+	puzzle, err = s.IdempotentCreateUpdate(ctx, puzzle)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := s.discordCreateUpdatePin(puzzle); err != nil {
+		return nil, fmt.Errorf("unable to set puzzle status message for %q: %w", puzzle.Name, err)
+	}
+
+	if err := s.discordUpdateChannel(puzzle); err != nil {
+		return nil, fmt.Errorf("unable to set channel category for %q: %v", puzzle.Name, err)
+	}
+
+	if err := s.driveUpdateSpreadsheet(ctx, puzzle); err != nil {
+		return nil, fmt.Errorf("unable to update spreadsheet title and folder for %q: %v", puzzle.Name, err)
+	}
+
+	// Update bot status in Airtable
+	puzzle, err = s.airtable.UpdateBotFields(puzzle, puzzle.Status, puzzle.ShouldArchive())
+	if err != nil {
+		return nil, err
+	}
+	return puzzle, nil
+}
