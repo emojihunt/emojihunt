@@ -17,6 +17,7 @@ import (
 	"github.com/gauravjsingh/emojihunt/huntbot"
 	"github.com/gauravjsingh/emojihunt/huntyet"
 	"github.com/gauravjsingh/emojihunt/qm"
+	"github.com/gauravjsingh/emojihunt/server"
 	"github.com/gauravjsingh/emojihunt/voiceroom"
 )
 
@@ -26,6 +27,8 @@ var (
 	guildID      = flag.String("discord_guild_id", "793599987694436374", "the id of the discord guild")
 	baseID       = flag.String("airtable_base_id", "appmjhGfZLui26Xow", "the id of the airtable base")
 	tableName    = flag.String("airtable_table_name", "Puzzle Tracker", "the name of the table in the airtable base")
+	certFile     = flag.String("certificate", "/etc/letsencrypt/live/huntbox.emojihunt.tech/fullchain.pem", "the path to the server certificate")
+	keyFile      = flag.String("private_key", "/etc/letsencrypt/live/huntbox.emojihunt.tech/privkey.pem", "the path to the server private key")
 )
 
 type secrets struct {
@@ -107,6 +110,9 @@ func main() {
 	dis.RegisterNewMessageHandler("voice channel helper", voiceroom.MakeVoiceRoomHandler(air, dis))
 
 	go bot.PollDatabase(ctx)
+
+	server := server.New(air, dis, d)
+	go server.Start(*certFile, *keyFile)
 
 	<-ctx.Done()
 }
