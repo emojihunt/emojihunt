@@ -113,12 +113,12 @@ func (air *Airtable) UpdateBotFields(puzzle *schema.Puzzle, lastBotStatus schema
 
 func (air *Airtable) parseRecord(record *airtable.Record) (*schema.Puzzle, error) {
 	round := schema.ParseRound(air.stringField(record, "Round"))
-	status, err := schema.ParseStatus(air.stringField(record, "Status"))
+	status, err := schema.ParsePrettyStatus(air.stringField(record, "Status"))
 	if err != nil {
 		return nil, err
 	}
 
-	lastBotStatus, err := schema.ParseStatus(air.stringField(record, "Last Bot Status"))
+	lastBotStatus, err := schema.ParseTextStatus(air.stringField(record, "Last Bot Status"))
 	if err != nil {
 		return nil, err
 	}
