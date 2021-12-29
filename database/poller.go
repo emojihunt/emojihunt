@@ -100,7 +100,7 @@ func (p *Poller) Poll(ctx context.Context) {
 }
 
 func (p *Poller) processPuzzle(ctx context.Context, puzzle *schema.Puzzle) error {
-	if puzzle.Name == "" || puzzle.PuzzleURL == "" || puzzle.Round.Name == "" {
+	if !puzzle.IsValid() {
 		// Occasionally warn the QM about puzzles that are missing fields.
 		if puzzle.Name != "" {
 			if err := p.warnPuzzle(ctx, puzzle); err != nil {

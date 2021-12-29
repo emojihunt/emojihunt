@@ -24,6 +24,10 @@ func (p Puzzle) SpreadsheetURL() string {
 	return fmt.Sprintf("https://docs.google.com/spreadsheets/d/%s", p.SpreadsheetID)
 }
 
+func (p Puzzle) IsValid() bool {
+	return p.Name != "" && p.Round.Name != "" && p.PuzzleURL != ""
+}
+
 type Round struct {
 	Name  string
 	Emoji string
@@ -32,8 +36,9 @@ type Round struct {
 func ParseRound(raw string) Round {
 	parts := strings.SplitN(raw, " ", 2)
 	if len(parts) != 2 {
-		err := fmt.Errorf("couldn't extract emoji and round name from %#v", raw)
-		panic(err)
+		// Return an empty Round object; we have to check for this (see
+		// IsValid(), above) and notify the QM so they can fix it.
+		return Round{}
 	}
 	return Round{parts[1], parts[0]}
 }
