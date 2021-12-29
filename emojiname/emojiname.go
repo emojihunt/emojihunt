@@ -1,16 +1,14 @@
 package emojiname
 
 import (
+	_ "embed"
 	"encoding/json"
 	"fmt"
 	"log"
 	"math/rand"
-	"os"
 	"strings"
 	"time"
 )
-
-var allEmoji []*Emoji
 
 var rng = rand.New(rand.NewSource(time.Now().UnixNano()))
 
@@ -85,22 +83,22 @@ func RandomEmoji(n int) ([]*Emoji, error) {
 	return ret, nil
 }
 
+// emoji.json from https://github.com/iamcal/emoji-data/blob/master/emoji.json
+// Copyright (c) 2013 Cal Henderson and MIT licensed.
+//
+//go:embed emoji.json
+var rawEmoji []byte
+var allEmoji []*Emoji
+
 func Load() ([]*Emoji, error) {
 	if allEmoji != nil {
 		return allEmoji, nil
 	}
 
-	f, err := os.Open("huntbot/emojiname/emoji-data/emoji.json")
+	err := json.Unmarshal(rawEmoji, &allEmoji)
 	if err != nil {
 		return nil, fmt.Errorf("error reading emoji data: %w", err)
 	}
 
-	var emoji []*Emoji
-	err = json.NewDecoder(f).Decode(&emoji)
-	if err != nil {
-		return nil, fmt.Errorf("error reading emoji data: %w", err)
-	}
-
-	allEmoji = emoji
-	return emoji, nil
+	return allEmoji, nil
 }

@@ -1,3 +1,0 @@
-[submodule "discord/emojiname/emoji-data"]
-	path = huntbot/emojiname/emoji-data
-	url = https://github.com/iamcal/emoji-data.git
