@@ -21,6 +21,10 @@ func (s *Syncer) IdempotentCreate(ctx context.Context, puzzle *schema.Puzzle) (*
 		if err != nil {
 			return nil, fmt.Errorf("error setting spreadsheet id for puzzle %q: %v", puzzle.Name, err)
 		}
+		err = s.driveUpdateSpreadsheet(ctx, puzzle)
+		if err != nil {
+			return nil, fmt.Errorf("error setting up spreadsheet for puzzle %q: %v", puzzle.Name, err)
+		}
 	}
 
 	if puzzle.DiscordChannel == "" {
@@ -34,6 +38,8 @@ func (s *Syncer) IdempotentCreate(ctx context.Context, puzzle *schema.Puzzle) (*
 		if err != nil {
 			return nil, fmt.Errorf("error setting discord channel for puzzle %q: %v", puzzle.Name, err)
 		}
+
+		// TODO: set pinned status message
 
 		// Treat Discord channel creation as the sentinel to also notify the
 		// team about the new puzzle.

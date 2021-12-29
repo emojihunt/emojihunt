@@ -64,5 +64,5 @@ func (s *Syncer) markSolved(ctx context.Context, puzzle *schema.Puzzle) error {
 	}
 
 	log.Printf("Marking sheet solved for %q", puzzle.Name)
-	return s.drive.MarkSheetSolved(ctx, puzzle.SpreadsheetID)
+	return s.driveUpdateSpreadsheet(ctx, puzzle)
 }

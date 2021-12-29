@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"strings"
 	"sync"
 
 	"google.golang.org/api/drive/v3"
@@ -44,60 +43,42 @@ func NewDrive(ctx context.Context, rootFolderID string) (*Drive, error) {
 
 func (d *Drive) CreateSheet(ctx context.Context, name, roundName string) (id string, err error) {
 	log.Printf("Creating sheet for %v", name)
-
-	sheet := &sheets.Spreadsheet{
-		Properties: &sheets.SpreadsheetProperties{
-			Title: name,
-		},
-	}
-
-	sheet, err = d.sheets.Spreadsheets.Create(sheet).Context(ctx).Do()
+	sheet, err := d.sheets.Spreadsheets.Create(&sheets.Spreadsheet{}).Context(ctx).Do()
 	if err != nil {
 		return "", fmt.Errorf("unable to create sheet for %q: %v", name, err)
 	}
-
-	folderID, err := d.roundFolder(ctx, roundName)
-	if err != nil {
-		return "", err
-	}
-
-	log.Println(folderID)
-
-	_, err = d.drive.Files.Update(sheet.SpreadsheetId, nil).AddParents(folderID).Context(ctx).Do()
-	if err != nil {
-		return "", fmt.Errorf("unable to add sheet for %q to folder for round %q: %v", name, roundName, err)
-	}
-
 	return sheet.SpreadsheetId, nil
 }
 
-func (d *Drive) MarkSheetSolved(ctx context.Context, sheetID string) error {
-	sheet, err := d.sheets.Spreadsheets.Get(sheetID).Context(ctx).Do()
-	if err != nil {
-		return fmt.Errorf("couldn't find sheet %q: %v", sheetID, err)
-	}
-
-	if strings.HasPrefix(sheet.Properties.Title, "[SOLVED]") {
-		return nil // nothing to do
-	}
-
+func (d *Drive) SetSheetTitle(ctx context.Context, sheetID, title string) error {
 	req := &sheets.BatchUpdateSpreadsheetRequest{
 		Requests: []*sheets.Request{{
 			UpdateSpreadsheetProperties: &sheets.UpdateSpreadsheetPropertiesRequest{
 				Fields: "title",
 				Properties: &sheets.SpreadsheetProperties{
-					Title: "[SOLVED] " + sheet.Properties.Title,
+					Title: title,
 				},
 			},
 		}},
 	}
+	_, err := d.sheets.Spreadsheets.
+		BatchUpdate(sheetID, req).
+		Context(ctx).
+		Do()
+	return err
+}
 
-	_, err = d.sheets.Spreadsheets.BatchUpdate(sheetID, req).Context(ctx).Do()
+func (d *Drive) SetSheetFolder(ctx context.Context, sheetID, roundName string) error {
+	folderID, err := d.roundFolder(ctx, roundName)
 	if err != nil {
-		return fmt.Errorf("couldn't update sheet %q title: %v", sheet.Properties.Title, err)
+		return err
 	}
-
-	return nil
+	_, err = d.drive.Files.Update(sheetID, nil).
+		EnforceSingleParent(true).
+		AddParents(folderID).
+		Context(ctx).
+		Do()
+	return err
 }
 
 const folderMimeType = "application/vnd.google-apps.folder"
