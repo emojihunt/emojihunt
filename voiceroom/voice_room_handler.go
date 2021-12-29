@@ -58,7 +58,7 @@ func MakeVoiceRoomHandler(air *client.Airtable, dis *client.Discord) client.Disc
 				return fmt.Errorf("missing room ID from command: %s", m.Content)
 			}
 			setPinnedVoiceInfo(dis, m.ChannelID, &rID)
-			reply = fmt.Sprintf("Set the room for puzzle %q to %s", puzzle.Name, dis.ChannelMention(rID))
+			reply = fmt.Sprintf("Set the room for puzzle %q to <#%s>", puzzle.Name, rID)
 		case "stop":
 			setPinnedVoiceInfo(dis, m.ChannelID, nil)
 			reply = fmt.Sprintf("Removed the room for puzzle %q", puzzle.Name)

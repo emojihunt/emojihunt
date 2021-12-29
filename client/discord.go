@@ -148,15 +148,6 @@ func (c *Discord) ChannelSend(chanID, msg string) error {
 	return err
 }
 
-func (c *Discord) ChannelSendEmbedAndPin(chanID string, embed *discordgo.MessageEmbed) error {
-	m, err := c.s.ChannelMessageSendEmbed(chanID, embed)
-	if err != nil {
-		return err
-	}
-	err = c.s.ChannelMessagePin(chanID, m.ID)
-	return err
-}
-
 // Returns last pinned status message, or nil if not found.
 func (c *Discord) pinnedStatusMessage(chanID, header string) (*discordgo.Message, error) {
 	ms, err := c.s.ChannelMessagesPinned(chanID)
@@ -184,7 +175,11 @@ func (c *Discord) CreateUpdatePin(chanID, header string, embed *discordgo.Messag
 	}
 
 	if statusMessage == nil {
-		err := c.ChannelSendEmbedAndPin(chanID, embed)
+		m, err := c.s.ChannelMessageSendEmbed(chanID, embed)
+		if err != nil {
+			return false, err
+		}
+		err = c.s.ChannelMessagePin(chanID, m.ID)
 		return err == nil, err
 	} else if statusMessage.Embeds[0] == embed {
 		return false, nil // no-op
@@ -293,83 +288,10 @@ func (c *Discord) AvailableRooms() []string {
 	return rs
 }
 
-func (c *Discord) updateRoom(r voiceRoom) error {
-	c.mu.Lock()
-	rID := c.roomsToID[r.name]
-	c.mu.Unlock()
-	log.Printf("channel update for room: %v ...", r)
-	defer log.Printf("channel update for room: %v ... done", r)
-	_, err := c.s.ChannelEdit(rID, r.VoiceChannelName())
-	return err
-}
-
-// Returns whether a puzzle was added.
-func (c *Discord) AddPuzzleToRoom(puzzle, roomID string) (bool, error) {
-	log.Printf("adding puzzle %q to room %q ...", puzzle, roomID)
-	defer log.Printf("adding puzzle %q to room %q ... done", puzzle, roomID)
-	roomCh, err := c.s.Channel(roomID)
-	if err != nil {
-		return false, fmt.Errorf("error finding room ID %q: %v", roomID, err)
-	}
-	r, err := parseRoom(roomCh.Name)
-	if err != nil {
-		return false, fmt.Errorf("error parsing room when adding puzzles: %v", err)
-	}
-	for _, p := range r.puzzles {
-		if p == puzzle {
-			return false, nil
-		}
-	}
-	r.puzzles = append(r.puzzles, puzzle)
-	if err := c.updateRoom(r); err != nil {
-		return false, err
-	}
-	return true, nil
-}
-
-// Returns whether a puzzle was removed.
-func (c *Discord) RemovePuzzleFromRoom(puzzle, roomID string) (bool, error) {
-	log.Printf("removing %q from %q ...", puzzle, roomID)
-	defer log.Printf("removing %q from %q ... done", puzzle, roomID)
-	roomCh, err := c.s.Channel(roomID)
-	if err != nil {
-		return false, fmt.Errorf("error finding room ID %q: %v", roomID, err)
-	}
-	r, err := parseRoom(roomCh.Name)
-	if err != nil {
-		return false, fmt.Errorf("error parsing room when removing puzzles: %v", err)
-	}
-	log.Printf("parsed room as %v", r)
-	index := -1
-	for i, p := range r.puzzles {
-		if p == puzzle {
-			index = i
-		}
-	}
-	if index == -1 {
-		// puzzle is not in this voice channel.
-		log.Printf("REMOVE NOISY LOG: did not find puzzle %q in channelID %q", puzzle, roomID)
-		return false, nil
-	}
-	r.puzzles = append(r.puzzles[:index], r.puzzles[index+1:]...)
-	log.Printf("updated room: %v", r)
-	if err := c.updateRoom(r); err != nil {
-		return false, err
-	}
-	return true, nil
-}
-
 type voiceRoom struct {
 	// The name of the room, eg. "Patio". This excludes the puzzles that might be part of the channel name.
 	name    string
 	puzzles []string
-}
-
-func (r voiceRoom) VoiceChannelName() string {
-	if len(r.puzzles) == 0 {
-		return r.name
-	}
-	return fmt.Sprintf("%s: %s", r.name, strings.Join(r.puzzles, ", "))
 }
 
 func parseRoom(voiceChanName string) (voiceRoom, error) {
@@ -388,8 +310,4 @@ func parseRoom(voiceChanName string) (voiceRoom, error) {
 		name:    parts[0],
 		puzzles: puzzles,
 	}, nil
-}
-
-func (c *Discord) ChannelMention(chanID string) string {
-	return fmt.Sprintf("<#%s>", chanID)
 }
