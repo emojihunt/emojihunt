@@ -112,7 +112,7 @@ func main() {
 	go bot.PollDatabase(ctx)
 
 	server := server.New(air, dis, d)
-	go server.Start(*certFile, *keyFile)
+	server.Start(*certFile, *keyFile)
 
 	<-ctx.Done()
 }
