@@ -9,12 +9,11 @@ import (
 	"log"
 	"os"
 	"os/signal"
-	"time"
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/gauravjsingh/emojihunt/bot"
 	"github.com/gauravjsingh/emojihunt/client"
-	"github.com/gauravjsingh/emojihunt/huntbot"
+	"github.com/gauravjsingh/emojihunt/database"
 	"github.com/gauravjsingh/emojihunt/server"
 	"github.com/gauravjsingh/emojihunt/syncer"
 )
@@ -100,16 +99,16 @@ func main() {
 		log.Fatalf("error creating drive integration: %v", err)
 	}
 	syn := syncer.New(air, dis, d)
-	hunt := huntbot.New(air, dis, syn, huntbot.Config{MinWarningFrequency: 10 * time.Minute, InitialWarningDelay: time.Minute})
+	poller := database.NewPoller(air, dis, syn)
 
 	log.Print("press ctrl+C to exit")
 	dis.RegisterNewMessageHandler("emoji generator", bot.MakeEmojiNameHandler())
 	dis.RegisterNewMessageHandler("isithuntyet?", bot.MakeHuntYetHandler())
-	dis.RegisterNewMessageHandler("bot control", hunt.Handler)
+	dis.RegisterNewMessageHandler("bot control", bot.MakeDatabaseHandler(dis, poller))
 	dis.RegisterNewMessageHandler("qm manager", bot.MakeQMHandler(dis))
 	dis.RegisterNewMessageHandler("voice channel helper", bot.MakeVoiceRoomHandler(air, dis))
 
-	go hunt.PollDatabase(ctx)
+	go poller.Poll(ctx)
 
 	server := server.New(air, dis, d, secrets.HuntboxToken)
 	server.Start(*certFile, *keyFile)
