@@ -1,4 +1,4 @@
-package voiceroom
+package bot
 
 import (
 	"fmt"
