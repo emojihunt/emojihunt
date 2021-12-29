@@ -119,15 +119,11 @@ func (p *Poller) processPuzzle(ctx context.Context, puzzle *schema.Puzzle) error
 	if p.setPuzzleStatus(puzzle.Name, puzzle.Status) != puzzle.Status ||
 		puzzle.Answer != "" && puzzle.Status.IsSolved() && !p.isArchived(puzzle.Name) {
 		// (potential) status change
+		if err := p.syncer.ProcessStatusUpdate(ctx, puzzle); err != nil {
+			return err
+		}
 		if puzzle.Status.IsSolved() {
-			if err := p.syncer.MarkSolved(ctx, puzzle); err != nil {
-				return fmt.Errorf("failed to mark puzzle %q solved: %v", puzzle.Name, err)
-			}
 			p.archive(puzzle.Name)
-		} else {
-			if err := p.logStatus(ctx, puzzle); err != nil {
-				return fmt.Errorf("failed to mark puzzle %q %v: %v", puzzle.Name, puzzle.Status, err)
-			}
 		}
 	}
 
@@ -177,20 +173,4 @@ func (p *Poller) setPuzzleStatus(name string, newStatus schema.Status) (oldStatu
 	oldStatus = p.puzzleStatus[name]
 	p.puzzleStatus[name] = newStatus
 	return oldStatus
-}
-
-// logStatus marks the status; it is *not* called if the puzzle is solved
-func (p *Poller) logStatus(ctx context.Context, puzzle *schema.Puzzle) error {
-	didUpdate, err := p.syncer.SetPinnedStatusInfo(puzzle, puzzle.DiscordChannel)
-	if err != nil {
-		return fmt.Errorf("unable to set puzzle status message for %q: %w", puzzle.Name, err)
-	}
-
-	if didUpdate {
-		if err := p.discord.StatusUpdateChannelSend(fmt.Sprintf("%s Puzzle <#%s> is now %v.", puzzle.Round.Emoji, puzzle.DiscordChannel, puzzle.Status.Pretty())); err != nil {
-			return fmt.Errorf("error posting puzzle status announcement: %v", err)
-		}
-	}
-
-	return nil
 }
