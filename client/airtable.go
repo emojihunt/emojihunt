@@ -100,9 +100,10 @@ func (air *Airtable) UpdateSpreadsheetID(puzzle *schema.Puzzle, spreadsheet stri
 	return air.parseRecord(record)
 }
 
-func (air *Airtable) UpdateLastBotStatus(puzzle *schema.Puzzle, lastBotStatus schema.Status) (*schema.Puzzle, error) {
+func (air *Airtable) UpdateBotFields(puzzle *schema.Puzzle, lastBotStatus schema.Status, archived bool) (*schema.Puzzle, error) {
 	record, err := puzzle.AirtableRecord.UpdateRecordPartial(map[string]interface{}{
-		"Last Bot Status": lastBotStatus.Serialize(),
+		"Last Bot Status": string(lastBotStatus),
+		"Archived":        archived,
 	})
 	if err != nil {
 		return nil, err
@@ -132,7 +133,9 @@ func (air *Airtable) parseRecord(record *airtable.Record) (*schema.Puzzle, error
 		PuzzleURL:      air.stringField(record, "Puzzle URL"),
 		SpreadsheetID:  air.stringField(record, "Spreadsheet ID"),
 		DiscordChannel: air.stringField(record, "Discord Channel"),
-		LastBotStatus:  lastBotStatus,
+
+		LastBotStatus: lastBotStatus,
+		Archived:      air.boolField(record, "Archived"),
 	}, nil
 }
 
@@ -143,5 +146,13 @@ func (air *Airtable) stringField(record *airtable.Record, field string) string {
 		return ""
 	} else {
 		return value.(string)
+	}
+}
+
+func (air *Airtable) boolField(record *airtable.Record, field string) bool {
+	if value, ok := record.Fields[field]; !ok {
+		return false
+	} else {
+		return value.(bool)
 	}
 }

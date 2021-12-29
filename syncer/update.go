@@ -32,7 +32,7 @@ func (s *Syncer) IdempotentUpdate(ctx context.Context, puzzle *schema.Puzzle) (*
 	// e.g. when the answer is added later
 
 	var err error
-	puzzle, err = s.airtable.UpdateLastBotStatus(puzzle, puzzle.Status)
+	puzzle, err = s.airtable.UpdateBotFields(puzzle, puzzle.Status, false)
 	if err != nil {
 		return nil, fmt.Errorf("failed to update Last Bot Status for puzzle %q: %v", puzzle.Name, err)
 	}

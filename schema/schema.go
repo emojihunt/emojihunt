@@ -17,7 +17,9 @@ type Puzzle struct {
 	PuzzleURL      string
 	SpreadsheetID  string
 	DiscordChannel string
-	LastBotStatus  Status
+
+	LastBotStatus Status
+	Archived      bool
 }
 
 func (p Puzzle) SpreadsheetURL() string {
