@@ -23,6 +23,9 @@ type Puzzle struct {
 }
 
 func (p Puzzle) SpreadsheetURL() string {
+	if p.SpreadsheetID == "" {
+		panic("called SpreadsheetURL() on a puzzle with no spreadsheet")
+	}
 	return fmt.Sprintf("https://docs.google.com/spreadsheets/d/%s", p.SpreadsheetID)
 }
 
