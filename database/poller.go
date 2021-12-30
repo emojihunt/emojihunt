@@ -125,6 +125,9 @@ func (p *Poller) warnPuzzle(ctx context.Context, puzzle *schema.Puzzle) error {
 	if puzzle.Round.Name == "" {
 		msgs = append(msgs, "missing a round")
 	}
+	if puzzle.Answer != "" && !puzzle.Status.IsSolved() {
+		msgs = append(msgs, "has an answer even though it's not marked solved")
+	}
 	if len(msgs) == 0 {
 		return fmt.Errorf("cannot warn about well-formatted puzzle %q: %v", puzzle.Name, puzzle)
 	}

@@ -30,7 +30,8 @@ func (p Puzzle) SpreadsheetURL() string {
 }
 
 func (p Puzzle) IsValid() bool {
-	return p.Name != "" && p.Round.Name != "" && p.PuzzleURL != ""
+	return p.Name != "" && p.Round.Name != "" &&
+		p.PuzzleURL != "" && (p.Status.IsSolved() || p.Answer == "")
 }
 
 func (p Puzzle) ShouldArchive() bool {
