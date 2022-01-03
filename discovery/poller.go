@@ -18,12 +18,13 @@ import (
 )
 
 type Poller struct {
-	cookie    *http.Cookie
-	airtable  *client.Airtable
-	discord   *client.Discord
-	server    *server.Server
-	newRounds map[string]time.Time
-	wsLimiter *rate.Limiter
+	cookie        *http.Cookie
+	airtable      *client.Airtable
+	discord       *client.Discord
+	server        *server.Server
+	wsLimiter     *rate.Limiter
+	newRounds     map[string]time.Time
+	lastWarnError time.Time
 
 	mu      sync.Mutex // hold while accessing everything below
 	enabled bool
@@ -38,6 +39,7 @@ type DiscoveredPuzzle struct {
 const (
 	pollInterval         = 1 * time.Minute
 	roundNotifyFrequency = 10 * time.Minute
+	warnErrorFrequency   = 10 * time.Minute
 	newPuzzleLimit       = 10
 	websocketBurst       = 3
 )
@@ -51,12 +53,13 @@ func New(cookieName, cookieValue string, airtable *client.Airtable, discord *cli
 			Value:  cookieValue,
 			MaxAge: 0,
 		},
-		airtable:  airtable,
-		discord:   discord,
-		server:    server,
-		newRounds: make(map[string]time.Time),
-		wsLimiter: rate.NewLimiter(websocketRate, websocketBurst),
-		enabled:   true,
+		airtable:      airtable,
+		discord:       discord,
+		server:        server,
+		wsLimiter:     rate.NewLimiter(websocketRate, websocketBurst),
+		newRounds:     make(map[string]time.Time),
+		lastWarnError: time.Now().Add(-24 * time.Hour),
+		enabled:       true,
 	}
 }
 
@@ -74,15 +77,11 @@ func (d *Poller) Poll(ctx context.Context) {
 
 		puzzles, err := d.Scrape()
 		if err != nil {
-			log.Printf("discovery: scraping error: %v", err)
-			msg := fmt.Sprintf("discovery: scraping error: ```\n%s\n```", spew.Sdump(err))
-			d.discord.ChannelSend(d.discord.TechChannelID, msg)
+			d.logAndMaybeWarn("scraping error", err)
 		}
 
 		if err := d.SyncPuzzles(puzzles); err != nil {
-			log.Printf("discovery: syncing error: %v", err)
-			msg := fmt.Sprintf("discovery: syncing error: ```\n%s\n```", spew.Sdump(err))
-			d.discord.ChannelSend(d.discord.TechChannelID, msg)
+			d.logAndMaybeWarn("syncing error", err)
 		}
 
 		select {
@@ -105,6 +104,15 @@ func (d *Poller) isEnabled() bool {
 	d.mu.Lock()
 	defer d.mu.Unlock()
 	return d.enabled
+}
+
+func (d *Poller) logAndMaybeWarn(memo string, err error) {
+	log.Printf("discovery: %s: %v", memo, err)
+	if time.Since(d.lastWarnError) >= warnErrorFrequency {
+		msg := fmt.Sprintf("discovery: %s: ```\n%s\n```", memo, spew.Sdump(err))
+		d.discord.ChannelSend(d.discord.TechChannelID, msg)
+		d.lastWarnError = time.Now()
+	}
 }
 
 func (d *Poller) openWebsocket() (chan bool, error) {
