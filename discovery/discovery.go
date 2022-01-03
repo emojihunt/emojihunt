@@ -113,20 +113,29 @@ func (d *Poller) SyncPuzzles(puzzles []*DiscoveredPuzzle) error {
 	}
 
 	// Filter out known puzzles
-	rounds := make(map[string]schema.Round)
 	records, err := d.airtable.ListRecords()
 	if err != nil {
 		return err
 	}
+
+	rounds := make(map[string]schema.Round)
+	knownURLs := make(map[string]bool)
+	knownNames := make(map[string]bool)
 	for _, record := range records {
 		rounds[record.Round.Name] = record.Round
-		delete(puzzleMap, record.PuzzleURL)
+		knownURLs[strings.ToUpper(record.PuzzleURL)] = true
+		knownNames[strings.ToUpper(record.Name)] = true
 	}
 
 	// Add remaining puzzles
 	var newPuzzles []*schema.NewPuzzle
 	skippedRounds := make(map[string]bool)
 	for _, puzzle := range puzzleMap {
+		if knownURLs[strings.ToUpper(puzzle.URL.String())] ||
+			knownNames[strings.ToUpper(puzzle.Name)] {
+			// skip if name or URL matches an existing puzzle
+			continue
+		}
 		round, ok := rounds[puzzle.Round]
 		if !ok {
 			log.Printf("discovery: skipping puzzle %q due to unknown round %q", puzzle.Name, puzzle.Round)
