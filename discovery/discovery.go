@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/andybalholm/cascadia"
+	"github.com/bwmarrin/discordgo"
 	"github.com/gauravjsingh/emojihunt/schema"
 	"golang.org/x/net/html"
 )
@@ -174,16 +175,18 @@ func (d *Poller) SyncPuzzles(puzzles []*DiscoveredPuzzle) error {
 }
 
 func (d *Poller) notifyNewPuzzle(puzzle *schema.Puzzle) error {
-	msg := fmt.Sprintf(
-		"New puzzle detected!\n"+
+	embed := &discordgo.MessageEmbed{
+		Title: "New puzzle detected!",
+		Description: fmt.Sprintf(
 			"Name: %q\n"+
-			"Round: %q\n"+
-			"URL: %s\n"+
-			"Edit in Airtable, or click here to approve as-is: %s",
-		puzzle.Name, puzzle.Round.Serialize(), puzzle.PuzzleURL,
-		d.server.ResyncURL(puzzle),
-	)
-	return d.discord.ChannelSend(d.discord.QMChannelID, msg)
+				"Round: %q\n"+
+				"URL: %s\n"+
+				"[:pencil: Edit in Airtable](%s) or [:hammer: Approve as-is](%s)",
+			puzzle.Name, puzzle.Round.Serialize(), puzzle.PuzzleURL,
+			d.airtable.EditURL(puzzle), d.server.ResyncURL(puzzle),
+		),
+	}
+	return d.discord.ChannelSendEmbed(d.discord.QMChannelID, embed)
 }
 
 func (d *Poller) notifyNewRounds(rounds map[string]bool) error {
@@ -200,12 +203,15 @@ func (d *Poller) notifyNewRounds(rounds map[string]bool) error {
 		return nil
 	}
 
-	msg := fmt.Sprintf(
-		"New rounds are available! Please add at least one puzzle from each round to " +
-			"Airtable (after that, puzzle auto-discovery can take over). Rounds: " +
-			strings.Join(array, ", "),
-	)
-	if err := d.discord.ChannelSend(d.discord.QMChannelID, msg); err != nil {
+	embed := &discordgo.MessageEmbed{
+		Title: "New rounds are available!",
+		Description: fmt.Sprintf(
+			"Please add at least one puzzle from each round to Airtable (after " +
+				"that, puzzle auto-discovery can take over). Rounds: " +
+				strings.Join(array, ", "),
+		),
+	}
+	if err := d.discord.ChannelSendEmbed(d.discord.QMChannelID, embed); err != nil {
 		return err
 	}
 

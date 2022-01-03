@@ -80,11 +80,13 @@ func (s *Syncer) notifyPuzzleSolvedMissingAnswer(puzzle *schema.Puzzle) error {
 		return err
 	}
 
-	qmMsg := fmt.Sprintf(
-		"Puzzle %q marked %s, but has no answer, please add it to Airtable.",
-		puzzle.Name, puzzle.Status.SolvedVerb(),
-	)
-	return s.discord.ChannelSend(s.discord.QMChannelID, qmMsg)
+	embed := &discordgo.MessageEmbed{
+		Description: fmt.Sprintf(
+			"Puzzle %q marked %s, but has no answer, please add it to Airtable.",
+			puzzle.Name, puzzle.Status.SolvedVerb(),
+		),
+	}
+	return s.discord.ChannelSendEmbed(s.discord.QMChannelID, embed)
 }
 
 // notifyPuzzleStatusChange sends messages about ordinary puzzle status changes

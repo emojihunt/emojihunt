@@ -9,7 +9,8 @@ import (
 )
 
 type Airtable struct {
-	table *airtable.Table
+	baseID, tableID string
+	table           *airtable.Table
 }
 
 const pageSize = 100 // most records returned per list request
@@ -24,7 +25,7 @@ const pendingSuffix = " [pending]" // puzzle name suffix for auto-added puzzles
 func NewAirtable(apiKey, baseID, tableID string) *Airtable {
 	client := airtable.NewClient(apiKey)
 	table := client.GetTable(baseID, tableID)
-	return &Airtable{table}
+	return &Airtable{baseID, tableID, table}
 }
 
 func (air *Airtable) ListRecords() ([]schema.Puzzle, error) {
@@ -164,6 +165,13 @@ func (air *Airtable) AddPuzzles(puzzles []*schema.NewPuzzle) ([]*schema.Puzzle, 
 		}
 	}
 	return created, nil
+}
+
+func (air *Airtable) EditURL(puzzle *schema.Puzzle) string {
+	return fmt.Sprintf(
+		"https://airtable.com/%s/%s/%s",
+		air.baseID, air.tableID, puzzle.AirtableRecord.ID,
+	)
 }
 
 func (air *Airtable) parseRecord(record *airtable.Record) (*schema.Puzzle, error) {

@@ -8,6 +8,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/bwmarrin/discordgo"
 	"github.com/davecgh/go-spew/spew"
 	"github.com/gauravjsingh/emojihunt/client"
 	"github.com/gauravjsingh/emojihunt/schema"
@@ -138,8 +139,10 @@ func (p *Poller) warnPuzzle(ctx context.Context, puzzle *schema.Puzzle) error {
 	if len(msgs) == 0 {
 		return fmt.Errorf("cannot warn about well-formatted puzzle %q: %v", puzzle.Name, puzzle)
 	}
-	msg := fmt.Sprintf("Puzzle %q is %s", puzzle.Name, strings.Join(msgs, " and "))
-	if err := p.discord.ChannelSend(p.discord.QMChannelID, msg); err != nil {
+	embed := &discordgo.MessageEmbed{
+		Description: fmt.Sprintf("Puzzle %q is %s", puzzle.Name, strings.Join(msgs, " and ")),
+	}
+	if err := p.discord.ChannelSendEmbed(p.discord.QMChannelID, embed); err != nil {
 		return err
 	}
 	p.lastWarnTime[puzzle.AirtableRecord.ID] = time.Now()
