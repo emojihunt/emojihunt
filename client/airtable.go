@@ -111,6 +111,33 @@ func (air *Airtable) UpdateBotFields(puzzle *schema.Puzzle, lastBotStatus schema
 	return air.parseRecord(record)
 }
 
+func (air *Airtable) AddPuzzles(puzzles []*schema.NewPuzzle) error {
+	for i := 0; i < len(puzzles); i += 10 {
+		records := airtable.Records{}
+		limit := i + 10
+		if limit > len(puzzles) {
+			limit = len(puzzles)
+		}
+		for _, puzzle := range puzzles[i:limit] {
+			fields := map[string]interface{}{
+				"Name":       puzzle.Name,
+				"Round":      puzzle.Round.Serialize(),
+				"Puzzle URL": puzzle.PuzzleURL,
+			}
+			records.Records = append(records.Records,
+				&airtable.Record{
+					Fields: fields,
+				},
+			)
+		}
+		_, err := air.table.AddRecords(&records)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func (air *Airtable) parseRecord(record *airtable.Record) (*schema.Puzzle, error) {
 	round := schema.ParseRound(air.stringField(record, "Round"))
 	status, err := schema.ParsePrettyStatus(air.stringField(record, "Status"))

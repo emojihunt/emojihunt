@@ -14,6 +14,7 @@ import (
 	"github.com/gauravjsingh/emojihunt/bot"
 	"github.com/gauravjsingh/emojihunt/client"
 	"github.com/gauravjsingh/emojihunt/database"
+	"github.com/gauravjsingh/emojihunt/discovery"
 	"github.com/gauravjsingh/emojihunt/server"
 	"github.com/gauravjsingh/emojihunt/syncer"
 )
@@ -33,6 +34,8 @@ type secrets struct {
 	DiscordToken         string      `json:"discord_token"`
 	HuntboxToken         string      `json:"huntbox_token"`
 	GoogleServiceAccount interface{} `json:"google_service_account"`
+	CookieName           string      `json:"hunt_cookie_name"` // to log in to the Hunt website
+	CookieValue          string      `json:"hunt_cookie_value"`
 }
 
 func loadSecrets(path string) (secrets, error) {
@@ -105,6 +108,7 @@ func main() {
 	}
 	syn := syncer.New(air, dis, d)
 	poller := database.NewPoller(air, dis, syn)
+	disc := discovery.New(secrets.CookieName, secrets.CookieValue, air)
 
 	log.Print("press ctrl+C to exit")
 	dis.RegisterNewMessageHandler("emoji generator", bot.MakeEmojiNameHandler())
@@ -114,6 +118,7 @@ func main() {
 	dis.RegisterNewMessageHandler("voice channel helper", bot.MakeVoiceRoomHandler(air, dis))
 
 	go poller.Poll(ctx)
+	go disc.Poll(ctx)
 
 	server := server.New(air, syn, secrets.HuntboxToken)
 	server.Start(*certFile, *keyFile)

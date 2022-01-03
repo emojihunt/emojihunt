@@ -22,6 +22,12 @@ type Puzzle struct {
 	Archived      bool
 }
 
+type NewPuzzle struct {
+	Name      string
+	Round     Round
+	PuzzleURL string
+}
+
 func (p Puzzle) SpreadsheetURL() string {
 	if p.SpreadsheetID == "" {
 		panic("called SpreadsheetURL() on a puzzle with no spreadsheet")
@@ -61,6 +67,10 @@ func (r Round) TwemojiURL() string {
 		codePoints = append(codePoints, fmt.Sprintf("%04x", runeValue))
 	}
 	return fmt.Sprintf("https://twemoji.maxcdn.com/2/72x72/%s.png", strings.Join(codePoints, "-"))
+}
+
+func (r Round) Serialize() string {
+	return r.Emoji + " " + r.Name
 }
 
 type Status string

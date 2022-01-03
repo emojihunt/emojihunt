@@ -88,7 +88,7 @@ func (p *Poller) Poll(ctx context.Context) {
 
 		select {
 		case <-ctx.Done():
-			log.Print("exiting watcher due to signal")
+			log.Print("exiting database poller due to signal")
 			return
 		case <-time.After(PollInterval):
 		}
