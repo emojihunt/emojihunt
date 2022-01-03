@@ -2,11 +2,13 @@ package discovery
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"net/http"
 	"net/url"
 	"time"
 
+	"github.com/davecgh/go-spew/spew"
 	"github.com/gauravjsingh/emojihunt/client"
 )
 
@@ -42,20 +44,25 @@ func New(cookieName, cookieValue string, airtable *client.Airtable, discord *cli
 }
 
 func (d *Discovery) Poll(ctx context.Context) {
-	// TODO: post errors to Slack
-	puzzles, err := d.Scrape()
-	if err != nil {
-		log.Printf("discovery: scraping error: %v", err)
-	}
+	for {
+		puzzles, err := d.Scrape()
+		if err != nil {
+			log.Printf("discovery: scraping error: %v", err)
+			msg := fmt.Sprintf("discovery: scraping error: ```\n%s\n```", spew.Sdump(err))
+			d.discord.TechChannelSend(msg)
+		}
 
-	if err := d.SyncPuzzles(puzzles); err != nil {
-		log.Printf("discovery: syncing error: %v", err)
-	}
+		if err := d.SyncPuzzles(puzzles); err != nil {
+			log.Printf("discovery: syncing error: %v", err)
+			msg := fmt.Sprintf("discovery: syncing error: ```\n%s\n```", spew.Sdump(err))
+			d.discord.TechChannelSend(msg)
+		}
 
-	select {
-	case <-ctx.Done():
-		log.Print("exiting discovery poller due to signal")
-		return
-	case <-time.After(pollInterval):
+		select {
+		case <-ctx.Done():
+			log.Print("exiting discovery poller due to signal")
+			return
+		case <-time.After(pollInterval):
+		}
 	}
 }

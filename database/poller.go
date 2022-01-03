@@ -8,6 +8,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/davecgh/go-spew/spew"
 	"github.com/gauravjsingh/emojihunt/client"
 	"github.com/gauravjsingh/emojihunt/schema"
 	"github.com/gauravjsingh/emojihunt/syncer"
@@ -69,7 +70,8 @@ func (p *Poller) Poll(ctx context.Context) {
 				log.Printf("polling sheet failed: %v", err)
 				failures++
 				if failures%10 == 3 {
-					p.discord.TechChannelSend(fmt.Sprintf("polling sheet failed: %v", err))
+					msg := fmt.Sprintf("polling sheet failed: ```\n%s\n```", spew.Sdump(err))
+					p.discord.TechChannelSend(msg)
 				}
 			} else {
 				failures = 0
