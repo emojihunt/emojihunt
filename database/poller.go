@@ -140,7 +140,10 @@ func (p *Poller) warnPuzzle(ctx context.Context, puzzle *schema.Puzzle) error {
 		return fmt.Errorf("cannot warn about well-formatted puzzle %q: %v", puzzle.Name, puzzle)
 	}
 	embed := &discordgo.MessageEmbed{
-		Description: fmt.Sprintf(":robot: Puzzle %q is %s", puzzle.Name, strings.Join(msgs, " and ")),
+		Description: fmt.Sprintf(
+			":robot: Halp! Errors with puzzle %q: %s. [:pencil: Edit in Airtable](%s)",
+			puzzle.Name, strings.Join(msgs, " and "), p.airtable.EditURL(puzzle),
+		),
 	}
 	if err := p.discord.ChannelSendEmbed(p.discord.QMChannelID, embed); err != nil {
 		return err

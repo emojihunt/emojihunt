@@ -82,8 +82,9 @@ func (s *Syncer) notifyPuzzleSolvedMissingAnswer(puzzle *schema.Puzzle) error {
 
 	embed := &discordgo.MessageEmbed{
 		Description: fmt.Sprintf(
-			":robot: Puzzle %q marked %s, but has no answer, please add it to Airtable.",
-			puzzle.Name, puzzle.Status.SolvedVerb(),
+			":robot: Puzzle %q marked %s, but no answer was entered in Airtable... "+
+				"[:pencil: Edit in Airtable](%s)",
+			puzzle.Name, puzzle.Status.SolvedVerb(), s.airtable.EditURL(puzzle),
 		),
 	}
 	return s.discord.ChannelSendEmbed(s.discord.QMChannelID, embed)
