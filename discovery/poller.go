@@ -28,6 +28,7 @@ type DiscoveredPuzzle struct {
 const (
 	pollInterval         = 1 * time.Minute
 	roundNotifyFrequency = 10 * time.Minute
+	newPuzzleLimit       = 10
 )
 
 func New(cookieName, cookieValue string, airtable *client.Airtable, discord *client.Discord) *Discovery {

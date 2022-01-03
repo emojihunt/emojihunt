@@ -133,13 +133,18 @@ func (d *Discovery) SyncPuzzles(puzzles []*DiscoveredPuzzle) error {
 			skippedRounds[puzzle.Round] = true
 			continue
 		}
-		log.Printf("discovery: adding puzzle %q (%s) in round %q", puzzle.Name, puzzle.URL.String(), puzzle.Round)
+		log.Printf("discovery: preparing to add puzzle %q (%s) in round %q", puzzle.Name, puzzle.URL.String(), puzzle.Round)
 		newPuzzles = append(newPuzzles, &schema.NewPuzzle{
 			Name:      puzzle.Name,
 			Round:     round,
 			PuzzleURL: puzzle.URL.String(),
 		})
 	}
+
+	if len(newPuzzles) > newPuzzleLimit {
+		return fmt.Errorf("too many new puzzles; aborting for safety (%d)", len(newPuzzles))
+	}
+
 	if err := d.airtable.AddPuzzles(newPuzzles); err != nil {
 		return err
 	}
