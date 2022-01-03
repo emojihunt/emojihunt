@@ -27,6 +27,7 @@ var (
 	tableName    = flag.String("airtable_table_name", "Puzzle Tracker", "the name of the table in the airtable base")
 	certFile     = flag.String("certificate", "/etc/letsencrypt/live/huntbox.emojihunt.tech/fullchain.pem", "the path to the server certificate")
 	keyFile      = flag.String("private_key", "/etc/letsencrypt/live/huntbox.emojihunt.tech/privkey.pem", "the path to the server private key")
+	origin       = flag.String("origin", "https://huntbox.emojihunt.tech", "origin of the hunt server, for URLs")
 )
 
 type secrets struct {
@@ -108,7 +109,8 @@ func main() {
 	}
 	syn := syncer.New(air, dis, d)
 	dbpoller := database.NewPoller(air, dis, syn)
-	dscvpoller := discovery.New(secrets.CookieName, secrets.CookieValue, air, dis)
+	server := server.New(air, syn, secrets.HuntboxToken, *origin)
+	dscvpoller := discovery.New(secrets.CookieName, secrets.CookieValue, air, dis, &server)
 
 	log.Print("press ctrl+C to exit")
 	dis.RegisterNewMessageHandler("emoji generator", bot.MakeEmojiNameHandler())
@@ -120,7 +122,6 @@ func main() {
 	go dbpoller.Poll(ctx)
 	go dscvpoller.Poll(ctx)
 
-	server := server.New(air, syn, secrets.HuntboxToken)
 	server.Start(*certFile, *keyFile)
 
 	<-ctx.Done()

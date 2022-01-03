@@ -7,6 +7,7 @@ import (
 
 	"github.com/davecgh/go-spew/spew"
 	"github.com/gauravjsingh/emojihunt/client"
+	"github.com/gauravjsingh/emojihunt/schema"
 	"github.com/gauravjsingh/emojihunt/syncer"
 )
 
@@ -14,10 +15,18 @@ type Server struct {
 	airtable *client.Airtable
 	syncer   *syncer.Syncer
 	secret   string
+	origin   string
 }
 
-func New(airtable *client.Airtable, syncer *syncer.Syncer, secret string) Server {
-	return Server{airtable, syncer, secret}
+func New(airtable *client.Airtable, syncer *syncer.Syncer, secret, origin string) Server {
+	return Server{airtable, syncer, secret, origin}
+}
+
+func (s *Server) ResyncURL(puzzle *schema.Puzzle) string {
+	return fmt.Sprintf(
+		"%s/resync?token=%s&record=%s",
+		s.origin, s.secret, puzzle.AirtableRecord.ID,
+	)
 }
 
 func (s *Server) Start(certFile, keyFile string) {

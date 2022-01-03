@@ -130,7 +130,8 @@ func (air *Airtable) UpdateBotFields(puzzle *schema.Puzzle, lastBotStatus schema
 	return air.parseRecord(record)
 }
 
-func (air *Airtable) AddPuzzles(puzzles []*schema.NewPuzzle) error {
+func (air *Airtable) AddPuzzles(puzzles []*schema.NewPuzzle) ([]*schema.Puzzle, error) {
+	var created []*schema.Puzzle
 	for i := 0; i < len(puzzles); i += 10 {
 		records := airtable.Records{}
 		limit := i + 10
@@ -150,12 +151,19 @@ func (air *Airtable) AddPuzzles(puzzles []*schema.NewPuzzle) error {
 				},
 			)
 		}
-		_, err := air.table.AddRecords(&records)
+		response, err := air.table.AddRecords(&records)
 		if err != nil {
-			return err
+			return nil, err
+		}
+		for _, record := range response.Records {
+			parsed, err := air.parseRecord(record)
+			if err != nil {
+				return nil, err
+			}
+			created = append(created, parsed)
 		}
 	}
-	return nil
+	return created, nil
 }
 
 func (air *Airtable) parseRecord(record *airtable.Record) (*schema.Puzzle, error) {

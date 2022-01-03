@@ -159,11 +159,31 @@ func (d *Poller) SyncPuzzles(puzzles []*DiscoveredPuzzle) error {
 		return fmt.Errorf("too many new puzzles; aborting for safety (%d)", len(newPuzzles))
 	}
 
-	if err := d.airtable.AddPuzzles(newPuzzles); err != nil {
+	created, err := d.airtable.AddPuzzles(newPuzzles)
+	if err != nil {
 		return err
 	}
 
+	for _, puzzle := range created {
+		if err := d.notifyNewPuzzle(puzzle); err != nil {
+			return err
+		}
+	}
+
 	return d.notifyNewRounds(skippedRounds)
+}
+
+func (d *Poller) notifyNewPuzzle(puzzle *schema.Puzzle) error {
+	msg := fmt.Sprintf(
+		"New puzzle detected!\n"+
+			"Name: %q\n"+
+			"Round: %q\n"+
+			"URL: %s\n"+
+			"Edit in Airtable, or click here to approve as-is: %s",
+		puzzle.Name, puzzle.Round.Serialize(), puzzle.PuzzleURL,
+		d.server.ResyncURL(puzzle),
+	)
+	return d.discord.QMChannelSend(msg)
 }
 
 func (d *Poller) notifyNewRounds(rounds map[string]bool) error {
