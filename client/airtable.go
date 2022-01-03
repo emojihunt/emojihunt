@@ -104,12 +104,18 @@ func (air *Airtable) UpdateSpreadsheetID(puzzle *schema.Puzzle, spreadsheet stri
 }
 
 func (air *Airtable) UpdateBotFields(puzzle *schema.Puzzle, lastBotStatus schema.Status, archived, pending bool) (*schema.Puzzle, error) {
-	fields := map[string]interface{}{
-		"Last Bot Status": string(lastBotStatus),
-		"Archived":        archived,
+	var fields = make(map[string]interface{})
+
+	if lastBotStatus == schema.NotStarted {
+		fields["Last Bot Status"] = nil
+	} else {
+		fields["Last Bot Status"] = string(lastBotStatus)
 	}
 
+	fields["Archived"] = archived
+
 	if puzzle.Pending != pending {
+		// The "pending" status is stored in the puzzle name
 		puzzleName := puzzle.Name
 		if pending {
 			puzzle.Name += pendingSuffix
