@@ -71,7 +71,7 @@ func (p *Poller) Poll(ctx context.Context) {
 				failures++
 				if failures%10 == 3 {
 					msg := fmt.Sprintf("polling sheet failed: ```\n%s\n```", spew.Sdump(err))
-					p.discord.TechChannelSend(msg)
+					p.discord.ChannelSend(p.discord.TechChannelID, msg)
 				}
 			} else {
 				failures = 0
@@ -138,7 +138,8 @@ func (p *Poller) warnPuzzle(ctx context.Context, puzzle *schema.Puzzle) error {
 	if len(msgs) == 0 {
 		return fmt.Errorf("cannot warn about well-formatted puzzle %q: %v", puzzle.Name, puzzle)
 	}
-	if err := p.discord.QMChannelSend(fmt.Sprintf("Puzzle %q is %s", puzzle.Name, strings.Join(msgs, " and "))); err != nil {
+	msg := fmt.Sprintf("Puzzle %q is %s", puzzle.Name, strings.Join(msgs, " and "))
+	if err := p.discord.ChannelSend(p.discord.QMChannelID, msg); err != nil {
 		return err
 	}
 	p.lastWarnTime[puzzle.AirtableRecord.ID] = time.Now()

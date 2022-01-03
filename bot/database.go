@@ -47,7 +47,7 @@ func MakeDatabaseHandler(discord *client.Discord, poller *database.Poller, disco
 
 		s.ChannelMessageSend(m.ChannelID, reply)
 		if info != "" {
-			discord.TechChannelSend(info)
+			discord.ChannelSend(discord.TechChannelID, info)
 			log.Print(info)
 		}
 

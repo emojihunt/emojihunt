@@ -183,7 +183,7 @@ func (d *Poller) notifyNewPuzzle(puzzle *schema.Puzzle) error {
 		puzzle.Name, puzzle.Round.Serialize(), puzzle.PuzzleURL,
 		d.server.ResyncURL(puzzle),
 	)
-	return d.discord.QMChannelSend(msg)
+	return d.discord.ChannelSend(d.discord.QMChannelID, msg)
 }
 
 func (d *Poller) notifyNewRounds(rounds map[string]bool) error {
@@ -205,7 +205,7 @@ func (d *Poller) notifyNewRounds(rounds map[string]bool) error {
 			"Airtable (after that, puzzle auto-discovery can take over). Rounds: " +
 			strings.Join(array, ", "),
 	)
-	if err := d.discord.QMChannelSend(msg); err != nil {
+	if err := d.discord.ChannelSend(d.discord.QMChannelID, msg); err != nil {
 		return err
 	}
 

@@ -23,11 +23,11 @@ type Discord struct {
 	// advanced bot usage, such as puzzle or round creation.
 	QMChannelID string
 	// The general channel has all users, and has announcements from the bot.
-	generalChannelID string
+	GeneralChannelID string
 	// The channel in which to post status updates.
-	statusUpdateChannelID string
+	StatusUpdateChannelID string
 	// The tech channel has error messages.
-	techChannelID string
+	TechChannelID string
 	// The puzzle channel category.
 	PuzzleCategoryID string
 	// The category for solved puzzles.
@@ -110,9 +110,9 @@ func NewDiscord(s *discordgo.Session, c DiscordConfig) (*Discord, error) {
 		s:                     s,
 		GuildID:               c.GuildID,
 		QMChannelID:           qm,
-		generalChannelID:      gen,
-		statusUpdateChannelID: st,
-		techChannelID:         tech,
+		GeneralChannelID:      gen,
+		StatusUpdateChannelID: st,
+		TechChannelID:         tech,
 		channelNameToID:       chIDs,
 		roomsToID:             rIDs,
 		PuzzleCategoryID:      puz,
@@ -145,6 +145,11 @@ func (c *Discord) RegisterNewMessageHandler(name string, h DiscordMessageHandler
 
 func (c *Discord) ChannelSend(chanID, msg string) error {
 	_, err := c.s.ChannelMessageSend(chanID, msg)
+	return err
+}
+
+func (c *Discord) ChannelSendEmbed(chanID string, embed *discordgo.MessageEmbed) error {
+	_, err := c.s.ChannelMessageSendEmbed(chanID, embed)
 	return err
 }
 
@@ -185,31 +190,6 @@ func (c *Discord) CreateUpdatePin(chanID, header string, embed *discordgo.Messag
 	}
 
 	_, err = c.s.ChannelMessageEditEmbed(chanID, statusMessage.ID, embed)
-	return err
-}
-
-func (c *Discord) QMChannelSend(msg string) error {
-	_, err := c.s.ChannelMessageSend(c.QMChannelID, msg)
-	return err
-}
-
-func (c *Discord) GeneralChannelSend(msg string) error {
-	_, err := c.s.ChannelMessageSend(c.generalChannelID, msg)
-	return err
-}
-
-func (c *Discord) GeneralChannelSendEmbed(embed *discordgo.MessageEmbed) error {
-	_, err := c.s.ChannelMessageSendEmbed(c.generalChannelID, embed)
-	return err
-}
-
-func (c *Discord) StatusUpdateChannelSend(msg string) error {
-	_, err := c.s.ChannelMessageSend(c.statusUpdateChannelID, msg)
-	return err
-}
-
-func (c *Discord) TechChannelSend(msg string) error {
-	_, err := c.s.ChannelMessageSend(c.techChannelID, msg)
 	return err
 }
 

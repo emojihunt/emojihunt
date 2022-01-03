@@ -76,13 +76,13 @@ func (d *Poller) Poll(ctx context.Context) {
 		if err != nil {
 			log.Printf("discovery: scraping error: %v", err)
 			msg := fmt.Sprintf("discovery: scraping error: ```\n%s\n```", spew.Sdump(err))
-			d.discord.TechChannelSend(msg)
+			d.discord.ChannelSend(d.discord.TechChannelID, msg)
 		}
 
 		if err := d.SyncPuzzles(puzzles); err != nil {
 			log.Printf("discovery: syncing error: %v", err)
 			msg := fmt.Sprintf("discovery: syncing error: ```\n%s\n```", spew.Sdump(err))
-			d.discord.TechChannelSend(msg)
+			d.discord.ChannelSend(d.discord.TechChannelID, msg)
 		}
 
 		select {

@@ -34,7 +34,7 @@ func (s *Syncer) notifyNewPuzzle(puzzle *schema.Puzzle) error {
 			},
 		},
 	}
-	return s.discord.GeneralChannelSendEmbed(embed)
+	return s.discord.ChannelSendEmbed(s.discord.GeneralChannelID, embed)
 }
 
 // notifyPuzzleFullySolved sends the two "Puzzle solved!" (or "Puzzle
@@ -66,7 +66,7 @@ func (s *Syncer) notifyPuzzleFullySolved(puzzle *schema.Puzzle) error {
 			},
 		},
 	}
-	return s.discord.GeneralChannelSendEmbed(embed)
+	return s.discord.ChannelSendEmbed(s.discord.GeneralChannelID, embed)
 }
 
 // notifyPuzzleSolvedMissingAnswer sends messages to the puzzle channel and to
@@ -84,7 +84,7 @@ func (s *Syncer) notifyPuzzleSolvedMissingAnswer(puzzle *schema.Puzzle) error {
 		"Puzzle %q marked %s, but has no answer, please add it to Airtable.",
 		puzzle.Name, puzzle.Status.SolvedVerb(),
 	)
-	return s.discord.QMChannelSend(qmMsg)
+	return s.discord.ChannelSend(s.discord.QMChannelID, qmMsg)
 }
 
 // notifyPuzzleStatusChange sends messages about ordinary puzzle status changes
@@ -94,5 +94,5 @@ func (s *Syncer) notifyPuzzleStatusChange(puzzle *schema.Puzzle) error {
 		"%s Puzzle <#%s> is now %v.",
 		puzzle.Round.Emoji, puzzle.DiscordChannel, puzzle.Status.Pretty(),
 	)
-	return s.discord.StatusUpdateChannelSend(msg)
+	return s.discord.ChannelSend(s.discord.StatusUpdateChannelID, msg)
 }
