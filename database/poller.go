@@ -76,6 +76,11 @@ func (p *Poller) Poll(ctx context.Context) {
 			}
 
 			for _, puzzle := range puzzles {
+				if puzzle.Pending {
+					// Skip auto-added records that haven't been confirmed by a
+					// human
+					continue
+				}
 				err := p.processPuzzle(ctx, &puzzle)
 				if err != nil {
 					// Log errors and keep going.

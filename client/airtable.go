@@ -2,6 +2,7 @@ package client
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/gauravjsingh/emojihunt/schema"
 	"github.com/mehanizm/airtable"
@@ -12,6 +13,8 @@ type Airtable struct {
 }
 
 const pageSize = 100 // most records returned per list request
+
+const pendingSuffix = " [pending]" // puzzle name suffix for auto-added puzzles
 
 // FYI the Airtable library has a built-in rate limiter that will block if we
 // exceed 4 requests per second. This will keep us under Airtable's 5
@@ -100,11 +103,21 @@ func (air *Airtable) UpdateSpreadsheetID(puzzle *schema.Puzzle, spreadsheet stri
 	return air.parseRecord(record)
 }
 
-func (air *Airtable) UpdateBotFields(puzzle *schema.Puzzle, lastBotStatus schema.Status, archived bool) (*schema.Puzzle, error) {
-	record, err := puzzle.AirtableRecord.UpdateRecordPartial(map[string]interface{}{
+func (air *Airtable) UpdateBotFields(puzzle *schema.Puzzle, lastBotStatus schema.Status, archived, pending bool) (*schema.Puzzle, error) {
+	fields := map[string]interface{}{
 		"Last Bot Status": string(lastBotStatus),
 		"Archived":        archived,
-	})
+	}
+
+	if puzzle.Pending != pending {
+		puzzleName := puzzle.Name
+		if pending {
+			puzzle.Name += pendingSuffix
+		}
+		fields["Name"] = puzzleName
+	}
+
+	record, err := puzzle.AirtableRecord.UpdateRecordPartial(fields)
 	if err != nil {
 		return nil, err
 	}
@@ -120,7 +133,7 @@ func (air *Airtable) AddPuzzles(puzzles []*schema.NewPuzzle) error {
 		}
 		for _, puzzle := range puzzles[i:limit] {
 			fields := map[string]interface{}{
-				"Name":       puzzle.Name,
+				"Name":       puzzle.Name + pendingSuffix,
 				"Round":      puzzle.Round.Serialize(),
 				"Puzzle URL": puzzle.PuzzleURL,
 			}
@@ -150,8 +163,17 @@ func (air *Airtable) parseRecord(record *airtable.Record) (*schema.Puzzle, error
 		return nil, err
 	}
 
+	puzzleName := air.stringField(record, "Name")
+	pending := false
+	if strings.HasSuffix(puzzleName, pendingSuffix) {
+		// Ideally the "pending" status would be stored in a separate field, but
+		// we want it to be obvious to humans viewing the Airtable.
+		puzzleName = strings.TrimSuffix(puzzleName, pendingSuffix)
+		pending = true
+	}
+
 	return &schema.Puzzle{
-		Name:   air.stringField(record, "Name"),
+		Name:   puzzleName,
 		Answer: air.stringField(record, "Answer"),
 		Round:  round,
 		Status: status,
@@ -161,6 +183,7 @@ func (air *Airtable) parseRecord(record *airtable.Record) (*schema.Puzzle, error
 		SpreadsheetID:  air.stringField(record, "Spreadsheet ID"),
 		DiscordChannel: air.stringField(record, "Discord Channel"),
 
+		Pending:       pending,
 		LastBotStatus: lastBotStatus,
 		Archived:      air.boolField(record, "Archived"),
 	}, nil

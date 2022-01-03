@@ -18,6 +18,7 @@ type Puzzle struct {
 	SpreadsheetID  string
 	DiscordChannel string
 
+	Pending       bool
 	LastBotStatus Status
 	Archived      bool
 }
