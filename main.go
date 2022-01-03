@@ -60,6 +60,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("error creating discordgo client: %v", err)
 	}
+	dg.Identify.Intents = discordgo.IntentsGuildMessages
 
 	err = dg.Open()
 	defer dg.Close()

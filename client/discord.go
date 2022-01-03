@@ -133,9 +133,6 @@ func getGuildID(s *discordgo.Session) (string, error) {
 type DiscordMessageHandler func(*discordgo.Session, *discordgo.MessageCreate) error
 
 func (c *Discord) RegisterNewMessageHandler(name string, h DiscordMessageHandler) {
-	// Only handle new guild messages.
-	// TODO: bitOr with the current value.
-	c.s.Identify.Intents = discordgo.MakeIntent(discordgo.IntentsGuildMessages)
 	c.s.AddHandler(func(s *discordgo.Session, m *discordgo.MessageCreate) {
 		if err := h(s, m); err != nil {
 			log.Printf("%s: %v", name, err)
