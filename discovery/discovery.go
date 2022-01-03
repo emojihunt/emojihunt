@@ -177,7 +177,7 @@ func (d *Poller) SyncPuzzles(puzzles []*DiscoveredPuzzle) error {
 func (d *Poller) notifyNewPuzzle(puzzle *schema.Puzzle) error {
 	embed := &discordgo.MessageEmbed{
 		Description: fmt.Sprintf(
-			":robot: New puzzle detected! Name: %q, Round: %q, URL: %q\n"+
+			":robot: New puzzle detected! Name: %q, Round: %q, URL: %s\n"+
 				"[:pencil: Edit in Airtable](%s) or [:hammer: Approve as-is](%s)",
 			puzzle.Name, puzzle.Round.Serialize(), puzzle.PuzzleURL,
 			d.airtable.EditURL(puzzle), d.server.ResyncURL(puzzle),
