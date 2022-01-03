@@ -128,6 +128,7 @@ func (d *Poller) SyncPuzzles(puzzles []*DiscoveredPuzzle) error {
 	for _, record := range records {
 		rounds[record.Round.Name] = record.Round
 		knownURLs[strings.ToUpper(record.PuzzleURL)] = true
+		knownURLs[strings.ToUpper(record.OriginalURL)] = true
 		knownNames[strings.ToUpper(record.Name)] = true
 	}
 

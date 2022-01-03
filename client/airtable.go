@@ -139,9 +139,10 @@ func (air *Airtable) AddPuzzles(puzzles []*schema.NewPuzzle) error {
 		}
 		for _, puzzle := range puzzles[i:limit] {
 			fields := map[string]interface{}{
-				"Name":       puzzle.Name + pendingSuffix,
-				"Round":      puzzle.Round.Serialize(),
-				"Puzzle URL": puzzle.PuzzleURL,
+				"Name":         puzzle.Name + pendingSuffix,
+				"Round":        puzzle.Round.Serialize(),
+				"Puzzle URL":   puzzle.PuzzleURL,
+				"Original URL": puzzle.PuzzleURL,
 			}
 			records.Records = append(records.Records,
 				&airtable.Record{
@@ -192,6 +193,7 @@ func (air *Airtable) parseRecord(record *airtable.Record) (*schema.Puzzle, error
 		Pending:       pending,
 		LastBotStatus: lastBotStatus,
 		Archived:      air.boolField(record, "Archived"),
+		OriginalURL:   air.stringField(record, "Original URL"),
 	}, nil
 }
 

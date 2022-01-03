@@ -21,6 +21,7 @@ type Puzzle struct {
 	Pending       bool
 	LastBotStatus Status
 	Archived      bool
+	OriginalURL   string
 }
 
 type NewPuzzle struct {
