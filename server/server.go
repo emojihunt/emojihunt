@@ -60,7 +60,7 @@ func (s *Server) resync(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	log.Printf("Received HTTP request: %s", r.URL.Path)
+	log.Printf("Received HTTP request: %q %q", r.URL.Path, r.Header.Get("User-Agent"))
 
 	if strings.Contains(r.Header.Get("User-Agent"), "Discordbot") {
 		w.WriteHeader(http.StatusForbidden)
