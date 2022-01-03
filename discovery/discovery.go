@@ -176,10 +176,9 @@ func (d *Poller) SyncPuzzles(puzzles []*DiscoveredPuzzle) error {
 
 func (d *Poller) notifyNewPuzzle(puzzle *schema.Puzzle) error {
 	embed := &discordgo.MessageEmbed{
-		Title: "New puzzle detected!",
 		Description: fmt.Sprintf(
-			"Name: %q\n"+
-				"Round: %q\n"+
+			":robot: New puzzle detected!\n"+
+				"Name: %q, Round: %q\n"+
 				"URL: %s\n"+
 				"[:pencil: Edit in Airtable](%s) or [:hammer: Approve as-is](%s)",
 			puzzle.Name, puzzle.Round.Serialize(), puzzle.PuzzleURL,
@@ -204,10 +203,9 @@ func (d *Poller) notifyNewRounds(rounds map[string]bool) error {
 	}
 
 	embed := &discordgo.MessageEmbed{
-		Title: "New rounds are available!",
 		Description: fmt.Sprintf(
-			"Please add at least one puzzle from each round to Airtable (after " +
-				"that, puzzle auto-discovery can take over). Rounds: " +
+			":robot: New rounds are available! Please add at least one puzzle from each round to " +
+				"Airtable (after that, puzzle auto-discovery can take over). Rounds: " +
 				strings.Join(array, ", "),
 		),
 	}
