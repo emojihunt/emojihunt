@@ -17,6 +17,10 @@ var (
 	// URL of the "All Puzzles" page on the hunt website
 	puzzleListURL, _ = url.Parse("http://puzzles.mit.edu/2021/puzzles.html")
 
+	// URL of the Websocket endpoint
+	websocketURL    *url.URL = nil
+	websocketOrigin          = "" // fmt.Sprintf("https://%s/", websocketURL.Host)
+
 	// A "group" is the HTML element that contains the round name and all of the
 	// puzzles in that round. This is a CSS selector that matches all of the
 	// groups in the page. This selector is run on the root of the document.

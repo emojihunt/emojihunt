@@ -8,6 +8,7 @@ require (
 	github.com/davecgh/go-spew v1.1.1
 	github.com/mehanizm/airtable v0.2.6
 	golang.org/x/net v0.0.0-20211216030914-fe4d6282115f
+	golang.org/x/time v0.0.0-20191024005414-555d28b269f0
 	google.golang.org/api v0.63.0
 )
 
