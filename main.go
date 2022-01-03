@@ -24,7 +24,7 @@ var (
 	rootFolderID = flag.String("root_folder_id", "1Mp8e1Sd7YXBwcgil62YCgslbQ6twmBlU", "the id of the google drive folder for this year")
 	guildID      = flag.String("discord_guild_id", "793599987694436374", "the id of the discord guild")
 	baseID       = flag.String("airtable_base_id", "appmjhGfZLui26Xow", "the id of the airtable base")
-	tableName    = flag.String("airtable_table_name", "Puzzle Tracker", "the name of the table in the airtable base")
+	tableID      = flag.String("airtable_table_id", "tblXFBYI5RQIogbog", "the id of the table in the airtable base")
 	certFile     = flag.String("certificate", "/etc/letsencrypt/live/huntbox.emojihunt.tech/fullchain.pem", "the path to the server certificate")
 	keyFile      = flag.String("private_key", "/etc/letsencrypt/live/huntbox.emojihunt.tech/privkey.pem", "the path to the server private key")
 	origin       = flag.String("origin", "https://huntbox.emojihunt.tech", "origin of the hunt server, for URLs")
@@ -80,7 +80,7 @@ func main() {
 		log.Fatalf("error creating discord client: %v", err)
 	}
 
-	air := client.NewAirtable(secrets.AirtableToken, *baseID, *tableName)
+	air := client.NewAirtable(secrets.AirtableToken, *baseID, *tableID)
 
 	ctx := context.Background()
 

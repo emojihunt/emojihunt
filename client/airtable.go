@@ -21,9 +21,9 @@ const pendingSuffix = " [pending]" // puzzle name suffix for auto-added puzzles
 // requests-per-second limit, which is important because if we break that limit
 // we get suspended for 30 seconds.
 
-func NewAirtable(apiKey, dbName, tableName string) *Airtable {
+func NewAirtable(apiKey, baseID, tableID string) *Airtable {
 	client := airtable.NewClient(apiKey)
-	table := client.GetTable(dbName, tableName)
+	table := client.GetTable(baseID, tableID)
 	return &Airtable{table}
 }
 
