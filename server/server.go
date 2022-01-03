@@ -3,7 +3,9 @@ package server
 import (
 	"crypto/subtle"
 	"fmt"
+	"log"
 	"net/http"
+	"strings"
 
 	"github.com/davecgh/go-spew/spew"
 	"github.com/gauravjsingh/emojihunt/client"
@@ -55,6 +57,14 @@ func (s *Server) resync(w http.ResponseWriter, r *http.Request) {
 		[]byte(r.URL.Query().Get("token"))) == 0 {
 		w.WriteHeader(http.StatusForbidden)
 		w.Write([]byte("incorrect token"))
+		return
+	}
+
+	log.Printf("Received HTTP request: %s", r.URL.Path)
+
+	if strings.Contains(r.Header.Get("User-Agent"), "Discordbot") {
+		w.WriteHeader(http.StatusForbidden)
+		w.Write([]byte("ignoring request with discordbot user agent"))
 		return
 	}
 
