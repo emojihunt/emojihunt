@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/davecgh/go-spew/spew"
 	"github.com/gauravjsingh/emojihunt/client"
 	"github.com/gauravjsingh/emojihunt/syncer"
 )
@@ -65,7 +66,7 @@ func (s *Server) resync(w http.ResponseWriter, r *http.Request) {
 	_, err = s.syncer.ForceUpdate(r.Context(), puzzle)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
-		fmt.Fprintf(w, "error: %#v\n", err)
+		spew.Fdump(w, err)
 		return
 	}
 
