@@ -108,7 +108,7 @@ func main() {
 	}
 	syn := syncer.New(air, dis, d)
 	poller := database.NewPoller(air, dis, syn)
-	disc := discovery.New(secrets.CookieName, secrets.CookieValue, air)
+	disc := discovery.New(secrets.CookieName, secrets.CookieValue, air, dis)
 
 	log.Print("press ctrl+C to exit")
 	dis.RegisterNewMessageHandler("emoji generator", bot.MakeEmojiNameHandler())

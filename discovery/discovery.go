@@ -1,7 +1,6 @@
 package discovery
 
 import (
-	"context"
 	"fmt"
 	"log"
 	"net/http"
@@ -10,23 +9,9 @@ import (
 	"time"
 
 	"github.com/andybalholm/cascadia"
-	"github.com/gauravjsingh/emojihunt/client"
 	"github.com/gauravjsingh/emojihunt/schema"
 	"golang.org/x/net/html"
 )
-
-type Discovery struct {
-	cookie   *http.Cookie
-	airtable *client.Airtable
-}
-
-type DiscoveredPuzzle struct {
-	Name  string
-	URL   *url.URL
-	Round string
-}
-
-const pollInterval = 1 * time.Minute
 
 var (
 	// URL of the "All Puzzles" page on the hunt website
@@ -60,36 +45,6 @@ var (
 // - Round Name: `a`
 // - Puzzle:     `ul li a`
 //
-
-func New(cookieName, cookieValue string, airtable *client.Airtable) *Discovery {
-	return &Discovery{
-		cookie: &http.Cookie{
-			Name:   cookieName,
-			Value:  cookieValue,
-			MaxAge: 0,
-		},
-		airtable: airtable,
-	}
-}
-
-func (d *Discovery) Poll(ctx context.Context) {
-	// TODO: post errors to Slack
-	puzzles, err := d.Scrape()
-	if err != nil {
-		log.Printf("discovery: scraping error: %v", err)
-	}
-
-	if err := d.SyncPuzzles(puzzles); err != nil {
-		log.Printf("discovery: syncing error: %v", err)
-	}
-
-	select {
-	case <-ctx.Done():
-		log.Print("exiting discovery poller due to signal")
-		return
-	case <-time.After(pollInterval):
-	}
-}
 
 func (d *Discovery) Scrape() ([]*DiscoveredPuzzle, error) {
 	// Download
@@ -150,6 +105,7 @@ func (d *Discovery) Scrape() ([]*DiscoveredPuzzle, error) {
 	}
 	return puzzles, nil
 }
+
 func (d *Discovery) SyncPuzzles(puzzles []*DiscoveredPuzzle) error {
 	puzzleMap := make(map[string]*DiscoveredPuzzle)
 	for _, puzzle := range puzzles {
@@ -169,11 +125,12 @@ func (d *Discovery) SyncPuzzles(puzzles []*DiscoveredPuzzle) error {
 
 	// Add remaining puzzles
 	var newPuzzles []*schema.NewPuzzle
+	skippedRounds := make(map[string]bool)
 	for _, puzzle := range puzzleMap {
 		round, ok := rounds[puzzle.Round]
 		if !ok {
 			log.Printf("discovery: skipping puzzle %q due to unknown round %q", puzzle.Name, puzzle.Round)
-			// TODO: ask QM to add new round
+			skippedRounds[puzzle.Round] = true
 			continue
 		}
 		log.Printf("discovery: adding puzzle %q (%s) in round %q", puzzle.Name, puzzle.URL.String(), puzzle.Round)
@@ -183,5 +140,38 @@ func (d *Discovery) SyncPuzzles(puzzles []*DiscoveredPuzzle) error {
 			PuzzleURL: puzzle.URL.String(),
 		})
 	}
-	return d.airtable.AddPuzzles(newPuzzles)
+	if err := d.airtable.AddPuzzles(newPuzzles); err != nil {
+		return err
+	}
+
+	return d.notifyNewRounds(skippedRounds)
+}
+
+func (d *Discovery) notifyNewRounds(rounds map[string]bool) error {
+	var array []string
+	shouldNotify := false
+	for round := range rounds {
+		array = append(array, round)
+		lastNotified, ok := d.newRounds[round]
+		if !ok || time.Since(lastNotified) > roundNotifyFrequency {
+			shouldNotify = true
+		}
+	}
+	if !shouldNotify {
+		return nil
+	}
+
+	msg := fmt.Sprintf(
+		"New rounds are available! Please add at least one puzzle from each round to " +
+			"Airtable (after that, puzzle auto-discovery can take over). Rounds: " +
+			strings.Join(array, ", "),
+	)
+	if err := d.discord.QMChannelSend(msg); err != nil {
+		return err
+	}
+
+	for round := range rounds {
+		d.newRounds[round] = time.Now()
+	}
+	return nil
 }

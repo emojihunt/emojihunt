@@ -14,9 +14,9 @@ import (
 )
 
 const (
-	PollInterval        = 10 * time.Second
-	InitialWarningDelay = 1 * time.Minute
-	MinWarningFrequency = 10 * time.Minute
+	pollInterval        = 10 * time.Second
+	initialWarningDelay = 1 * time.Minute
+	minWarningFrequency = 10 * time.Minute
 )
 
 type Poller struct {
@@ -95,7 +95,7 @@ func (p *Poller) Poll(ctx context.Context) {
 		case <-ctx.Done():
 			log.Print("exiting database poller due to signal")
 			return
-		case <-time.After(PollInterval):
+		case <-time.After(pollInterval):
 		}
 	}
 }
@@ -119,8 +119,8 @@ func (p *Poller) warnPuzzle(ctx context.Context, puzzle *schema.Puzzle) error {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 	if lastWarning, ok := p.lastWarnTime[puzzle.AirtableRecord.ID]; !ok {
-		p.lastWarnTime[puzzle.AirtableRecord.ID] = time.Now().Add(InitialWarningDelay - MinWarningFrequency)
-	} else if time.Since(lastWarning) <= MinWarningFrequency {
+		p.lastWarnTime[puzzle.AirtableRecord.ID] = time.Now().Add(initialWarningDelay - minWarningFrequency)
+	} else if time.Since(lastWarning) <= minWarningFrequency {
 		return nil
 	}
 	var msgs []string
