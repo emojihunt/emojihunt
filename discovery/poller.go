@@ -6,17 +6,21 @@ import (
 	"log"
 	"net/http"
 	"net/url"
+	"sync"
 	"time"
 
 	"github.com/davecgh/go-spew/spew"
 	"github.com/gauravjsingh/emojihunt/client"
 )
 
-type Discovery struct {
+type Poller struct {
 	cookie    *http.Cookie
 	airtable  *client.Airtable
 	discord   *client.Discord
 	newRounds map[string]time.Time
+
+	mu      sync.Mutex // hold while accessing everything below
+	enabled bool
 }
 
 type DiscoveredPuzzle struct {
@@ -31,8 +35,8 @@ const (
 	newPuzzleLimit       = 10
 )
 
-func New(cookieName, cookieValue string, airtable *client.Airtable, discord *client.Discord) *Discovery {
-	return &Discovery{
+func New(cookieName, cookieValue string, airtable *client.Airtable, discord *client.Discord) *Poller {
+	return &Poller{
 		cookie: &http.Cookie{
 			Name:   cookieName,
 			Value:  cookieValue,
@@ -41,11 +45,17 @@ func New(cookieName, cookieValue string, airtable *client.Airtable, discord *cli
 		airtable:  airtable,
 		discord:   discord,
 		newRounds: make(map[string]time.Time),
+		enabled:   true,
 	}
 }
 
-func (d *Discovery) Poll(ctx context.Context) {
+func (d *Poller) Poll(ctx context.Context) {
 	for {
+		if !d.isEnabled() {
+			time.Sleep(2 * time.Second)
+			continue
+		}
+
 		puzzles, err := d.Scrape()
 		if err != nil {
 			log.Printf("discovery: scraping error: %v", err)
@@ -66,4 +76,16 @@ func (d *Discovery) Poll(ctx context.Context) {
 		case <-time.After(pollInterval):
 		}
 	}
+}
+
+func (d *Poller) Enable(enable bool) {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	d.enabled = enable
+}
+
+func (d *Poller) isEnabled() bool {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	return d.enabled
 }

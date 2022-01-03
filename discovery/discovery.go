@@ -46,7 +46,7 @@ var (
 // - Puzzle:     `ul li a`
 //
 
-func (d *Discovery) Scrape() ([]*DiscoveredPuzzle, error) {
+func (d *Poller) Scrape() ([]*DiscoveredPuzzle, error) {
 	// Download
 	req, err := http.NewRequest("GET", puzzleListURL.String(), nil)
 	if err != nil {
@@ -106,7 +106,7 @@ func (d *Discovery) Scrape() ([]*DiscoveredPuzzle, error) {
 	return puzzles, nil
 }
 
-func (d *Discovery) SyncPuzzles(puzzles []*DiscoveredPuzzle) error {
+func (d *Poller) SyncPuzzles(puzzles []*DiscoveredPuzzle) error {
 	puzzleMap := make(map[string]*DiscoveredPuzzle)
 	for _, puzzle := range puzzles {
 		puzzleMap[puzzle.URL.String()] = puzzle
@@ -152,7 +152,7 @@ func (d *Discovery) SyncPuzzles(puzzles []*DiscoveredPuzzle) error {
 	return d.notifyNewRounds(skippedRounds)
 }
 
-func (d *Discovery) notifyNewRounds(rounds map[string]bool) error {
+func (d *Poller) notifyNewRounds(rounds map[string]bool) error {
 	var array []string
 	shouldNotify := false
 	for round := range rounds {

@@ -107,18 +107,18 @@ func main() {
 		log.Fatalf("error creating drive integration: %v", err)
 	}
 	syn := syncer.New(air, dis, d)
-	poller := database.NewPoller(air, dis, syn)
-	disc := discovery.New(secrets.CookieName, secrets.CookieValue, air, dis)
+	dbpoller := database.NewPoller(air, dis, syn)
+	dscvpoller := discovery.New(secrets.CookieName, secrets.CookieValue, air, dis)
 
 	log.Print("press ctrl+C to exit")
 	dis.RegisterNewMessageHandler("emoji generator", bot.MakeEmojiNameHandler())
 	dis.RegisterNewMessageHandler("isithuntyet?", bot.MakeHuntYetHandler())
-	dis.RegisterNewMessageHandler("bot control", bot.MakeDatabaseHandler(dis, poller))
+	dis.RegisterNewMessageHandler("bot control", bot.MakeDatabaseHandler(dis, dbpoller, dscvpoller))
 	dis.RegisterNewMessageHandler("qm manager", bot.MakeQMHandler(dis))
 	dis.RegisterNewMessageHandler("voice channel helper", bot.MakeVoiceRoomHandler(air, dis))
 
-	go poller.Poll(ctx)
-	go disc.Poll(ctx)
+	go dbpoller.Poll(ctx)
+	go dscvpoller.Poll(ctx)
 
 	server := server.New(air, syn, secrets.HuntboxToken)
 	server.Start(*certFile, *keyFile)
