@@ -21,8 +21,8 @@ var hunts = []hunt{
 func MakeHuntYetCommand() *client.DiscordCommand {
 	return &client.DiscordCommand{
 		ApplicationCommand: &discordgo.ApplicationCommand{
-			Name:        "/huntyet",
-			Description: "IS IT HUNT YET???",
+			Name:        "huntyet",
+			Description: "IS IT HUNT YET??? ⏳",
 		},
 		Handler: func(s *discordgo.Session, i *client.DiscordCommandInput) (string, error) {
 			var now = time.Now()

@@ -116,12 +116,15 @@ func main() {
 	log.Print("press ctrl+C to exit")
 	dis.RegisterNewMessageHandler("voice channel helper", bot.MakeVoiceRoomHandler(air, dis))
 
-	dis.RegisterCommands([]*client.DiscordCommand{
+	err = dis.RegisterCommands([]*client.DiscordCommand{
 		bot.MakeDatabaseCommand(dis, dbpoller, dscvpoller),
 		bot.MakeEmojiNameCommand(),
 		bot.MakeHuntYetCommand(),
 		bot.MakeQMCommand(dis),
 	})
+	if err != nil {
+		log.Fatalf("failed to register discord commands: %v", err)
+	}
 
 	go dbpoller.Poll(ctx)
 	go dscvpoller.Poll(ctx)

@@ -13,7 +13,7 @@ import (
 func MakeEmojiNameCommand() *client.DiscordCommand {
 	return &client.DiscordCommand{
 		ApplicationCommand: &discordgo.ApplicationCommand{
-			Name:        "/name",
+			Name:        "name",
 			Description: "Generate a team name 🌊🎨🎡",
 		},
 		Handler: func(s *discordgo.Session, i *client.DiscordCommandInput) (string, error) {

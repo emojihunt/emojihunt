@@ -10,16 +10,17 @@ import (
 func MakeQMCommand(dis *client.Discord) *client.DiscordCommand {
 	return &client.DiscordCommand{
 		ApplicationCommand: &discordgo.ApplicationCommand{
-			Name: "qm",
+			Name:        "qm",
+			Description: "Tools for the Quartermaster 👷",
 			Options: []*discordgo.ApplicationCommandOption{
 				{
 					Name:        "start",
-					Description: "Start your shift as Quartermaster :coffee:",
+					Description: "Start your shift as Quartermaster ☕",
 					Type:        discordgo.ApplicationCommandOptionSubCommand,
 				},
 				{
 					Name:        "stop",
-					Description: "End your shift as Quartermaster :sleeping:",
+					Description: "End your shift as Quartermaster 🛌",
 					Type:        discordgo.ApplicationCommandOptionSubCommand,
 				},
 			},
