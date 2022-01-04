@@ -114,13 +114,12 @@ func main() {
 	dscvpoller := discovery.New(secrets.CookieName, secrets.CookieValue, air, dis, &server)
 
 	log.Print("press ctrl+C to exit")
-	dis.RegisterNewMessageHandler("emoji generator", bot.MakeEmojiNameHandler())
-	dis.RegisterNewMessageHandler("isithuntyet?", bot.MakeHuntYetHandler())
-	dis.RegisterNewMessageHandler("bot control", bot.MakeDatabaseHandler(dis, dbpoller, dscvpoller))
-	dis.RegisterNewMessageHandler("qm manager", bot.MakeQMHandler(dis))
 	dis.RegisterNewMessageHandler("voice channel helper", bot.MakeVoiceRoomHandler(air, dis))
 
 	dis.RegisterCommands([]*client.DiscordCommand{
+		bot.MakeDatabaseCommand(dis, dbpoller, dscvpoller),
+		bot.MakeEmojiNameCommand(),
+		bot.MakeHuntYetCommand(),
 		bot.MakeQMCommand(dis),
 	})
 

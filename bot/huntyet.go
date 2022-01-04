@@ -2,7 +2,6 @@ package bot
 
 import (
 	"fmt"
-	"strings"
 	"time"
 
 	"github.com/bwmarrin/discordgo"
@@ -19,25 +18,23 @@ var hunts = []hunt{
 	{time.Date(2023, 1, 13, 17, 0, 0, 0, time.UTC), time.Date(2023, 1, 15, 23, 0, 0, 0, time.UTC)},
 }
 
-func MakeHuntYetHandler() client.DiscordMessageHandler {
-	return func(s *discordgo.Session, m *discordgo.MessageCreate) error {
-		if m.Author.ID == s.State.User.ID || !strings.HasPrefix(m.Content, "!huntyet") {
-			return nil
-		}
-
-		var msg = "Gosh, I'm not sure! @tech can update the bot."
-		var now = time.Now()
-		for _, h := range hunts {
-			if h.start.After(now) {
-				msg = fmt.Sprintf("No. You'll have to wait another %v.", formatDuration(h.start.Sub(now)))
-				break
-			} else if h.end.After(now) {
-				msg = "Yes! HUNT HUNT HUNT!"
-				break
+func MakeHuntYetCommand() *client.DiscordCommand {
+	return &client.DiscordCommand{
+		ApplicationCommand: &discordgo.ApplicationCommand{
+			Name:        "/huntyet",
+			Description: "IS IT HUNT YET???",
+		},
+		Handler: func(s *discordgo.Session, i *client.DiscordCommandInput) (string, error) {
+			var now = time.Now()
+			for _, h := range hunts {
+				if h.start.After(now) {
+					return fmt.Sprintf("No. You'll have to wait another %v.", formatDuration(h.start.Sub(now))), nil
+				} else if h.end.After(now) {
+					return "Yes! HUNT HUNT HUNT!", nil
+				}
 			}
-		}
-		_, err := s.ChannelMessageSend(m.ChannelID, msg)
-		return err
+			return "Gosh, I'm not sure! @tech can update the bot.", nil
+		},
 	}
 }
 
