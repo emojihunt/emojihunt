@@ -7,6 +7,7 @@ import (
 	"sync"
 
 	"github.com/bwmarrin/discordgo"
+	"github.com/davecgh/go-spew/spew"
 )
 
 type DiscordConfig struct {
@@ -34,6 +35,8 @@ type Discord struct {
 	SolvedCategoryID string
 	// The Role ID for the QM role.
 	QMRoleID string
+
+	handlers map[string]DiscordCommandHandler
 
 	// This might be a case where sync.Map makes sense.
 	mu              sync.Mutex
@@ -100,7 +103,8 @@ func NewDiscord(s *discordgo.Session, c DiscordConfig) (*Discord, error) {
 		return nil, fmt.Errorf("QM role %q not found in roles: %v", c.QMRoleName, roles)
 	}
 
-	return &Discord{
+	commandHandlers := make(map[string]DiscordCommandHandler)
+	discord := &Discord{
 		s:                     s,
 		GuildID:               c.GuildID,
 		QMChannelID:           qm,
@@ -112,7 +116,11 @@ func NewDiscord(s *discordgo.Session, c DiscordConfig) (*Discord, error) {
 		PuzzleCategoryID:      puz,
 		SolvedCategoryID:      ar,
 		QMRoleID:              qmRoleID,
-	}, nil
+		handlers:              commandHandlers,
+	}
+	s.AddHandler(discord.commandHandler)
+
+	return discord, nil
 }
 
 func getGuildID(s *discordgo.Session) (string, error) {
@@ -132,6 +140,66 @@ func (c *Discord) RegisterNewMessageHandler(name string, h DiscordMessageHandler
 			log.Printf("%s: %v", name, err)
 		}
 	})
+}
+
+type DiscordCommand struct {
+	ApplicationCommand *discordgo.ApplicationCommand
+	Handler            DiscordCommandHandler
+}
+
+type DiscordCommandInput struct {
+	IC         *discordgo.InteractionCreate
+	User       *discordgo.User
+	Command    string
+	Subcommand string
+}
+
+type DiscordCommandHandler func(*discordgo.Session, *DiscordCommandInput) (string, error)
+
+func (c *Discord) RegisterCommands(commands []*DiscordCommand) error {
+	var appCommands []*discordgo.ApplicationCommand
+	for _, command := range commands {
+		appCommands = append(appCommands, command.ApplicationCommand)
+		c.handlers[command.ApplicationCommand.Name] = command.Handler
+	}
+	_, err := c.s.ApplicationCommandBulkOverwrite(c.s.State.User.ID, c.GuildID, appCommands)
+	return err
+}
+
+func (c *Discord) commandHandler(s *discordgo.Session, i *discordgo.InteractionCreate) {
+	input := &DiscordCommandInput{
+		IC:         i,
+		User:       i.User,
+		Command:    i.ApplicationCommandData().Name,
+		Subcommand: "",
+	}
+	if input.User == nil {
+		input.User = i.Member.User
+	}
+	for _, opt := range i.ApplicationCommandData().Options {
+		if opt.Type == discordgo.ApplicationCommandOptionSubCommand {
+			input.Subcommand = opt.Name
+		}
+	}
+
+	if handler, ok := c.handlers[input.Command]; ok {
+		log.Printf("discord: handling command \"%s %s\" from @%s", input.Command, input.Subcommand, input.User.Username)
+		reply, err := handler(s, input)
+		if err != nil {
+			log.Printf("discord: error handling interaction %q: %s", input.Command, spew.Sdump(err))
+			reply = fmt.Sprintf("```\n🚨 Bot Error\n%s\n```", spew.Sdump(err))
+		}
+
+		err = s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+			Type: discordgo.InteractionResponseChannelMessageWithSource,
+			Data: &discordgo.InteractionResponseData{Content: reply},
+		})
+		if err != nil {
+			log.Printf("discord: error responding to interaction %q: %s", input.Command, spew.Sdump(err))
+		}
+	} else {
+		log.Printf("discord: received unknown interaction: %#v %#v", i, i.ApplicationCommandData())
+	}
 }
 
 func (c *Discord) ChannelSend(chanID, msg string) error {

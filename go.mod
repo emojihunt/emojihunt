@@ -4,7 +4,7 @@ go 1.17
 
 require (
 	github.com/andybalholm/cascadia v1.3.1
-	github.com/bwmarrin/discordgo v0.23.2
+	github.com/bwmarrin/discordgo v0.23.3-0.20211228023845-29269347e820
 	github.com/davecgh/go-spew v1.1.1
 	github.com/mehanizm/airtable v0.2.6
 	golang.org/x/net v0.0.0-20211216030914-fe4d6282115f

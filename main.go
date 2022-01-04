@@ -120,6 +120,10 @@ func main() {
 	dis.RegisterNewMessageHandler("qm manager", bot.MakeQMHandler(dis))
 	dis.RegisterNewMessageHandler("voice channel helper", bot.MakeVoiceRoomHandler(air, dis))
 
+	dis.RegisterCommands([]*client.DiscordCommand{
+		bot.MakeQMCommand(dis),
+	})
+
 	go dbpoller.Poll(ctx)
 	go dscvpoller.Poll(ctx)
 
