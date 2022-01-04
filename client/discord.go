@@ -38,9 +38,7 @@ type Discord struct {
 	// This might be a case where sync.Map makes sense.
 	mu              sync.Mutex
 	channelNameToID map[string]string
-	// A room is the common name of a voice channel, excluding the puzzles present there.
-	// For example, a voice channel "Patio: puzzle 1, puzzle 2", is named "Patio", and has 2 puzzles being worked on.
-	roomsToID map[string]string
+	roomsToID       map[string]string
 }
 
 func NewDiscord(s *discordgo.Session, c DiscordConfig) (*Discord, error) {
@@ -60,11 +58,7 @@ func NewDiscord(s *discordgo.Session, c DiscordConfig) (*Discord, error) {
 	for _, ch := range chs {
 		chIDs[ch.Name] = ch.ID
 		if ch.Type == discordgo.ChannelTypeGuildVoice {
-			r, err := parseRoom(ch.Name)
-			if err != nil {
-				return nil, err
-			}
-			rIDs[r.name] = ch.ID
+			rIDs[ch.Name] = ch.ID
 		}
 	}
 	qm, ok := chIDs[c.QMChannelName]
@@ -266,28 +260,4 @@ func (c *Discord) AvailableRooms() []string {
 		rs = append(rs, r)
 	}
 	return rs
-}
-
-type voiceRoom struct {
-	// The name of the room, eg. "Patio". This excludes the puzzles that might be part of the channel name.
-	name    string
-	puzzles []string
-}
-
-func parseRoom(voiceChanName string) (voiceRoom, error) {
-	parts := strings.Split(voiceChanName, ":")
-	if len(parts) == 1 {
-		return voiceRoom{name: parts[0]}, nil
-	}
-	if len(parts) != 2 {
-		return voiceRoom{}, fmt.Errorf("too many ':' in voice channel name: %q", voiceChanName)
-	}
-	puzzles := strings.Split(parts[1], ",")
-	for i, p := range puzzles {
-		puzzles[i] = strings.TrimSpace(p)
-	}
-	return voiceRoom{
-		name:    parts[0],
-		puzzles: puzzles,
-	}, nil
 }
