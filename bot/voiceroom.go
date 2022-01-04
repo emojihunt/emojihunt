@@ -43,7 +43,8 @@ func handleVoiceRoomCommand(air *client.Airtable, dis *client.Discord, m *discor
 
 	var rID string
 	if matches[2] != "" {
-		_, ok := dis.ClosestRoomID(matches[2])
+		var ok bool
+		rID, ok = dis.ClosestRoomID(matches[2])
 		if !ok {
 			return fmt.Sprintf("Unable to find room %q. Available rooms are: %v", matches[2], strings.Join(dis.AvailableRooms(), ", "))
 		}

@@ -59,7 +59,7 @@ func NewDiscord(s *discordgo.Session, c DiscordConfig) (*Discord, error) {
 	rIDs := make(map[string]string)
 	for _, ch := range chs {
 		chIDs[ch.Name] = ch.ID
-		if ch.Bitrate != 0 {
+		if ch.Type == discordgo.ChannelTypeGuildVoice {
 			r, err := parseRoom(ch.Name)
 			if err != nil {
 				return nil, err
