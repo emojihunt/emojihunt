@@ -116,7 +116,7 @@ func voiceAsyncProcessing(air *client.Airtable, dis *client.Discord, puzzle *sch
 	if err != nil {
 		return err
 	}
-	return voiceSyncEvents(dis, puzzles, events)
+	return voiceSyncEvents(air, dis, puzzles, puzzle, events)
 }
 
 func voiceSyncPinnedMessage(dis *client.Discord, puzzle *schema.Puzzle) error {
@@ -132,13 +132,13 @@ func voiceSyncPinnedMessage(dis *client.Discord, puzzle *schema.Puzzle) error {
 	return dis.CreateUpdatePin(puzzle.DiscordChannel, roomStatusHeader, embed)
 }
 
-func voiceSyncEvents(dis *client.Discord, puzzles []*schema.Puzzle, eventsByID map[string]*client.DiscordScheduledEvent) error {
-	var groupings = make(map[string][]string)
+func voiceSyncEvents(air *client.Airtable, dis *client.Discord, puzzles []*schema.Puzzle, newest *schema.Puzzle, eventsByID map[string]*client.DiscordScheduledEvent) error {
+	var groupings = make(map[string][]*schema.Puzzle)
 	for _, puzzle := range puzzles {
 		if puzzle.VoiceRoom == "" {
 			continue
 		}
-		groupings[puzzle.VoiceRoom] = append(groupings[puzzle.VoiceRoom], puzzle.Name)
+		groupings[puzzle.VoiceRoom] = append(groupings[puzzle.VoiceRoom], puzzle)
 	}
 
 	var eventsByChannel = make(map[string]*client.DiscordScheduledEvent)
@@ -157,7 +157,12 @@ func voiceSyncEvents(dis *client.Discord, puzzles []*schema.Puzzle, eventsByID m
 	}
 
 	for voiceRoom, puzzles := range groupings {
-		eventTitle := strings.Join(sort.StringSlice(puzzles), " & ")
+		var puzzleNames []string
+		for _, puzzle := range puzzles {
+			puzzleNames = append(puzzleNames, puzzle.Name)
+		}
+		eventTitle := strings.Join(sort.StringSlice(puzzleNames), " & ")
+
 		if existing, ok := eventsByChannel[voiceRoom]; ok {
 			// Update existing event if needed
 			if eventTitle != existing.Name {
@@ -170,11 +175,22 @@ func voiceSyncEvents(dis *client.Discord, puzzles []*schema.Puzzle, eventsByID m
 			}
 		} else {
 			// Create new event
-
-			// TODO: if the event has been stopped manually, drop all puzzles
-			// from it, update Airtable and update the pins. This means we need
-			// to re-sync from Discord? Or no, log the event ID instead of the
-			// voice room...
+			if len(puzzles) > 1 {
+				// There are other puzzles assigned to this room, but there's no
+				// event. Someone must have stopped the event manually (or
+				// Discord stopped it because the voice room emptied for more
+				// than a few minutes). Handle this by un-assigning all of the
+				// stale puzzles from the room.
+				for _, puzzle := range puzzles {
+					if puzzle.AirtableRecord.ID == newest.AirtableRecord.ID {
+						continue
+					}
+					if _, err := voiceSyncUnassignStalePuzzle(air, dis, puzzle); err != nil {
+						return err
+					}
+				}
+				eventTitle = newest.Name
+			}
 
 			event, err := dis.CreateScheduledEvent(&client.DiscordScheduledEvent{
 				ChannelID:    voiceRoom,
@@ -197,4 +213,16 @@ func voiceSyncEvents(dis *client.Discord, puzzles []*schema.Puzzle, eventsByID m
 	}
 
 	return nil
+}
+
+func voiceSyncUnassignStalePuzzle(air *client.Airtable, dis *client.Discord, puzzle *schema.Puzzle) (*schema.Puzzle, error) {
+	var err error
+	if puzzle, err = air.UpdateVoiceRoom(puzzle, ""); err != nil {
+		return nil, err
+	}
+	if err = voiceSyncPinnedMessage(dis, puzzle); err != nil {
+		return nil, err
+	}
+	return puzzle, nil
+
 }
