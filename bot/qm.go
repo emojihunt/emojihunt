@@ -26,7 +26,7 @@ func MakeQMCommand(dis *client.Discord) *client.DiscordCommand {
 			},
 		},
 		Handler: func(s *discordgo.Session, i *client.DiscordCommandInput) (string, error) {
-			switch i.Subcommand {
+			switch i.Subcommand.Name {
 			case "start":
 				err := s.GuildMemberRoleAdd(dis.GuildID, i.User.ID, dis.QMRoleID)
 				if err != nil {
@@ -40,7 +40,7 @@ func MakeQMCommand(dis *client.Discord) *client.DiscordCommand {
 				}
 				return fmt.Sprintf("%s is no longer a QM", i.User.Mention()), nil
 			default:
-				return "", fmt.Errorf("unexpected /qm subcommand: %q", i.Subcommand)
+				return "", fmt.Errorf("unexpected /qm subcommand: %q", i.Subcommand.Name)
 			}
 		},
 	}

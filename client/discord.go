@@ -3,7 +3,6 @@ package client
 import (
 	"fmt"
 	"log"
-	"strings"
 	"sync"
 
 	"github.com/bwmarrin/discordgo"
@@ -41,7 +40,6 @@ type Discord struct {
 	// This might be a case where sync.Map makes sense.
 	mu              sync.Mutex
 	channelNameToID map[string]string
-	roomsToID       map[string]string
 }
 
 func NewDiscord(s *discordgo.Session, c DiscordConfig) (*Discord, error) {
@@ -57,12 +55,8 @@ func NewDiscord(s *discordgo.Session, c DiscordConfig) (*Discord, error) {
 		return nil, fmt.Errorf("error creating channel ID cache: %v", err)
 	}
 	chIDs := make(map[string]string)
-	rIDs := make(map[string]string)
 	for _, ch := range chs {
 		chIDs[ch.Name] = ch.ID
-		if ch.Type == discordgo.ChannelTypeGuildVoice {
-			rIDs[ch.Name] = ch.ID
-		}
 	}
 	qm, ok := chIDs[c.QMChannelName]
 	if !ok {
@@ -112,7 +106,6 @@ func NewDiscord(s *discordgo.Session, c DiscordConfig) (*Discord, error) {
 		StatusUpdateChannelID: st,
 		TechChannelID:         tech,
 		channelNameToID:       chIDs,
-		roomsToID:             rIDs,
 		PuzzleCategoryID:      puz,
 		SolvedCategoryID:      ar,
 		QMRoleID:              qmRoleID,
@@ -151,7 +144,7 @@ type DiscordCommandInput struct {
 	IC         *discordgo.InteractionCreate
 	User       *discordgo.User
 	Command    string
-	Subcommand string
+	Subcommand *discordgo.ApplicationCommandInteractionDataOption
 }
 
 type DiscordCommandHandler func(*discordgo.Session, *DiscordCommandInput) (string, error)
@@ -171,20 +164,23 @@ func (c *Discord) commandHandler(s *discordgo.Session, i *discordgo.InteractionC
 		IC:         i,
 		User:       i.User,
 		Command:    i.ApplicationCommandData().Name,
-		Subcommand: "",
+		Subcommand: nil,
 	}
 	if input.User == nil {
 		input.User = i.Member.User
 	}
 	for _, opt := range i.ApplicationCommandData().Options {
 		if opt.Type == discordgo.ApplicationCommandOptionSubCommand {
-			input.Subcommand = opt.Name
+			input.Subcommand = opt
 		}
 	}
 
 	if handler, ok := c.handlers[input.Command]; ok {
-		log.Printf("discord: handling command %q from @%s",
-			strings.Join([]string{input.Command, input.Subcommand}, " "), input.User.Username)
+		var cmdName = input.Command
+		if input.Subcommand != nil {
+			cmdName += " " + input.Subcommand.Name
+		}
+		log.Printf("discord: handling command %q from @%s", cmdName, input.User.Username)
 
 		// Call the handler! We need to run our logic and call
 		// InteractionRespond within 3 seconds, otherwise Discord will report an
@@ -310,27 +306,4 @@ func (c *Discord) CreateChannel(name string) (string, error) {
 	}
 	c.channelNameToID[name] = ch.ID
 	return ch.ID, nil
-}
-
-func (c *Discord) ClosestRoomID(input string) (string, bool) {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-	for r, id := range c.roomsToID {
-		input = strings.ReplaceAll(strings.ReplaceAll(strings.ToLower(input), " ", ""), "-", "")
-		r = strings.ReplaceAll(strings.ReplaceAll(strings.ToLower(r), " ", ""), "-", "")
-		if r == input {
-			return id, true
-		}
-	}
-	return "", false
-}
-
-func (c *Discord) AvailableRooms() []string {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-	var rs []string
-	for r := range c.roomsToID {
-		rs = append(rs, r)
-	}
-	return rs
 }

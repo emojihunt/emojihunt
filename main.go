@@ -113,18 +113,17 @@ func main() {
 	server := server.New(air, syn, secrets.HuntboxToken, *origin)
 	dscvpoller := discovery.New(secrets.CookieName, secrets.CookieValue, air, dis, &server)
 
-	log.Print("press ctrl+C to exit")
-	dis.RegisterNewMessageHandler("voice channel helper", bot.MakeVoiceRoomHandler(air, dis))
-
 	err = dis.RegisterCommands([]*client.DiscordCommand{
 		bot.MakeDatabaseCommand(dis, dbpoller, dscvpoller),
 		bot.MakeEmojiNameCommand(),
 		bot.MakeHuntYetCommand(),
 		bot.MakeQMCommand(dis),
+		bot.MakeVoiceRoomCommand(air, dis),
 	})
 	if err != nil {
 		log.Fatalf("failed to register discord commands: %v", err)
 	}
+	log.Print("press ctrl+C to exit")
 
 	go dbpoller.Poll(ctx)
 	go dscvpoller.Poll(ctx)

@@ -33,7 +33,7 @@ func MakeDatabaseCommand(discord *client.Discord, poller *database.Poller, disco
 			},
 		},
 		Handler: func(s *discordgo.Session, i *client.DiscordCommandInput) (string, error) {
-			switch i.Subcommand {
+			switch i.Subcommand.Name {
 			case "kill":
 				discovery.Enable(false)
 				if poller.Enable(false) {
@@ -58,7 +58,7 @@ func MakeDatabaseCommand(discord *client.Discord, poller *database.Poller, disco
 				return "Ok, I've paused puzzle auto-discovery for now. Re-enable it with `!huntbot start`. " +
 					"(This will also reenable the entire bot if the bot has been killed.)", nil
 			default:
-				return "", fmt.Errorf("unexpected /huntbot subcommand: %q", i.Subcommand)
+				return "", fmt.Errorf("unexpected /huntbot subcommand: %q", i.Subcommand.Name)
 			}
 		},
 	}
