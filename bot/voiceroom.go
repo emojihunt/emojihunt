@@ -159,15 +159,15 @@ func voiceSyncEvents(dis *client.Discord, puzzles []*schema.Puzzle, eventsByID m
 	for voiceRoom, puzzles := range groupings {
 		eventTitle := strings.Join(sort.StringSlice(puzzles), " & ")
 		if existing, ok := eventsByChannel[voiceRoom]; ok {
-			// Update existing event
-			// TODO: only if there are changes
-			_, err := dis.UpdateScheduledEvent(existing, map[string]interface{}{
-				"name": eventTitle,
-			})
-			if err != nil {
-				return err
+			// Update existing event if needed
+			if eventTitle != existing.Name {
+				_, err := dis.UpdateScheduledEvent(existing, map[string]interface{}{
+					"name": eventTitle,
+				})
+				if err != nil {
+					return err
+				}
 			}
-
 		} else {
 			// Create new event
 
