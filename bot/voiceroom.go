@@ -61,14 +61,14 @@ func MakeVoiceRoomCommand(air *client.Airtable, dis *client.Discord) *client.Dis
 				setPinnedVoiceInfo(dis, i.IC.ChannelID, nil)
 				return fmt.Sprintf("Removed the room for puzzle %q", puzzle.Name), nil
 			default:
-				return "", fmt.Errorf("unexpected /name subcommand: %q", i.Subcommand.Name)
+				return "", fmt.Errorf("unexpected /room subcommand: %q", i.Subcommand.Name)
 			}
 		},
 	}
 }
 
 func setPinnedVoiceInfo(dis *client.Discord, puzzleChannelID string, voiceChannel *discordgo.Channel) error {
-	room := "No voice room set. \"!room start $room\" to start working in $room."
+	room := "No voice room set. Use `/room start $room` to start working in $room."
 	if voiceChannel != nil {
 		room = fmt.Sprintf("Join us in %s!", voiceChannel.Mention())
 	}
