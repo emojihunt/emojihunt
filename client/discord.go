@@ -183,7 +183,12 @@ func (c *Discord) commandHandler(s *discordgo.Session, i *discordgo.InteractionC
 	}
 
 	if handler, ok := c.handlers[input.Command]; ok {
-		log.Printf("discord: handling command \"%s %s\" from @%s", input.Command, input.Subcommand, input.User.Username)
+		log.Printf("discord: handling command %q from @%s",
+			strings.Join([]string{input.Command, input.Subcommand}, " "), input.User.Username)
+
+		// Call the handler! We need to run our logic and call
+		// InteractionRespond within 3 seconds, otherwise Discord will report an
+		// error to the user.
 		reply, err := handler(s, input)
 		if err != nil {
 			log.Printf("discord: error handling interaction %q: %s", input.Command, spew.Sdump(err))
