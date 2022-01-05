@@ -50,7 +50,7 @@ func (s *Syncer) IdempotentCreateUpdate(ctx context.Context, puzzle *schema.Puzz
 			return nil, fmt.Errorf("error creating discord channel for %q: %v", puzzle.Name, err)
 		}
 
-		puzzle, err = s.airtable.UpdateDiscordChannel(puzzle, channel)
+		puzzle, err = s.airtable.UpdateDiscordChannel(puzzle, channel.ID)
 		if err != nil {
 			return nil, fmt.Errorf("error setting discord channel for puzzle %q: %v", puzzle.Name, err)
 		}

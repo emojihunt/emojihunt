@@ -37,7 +37,7 @@ func MakeDatabaseCommand(discord *client.Discord, poller *database.Poller, disco
 			case "kill":
 				discovery.Enable(false)
 				if poller.Enable(false) {
-					discord.ChannelSend(discord.TechChannelID,
+					discord.ChannelSend(discord.TechChannel,
 						fmt.Sprintf("**bot disabled by %v**", i.User.Mention()))
 					return "Ok, I've disabled the bot for now.  Enable it with `/huntbot start`.", nil
 				} else {
@@ -46,14 +46,14 @@ func MakeDatabaseCommand(discord *client.Discord, poller *database.Poller, disco
 			case "start":
 				discovery.Enable(true)
 				if poller.Enable(true) {
-					discord.ChannelSend(discord.TechChannelID,
+					discord.ChannelSend(discord.TechChannel,
 						fmt.Sprintf("**bot enabled by %v**", i.User.Mention()))
 					return "Ok, I've enabled the bot for now. Disable it with `/huntbot kill``.", nil
 				} else {
 					return "The bot was already enabled. Disable it with `/huntbot kill`.", nil
 				}
 			case "nodiscovery":
-				discord.ChannelSend(discord.TechChannelID,
+				discord.ChannelSend(discord.TechChannel,
 					fmt.Sprintf("**discovery paused by %v**", i.User.Mention()))
 				return "Ok, I've paused puzzle auto-discovery for now. Re-enable it with `!huntbot start`. " +
 					"(This will also reenable the entire bot if the bot has been killed.)", nil

@@ -183,7 +183,7 @@ func (d *Poller) notifyNewPuzzle(puzzle *schema.Puzzle) error {
 			d.airtable.EditURL(puzzle), d.server.ResyncURL(puzzle),
 		),
 	}
-	return d.discord.ChannelSendEmbed(d.discord.QMChannelID, embed)
+	return d.discord.ChannelSendEmbed(d.discord.QMChannel, embed)
 }
 
 func (d *Poller) notifyNewRounds(rounds map[string]bool) error {
@@ -207,7 +207,7 @@ func (d *Poller) notifyNewRounds(rounds map[string]bool) error {
 				strings.Join(array, ", "),
 		),
 	}
-	if err := d.discord.ChannelSendEmbed(d.discord.QMChannelID, embed); err != nil {
+	if err := d.discord.ChannelSendEmbed(d.discord.QMChannel, embed); err != nil {
 		return err
 	}
 

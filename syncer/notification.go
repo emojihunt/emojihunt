@@ -34,7 +34,7 @@ func (s *Syncer) notifyNewPuzzle(puzzle *schema.Puzzle) error {
 			},
 		},
 	}
-	return s.discord.ChannelSendEmbed(s.discord.GeneralChannelID, embed)
+	return s.discord.ChannelSendEmbed(s.discord.GeneralChannel, embed)
 }
 
 // notifyPuzzleFullySolved sends the two "Puzzle solved!" (or "Puzzle
@@ -44,7 +44,7 @@ func (s *Syncer) notifyPuzzleFullySolved(puzzle *schema.Puzzle) error {
 		"Puzzle %s! The answer was `%v`. I'll archive this channel.",
 		puzzle.Status.SolvedVerb(), puzzle.Answer,
 	)
-	if err := s.discord.ChannelSend(puzzle.DiscordChannel, msg); err != nil {
+	if err := s.discord.ChannelSendRawID(puzzle.DiscordChannel, msg); err != nil {
 		return err
 	}
 
@@ -66,7 +66,7 @@ func (s *Syncer) notifyPuzzleFullySolved(puzzle *schema.Puzzle) error {
 			},
 		},
 	}
-	return s.discord.ChannelSendEmbed(s.discord.GeneralChannelID, embed)
+	return s.discord.ChannelSendEmbed(s.discord.GeneralChannel, embed)
 }
 
 // notifyPuzzleSolvedMissingAnswer sends messages to the puzzle channel and to
@@ -76,7 +76,7 @@ func (s *Syncer) notifyPuzzleSolvedMissingAnswer(puzzle *schema.Puzzle) error {
 		"Puzzle %s! Please add the answer to Airtable.",
 		puzzle.Status.SolvedVerb(),
 	)
-	if err := s.discord.ChannelSend(puzzle.DiscordChannel, puzMsg); err != nil {
+	if err := s.discord.ChannelSendRawID(puzzle.DiscordChannel, puzMsg); err != nil {
 		return err
 	}
 
@@ -87,7 +87,7 @@ func (s *Syncer) notifyPuzzleSolvedMissingAnswer(puzzle *schema.Puzzle) error {
 			puzzle.Name, puzzle.Status.SolvedVerb(), s.airtable.EditURL(puzzle),
 		),
 	}
-	return s.discord.ChannelSendEmbed(s.discord.QMChannelID, embed)
+	return s.discord.ChannelSendEmbed(s.discord.QMChannel, embed)
 }
 
 // notifyPuzzleStatusChange sends messages about ordinary puzzle status changes
@@ -97,5 +97,5 @@ func (s *Syncer) notifyPuzzleStatusChange(puzzle *schema.Puzzle) error {
 		"%s Puzzle <#%s> is now %v.",
 		puzzle.Round.Emoji, puzzle.DiscordChannel, puzzle.Status.Pretty(),
 	)
-	return s.discord.ChannelSend(s.discord.StatusUpdateChannelID, msg)
+	return s.discord.ChannelSend(s.discord.StatusUpdateChannel, msg)
 }

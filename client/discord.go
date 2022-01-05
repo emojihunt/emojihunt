@@ -20,17 +20,17 @@ type Discord struct {
 	GuildID string
 	// The QM channel contains a central log of interesting bot actions, as well as the only place for
 	// advanced bot usage, such as puzzle or round creation.
-	QMChannelID string
+	QMChannel *discordgo.Channel
 	// The general channel has all users, and has announcements from the bot.
-	GeneralChannelID string
+	GeneralChannel *discordgo.Channel
 	// The channel in which to post status updates.
-	StatusUpdateChannelID string
+	StatusUpdateChannel *discordgo.Channel
 	// The tech channel has error messages.
-	TechChannelID string
+	TechChannel *discordgo.Channel
 	// The puzzle channel category.
-	PuzzleCategoryID string
+	PuzzleCategory *discordgo.Channel
 	// The category for solved puzzles.
-	SolvedCategoryID string
+	SolvedCategory *discordgo.Channel
 	// The Role ID for the QM role.
 	QMRoleID string
 
@@ -38,32 +38,25 @@ type Discord struct {
 }
 
 func NewDiscord(s *discordgo.Session, c DiscordConfig) (*Discord, error) {
-	if c.GuildID == "" {
-		var err error
-		c.GuildID, err = getGuildID(s)
-		if err != nil {
-			return nil, err
-		}
-	}
 	chs, err := s.GuildChannels(c.GuildID)
 	if err != nil {
 		return nil, fmt.Errorf("error creating channel ID cache: %v", err)
 	}
-	var qm, puz, ar, gen, st, tech string
+	var qm, puz, ar, gen, st, tech *discordgo.Channel
 	for _, ch := range chs {
 		switch ch.Name {
 		case c.QMChannelName:
-			qm = ch.Name
+			qm = ch
 		case c.PuzzleCategoryName:
-			puz = ch.Name
+			puz = ch
 		case c.SolvedCategoryName:
-			ar = ch.Name
+			ar = ch
 		case c.GeneralChannelName:
-			gen = ch.Name
+			gen = ch
 		case c.StatusUpdateChannelName:
-			st = ch.Name
+			st = ch
 		case c.TechChannelName:
-			tech = ch.Name
+			tech = ch
 		}
 	}
 	roles, err := s.GuildRoles(c.GuildID)
@@ -83,39 +76,20 @@ func NewDiscord(s *discordgo.Session, c DiscordConfig) (*Discord, error) {
 
 	commandHandlers := make(map[string]DiscordCommandHandler)
 	discord := &Discord{
-		s:                     s,
-		GuildID:               c.GuildID,
-		QMChannelID:           qm,
-		GeneralChannelID:      gen,
-		StatusUpdateChannelID: st,
-		TechChannelID:         tech,
-		PuzzleCategoryID:      puz,
-		SolvedCategoryID:      ar,
-		QMRoleID:              qmRoleID,
-		handlers:              commandHandlers,
+		s:                   s,
+		GuildID:             c.GuildID,
+		QMChannel:           qm,
+		GeneralChannel:      gen,
+		StatusUpdateChannel: st,
+		TechChannel:         tech,
+		PuzzleCategory:      puz,
+		SolvedCategory:      ar,
+		QMRoleID:            qmRoleID,
+		handlers:            commandHandlers,
 	}
 	s.AddHandler(discord.commandHandler)
 
 	return discord, nil
-}
-
-func getGuildID(s *discordgo.Session) (string, error) {
-	log.Print("fetching GuildID from session")
-	gs := s.State.Guilds
-	if len(gs) != 1 {
-		return "", fmt.Errorf("expected exactly 1 guild, found %d", len(gs))
-	}
-	return gs[0].ID, nil
-}
-
-type DiscordMessageHandler func(*discordgo.Session, *discordgo.MessageCreate) error
-
-func (c *Discord) RegisterNewMessageHandler(name string, h DiscordMessageHandler) {
-	c.s.AddHandler(func(s *discordgo.Session, m *discordgo.MessageCreate) {
-		if err := h(s, m); err != nil {
-			log.Printf("%s: %v", name, err)
-		}
-	})
 }
 
 type DiscordCommand struct {
@@ -186,13 +160,18 @@ func (c *Discord) commandHandler(s *discordgo.Session, i *discordgo.InteractionC
 	}
 }
 
-func (c *Discord) ChannelSend(chanID, msg string) error {
-	_, err := c.s.ChannelMessageSend(chanID, msg)
+func (c *Discord) ChannelSend(ch *discordgo.Channel, msg string) error {
+	_, err := c.s.ChannelMessageSend(ch.ID, msg)
 	return err
 }
 
-func (c *Discord) ChannelSendEmbed(chanID string, embed *discordgo.MessageEmbed) error {
-	_, err := c.s.ChannelMessageSendEmbed(chanID, embed)
+func (c *Discord) ChannelSendEmbed(ch *discordgo.Channel, embed *discordgo.MessageEmbed) error {
+	_, err := c.s.ChannelMessageSendEmbed(ch.ID, embed)
+	return err
+}
+
+func (c *Discord) ChannelSendRawID(chID, msg string) error {
+	_, err := c.s.ChannelMessageSend(chID, msg)
 	return err
 }
 
@@ -236,25 +215,18 @@ func (c *Discord) CreateUpdatePin(chanID, header string, embed *discordgo.Messag
 	return err
 }
 
-var ErrChannelNotFound = fmt.Errorf("channel not found")
-
-func (c *Discord) SetChannelCategory(chID, categoryID string) error {
+func (c *Discord) SetChannelCategory(chID string, category *discordgo.Channel) error {
 	ch, err := c.s.Channel(chID)
 	if err != nil {
-		return fmt.Errorf("channel id %s not found: %w", chID, ErrChannelNotFound)
+		return fmt.Errorf("channel id %s not found", chID)
 	}
 
-	if ch.ParentID == categoryID {
+	if ch.ParentID == category.ID {
 		return nil // no-op
 	}
 
-	category, err := c.s.Channel(categoryID)
-	if err != nil {
-		return fmt.Errorf("category channel id %s not found: %w", categoryID, ErrChannelNotFound)
-	}
-
 	_, err = c.s.ChannelEditComplex(chID, &discordgo.ChannelEdit{
-		ParentID:             categoryID,
+		ParentID:             category.ID,
 		PermissionOverwrites: category.PermissionOverwrites,
 	})
 	if err != nil {
@@ -268,15 +240,16 @@ func (c *Discord) SetChannelName(chID, name string) error {
 	return err
 }
 
-// CreateChannel ensures that a channel exists with the given name, and returns the channel ID.
-func (c *Discord) CreateChannel(name string) (string, error) {
+// CreateChannel ensures that a channel exists with the given name, and returns
+// the channel object.
+func (c *Discord) CreateChannel(name string) (*discordgo.Channel, error) {
 	ch, err := c.s.GuildChannelCreateComplex(c.GuildID, discordgo.GuildChannelCreateData{
 		Name:     name,
 		Type:     discordgo.ChannelTypeGuildText,
-		ParentID: c.PuzzleCategoryID,
+		ParentID: c.PuzzleCategory.ID,
 	})
 	if err != nil {
-		return "", fmt.Errorf("error creating channel %q: %v", name, err)
+		return nil, fmt.Errorf("error creating channel %q: %v", name, err)
 	}
-	return ch.ID, nil
+	return ch, nil
 }

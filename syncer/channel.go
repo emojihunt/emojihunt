@@ -50,11 +50,11 @@ func (s *Syncer) discordCreateUpdatePin(puzzle *schema.Puzzle) error {
 // solved puzzles), and the puzzle name includes a check mark when the puzzle is
 // solved. It needs to be called when the puzzle status changes.
 func (s *Syncer) discordUpdateChannel(puzzle *schema.Puzzle) error {
-	var category string
+	var category *discordgo.Channel
 	if puzzle.ShouldArchive() {
-		category = s.discord.SolvedCategoryID
+		category = s.discord.SolvedCategory
 	} else {
-		category = s.discord.PuzzleCategoryID
+		category = s.discord.PuzzleCategory
 	}
 
 	err := s.discord.SetChannelCategory(puzzle.DiscordChannel, category)

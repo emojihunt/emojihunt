@@ -72,7 +72,7 @@ func (p *Poller) Poll(ctx context.Context) {
 				failures++
 				if failures%10 == 3 {
 					msg := fmt.Sprintf("polling sheet failed: ```\n%s\n```", spew.Sdump(err))
-					p.discord.ChannelSend(p.discord.TechChannelID, msg)
+					p.discord.ChannelSend(p.discord.TechChannel, msg)
 				}
 			} else {
 				failures = 0
@@ -145,7 +145,7 @@ func (p *Poller) warnPuzzle(ctx context.Context, puzzle *schema.Puzzle) error {
 			puzzle.Name, strings.Join(msgs, " and "), p.airtable.EditURL(puzzle),
 		),
 	}
-	if err := p.discord.ChannelSendEmbed(p.discord.QMChannelID, embed); err != nil {
+	if err := p.discord.ChannelSendEmbed(p.discord.QMChannel, embed); err != nil {
 		return err
 	}
 	p.lastWarnTime[puzzle.AirtableRecord.ID] = time.Now()
