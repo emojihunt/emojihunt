@@ -10,7 +10,6 @@ import (
 	"os"
 	"os/signal"
 
-	"github.com/bwmarrin/discordgo"
 	"github.com/gauravjsingh/emojihunt/bot"
 	"github.com/gauravjsingh/emojihunt/client"
 	"github.com/gauravjsingh/emojihunt/database"
@@ -52,40 +51,14 @@ func loadSecrets(path string) (secrets, error) {
 }
 
 func main() {
+	// Load secrets.json
 	secrets, err := loadSecrets(*secretsFile)
 	if err != nil {
 		log.Fatalf("error loading secrets: %v", err)
 	}
-	dg, err := discordgo.New(secrets.DiscordToken)
-	if err != nil {
-		log.Fatalf("error creating discordgo client: %v", err)
-	}
-	dg.Identify.Intents = discordgo.IntentsGuildMessages
 
-	err = dg.Open()
-	defer dg.Close()
-	if err != nil {
-		log.Fatalf("error opening discord connection: %v", err)
-	}
-
-	dis, err := client.NewDiscord(dg, client.DiscordConfig{
-		GuildID:            *guildID,
-		QMChannelName:      "qm",
-		GeneralChannelName: "whats-going-on",
-		TechChannelName:    "tech",
-		SolvedCategoryName: "Solved",
-		PuzzleCategoryName: "Puzzles",
-		QMRoleName:         "QM",
-	})
-	if err != nil {
-		log.Fatalf("error creating discord client: %v", err)
-	}
-
-	air := client.NewAirtable(secrets.AirtableToken, *baseID, *tableID)
-
-	ctx := context.Background()
-
-	ctx, cancel := context.WithCancel(ctx)
+	// Set up our context, which is cancelled on Ctrl-C
+	ctx, cancel := context.WithCancel(context.Background())
 	ch := make(chan os.Signal, 1)
 	signal.Notify(ch, os.Interrupt)
 	defer func() {
@@ -100,6 +73,22 @@ func main() {
 		}
 	}()
 
+	// Set up Discord client
+	dis, err := client.NewDiscord(secrets.DiscordToken, client.DiscordConfig{
+		GuildID:            *guildID,
+		QMChannelName:      "qm",
+		GeneralChannelName: "whats-going-on",
+		TechChannelName:    "tech",
+		SolvedCategoryName: "Solved",
+		PuzzleCategoryName: "Puzzles",
+		QMRoleName:         "QM",
+	})
+	if err != nil {
+		log.Fatalf("error creating discord client: %v", err)
+	}
+	defer dis.Close()
+
+	// Set up Google Drive client
 	rawServiceAccount, err := json.Marshal(secrets.GoogleServiceAccount)
 	if err != nil {
 		panic(err)
@@ -108,11 +97,17 @@ func main() {
 	if err != nil {
 		log.Fatalf("error creating drive integration: %v", err)
 	}
+
+	// Set up Airtable client
+	air := client.NewAirtable(secrets.AirtableToken, *baseID, *tableID)
+
+	// Start internal engines
 	syn := syncer.New(air, dis, d)
 	dbpoller := database.NewPoller(air, dis, syn)
 	server := server.New(air, syn, secrets.HuntboxToken, *origin)
 	dscvpoller := discovery.New(secrets.CookieName, secrets.CookieValue, air, dis, &server)
 
+	// Register Discord bots
 	err = dis.RegisterCommands([]*client.DiscordCommand{
 		bot.MakeDatabaseCommand(dis, dbpoller, dscvpoller),
 		bot.MakeEmojiNameCommand(),
@@ -123,13 +118,12 @@ func main() {
 	if err != nil {
 		log.Fatalf("failed to register discord commands: %v", err)
 	}
-	log.Print("press ctrl+C to exit")
 
+	// Run!
+	log.Print("press ctrl+C to exit")
 	go dbpoller.Poll(ctx)
 	go dscvpoller.Poll(ctx)
-
 	server.Start(*certFile, *keyFile)
-
 	<-ctx.Done()
 }
 

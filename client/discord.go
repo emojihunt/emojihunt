@@ -37,7 +37,18 @@ type Discord struct {
 	handlers map[string]DiscordCommandHandler
 }
 
-func NewDiscord(s *discordgo.Session, c DiscordConfig) (*Discord, error) {
+func NewDiscord(token string, c DiscordConfig) (*Discord, error) {
+	// Initialize discordgo client
+	s, err := discordgo.New(token)
+	if err != nil {
+		return nil, err
+	}
+	s.Identify.Intents = discordgo.IntentsGuildMessages
+	if err := s.Open(); err != nil {
+		return nil, err
+	}
+
+	// Map channel/etc. names in config to actual Discord API IDs
 	chs, err := s.GuildChannels(c.GuildID)
 	if err != nil {
 		return nil, fmt.Errorf("error creating channel ID cache: %v", err)
@@ -74,6 +85,7 @@ func NewDiscord(s *discordgo.Session, c DiscordConfig) (*Discord, error) {
 		return nil, fmt.Errorf("QM role %q not found in roles: %v", c.QMRoleName, roles)
 	}
 
+	// Set up slash commands; return
 	commandHandlers := make(map[string]DiscordCommandHandler)
 	discord := &Discord{
 		s:                   s,
@@ -90,6 +102,10 @@ func NewDiscord(s *discordgo.Session, c DiscordConfig) (*Discord, error) {
 	s.AddHandler(discord.commandHandler)
 
 	return discord, nil
+}
+
+func (c *Discord) Close() error {
+	return c.s.Close()
 }
 
 func (c *Discord) ChannelSend(ch *discordgo.Channel, msg string) error {
