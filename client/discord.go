@@ -3,7 +3,6 @@ package client
 import (
 	"fmt"
 	"log"
-	"sync"
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/davecgh/go-spew/spew"
@@ -36,10 +35,6 @@ type Discord struct {
 	QMRoleID string
 
 	handlers map[string]DiscordCommandHandler
-
-	// This might be a case where sync.Map makes sense.
-	mu              sync.Mutex
-	channelNameToID map[string]string
 }
 
 func NewDiscord(s *discordgo.Session, c DiscordConfig) (*Discord, error) {
@@ -54,33 +49,22 @@ func NewDiscord(s *discordgo.Session, c DiscordConfig) (*Discord, error) {
 	if err != nil {
 		return nil, fmt.Errorf("error creating channel ID cache: %v", err)
 	}
-	chIDs := make(map[string]string)
+	var qm, puz, ar, gen, st, tech string
 	for _, ch := range chs {
-		chIDs[ch.Name] = ch.ID
-	}
-	qm, ok := chIDs[c.QMChannelName]
-	if !ok {
-		return nil, fmt.Errorf("QM Channel %q not found", c.QMChannelName)
-	}
-	puz, ok := chIDs[c.PuzzleCategoryName]
-	if !ok {
-		return nil, fmt.Errorf("puzzle category %q not found in channels: %v", c.PuzzleCategoryName, chIDs)
-	}
-	ar, ok := chIDs[c.SolvedCategoryName]
-	if !ok {
-		return nil, fmt.Errorf("archive %q not found", c.SolvedCategoryName)
-	}
-	gen, ok := chIDs[c.GeneralChannelName]
-	if !ok {
-		gen = qm
-	}
-	st, ok := chIDs[c.StatusUpdateChannelName]
-	if !ok {
-		st = gen
-	}
-	tech, ok := chIDs[c.TechChannelName]
-	if !ok {
-		tech = qm
+		switch ch.Name {
+		case c.QMChannelName:
+			qm = ch.Name
+		case c.PuzzleCategoryName:
+			puz = ch.Name
+		case c.SolvedCategoryName:
+			ar = ch.Name
+		case c.GeneralChannelName:
+			gen = ch.Name
+		case c.StatusUpdateChannelName:
+			st = ch.Name
+		case c.TechChannelName:
+			tech = ch.Name
+		}
 	}
 	roles, err := s.GuildRoles(c.GuildID)
 	if err != nil {
@@ -105,7 +89,6 @@ func NewDiscord(s *discordgo.Session, c DiscordConfig) (*Discord, error) {
 		GeneralChannelID:      gen,
 		StatusUpdateChannelID: st,
 		TechChannelID:         tech,
-		channelNameToID:       chIDs,
 		PuzzleCategoryID:      puz,
 		SolvedCategoryID:      ar,
 		QMRoleID:              qmRoleID,
@@ -281,21 +264,12 @@ func (c *Discord) SetChannelCategory(chID, categoryID string) error {
 }
 
 func (c *Discord) SetChannelName(chID, name string) error {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-	c.channelNameToID[name] = chID
-
 	_, err := c.s.ChannelEdit(chID, name)
 	return err
 }
 
 // CreateChannel ensures that a channel exists with the given name, and returns the channel ID.
 func (c *Discord) CreateChannel(name string) (string, error) {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-	if id, ok := c.channelNameToID[name]; ok {
-		return id, nil
-	}
 	ch, err := c.s.GuildChannelCreateComplex(c.GuildID, discordgo.GuildChannelCreateData{
 		Name:     name,
 		Type:     discordgo.ChannelTypeGuildText,
@@ -304,6 +278,5 @@ func (c *Discord) CreateChannel(name string) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("error creating channel %q: %v", name, err)
 	}
-	c.channelNameToID[name] = ch.ID
 	return ch.ID, nil
 }
