@@ -92,6 +92,92 @@ func NewDiscord(s *discordgo.Session, c DiscordConfig) (*Discord, error) {
 	return discord, nil
 }
 
+func (c *Discord) ChannelSend(ch *discordgo.Channel, msg string) error {
+	_, err := c.s.ChannelMessageSend(ch.ID, msg)
+	return err
+}
+
+func (c *Discord) ChannelSendEmbed(ch *discordgo.Channel, embed *discordgo.MessageEmbed) error {
+	_, err := c.s.ChannelMessageSendEmbed(ch.ID, embed)
+	return err
+}
+
+func (c *Discord) ChannelSendRawID(chID, msg string) error {
+	_, err := c.s.ChannelMessageSend(chID, msg)
+	return err
+}
+
+func (c *Discord) CreateChannel(name string) (*discordgo.Channel, error) {
+	return c.s.GuildChannelCreateComplex(c.GuildID, discordgo.GuildChannelCreateData{
+		Name:     name,
+		Type:     discordgo.ChannelTypeGuildText,
+		ParentID: c.PuzzleCategory.ID,
+	})
+}
+
+func (c *Discord) SetChannelName(chID, name string) error {
+	_, err := c.s.ChannelEdit(chID, name)
+	return err
+}
+
+func (c *Discord) SetChannelCategory(chID string, category *discordgo.Channel) error {
+	ch, err := c.s.Channel(chID)
+	if err != nil {
+		return fmt.Errorf("channel id %s not found", chID)
+	}
+
+	if ch.ParentID == category.ID {
+		return nil // no-op
+	}
+
+	_, err = c.s.ChannelEditComplex(chID, &discordgo.ChannelEdit{
+		ParentID:             category.ID,
+		PermissionOverwrites: category.PermissionOverwrites,
+	})
+	if err != nil {
+		return fmt.Errorf("error moving channel to category %q: %v", category.Name, err)
+	}
+	return nil
+}
+
+// Set the pinned status message, by posting one or editing the existing one.
+// No-op if the status was already set.
+func (c *Discord) CreateUpdatePin(chanID, header string, embed *discordgo.MessageEmbed) error {
+	existing, err := c.s.ChannelMessagesPinned(chanID)
+	if err != nil {
+		return err
+	}
+	var statusMessage *discordgo.Message
+	for _, msg := range existing {
+		if len(msg.Embeds) > 0 && msg.Embeds[0].Author.Name == header {
+			if statusMessage != nil {
+				log.Printf("discord: multiple status messages in %v, editing last one", chanID)
+			}
+			statusMessage = msg
+		}
+	}
+
+	if statusMessage == nil {
+		// create a pinned message
+		m, err := c.s.ChannelMessageSendEmbed(chanID, embed)
+		if err != nil {
+			return err
+		}
+		return c.s.ChannelMessagePin(chanID, m.ID)
+	} else {
+		// update existing pinned message
+		if statusMessage.Embeds[0] == embed {
+			return nil // no-op
+		}
+		_, err = c.s.ChannelMessageEditEmbed(chanID, statusMessage.ID, embed)
+		return err
+	}
+}
+
+//
+// Helpers for Slash Commands (bots)
+//
+
 type DiscordCommand struct {
 	ApplicationCommand *discordgo.ApplicationCommand
 	Handler            DiscordCommandHandler
@@ -158,98 +244,4 @@ func (c *Discord) commandHandler(s *discordgo.Session, i *discordgo.InteractionC
 	} else {
 		log.Printf("discord: received unknown interaction: %#v %#v", i, i.ApplicationCommandData())
 	}
-}
-
-func (c *Discord) ChannelSend(ch *discordgo.Channel, msg string) error {
-	_, err := c.s.ChannelMessageSend(ch.ID, msg)
-	return err
-}
-
-func (c *Discord) ChannelSendEmbed(ch *discordgo.Channel, embed *discordgo.MessageEmbed) error {
-	_, err := c.s.ChannelMessageSendEmbed(ch.ID, embed)
-	return err
-}
-
-func (c *Discord) ChannelSendRawID(chID, msg string) error {
-	_, err := c.s.ChannelMessageSend(chID, msg)
-	return err
-}
-
-// Returns last pinned status message, or nil if not found.
-func (c *Discord) pinnedStatusMessage(chanID, header string) (*discordgo.Message, error) {
-	ms, err := c.s.ChannelMessagesPinned(chanID)
-	if err != nil {
-		return nil, err
-	}
-	var statusMessage *discordgo.Message
-	for _, m := range ms {
-		if len(m.Embeds) > 0 && m.Embeds[0].Author.Name == header {
-			if statusMessage != nil {
-				log.Printf("Multiple status messages in %v, editing last one", chanID)
-			}
-			statusMessage = m
-		}
-	}
-	return statusMessage, nil
-}
-
-// Set the pinned status message, by posting one or editing the existing one.
-// No-op if the status was already set.
-func (c *Discord) CreateUpdatePin(chanID, header string, embed *discordgo.MessageEmbed) error {
-	statusMessage, err := c.pinnedStatusMessage(chanID, header)
-	if err != nil {
-		return err
-	}
-
-	if statusMessage == nil {
-		m, err := c.s.ChannelMessageSendEmbed(chanID, embed)
-		if err != nil {
-			return err
-		}
-		return c.s.ChannelMessagePin(chanID, m.ID)
-	} else if statusMessage.Embeds[0] == embed {
-		return nil // no-op
-	}
-
-	_, err = c.s.ChannelMessageEditEmbed(chanID, statusMessage.ID, embed)
-	return err
-}
-
-func (c *Discord) SetChannelCategory(chID string, category *discordgo.Channel) error {
-	ch, err := c.s.Channel(chID)
-	if err != nil {
-		return fmt.Errorf("channel id %s not found", chID)
-	}
-
-	if ch.ParentID == category.ID {
-		return nil // no-op
-	}
-
-	_, err = c.s.ChannelEditComplex(chID, &discordgo.ChannelEdit{
-		ParentID:             category.ID,
-		PermissionOverwrites: category.PermissionOverwrites,
-	})
-	if err != nil {
-		return fmt.Errorf("error moving channel: %v", err)
-	}
-	return nil
-}
-
-func (c *Discord) SetChannelName(chID, name string) error {
-	_, err := c.s.ChannelEdit(chID, name)
-	return err
-}
-
-// CreateChannel ensures that a channel exists with the given name, and returns
-// the channel object.
-func (c *Discord) CreateChannel(name string) (*discordgo.Channel, error) {
-	ch, err := c.s.GuildChannelCreateComplex(c.GuildID, discordgo.GuildChannelCreateData{
-		Name:     name,
-		Type:     discordgo.ChannelTypeGuildText,
-		ParentID: c.PuzzleCategory.ID,
-	})
-	if err != nil {
-		return nil, fmt.Errorf("error creating channel %q: %v", name, err)
-	}
-	return ch, nil
 }
