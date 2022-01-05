@@ -3,6 +3,8 @@ package client
 import (
 	"fmt"
 	"log"
+	"sync"
+	"time"
 
 	"github.com/bwmarrin/discordgo"
 )
@@ -34,6 +36,10 @@ type Discord struct {
 	QMRoleID string
 
 	handlers map[string]DiscordCommandHandler
+
+	mu                        sync.Mutex // hold while accessing everything below
+	scheduledEventsCache      map[string]*DiscordScheduledEvent
+	scheduledEventsLastUpdate time.Time
 }
 
 func NewDiscord(token string, c DiscordConfig) (*Discord, error) {
@@ -87,16 +93,17 @@ func NewDiscord(token string, c DiscordConfig) (*Discord, error) {
 	// Set up slash commands; return
 	commandHandlers := make(map[string]DiscordCommandHandler)
 	discord := &Discord{
-		s:                   s,
-		GuildID:             c.GuildID,
-		QMChannel:           qm,
-		GeneralChannel:      gen,
-		StatusUpdateChannel: st,
-		TechChannel:         tech,
-		PuzzleCategory:      puz,
-		SolvedCategory:      ar,
-		QMRoleID:            qmRoleID,
-		handlers:            commandHandlers,
+		s:                         s,
+		GuildID:                   c.GuildID,
+		QMChannel:                 qm,
+		GeneralChannel:            gen,
+		StatusUpdateChannel:       st,
+		TechChannel:               tech,
+		PuzzleCategory:            puz,
+		SolvedCategory:            ar,
+		QMRoleID:                  qmRoleID,
+		handlers:                  commandHandlers,
+		scheduledEventsLastUpdate: time.Now().Add(-24 * time.Hour),
 	}
 	s.AddHandler(discord.commandHandler)
 

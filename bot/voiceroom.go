@@ -112,7 +112,7 @@ func voiceAsyncProcessing(air *client.Airtable, dis *client.Discord, puzzle *sch
 	if err != nil {
 		return err
 	}
-	events, err := dis.ListScheduledEvents() // TODO: cache this call
+	events, err := dis.ListScheduledEvents()
 	if err != nil {
 		return err
 	}
@@ -132,7 +132,7 @@ func voiceSyncPinnedMessage(dis *client.Discord, puzzle *schema.Puzzle) error {
 	return dis.CreateUpdatePin(puzzle.DiscordChannel, roomStatusHeader, embed)
 }
 
-func voiceSyncEvents(dis *client.Discord, puzzles []*schema.Puzzle, events []*client.DiscordScheduledEvent) error {
+func voiceSyncEvents(dis *client.Discord, puzzles []*schema.Puzzle, eventsByID map[string]*client.DiscordScheduledEvent) error {
 	var groupings = make(map[string][]string)
 	for _, puzzle := range puzzles {
 		if puzzle.VoiceRoom == "" {
@@ -141,13 +141,13 @@ func voiceSyncEvents(dis *client.Discord, puzzles []*schema.Puzzle, events []*cl
 		groupings[puzzle.VoiceRoom] = append(groupings[puzzle.VoiceRoom], puzzle.Name)
 	}
 
-	var eventLookup = make(map[string]*client.DiscordScheduledEvent)
-	for _, event := range events {
+	var eventsByChannel = make(map[string]*client.DiscordScheduledEvent)
+	for _, event := range eventsByID {
 		if event.Description != eventDescription {
 			// Skip events not created by the bot
 			continue
 		}
-		eventLookup[event.ChannelID] = event
+		eventsByChannel[event.ChannelID] = event
 		if _, ok := groupings[event.ChannelID]; !ok {
 			// Event has no more puzzles; delete
 			if err := dis.DeleteScheduledEvent(event); err != nil {
@@ -158,7 +158,7 @@ func voiceSyncEvents(dis *client.Discord, puzzles []*schema.Puzzle, events []*cl
 
 	for voiceRoom, puzzles := range groupings {
 		eventTitle := strings.Join(sort.StringSlice(puzzles), " & ")
-		if existing, ok := eventLookup[voiceRoom]; ok {
+		if existing, ok := eventsByChannel[voiceRoom]; ok {
 			// Update existing event
 			// TODO: only if there are changes
 			_, err := dis.UpdateScheduledEvent(existing, map[string]interface{}{

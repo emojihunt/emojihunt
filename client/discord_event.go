@@ -18,21 +18,42 @@ type DiscordScheduledEvent struct {
 	Status       int       `json:"status,omitempty"`
 }
 
-func (c *Discord) ListScheduledEvents() ([]*DiscordScheduledEvent, error) {
-	// Rate limit: once every 10 seconds
+func (c *Discord) ListScheduledEvents() (map[string]*DiscordScheduledEvent, error) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	// This endpoint is rate-limited to about one request per 10 seconds (why
+	// just this one? we don't know) so we save results to a cache.
+	if time.Since(c.scheduledEventsLastUpdate) < 15*time.Second {
+		return c.scheduledEventsCache, nil
+	}
+
 	bucket := discordgo.EndpointGuild(c.GuildID) + "/scheduled-events"
 	resp, err := c.s.RequestWithBucketID("GET", bucket, nil, bucket)
 	if err != nil {
 		return nil, err
 	}
 
-	var events []*DiscordScheduledEvent
-	err = json.Unmarshal(resp, &events)
-	return events, err
+	var raw []*DiscordScheduledEvent
+	if err := json.Unmarshal(resp, &raw); err != nil {
+		return nil, err
+	}
+
+	events := make(map[string]*DiscordScheduledEvent)
+	for _, event := range raw {
+		events[event.ID] = event
+	}
+
+	c.scheduledEventsCache = events
+	c.scheduledEventsLastUpdate = time.Now()
+
+	return events, nil
 }
 
 func (c *Discord) CreateScheduledEvent(event *DiscordScheduledEvent) (*DiscordScheduledEvent, error) {
-	// Rate limit: haven't found it yet
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
 	bucket := discordgo.EndpointGuild(c.GuildID) + "/scheduled-events"
 	resp, err := c.s.RequestWithBucketID("POST", bucket, event, bucket)
 	if err != nil {
@@ -40,11 +61,19 @@ func (c *Discord) CreateScheduledEvent(event *DiscordScheduledEvent) (*DiscordSc
 	}
 
 	var created *DiscordScheduledEvent
-	err = json.Unmarshal(resp, &created)
-	return created, err
+	if err := json.Unmarshal(resp, &created); err != nil {
+		return nil, err
+	}
+
+	c.scheduledEventsCache[created.ID] = created
+
+	return created, nil
 }
 
 func (c *Discord) UpdateScheduledEvent(event *DiscordScheduledEvent, fields map[string]interface{}) (*DiscordScheduledEvent, error) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
 	bucket := discordgo.EndpointGuild(c.GuildID) + "/scheduled-events/" + event.ID
 	resp, err := c.s.RequestWithBucketID("PATCH", bucket, fields, bucket)
 	if err != nil {
@@ -52,12 +81,25 @@ func (c *Discord) UpdateScheduledEvent(event *DiscordScheduledEvent, fields map[
 	}
 
 	var modified *DiscordScheduledEvent
-	err = json.Unmarshal(resp, &modified)
-	return modified, err
+	if err := json.Unmarshal(resp, &modified); err != nil {
+		return nil, err
+	}
+
+	c.scheduledEventsCache[modified.ID] = modified
+
+	return modified, nil
 }
 
 func (c *Discord) DeleteScheduledEvent(event *DiscordScheduledEvent) error {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
 	bucket := discordgo.EndpointGuild(c.GuildID) + "/scheduled-events/" + event.ID
-	_, err := c.s.RequestWithBucketID("DELETE", bucket, nil, bucket)
-	return err
+	if _, err := c.s.RequestWithBucketID("DELETE", bucket, nil, bucket); err != nil {
+		return err
+	}
+
+	delete(c.scheduledEventsCache, event.ID)
+
+	return nil
 }

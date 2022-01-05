@@ -15,7 +15,7 @@ type Drive struct {
 	// ID of this year's root folder (e.g. "emoji hunt/2021")
 	rootFolderID string
 
-	// hold while accessing roundFolderIDs, puzzles maps
+	// hold while accessing roundFolderIDs
 	mu sync.Mutex
 	// cache of round name to folder ID
 	roundFolderIDs map[string]string
