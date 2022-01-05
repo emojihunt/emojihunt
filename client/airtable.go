@@ -84,6 +84,29 @@ func (air *Airtable) FindByDiscordChannel(channel string) (*schema.Puzzle, error
 	return air.parseRecord(response.Records[0])
 }
 
+func (air *Airtable) FindWithVoiceRoom() ([]*schema.Puzzle, error) {
+	response, err := air.table.GetRecords().
+		WithFilterFormula("{Voice Room}!=''").
+		Do()
+	if err != nil {
+		return nil, err
+	} else if response.Offset != "" {
+		// This shouldn't happen, but if it does we fail instead of spending too
+		// much of our rate limit on paginated requests.
+		return nil, fmt.Errorf("airtable query failed: too many records have a voice room")
+	}
+
+	var puzzles []*schema.Puzzle
+	for _, record := range response.Records {
+		puzzle, err := air.parseRecord(record)
+		if err != nil {
+			return nil, err
+		}
+		puzzles = append(puzzles, puzzle)
+	}
+	return puzzles, nil
+}
+
 func (air *Airtable) UpdateDiscordChannel(puzzle *schema.Puzzle, channel string) (*schema.Puzzle, error) {
 	record, err := puzzle.AirtableRecord.UpdateRecordPartial(map[string]interface{}{
 		"Discord Channel": channel,
@@ -125,6 +148,16 @@ func (air *Airtable) UpdateBotFields(puzzle *schema.Puzzle, lastBotStatus schema
 	}
 
 	record, err := puzzle.AirtableRecord.UpdateRecordPartial(fields)
+	if err != nil {
+		return nil, err
+	}
+	return air.parseRecord(record)
+}
+
+func (air *Airtable) UpdateVoiceRoom(puzzle *schema.Puzzle, voiceRoom string) (*schema.Puzzle, error) {
+	record, err := puzzle.AirtableRecord.UpdateRecordPartial(map[string]interface{}{
+		"Voice Room": voiceRoom,
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -210,6 +243,7 @@ func (air *Airtable) parseRecord(record *airtable.Record) (*schema.Puzzle, error
 		LastBotStatus: lastBotStatus,
 		Archived:      air.boolField(record, "Archived"),
 		OriginalURL:   air.stringField(record, "Original URL"),
+		VoiceRoom:     air.stringField(record, "Voice Room"),
 	}, nil
 }
 

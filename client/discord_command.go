@@ -22,6 +22,8 @@ type DiscordCommandInput struct {
 
 type DiscordCommandHandler func(*discordgo.Session, *DiscordCommandInput) (string, error)
 
+const DiscordMagicReplyDefer = "$DEFER$"
+
 func (c *Discord) RegisterCommands(commands []*DiscordCommand) error {
 	var appCommands []*discordgo.ApplicationCommand
 	for _, command := range commands {
@@ -61,13 +63,19 @@ func (c *Discord) commandHandler(s *discordgo.Session, i *discordgo.InteractionC
 		reply, err := handler(s, input)
 		if err != nil {
 			log.Printf("discord: error handling interaction %q: %s", input.Command, spew.Sdump(err))
-			reply = fmt.Sprintf("```\n🚨 Bot Error\n%s\n```", spew.Sdump(err))
+			reply = fmt.Sprintf("🚨 Bot Error! Please ping in %s for help.\n```\n%s\n```", c.TechChannel.Mention(), spew.Sdump(err))
 		}
 
-		err = s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
-			Type: discordgo.InteractionResponseChannelMessageWithSource,
-			Data: &discordgo.InteractionResponseData{Content: reply},
-		})
+		if reply == DiscordMagicReplyDefer {
+			err = s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+				Type: discordgo.InteractionResponseDeferredChannelMessageWithSource,
+			})
+		} else {
+			err = s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+				Type: discordgo.InteractionResponseChannelMessageWithSource,
+				Data: &discordgo.InteractionResponseData{Content: reply},
+			})
+		}
 		if err != nil {
 			log.Printf("discord: error responding to interaction %q: %s", input.Command, spew.Sdump(err))
 		}

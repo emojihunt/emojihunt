@@ -22,6 +22,7 @@ type Puzzle struct {
 	LastBotStatus Status
 	Archived      bool
 	OriginalURL   string
+	VoiceRoom     string
 }
 
 type NewPuzzle struct {
