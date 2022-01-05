@@ -30,6 +30,12 @@ func MakeDatabaseCommand(discord *client.Discord, poller *database.Poller, disco
 					Description: "Stop Huntbot from discovering new puzzles 🔎",
 					Type:        discordgo.ApplicationCommandOptionSubCommand,
 				},
+				{
+					Name:         "error",
+					Description:  "Test error message 💥",
+					Type:         discordgo.ApplicationCommandOptionSubCommand,
+					Autocomplete: false,
+				},
 			},
 		},
 		Handler: func(s *discordgo.Session, i *client.DiscordCommandInput) (string, error) {
