@@ -104,8 +104,7 @@ func main() {
 	// Start internal engines
 	syn := syncer.New(air, dis, d)
 	dbpoller := database.NewPoller(air, dis, syn)
-	server := server.New(air, syn, secrets.HuntboxToken, *origin)
-	dscvpoller := discovery.New(secrets.CookieName, secrets.CookieValue, air, dis, syn, server)
+	dscvpoller := discovery.New(secrets.CookieName, secrets.CookieValue, air, dis, syn)
 
 	// Register Discord bots
 	err = dis.RegisterCommands([]*client.DiscordCommand{
@@ -124,7 +123,10 @@ func main() {
 	log.Print("press ctrl+C to exit")
 	go dbpoller.Poll(ctx)
 	go dscvpoller.Poll(ctx)
+
+	server := server.New(air, syn, secrets.HuntboxToken, *origin)
 	server.Start(*certFile, *keyFile)
+
 	<-ctx.Done()
 }
 
