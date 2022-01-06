@@ -135,7 +135,15 @@ func (s Status) Pretty() string {
 	switch s {
 	case NotStarted:
 		return "Not Started"
+	case "Working":
+		return "✍️ Working"
+	case "Abandoned":
+		return "🗑️ Abandoned"
+	case "Solved":
+		return "🏅 Solved"
+	case "Backsolved":
+		return "🤦‍♀️ Backsolved"
 	default:
-		return string(s)
+		panic(fmt.Errorf("called Pretty() on unknown status %v", s))
 	}
 }

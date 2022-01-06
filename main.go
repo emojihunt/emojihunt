@@ -112,6 +112,7 @@ func main() {
 		bot.MakeEmojiNameCommand(),
 		bot.MakeHuntYetCommand(),
 		bot.MakeQMCommand(dis),
+		bot.MakeStatusCommand(ctx, air, dis, syn),
 		bot.MakeVoiceRoomCommand(air, dis),
 		dscvpoller.MakeApproveCommand(ctx),
 	})

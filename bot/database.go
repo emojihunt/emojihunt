@@ -23,7 +23,7 @@ func MakeDatabaseCommand(discord *client.Discord, poller *database.Poller, disco
 				},
 				{
 					Name:        "start",
-					Description: "Re-enable Huntbot 🚥",
+					Description: "Re-enable Huntbot 📡",
 					Type:        discordgo.ApplicationCommandOptionSubCommand,
 				},
 				{

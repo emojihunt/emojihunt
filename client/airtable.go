@@ -127,6 +127,20 @@ func (air *Airtable) UpdateSpreadsheetID(puzzle *schema.Puzzle, spreadsheet stri
 	return air.parseRecord(record)
 }
 
+func (air *Airtable) UpdateStatus(puzzle *schema.Puzzle, status schema.Status) (*schema.Puzzle, error) {
+	var fields = make(map[string]interface{})
+	if status == schema.NotStarted {
+		fields["Status"] = nil
+	} else {
+		fields["Status"] = status.Pretty()
+	}
+	record, err := puzzle.AirtableRecord.UpdateRecordPartial(fields)
+	if err != nil {
+		return nil, err
+	}
+	return air.parseRecord(record)
+}
+
 func (air *Airtable) UpdateBotFields(puzzle *schema.Puzzle, lastBotStatus schema.Status, archived, pending bool) (*schema.Puzzle, error) {
 	var fields = make(map[string]interface{})
 
