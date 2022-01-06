@@ -14,7 +14,6 @@ import (
 	"github.com/gauravjsingh/emojihunt/client"
 	"github.com/gauravjsingh/emojihunt/database"
 	"github.com/gauravjsingh/emojihunt/discovery"
-	"github.com/gauravjsingh/emojihunt/server"
 	"github.com/gauravjsingh/emojihunt/syncer"
 )
 
@@ -126,8 +125,8 @@ func main() {
 	go dbpoller.Poll(ctx)
 	go dscvpoller.Poll(ctx)
 
-	server := server.New(air, syn, secrets.HuntboxToken, *origin)
-	server.Start(*certFile, *keyFile)
+	// server := server.New(air, syn, secrets.HuntboxToken, *origin)
+	// server.Start(*certFile, *keyFile)
 
 	<-ctx.Done()
 }

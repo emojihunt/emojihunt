@@ -23,7 +23,7 @@ func MakeStatusCommand(ctx context.Context, air *client.Airtable, dis *client.Di
 					Required:    true,
 					Type:        discordgo.ApplicationCommandOptionString,
 					Choices: []*discordgo.ApplicationCommandOptionChoice{
-						{Name: "Not Started", Value: schema.NotStarted},
+						{Name: "Not Started", Value: "Not Started"}, // value is displayed in the mousover UI
 						{Name: "✍️ Working", Value: schema.Working},
 						{Name: "🗑️ Abandoned", Value: schema.Abandoned},
 						// for the solved statuses, use /solve

@@ -103,6 +103,8 @@ func ParseTextStatus(textPart string) (Status, error) {
 	switch textPart {
 	case "":
 		return NotStarted, nil
+	case "Not Started":
+		return NotStarted, nil
 	case "Working":
 		return Working, nil
 	case "Abandoned":
