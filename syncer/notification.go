@@ -39,13 +39,15 @@ func (s *Syncer) notifyNewPuzzle(puzzle *schema.Puzzle) error {
 
 // notifyPuzzleFullySolved sends the two "Puzzle solved!" (or "Puzzle
 // backsolved!") messages: one to the puzzle channel, and another to #general.
-func (s *Syncer) notifyPuzzleFullySolved(puzzle *schema.Puzzle) error {
-	msg := fmt.Sprintf(
-		"Puzzle %s! The answer was `%v`. I'll archive this channel.",
-		puzzle.Status.SolvedVerb(), puzzle.Answer,
-	)
-	if err := s.discord.ChannelSendRawID(puzzle.DiscordChannel, msg); err != nil {
-		return err
+func (s *Syncer) notifyPuzzleFullySolved(puzzle *schema.Puzzle, suppressSolveNotif bool) error {
+	if !suppressSolveNotif {
+		msg := fmt.Sprintf(
+			"Puzzle %s! The answer was `%v`. I'll archive this channel.",
+			puzzle.Status.SolvedVerb(), puzzle.Answer,
+		)
+		if err := s.discord.ChannelSendRawID(puzzle.DiscordChannel, msg); err != nil {
+			return err
+		}
 	}
 
 	embed := &discordgo.MessageEmbed{

@@ -23,7 +23,7 @@ func New(airtable *client.Airtable, discord *client.Discord, drive *client.Drive
 // information in Airtable. When a puzzle is newly added, it creates the
 // spreadsheet and Discord channel and links them in Airtable. When a puzzle's
 // status is updated, it handles that also.
-func (s *Syncer) IdempotentCreateUpdate(ctx context.Context, puzzle *schema.Puzzle) (*schema.Puzzle, error) {
+func (s *Syncer) IdempotentCreateUpdate(ctx context.Context, puzzle *schema.Puzzle, suppressSolveNotif bool) (*schema.Puzzle, error) {
 	// 1. Create the spreadsheet, if required
 	if puzzle.SpreadsheetID == "" {
 		spreadsheet, err := s.drive.CreateSheet(ctx, puzzle.Name, puzzle.Round.Name)
@@ -96,7 +96,7 @@ func (s *Syncer) IdempotentCreateUpdate(ctx context.Context, puzzle *schema.Puzz
 		if puzzle.Status.IsSolved() {
 			if puzzle.Answer != "" {
 				// Puzzle solved and answer entered!
-				err = s.notifyPuzzleFullySolved(puzzle)
+				err = s.notifyPuzzleFullySolved(puzzle, suppressSolveNotif)
 			} else {
 				// Puzzle marked as solved but answer needs to be entered in
 				// Airtable...
@@ -113,7 +113,7 @@ func (s *Syncer) IdempotentCreateUpdate(ctx context.Context, puzzle *schema.Puzz
 
 func (s *Syncer) ForceUpdate(ctx context.Context, puzzle *schema.Puzzle) (*schema.Puzzle, error) {
 	var err error
-	puzzle, err = s.IdempotentCreateUpdate(ctx, puzzle)
+	puzzle, err = s.IdempotentCreateUpdate(ctx, puzzle, false)
 	if err != nil {
 		return nil, err
 	}

@@ -70,10 +70,13 @@ func MakeSolveCommand(ctx context.Context, air *client.Airtable, dis *client.Dis
 				if puzzle, err = air.MarkSolved(puzzle, newStatus, answer); err != nil {
 					return "", err
 				}
-				if puzzle, err = syn.IdempotentCreateUpdate(ctx, puzzle); err != nil {
+				if puzzle, err = syn.IdempotentCreateUpdate(ctx, puzzle, true); err != nil {
 					return "", err
 				}
-				return "🎉 Congratulations!", nil
+				return fmt.Sprintf(
+					"🎉 Congratulations on the %s! I'll record the answer `%s` and archive this channel.",
+					newStatus.SolvedNoun(), answer,
+				), nil
 			})
 		},
 	}

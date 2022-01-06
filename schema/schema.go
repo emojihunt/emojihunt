@@ -131,6 +131,17 @@ func (s Status) SolvedVerb() string {
 	}
 }
 
+func (s Status) SolvedNoun() string {
+	switch s {
+	case Solved:
+		return "solve"
+	case Backsolved:
+		return "backsolve"
+	default:
+		panic("called SolvedNoun() on an unsolved puzzle")
+	}
+}
+
 func (s Status) Pretty() string {
 	switch s {
 	case NotStarted:
