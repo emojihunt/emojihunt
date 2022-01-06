@@ -127,13 +127,33 @@ func (air *Airtable) UpdateSpreadsheetID(puzzle *schema.Puzzle, spreadsheet stri
 	return air.parseRecord(record)
 }
 
-func (air *Airtable) UpdateStatus(puzzle *schema.Puzzle, status schema.Status) (*schema.Puzzle, error) {
+func (air *Airtable) UpdateStatusAndClearAnswer(puzzle *schema.Puzzle, status schema.Status) (*schema.Puzzle, error) {
 	var fields = make(map[string]interface{})
 	if status == schema.NotStarted {
 		fields["Status"] = nil
 	} else {
 		fields["Status"] = status.Pretty()
 	}
+	fields["Answer"] = nil
+	record, err := puzzle.AirtableRecord.UpdateRecordPartial(fields)
+	if err != nil {
+		return nil, err
+	}
+	return air.parseRecord(record)
+}
+
+func (air *Airtable) MarkSolved(puzzle *schema.Puzzle, status schema.Status, answer string) (*schema.Puzzle, error) {
+	if !status.IsSolved() {
+		return nil, fmt.Errorf("tried to call MarkSolved() on with unsolved status %v", status)
+	}
+
+	var fields = make(map[string]interface{})
+	if status == schema.NotStarted {
+		fields["Status"] = nil
+	} else {
+		fields["Status"] = status.Pretty()
+	}
+	fields["Answer"] = answer
 	record, err := puzzle.AirtableRecord.UpdateRecordPartial(fields)
 	if err != nil {
 		return nil, err

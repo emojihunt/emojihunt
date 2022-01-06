@@ -10,24 +10,28 @@ import (
 	"github.com/gauravjsingh/emojihunt/syncer"
 )
 
-func MakeStatusCommand(ctx context.Context, air *client.Airtable, dis *client.Discord, syn *syncer.Syncer) *client.DiscordCommand {
+func MakeSolveCommand(ctx context.Context, air *client.Airtable, dis *client.Discord, syn *syncer.Syncer) *client.DiscordCommand {
 	return &client.DiscordCommand{
 		InteractionType: discordgo.InteractionApplicationCommand,
 		ApplicationCommand: &discordgo.ApplicationCommand{
-			Name:        "status",
-			Description: "Use in a puzzle channel to update the puzzle's status 🚥",
+			Name:        "solve",
+			Description: "Use in a puzzle channel to mark the puzzle as solved! 🌠",
 			Options: []*discordgo.ApplicationCommandOption{
 				{
-					Name:        "to",
-					Description: "What's the new status?",
+					Name:        "as",
+					Description: "What kind of solve was it?",
 					Required:    true,
 					Type:        discordgo.ApplicationCommandOptionString,
 					Choices: []*discordgo.ApplicationCommandOptionChoice{
-						{Name: "Not Started", Value: schema.NotStarted},
-						{Name: "✍️ Working", Value: schema.Working},
-						{Name: "🗑️ Abandoned", Value: schema.Abandoned},
-						// for the solved statuses, use /solve
+						{Name: "🏅 Solved", Value: schema.Solved},
+						{Name: "🤦‍♀️ Backsolved", Value: schema.Backsolved},
 					},
+				},
+				{
+					Name:        "answer",
+					Description: "What was the answer?",
+					Required:    true,
+					Type:        discordgo.ApplicationCommandOptionString,
 				},
 			},
 		},
@@ -36,7 +40,7 @@ func MakeStatusCommand(ctx context.Context, air *client.Airtable, dis *client.Di
 			var err error
 			var found = false
 			for _, opt := range i.IC.ApplicationCommandData().Options {
-				if opt.Name == "to" {
+				if opt.Name == "as" {
 					if newStatus, err = schema.ParseTextStatus(opt.StringValue()); err != nil {
 						return "", err
 					}
@@ -47,29 +51,29 @@ func MakeStatusCommand(ctx context.Context, air *client.Airtable, dis *client.Di
 				return "", fmt.Errorf("could not find status argument in options list")
 			}
 
+			var answer string
+			for _, opt := range i.IC.ApplicationCommandData().Options {
+				if opt.Name == "answer" {
+					answer = opt.StringValue()
+				}
+			}
+			if answer == "" {
+				return "", fmt.Errorf("could not find answer argument in options list")
+			}
+
 			puzzle, err := air.FindByDiscordChannel(i.IC.ChannelID)
 			if err != nil {
 				return "", fmt.Errorf("unable to get puzzle for channel ID %q", i.IC.ChannelID)
 			}
 
-			if puzzle.Status == newStatus {
-				return fmt.Sprintf(":elephant: This puzzle already has status %s", newStatus.Pretty()), nil
-			}
-
 			return dis.ReplyAsync(s, i, func() (string, error) {
-				reply := fmt.Sprintf(":face_with_monocle: Updated puzzle status to %s!", newStatus.Pretty())
-				if puzzle.Answer != "" {
-					reply = fmt.Sprintf(":woozy_face: Updated puzzle status to %s and cleared answer `%s`. "+
-						"Was that right?", newStatus.Pretty(), puzzle.Answer)
-				}
-
-				if puzzle, err = air.UpdateStatusAndClearAnswer(puzzle, newStatus); err != nil {
+				if puzzle, err = air.MarkSolved(puzzle, newStatus, answer); err != nil {
 					return "", err
 				}
 				if puzzle, err = syn.IdempotentCreateUpdate(ctx, puzzle); err != nil {
 					return "", err
 				}
-				return reply, nil
+				return "🎉 Congratulations!", nil
 			})
 		},
 	}
