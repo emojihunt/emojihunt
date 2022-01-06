@@ -10,10 +10,10 @@ import (
 )
 
 type DiscordConfig struct {
-	GuildID                                                                     string
-	QMChannelName, GeneralChannelName, StatusUpdateChannelName, TechChannelName string
-	PuzzleCategoryName, SolvedCategoryName                                      string
-	QMRoleName                                                                  string
+	GuildID                                            string
+	QMChannelName, GeneralChannelName, TechChannelName string
+	PuzzleCategoryName, SolvedCategoryName             string
+	QMRoleName                                         string
 }
 
 type Discord struct {
@@ -24,8 +24,6 @@ type Discord struct {
 	QMChannel *discordgo.Channel
 	// The general channel has all users, and has announcements from the bot.
 	GeneralChannel *discordgo.Channel
-	// The channel in which to post status updates.
-	StatusUpdateChannel *discordgo.Channel
 	// The tech channel has error messages.
 	TechChannel *discordgo.Channel
 	// The puzzle channel category.
@@ -59,7 +57,7 @@ func NewDiscord(token string, c DiscordConfig) (*Discord, error) {
 	if err != nil {
 		return nil, fmt.Errorf("error creating channel ID cache: %v", err)
 	}
-	var qm, puz, ar, gen, st, tech *discordgo.Channel
+	var qm, puz, ar, gen, tech *discordgo.Channel
 	for _, ch := range chs {
 		switch ch.Name {
 		case c.QMChannelName:
@@ -70,8 +68,6 @@ func NewDiscord(token string, c DiscordConfig) (*Discord, error) {
 			ar = ch
 		case c.GeneralChannelName:
 			gen = ch
-		case c.StatusUpdateChannelName:
-			st = ch
 		case c.TechChannelName:
 			tech = ch
 		}
@@ -97,7 +93,6 @@ func NewDiscord(token string, c DiscordConfig) (*Discord, error) {
 		GuildID:                   c.GuildID,
 		QMChannel:                 qm,
 		GeneralChannel:            gen,
-		StatusUpdateChannel:       st,
 		TechChannel:               tech,
 		PuzzleCategory:            puz,
 		SolvedCategory:            ar,

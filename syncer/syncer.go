@@ -102,9 +102,6 @@ func (s *Syncer) IdempotentCreateUpdate(ctx context.Context, puzzle *schema.Puzz
 				// Airtable...
 				err = s.notifyPuzzleSolvedMissingAnswer(puzzle)
 			}
-		} else {
-			// Ordinary status change
-			err = s.notifyPuzzleStatusChange(puzzle)
 		}
 		if err != nil {
 			return nil, fmt.Errorf("error posting puzzle status announcement: %v", err)

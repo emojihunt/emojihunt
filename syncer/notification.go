@@ -95,17 +95,3 @@ func (s *Syncer) notifyPuzzleSolvedMissingAnswer(puzzle *schema.Puzzle) error {
 	}
 	return s.discord.ChannelSendComponents(s.discord.QMChannel, msg, components)
 }
-
-// notifyPuzzleStatusChange sends messages about ordinary puzzle status changes
-// (i.e. everything except when a puzzle is solved).
-func (s *Syncer) notifyPuzzleStatusChange(puzzle *schema.Puzzle) error {
-	if s.discord.StatusUpdateChannel == nil {
-		// status update channel is optional
-		return nil
-	}
-	msg := fmt.Sprintf(
-		"%s Puzzle <#%s> is now %v.",
-		puzzle.Round.Emoji, puzzle.DiscordChannel, puzzle.Status.Pretty(),
-	)
-	return s.discord.ChannelSend(s.discord.StatusUpdateChannel, msg)
-}
