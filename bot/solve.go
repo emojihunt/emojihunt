@@ -63,7 +63,7 @@ func MakeSolveCommand(ctx context.Context, air *client.Airtable, dis *client.Dis
 
 			puzzle, err := air.FindByDiscordChannel(i.IC.ChannelID)
 			if err != nil {
-				return "", fmt.Errorf("unable to get puzzle for channel ID %q", i.IC.ChannelID)
+				return ":butterfly: I can't find a puzzle associated with this channel. Is this a puzzle channel?", nil
 			}
 
 			return dis.ReplyAsync(s, i, func() (string, error) {

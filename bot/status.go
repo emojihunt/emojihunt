@@ -49,7 +49,7 @@ func MakeStatusCommand(ctx context.Context, air *client.Airtable, dis *client.Di
 
 			puzzle, err := air.FindByDiscordChannel(i.IC.ChannelID)
 			if err != nil {
-				return "", fmt.Errorf("unable to get puzzle for channel ID %q", i.IC.ChannelID)
+				return ":butterfly: I can't find a puzzle associated with this channel. Is this a puzzle channel?", nil
 			}
 
 			if puzzle.Status == newStatus {
