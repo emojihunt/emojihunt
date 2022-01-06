@@ -26,7 +26,7 @@ type DiscordCommandInput struct {
 
 type DiscordCommandHandler func(*discordgo.Session, *DiscordCommandInput) (string, error)
 
-const DiscordMagicReplyDefer = "$DEFER$"
+const discordMagicReplyDefer = "$DEFER$"
 
 func (c *Discord) RegisterCommands(commands []*DiscordCommand) error {
 	var appCommands []*discordgo.ApplicationCommand
@@ -98,7 +98,7 @@ func (c *Discord) commandHandler(s *discordgo.Session, i *discordgo.InteractionC
 		reply = fmt.Sprintf("🚨 Bot Error! Please ping in %s for help.\n```\n%s\n```", c.TechChannel.Mention(), spew.Sdump(err))
 	}
 
-	if reply == DiscordMagicReplyDefer {
+	if reply == discordMagicReplyDefer {
 		err = s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 			Type: discordgo.InteractionResponseDeferredChannelMessageWithSource,
 		})
@@ -111,4 +111,35 @@ func (c *Discord) commandHandler(s *discordgo.Session, i *discordgo.InteractionC
 	if err != nil {
 		log.Printf("discord: error responding to %s %q: %s", idesc, input.Command, spew.Sdump(err))
 	}
+}
+
+// When performing a long-running action in response to a Discord interaction
+// (slash command, message button), we have to send our initial response within
+// 3 seconds and defer the rest of the work to complete asynchronously. To do
+// this:
+//
+//   return ReplyAsync(s, i, func() (string, error) { ... })
+//
+// Discord will display "huntbot is thinking..." until the async function
+// completes.
+//
+func (d *Discord) ReplyAsync(s *discordgo.Session, i *DiscordCommandInput, fn func() (string, error)) (string, error) {
+	go func() {
+		reply, err := fn()
+		if err != nil {
+			log.Printf("discord: error handling interaction %q: %s", i.Command, spew.Sdump(err))
+			reply = fmt.Sprintf("🚨 Bot Error! Please ping in %s for help.\n```\n%s\n```", d.TechChannel.Mention(), spew.Sdump(err))
+		}
+		_, err = s.InteractionResponseEdit(
+			s.State.User.ID, i.IC.Interaction, &discordgo.WebhookEdit{
+				Content: reply,
+			},
+		)
+		if err != nil {
+			log.Printf("discord: error responding to interaction %q: %s", i.Command, spew.Sdump(err))
+		} else {
+			log.Printf("discord: finished async processing for interaction %q", i.Command)
+		}
+	}()
+	return discordMagicReplyDefer, nil
 }

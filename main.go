@@ -113,7 +113,7 @@ func main() {
 		bot.MakeHuntYetCommand(),
 		bot.MakeQMCommand(dis),
 		bot.MakeVoiceRoomCommand(air, dis),
-		dscvpoller.MakeApproveCommand(),
+		dscvpoller.MakeApproveCommand(ctx),
 	})
 	if err != nil {
 		log.Fatalf("failed to register discord commands: %v", err)

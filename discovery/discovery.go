@@ -11,7 +11,6 @@ import (
 
 	"github.com/andybalholm/cascadia"
 	"github.com/bwmarrin/discordgo"
-	"github.com/davecgh/go-spew/spew"
 	"github.com/gauravjsingh/emojihunt/client"
 	"github.com/gauravjsingh/emojihunt/schema"
 	"golang.org/x/net/html"
@@ -177,7 +176,7 @@ func (d *Poller) SyncPuzzles(puzzles []*DiscoveredPuzzle) error {
 	return d.notifyNewRounds(skippedRounds)
 }
 
-func (d *Poller) MakeApproveCommand() *client.DiscordCommand {
+func (d *Poller) MakeApproveCommand(ctx context.Context) *client.DiscordCommand {
 	return &client.DiscordCommand{
 		InteractionType: discordgo.InteractionMessageComponent,
 		CustomID:        "discovery.approve",
@@ -193,27 +192,12 @@ func (d *Poller) MakeApproveCommand() *client.DiscordCommand {
 				return fmt.Sprintf(":man_shrugging: Puzzle %q is already approved, %s!", puzzle.Name, i.User.Mention()), nil
 			}
 
-			// Work around the three-second deadline. Discord will display
-			// "huntbot is thinking..." until this finishes.
-			go func() {
-				reply := fmt.Sprintf(":ok_hand: I've created puzzle %q, %s!", puzzle.Name, i.User.Mention())
-				_, err := d.syncer.ForceUpdate(context.Background(), puzzle)
-				if err != nil {
-					log.Printf("discord: error handling interaction %q: %s", i.Command, spew.Sdump(err))
-					reply = fmt.Sprintf("🚨 Bot Error! Please ping in %s for help.\n```\n%s\n```", d.discord.TechChannel.Mention(), spew.Sdump(err))
+			return d.discord.ReplyAsync(s, i, func() (string, error) {
+				if _, err := d.syncer.ForceUpdate(ctx, puzzle); err != nil {
+					return "", err
 				}
-				_, err = s.InteractionResponseEdit(
-					s.State.User.ID, i.IC.Interaction, &discordgo.WebhookEdit{
-						Content: reply,
-					},
-				)
-				if err != nil {
-					log.Printf("discord: error responding to interaction %q: %s", i.Command, spew.Sdump(err))
-				} else {
-					log.Printf("discord: finished async processing for interaction %q", i.Command)
-				}
-			}()
-			return client.DiscordMagicReplyDefer, nil
+				return fmt.Sprintf(":ok_hand: I've created puzzle %q, %s!", puzzle.Name, i.User.Mention()), nil
+			})
 		},
 	}
 }
