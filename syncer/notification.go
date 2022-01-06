@@ -80,14 +80,20 @@ func (s *Syncer) notifyPuzzleSolvedMissingAnswer(puzzle *schema.Puzzle) error {
 		return err
 	}
 
-	embed := &discordgo.MessageEmbed{
-		Description: fmt.Sprintf(
-			":robot: Puzzle %q marked %s, but no answer was entered in Airtable... "+
-				"[:pencil: Edit in Airtable](%s)",
-			puzzle.Name, puzzle.Status.SolvedVerb(), s.airtable.EditURL(puzzle),
-		),
+	msg := fmt.Sprintf(
+		"**:woman_shrugging: Help!** Puzzle %q is marked as %s, but no answer was "+
+			"entered in Airtable.",
+		puzzle.Name, puzzle.Status.SolvedVerb(),
+	)
+	components := []discordgo.MessageComponent{
+		discordgo.Button{
+			Label: "Edit in Airtable",
+			Style: discordgo.LinkButton,
+			Emoji: discordgo.ComponentEmoji{Name: "📝"},
+			URL:   s.airtable.EditURL(puzzle),
+		},
 	}
-	return s.discord.ChannelSendEmbed(s.discord.QMChannel, embed)
+	return s.discord.ChannelSendComponents(s.discord.QMChannel, msg, components)
 }
 
 // notifyPuzzleStatusChange sends messages about ordinary puzzle status changes

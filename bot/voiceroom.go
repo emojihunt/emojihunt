@@ -20,6 +20,7 @@ const (
 
 func MakeVoiceRoomCommand(air *client.Airtable, dis *client.Discord) *client.DiscordCommand {
 	return &client.DiscordCommand{
+		InteractionType: discordgo.InteractionApplicationCommand,
 		ApplicationCommand: &discordgo.ApplicationCommand{
 			Name:        "room",
 			Description: "Assign puzzles to voice rooms",

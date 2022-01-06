@@ -35,7 +35,8 @@ type Discord struct {
 	// The Role ID for the QM role.
 	QMRoleID string
 
-	handlers map[string]DiscordCommandHandler
+	appCommandHandlers map[string]DiscordCommandHandler
+	componentHandlers  map[string]DiscordCommandHandler
 
 	mu                        sync.Mutex // hold while accessing everything below
 	scheduledEventsCache      map[string]*DiscordScheduledEvent
@@ -91,7 +92,6 @@ func NewDiscord(token string, c DiscordConfig) (*Discord, error) {
 	}
 
 	// Set up slash commands; return
-	commandHandlers := make(map[string]DiscordCommandHandler)
 	discord := &Discord{
 		s:                         s,
 		GuildID:                   c.GuildID,
@@ -102,7 +102,8 @@ func NewDiscord(token string, c DiscordConfig) (*Discord, error) {
 		PuzzleCategory:            puz,
 		SolvedCategory:            ar,
 		QMRoleID:                  qmRoleID,
-		handlers:                  commandHandlers,
+		appCommandHandlers:        make(map[string]DiscordCommandHandler),
+		componentHandlers:         make(map[string]DiscordCommandHandler),
 		scheduledEventsLastUpdate: time.Now().Add(-24 * time.Hour),
 	}
 	s.AddHandler(discord.commandHandler)
@@ -121,6 +122,22 @@ func (c *Discord) ChannelSend(ch *discordgo.Channel, msg string) error {
 
 func (c *Discord) ChannelSendEmbed(ch *discordgo.Channel, embed *discordgo.MessageEmbed) error {
 	_, err := c.s.ChannelMessageSendEmbed(ch.ID, embed)
+	return err
+}
+
+func (c *Discord) ChannelSendComponents(ch *discordgo.Channel, msg string, components []discordgo.MessageComponent) error {
+	var actionsRow []discordgo.MessageComponent
+	if components != nil {
+		actionsRow = []discordgo.MessageComponent{
+			discordgo.ActionsRow{
+				Components: components,
+			},
+		}
+	}
+	_, err := c.s.ChannelMessageSendComplex(ch.ID, &discordgo.MessageSend{
+		Content:    msg,
+		Components: actionsRow,
+	})
 	return err
 }
 

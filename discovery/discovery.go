@@ -1,6 +1,7 @@
 package discovery
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"net/http"
@@ -10,6 +11,8 @@ import (
 
 	"github.com/andybalholm/cascadia"
 	"github.com/bwmarrin/discordgo"
+	"github.com/davecgh/go-spew/spew"
+	"github.com/gauravjsingh/emojihunt/client"
 	"github.com/gauravjsingh/emojihunt/schema"
 	"golang.org/x/net/html"
 )
@@ -174,16 +177,67 @@ func (d *Poller) SyncPuzzles(puzzles []*DiscoveredPuzzle) error {
 	return d.notifyNewRounds(skippedRounds)
 }
 
-func (d *Poller) notifyNewPuzzle(puzzle *schema.Puzzle) error {
-	embed := &discordgo.MessageEmbed{
-		Description: fmt.Sprintf(
-			":robot: New puzzle detected! Name: %q, Round: %q, URL: %s\n"+
-				"[:pencil: Edit in Airtable](%s) or [:hammer: Approve as-is](%s)",
-			puzzle.Name, puzzle.Round.Serialize(), puzzle.PuzzleURL,
-			d.airtable.EditURL(puzzle), d.server.ResyncURL(puzzle),
-		),
+func (d *Poller) MakeApproveCommand() *client.DiscordCommand {
+	return &client.DiscordCommand{
+		InteractionType: discordgo.InteractionMessageComponent,
+		CustomID:        "discovery.approve",
+		Handler: func(s *discordgo.Session, i *client.DiscordCommandInput) (string, error) {
+			parts := strings.Split(i.Command, "/")
+			if len(parts) < 2 {
+				return "", fmt.Errorf("could not parse Airtable ID from command: %q", i.Command)
+			}
+			puzzle, err := d.airtable.FindByID(parts[1])
+			if err != nil {
+				return "", err
+			} else if !puzzle.Pending {
+				return fmt.Sprintf(":man_shrugging: Puzzle %q is already approved, %s!", puzzle.Name, i.User.Mention()), nil
+			}
+
+			// Work around the three-second deadline. Discord will display
+			// "huntbot is thinking..." until this finishes.
+			go func() {
+				reply := fmt.Sprintf(":ok_hand: I've created puzzle %q, %s!", puzzle.Name, i.User.Mention())
+				_, err := d.syncer.ForceUpdate(context.Background(), puzzle)
+				if err != nil {
+					log.Printf("discord: error handling interaction %q: %s", i.Command, spew.Sdump(err))
+					reply = fmt.Sprintf("🚨 Bot Error! Please ping in %s for help.\n```\n%s\n```", d.discord.TechChannel.Mention(), spew.Sdump(err))
+				}
+				_, err = s.InteractionResponseEdit(
+					s.State.User.ID, i.IC.Interaction, &discordgo.WebhookEdit{
+						Content: reply,
+					},
+				)
+				if err != nil {
+					log.Printf("discord: error responding to interaction %q: %s", i.Command, spew.Sdump(err))
+				} else {
+					log.Printf("discord: finished async processing for interaction %q", i.Command)
+				}
+			}()
+			return client.DiscordMagicReplyDefer, nil
+		},
 	}
-	return d.discord.ChannelSendEmbed(d.discord.QMChannel, embed)
+}
+
+func (d *Poller) notifyNewPuzzle(puzzle *schema.Puzzle) error {
+	msg := fmt.Sprintf(
+		"**%s New puzzle detected!** Name: %q, Round: %s, URL: %s",
+		puzzle.Round.Emoji, puzzle.Name, puzzle.Round.Name, puzzle.PuzzleURL,
+	)
+	components := []discordgo.MessageComponent{
+		discordgo.Button{
+			Label: "Edit in Airtable",
+			Style: discordgo.LinkButton,
+			Emoji: discordgo.ComponentEmoji{Name: "📝"},
+			URL:   d.airtable.EditURL(puzzle),
+		},
+		discordgo.Button{
+			Label:    "Approve",
+			Style:    discordgo.SuccessButton,
+			Emoji:    discordgo.ComponentEmoji{Name: "🔨"},
+			CustomID: "discovery.approve/" + puzzle.AirtableRecord.ID,
+		},
+	}
+	return d.discord.ChannelSendComponents(d.discord.QMChannel, msg, components)
 }
 
 func (d *Poller) notifyNewRounds(rounds map[string]bool) error {
@@ -200,14 +254,12 @@ func (d *Poller) notifyNewRounds(rounds map[string]bool) error {
 		return nil
 	}
 
-	embed := &discordgo.MessageEmbed{
-		Description: fmt.Sprintf(
-			":robot: New rounds are available! Please add at least one puzzle from each round to " +
-				"Airtable (after that, puzzle auto-discovery can take over). Rounds: " +
-				strings.Join(array, ", "),
-		),
-	}
-	if err := d.discord.ChannelSendEmbed(d.discord.QMChannel, embed); err != nil {
+	msg := fmt.Sprintf(
+		"**:ferris_wheel: New rounds are available!** Please add at least one puzzle from " +
+			"each round to Airtable (after that, puzzle auto-discovery can take over). Rounds: " +
+			strings.Join(array, ", "),
+	)
+	if err := d.discord.ChannelSend(d.discord.QMChannel, msg); err != nil {
 		return err
 	}
 

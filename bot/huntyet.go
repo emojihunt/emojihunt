@@ -20,6 +20,7 @@ var hunts = []hunt{
 
 func MakeHuntYetCommand() *client.DiscordCommand {
 	return &client.DiscordCommand{
+		InteractionType: discordgo.InteractionApplicationCommand,
 		ApplicationCommand: &discordgo.ApplicationCommand{
 			Name:        "huntyet",
 			Description: "IS IT HUNT YET??? ⏳",

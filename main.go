@@ -105,7 +105,7 @@ func main() {
 	syn := syncer.New(air, dis, d)
 	dbpoller := database.NewPoller(air, dis, syn)
 	server := server.New(air, syn, secrets.HuntboxToken, *origin)
-	dscvpoller := discovery.New(secrets.CookieName, secrets.CookieValue, air, dis, &server)
+	dscvpoller := discovery.New(secrets.CookieName, secrets.CookieValue, air, dis, syn, server)
 
 	// Register Discord bots
 	err = dis.RegisterCommands([]*client.DiscordCommand{
@@ -114,6 +114,7 @@ func main() {
 		bot.MakeHuntYetCommand(),
 		bot.MakeQMCommand(dis),
 		bot.MakeVoiceRoomCommand(air, dis),
+		dscvpoller.MakeApproveCommand(),
 	})
 	if err != nil {
 		log.Fatalf("failed to register discord commands: %v", err)

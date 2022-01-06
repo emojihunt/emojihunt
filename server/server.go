@@ -20,8 +20,8 @@ type Server struct {
 	origin   string
 }
 
-func New(airtable *client.Airtable, syncer *syncer.Syncer, secret, origin string) Server {
-	return Server{airtable, syncer, secret, origin}
+func New(airtable *client.Airtable, syncer *syncer.Syncer, secret, origin string) *Server {
+	return &Server{airtable, syncer, secret, origin}
 }
 
 func (s *Server) ResyncURL(puzzle *schema.Puzzle) string {

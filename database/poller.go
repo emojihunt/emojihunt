@@ -139,13 +139,17 @@ func (p *Poller) warnPuzzle(ctx context.Context, puzzle *schema.Puzzle) error {
 	if len(msgs) == 0 {
 		return fmt.Errorf("cannot warn about well-formatted puzzle %q: %v", puzzle.Name, puzzle)
 	}
-	embed := &discordgo.MessageEmbed{
-		Description: fmt.Sprintf(
-			":robot: Halp! Errors with puzzle %q: %s. [:pencil: Edit in Airtable](%s)",
-			puzzle.Name, strings.Join(msgs, " and "), p.airtable.EditURL(puzzle),
-		),
+	msg := fmt.Sprintf("**:boom: Halp!** Errors with puzzle %q: %s.",
+		puzzle.Name, strings.Join(msgs, " and "))
+	components := []discordgo.MessageComponent{
+		discordgo.Button{
+			Label: "Edit in Airtable",
+			Style: discordgo.LinkButton,
+			Emoji: discordgo.ComponentEmoji{Name: "📝"},
+			URL:   p.airtable.EditURL(puzzle),
+		},
 	}
-	if err := p.discord.ChannelSendEmbed(p.discord.QMChannel, embed); err != nil {
+	if err := p.discord.ChannelSendComponents(p.discord.QMChannel, msg, components); err != nil {
 		return err
 	}
 	p.lastWarnTime[puzzle.AirtableRecord.ID] = time.Now()

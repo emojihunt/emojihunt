@@ -13,6 +13,7 @@ import (
 	"github.com/davecgh/go-spew/spew"
 	"github.com/gauravjsingh/emojihunt/client"
 	"github.com/gauravjsingh/emojihunt/server"
+	"github.com/gauravjsingh/emojihunt/syncer"
 	"golang.org/x/net/websocket"
 	"golang.org/x/time/rate"
 )
@@ -21,6 +22,7 @@ type Poller struct {
 	cookie        *http.Cookie
 	airtable      *client.Airtable
 	discord       *client.Discord
+	syncer        *syncer.Syncer
 	server        *server.Server
 	wsLimiter     *rate.Limiter
 	newRounds     map[string]time.Time
@@ -46,7 +48,9 @@ const (
 
 var websocketRate = rate.Every(1 * time.Minute)
 
-func New(cookieName, cookieValue string, airtable *client.Airtable, discord *client.Discord, server *server.Server) *Poller {
+func New(cookieName, cookieValue string, airtable *client.Airtable,
+	discord *client.Discord, syncer *syncer.Syncer, server *server.Server) *Poller {
+
 	return &Poller{
 		cookie: &http.Cookie{
 			Name:   cookieName,
@@ -55,6 +59,7 @@ func New(cookieName, cookieValue string, airtable *client.Airtable, discord *cli
 		},
 		airtable:      airtable,
 		discord:       discord,
+		syncer:        syncer,
 		server:        server,
 		wsLimiter:     rate.NewLimiter(websocketRate, websocketBurst),
 		newRounds:     make(map[string]time.Time),

@@ -11,6 +11,7 @@ import (
 
 func MakeDatabaseCommand(discord *client.Discord, poller *database.Poller, discovery *discovery.Poller) *client.DiscordCommand {
 	return &client.DiscordCommand{
+		InteractionType: discordgo.InteractionApplicationCommand,
 		ApplicationCommand: &discordgo.ApplicationCommand{
 			Name:        "huntbot",
 			Description: "Robot control panel 🤖",

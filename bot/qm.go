@@ -9,6 +9,7 @@ import (
 
 func MakeQMCommand(dis *client.Discord) *client.DiscordCommand {
 	return &client.DiscordCommand{
+		InteractionType: discordgo.InteractionApplicationCommand,
 		ApplicationCommand: &discordgo.ApplicationCommand{
 			Name:        "qm",
 			Description: "Tools for the Quartermaster 👷",
