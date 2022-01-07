@@ -10,7 +10,10 @@ import (
 // hunt. Rin `go run ./publisher/cmd` in the root of the project to scrape the
 // given URL and print the puzzles that were found.
 func main() {
-	disc := discovery.New("dummyCookie", "dummyValue", nil, nil, nil)
+	disc := discovery.New(nil, nil, nil, &discovery.DiscoveryConfig{
+		CookieName:  "dummyCookie",
+		CookieValue: "dummyValue",
+	})
 	puzzles, err := disc.Scrape()
 	if err != nil {
 		fmt.Printf("fatal error: %#v\n", err)
