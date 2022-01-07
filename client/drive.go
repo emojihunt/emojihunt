@@ -2,6 +2,7 @@ package client
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"log"
 	"sync"
@@ -10,6 +11,11 @@ import (
 	"google.golang.org/api/option"
 	"google.golang.org/api/sheets/v4"
 )
+
+type DriveConfig struct {
+	RootFolderID   string      `json:"root_folder_id"`
+	ServiceAccount interface{} `json:"service_account"`
+}
 
 type Drive struct {
 	// ID of this year's root folder (e.g. "emoji hunt/2021")
@@ -24,18 +30,23 @@ type Drive struct {
 	drive  *drive.Service
 }
 
-func NewDrive(ctx context.Context, rootFolderID string, credentials []byte) (*Drive, error) {
-	sheetsService, err := sheets.NewService(ctx, option.WithCredentialsJSON(credentials))
+func NewDrive(ctx context.Context, config *DriveConfig) (*Drive, error) {
+	rawServiceAccount, err := json.Marshal(config.ServiceAccount)
 	if err != nil {
 		return nil, err
 	}
-	driveService, err := drive.NewService(ctx, option.WithCredentialsJSON(credentials))
+
+	sheetsService, err := sheets.NewService(ctx, option.WithCredentialsJSON(rawServiceAccount))
+	if err != nil {
+		return nil, err
+	}
+	driveService, err := drive.NewService(ctx, option.WithCredentialsJSON(rawServiceAccount))
 	if err != nil {
 		return nil, err
 	}
 
 	return &Drive{
-		rootFolderID:   rootFolderID,
+		rootFolderID:   config.RootFolderID,
 		roundFolderIDs: make(map[string]string),
 		sheets:         sheetsService,
 		drive:          driveService,

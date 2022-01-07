@@ -19,20 +19,20 @@ import (
 )
 
 var (
-	secretsFile  = flag.String("secrets_file", "secrets.json", "path to the flie that contains secrets used by the application")
-	rootFolderID = flag.String("root_folder_id", "1Mp8e1Sd7YXBwcgil62YCgslbQ6twmBlU", "the id of the google drive folder for this year")
-	certFile     = flag.String("certificate", "/etc/letsencrypt/live/huntbox.emojihunt.tech/fullchain.pem", "the path to the server certificate")
-	keyFile      = flag.String("private_key", "/etc/letsencrypt/live/huntbox.emojihunt.tech/privkey.pem", "the path to the server private key")
-	origin       = flag.String("origin", "https://huntbox.emojihunt.tech", "origin of the hunt server, for URLs")
+	secretsFile = flag.String("secrets_file", "secrets.json", "path to the flie that contains secrets used by the application")
+	certFile    = flag.String("certificate", "/etc/letsencrypt/live/huntbox.emojihunt.tech/fullchain.pem", "the path to the server certificate")
+	keyFile     = flag.String("private_key", "/etc/letsencrypt/live/huntbox.emojihunt.tech/privkey.pem", "the path to the server private key")
+	origin      = flag.String("origin", "https://huntbox.emojihunt.tech", "origin of the hunt server, for URLs")
 )
 
 type secrets struct {
-	Airtable             *client.AirtableConfig `json:"airtable"`
-	Discord              *client.DiscordConfig  `json:"discord"`
-	HuntboxToken         string                 `json:"huntbox_token"`
-	GoogleServiceAccount interface{}            `json:"google_service_account"`
-	CookieName           string                 `json:"hunt_cookie_name"` // to log in to the Hunt website
-	CookieValue          string                 `json:"hunt_cookie_value"`
+	Airtable    *client.AirtableConfig `json:"airtable"`
+	Discord     *client.DiscordConfig  `json:"discord"`
+	GoogleDrive *client.DriveConfig    `json:"google_drive"`
+
+	HuntboxToken string `json:"huntbox_token"`
+	CookieName   string `json:"hunt_cookie_name"` // to log in to the Hunt website
+	CookieValue  string `json:"hunt_cookie_value"`
 }
 
 func loadSecrets(path string) (secrets, error) {
@@ -70,40 +70,33 @@ func main() {
 		}
 	}()
 
-	// Set up Discord client
-	dis, err := client.NewDiscord(secrets.Discord)
+	// Set up clients
+	discord, err := client.NewDiscord(secrets.Discord)
 	if err != nil {
 		log.Fatalf("error creating discord client: %v", err)
 	}
-	defer dis.Close()
+	defer discord.Close()
 
-	// Set up Google Drive client
-	rawServiceAccount, err := json.Marshal(secrets.GoogleServiceAccount)
-	if err != nil {
-		panic(err)
-	}
-	d, err := client.NewDrive(ctx, *rootFolderID, rawServiceAccount)
+	airtable := client.NewAirtable(secrets.Airtable)
+
+	drive, err := client.NewDrive(ctx, secrets.GoogleDrive)
 	if err != nil {
 		log.Fatalf("error creating drive integration: %v", err)
 	}
 
-	// Set up Airtable client
-	air := client.NewAirtable(secrets.Airtable)
-
 	// Start internal engines
-	syn := syncer.New(air, dis, d)
-	dbpoller := database.NewPoller(air, dis, syn)
-	dscvpoller := discovery.New(secrets.CookieName, secrets.CookieValue, air, dis, syn)
+	syncer := syncer.New(airtable, discord, drive)
+	dbpoller := database.NewPoller(airtable, discord, syncer)
+	dscvpoller := discovery.New(secrets.CookieName, secrets.CookieValue, airtable, discord, syncer)
 
-	// Register Discord bots
-	err = dis.RegisterCommands([]*client.DiscordCommand{
-		bot.MakeDatabaseCommand(dis, dbpoller, dscvpoller),
+	err = discord.RegisterCommands([]*client.DiscordCommand{
+		bot.MakeDatabaseCommand(discord, dbpoller, dscvpoller),
 		bot.MakeEmojiNameCommand(),
 		bot.MakeHuntYetCommand(),
-		bot.MakeQMCommand(dis),
-		bot.MakeSolveCommand(ctx, air, dis, syn),
-		bot.MakeStatusCommand(ctx, air, dis, syn),
-		bot.MakeVoiceRoomCommand(air, dis),
+		bot.MakeQMCommand(discord),
+		bot.MakeSolveCommand(ctx, airtable, discord, syncer),
+		bot.MakeStatusCommand(ctx, airtable, discord, syncer),
+		bot.MakeVoiceRoomCommand(airtable, discord),
 		dscvpoller.MakeApproveCommand(ctx),
 	})
 	if err != nil {
@@ -115,7 +108,7 @@ func main() {
 	go dbpoller.Poll(ctx)
 	go dscvpoller.Poll(ctx)
 
-	server := server.New(air, syn, secrets.HuntboxToken, *origin)
+	server := server.New(airtable, syncer, secrets.HuntboxToken, *origin)
 	server.Start(*certFile, *keyFile)
 
 	<-ctx.Done()
