@@ -20,7 +20,7 @@ func MakeVoiceRoomCommand(air *client.Airtable, dis *client.Discord) *client.Dis
 	return &client.DiscordCommand{
 		InteractionType: discordgo.InteractionApplicationCommand,
 		ApplicationCommand: &discordgo.ApplicationCommand{
-			Name:        "room",
+			Name:        "voice",
 			Description: "Assign puzzles to voice rooms",
 			Options: []*discordgo.ApplicationCommandOption{
 				{
@@ -73,7 +73,7 @@ func MakeVoiceRoomCommand(air *client.Airtable, dis *client.Discord) *client.Dis
 				}
 				reply = fmt.Sprintf("Removed the room for puzzle %q", puzzle.Name)
 			default:
-				return "", fmt.Errorf("unexpected /room subcommand: %q", i.Subcommand.Name)
+				return "", fmt.Errorf("unexpected /voice subcommand: %q", i.Subcommand.Name)
 			}
 
 			return dis.ReplyAsync(s, i, func() (string, error) {
@@ -102,7 +102,7 @@ func voiceAsyncProcessing(air *client.Airtable, dis *client.Discord, puzzle *sch
 }
 
 func voiceSyncPinnedMessage(dis *client.Discord, puzzle *schema.Puzzle) error {
-	msg := "No voice room set. Use `/room start $room` to start working in $room."
+	msg := "No voice room set. Use `/voice start` to start working in $room."
 	if puzzle.VoiceRoom != "" {
 		msg = fmt.Sprintf("Join us in <#%s>!", puzzle.VoiceRoom)
 	}
