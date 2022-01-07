@@ -79,8 +79,7 @@ func main() {
 		bot.MakeEmojiNameCommand(),
 		bot.MakeHuntYetCommand(),
 		bot.MakeQMCommand(discord),
-		bot.MakeSolveCommand(ctx, airtable, discord, syncer),
-		bot.MakeStatusCommand(ctx, airtable, discord, syncer),
+		bot.MakePuzzleCommand(ctx, airtable, discord, syncer),
 		bot.MakeVoiceRoomCommand(airtable, discord),
 	}
 	var dscvpoller *discovery.Poller

@@ -133,35 +133,18 @@ func (air *Airtable) UpdateSpreadsheetID(puzzle *schema.Puzzle, spreadsheet stri
 	return air.parseRecord(record)
 }
 
-func (air *Airtable) UpdateStatusAndClearAnswer(puzzle *schema.Puzzle, status schema.Status) (*schema.Puzzle, error) {
-	var fields = make(map[string]interface{})
+func (air *Airtable) SetStatusAndAnswer(puzzle *schema.Puzzle, status schema.Status, answer string) (*schema.Puzzle, error) {
+	var fields = map[string]interface{}{
+		"Status":   status.Pretty(),
+		"Answer":   answer,
+		"Archived": status.IsSolved(),
+	}
 	if status == schema.NotStarted {
 		fields["Status"] = nil
 		fields["Last Bot Status"] = nil
 	} else {
 		fields["Status"] = status.Pretty()
 		fields["Last Bot Status"] = string(status)
-	}
-	fields["Answer"] = nil
-	fields["Archived"] = false
-	record, err := puzzle.AirtableRecord.UpdateRecordPartial(fields)
-	if err != nil {
-		return nil, err
-	}
-	return air.parseRecord(record)
-}
-
-func (air *Airtable) MarkSolved(puzzle *schema.Puzzle, status schema.Status, answer string) (*schema.Puzzle, error) {
-	if !status.IsSolved() {
-		return nil, fmt.Errorf("tried to call MarkSolved() on with unsolved status %v", status)
-	}
-
-	var fields = map[string]interface{}{
-		"Status": status.Pretty(),
-		"Answer": answer,
-		// Proactively set these fields to avoid a race with the other bot
-		"Last Bot Status": string(status),
-		"Archived":        true,
 	}
 	record, err := puzzle.AirtableRecord.UpdateRecordPartial(fields)
 	if err != nil {

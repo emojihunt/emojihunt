@@ -162,6 +162,19 @@ func (d *Discord) ReplyAsync(s *discordgo.Session, i *DiscordCommandInput, fn fu
 	return discordMagicReplyDefer, nil
 }
 
+func (d *Discord) OptionByName(options []*discordgo.ApplicationCommandInteractionDataOption, name string) (*discordgo.ApplicationCommandInteractionDataOption, error) {
+	var result *discordgo.ApplicationCommandInteractionDataOption
+	for _, opt := range options {
+		if opt.Name == name {
+			result = opt
+		}
+	}
+	if result == nil {
+		return nil, fmt.Errorf("could not find option %q in options list", name)
+	}
+	return result, nil
+}
+
 func (d *Discord) enableMessageComponents(s *discordgo.Session, message *discordgo.Message, enabled bool) error {
 	if len(message.Components) < 1 {
 		return nil

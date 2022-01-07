@@ -55,15 +55,12 @@ func MakeVoiceRoomCommand(air *client.Airtable, dis *client.Discord) *client.Dis
 			var reply string
 			switch i.Subcommand.Name {
 			case "start":
-				var channel *discordgo.Channel
-				for _, opt := range i.Subcommand.Options {
-					if opt.Name == "in" {
-						channel = opt.ChannelValue(s)
-					}
+				channelOpt, err := dis.OptionByName(i.Subcommand.Options, "in")
+				if err != nil {
+					return "", err
 				}
-				if channel == nil {
-					return "", fmt.Errorf("could not find channel argument in options list")
-				}
+				channel := channelOpt.ChannelValue(s)
+
 				puzzle, err = air.UpdateVoiceRoom(puzzle, channel.ID)
 				if err != nil {
 					return "", err
