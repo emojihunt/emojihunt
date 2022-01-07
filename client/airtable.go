@@ -135,16 +135,10 @@ func (air *Airtable) UpdateSpreadsheetID(puzzle *schema.Puzzle, spreadsheet stri
 
 func (air *Airtable) SetStatusAndAnswer(puzzle *schema.Puzzle, status schema.Status, answer string) (*schema.Puzzle, error) {
 	var fields = map[string]interface{}{
-		"Status":   status.Pretty(),
-		"Answer":   answer,
-		"Archived": status.IsSolved(),
-	}
-	if status == schema.NotStarted {
-		fields["Status"] = nil
-		fields["Last Bot Status"] = nil
-	} else {
-		fields["Status"] = status.Pretty()
-		fields["Last Bot Status"] = string(status)
+		"Status":          status.PrettyForAirtable(),
+		"Answer":          answer,
+		"Last Bot Status": status.TextForAirtable(),
+		"Archived":        status.IsSolved(),
 	}
 	record, err := puzzle.AirtableRecord.UpdateRecordPartial(fields)
 	if err != nil {

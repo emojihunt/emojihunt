@@ -80,14 +80,14 @@ func MakePuzzleCommand(ctx context.Context, air *client.Airtable, dis *client.Di
 				}
 
 				if puzzle.Status == newStatus {
-					return fmt.Sprintf(":elephant: This puzzle already has status %s", newStatus.Pretty()), nil
+					return fmt.Sprintf(":elephant: This puzzle already has status %s", newStatus.Human()), nil
 				}
 
 				if puzzle.Answer == "" {
-					reply = fmt.Sprintf(":face_with_monocle: Updated puzzle status to %s!", newStatus.Pretty())
+					reply = fmt.Sprintf(":face_with_monocle: Updated puzzle status to %s!", newStatus.Human())
 				} else {
 					reply = fmt.Sprintf(":woozy_face: Updated puzzle status to %s and cleared answer `%s`. "+
-						"Was that right?", newStatus.Pretty(), puzzle.Answer)
+						"Was that right?", newStatus.Human(), puzzle.Answer)
 				}
 			case "solved":
 				if statusOpt, err := dis.OptionByName(i.Subcommand.Options, "as"); err != nil {

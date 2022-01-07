@@ -118,6 +118,37 @@ func ParseTextStatus(textPart string) (Status, error) {
 	}
 }
 
+func (s Status) Human() string {
+	switch s {
+	case NotStarted:
+		return "Not Started"
+	case "Working":
+		return "✍️ Working"
+	case "Abandoned":
+		return "🗑️ Abandoned"
+	case "Solved":
+		return "🏅 Solved"
+	case "Backsolved":
+		return "🤦‍♀️ Backsolved"
+	default:
+		panic(fmt.Errorf("called Human() on unknown status %v", s))
+	}
+}
+
+func (s Status) PrettyForAirtable() interface{} {
+	if s == NotStarted {
+		return nil
+	}
+	return s.Human()
+}
+
+func (s Status) TextForAirtable() interface{} {
+	if s == NotStarted {
+		return nil
+	}
+	return string(s)
+}
+
 func (s Status) IsSolved() bool {
 	return s == Solved || s == Backsolved
 }
@@ -141,22 +172,5 @@ func (s Status) SolvedNoun() string {
 		return "backsolve"
 	default:
 		panic("called SolvedNoun() on an unsolved puzzle")
-	}
-}
-
-func (s Status) Pretty() string {
-	switch s {
-	case NotStarted:
-		return "Not Started"
-	case "Working":
-		return "✍️ Working"
-	case "Abandoned":
-		return "🗑️ Abandoned"
-	case "Solved":
-		return "🏅 Solved"
-	case "Backsolved":
-		return "🤦‍♀️ Backsolved"
-	default:
-		panic(fmt.Errorf("called Pretty() on unknown status %v", s))
 	}
 }

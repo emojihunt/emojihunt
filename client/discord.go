@@ -51,6 +51,7 @@ func NewDiscord(config *DiscordConfig) (*Discord, error) {
 	if err != nil {
 		return nil, err
 	}
+	// s.Debug = true // warning: it's *very* verbose
 	s.Identify.Intents = discordgo.IntentsGuildMessages
 	if err := s.Open(); err != nil {
 		return nil, err

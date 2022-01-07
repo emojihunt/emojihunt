@@ -7,8 +7,11 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
+	"net/http"
 	"os"
 	"os/signal"
+
+	_ "net/http/pprof"
 
 	"github.com/gauravjsingh/emojihunt/bot"
 	"github.com/gauravjsingh/emojihunt/client"
@@ -56,6 +59,12 @@ func main() {
 			cancel()
 		case <-ctx.Done():
 		}
+	}()
+
+	// Start debug server
+	// http://localhost:6060/debug/pprof/goroutine?debug=2
+	go func() {
+		http.ListenAndServe("localhost:6060", nil)
 	}()
 
 	// Set up clients

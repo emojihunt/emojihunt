@@ -26,7 +26,7 @@ func (s *Syncer) discordCreateUpdatePin(puzzle *schema.Puzzle) error {
 			},
 			{
 				Name:   "Status",
-				Value:  puzzle.Status.Pretty(),
+				Value:  puzzle.Status.Human(),
 				Inline: true,
 			},
 			{
