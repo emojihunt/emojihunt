@@ -21,20 +21,18 @@ import (
 var (
 	secretsFile  = flag.String("secrets_file", "secrets.json", "path to the flie that contains secrets used by the application")
 	rootFolderID = flag.String("root_folder_id", "1Mp8e1Sd7YXBwcgil62YCgslbQ6twmBlU", "the id of the google drive folder for this year")
-	baseID       = flag.String("airtable_base_id", "appmjhGfZLui26Xow", "the id of the airtable base")
-	tableID      = flag.String("airtable_table_id", "tblXFBYI5RQIogbog", "the id of the table in the airtable base")
 	certFile     = flag.String("certificate", "/etc/letsencrypt/live/huntbox.emojihunt.tech/fullchain.pem", "the path to the server certificate")
 	keyFile      = flag.String("private_key", "/etc/letsencrypt/live/huntbox.emojihunt.tech/privkey.pem", "the path to the server private key")
 	origin       = flag.String("origin", "https://huntbox.emojihunt.tech", "origin of the hunt server, for URLs")
 )
 
 type secrets struct {
-	AirtableToken        string                `json:"airtable_token"`
-	Discord              *client.DiscordConfig `json:"discord"`
-	HuntboxToken         string                `json:"huntbox_token"`
-	GoogleServiceAccount interface{}           `json:"google_service_account"`
-	CookieName           string                `json:"hunt_cookie_name"` // to log in to the Hunt website
-	CookieValue          string                `json:"hunt_cookie_value"`
+	Airtable             *client.AirtableConfig `json:"airtable"`
+	Discord              *client.DiscordConfig  `json:"discord"`
+	HuntboxToken         string                 `json:"huntbox_token"`
+	GoogleServiceAccount interface{}            `json:"google_service_account"`
+	CookieName           string                 `json:"hunt_cookie_name"` // to log in to the Hunt website
+	CookieValue          string                 `json:"hunt_cookie_value"`
 }
 
 func loadSecrets(path string) (secrets, error) {
@@ -90,7 +88,7 @@ func main() {
 	}
 
 	// Set up Airtable client
-	air := client.NewAirtable(secrets.AirtableToken, *baseID, *tableID)
+	air := client.NewAirtable(secrets.Airtable)
 
 	// Start internal engines
 	syn := syncer.New(air, dis, d)

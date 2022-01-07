@@ -8,6 +8,12 @@ import (
 	"github.com/mehanizm/airtable"
 )
 
+type AirtableConfig struct {
+	APIKey  string `json:"api_key"`
+	BaseID  string `json:"base_id"`
+	TableID string `json:"table_id"`
+}
+
 type Airtable struct {
 	baseID, tableID string
 	table           *airtable.Table
@@ -22,10 +28,10 @@ const pendingSuffix = " [pending]" // puzzle name suffix for auto-added puzzles
 // requests-per-second limit, which is important because if we break that limit
 // we get suspended for 30 seconds.
 
-func NewAirtable(apiKey, baseID, tableID string) *Airtable {
-	client := airtable.NewClient(apiKey)
-	table := client.GetTable(baseID, tableID)
-	return &Airtable{baseID, tableID, table}
+func NewAirtable(config *AirtableConfig) *Airtable {
+	client := airtable.NewClient(config.APIKey)
+	table := client.GetTable(config.BaseID, config.TableID)
+	return &Airtable{config.BaseID, config.TableID, table}
 }
 
 func (air *Airtable) ListRecords() ([]schema.Puzzle, error) {
