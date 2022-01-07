@@ -90,9 +90,9 @@ func (air *Airtable) FindByDiscordChannel(channel string) (*schema.Puzzle, error
 	return air.parseRecord(response.Records[0])
 }
 
-func (air *Airtable) FindWithVoiceRoom() ([]*schema.Puzzle, error) {
+func (air *Airtable) FindWithVoiceRoomEvent() ([]*schema.Puzzle, error) {
 	response, err := air.table.GetRecords().
-		WithFilterFormula("{Voice Room}!=''").
+		WithFilterFormula("{Voice Room Event}!=''").
 		Do()
 	if err != nil {
 		return nil, err
@@ -174,9 +174,9 @@ func (air *Airtable) UpdateBotFields(puzzle *schema.Puzzle, lastBotStatus schema
 	return air.parseRecord(record)
 }
 
-func (air *Airtable) UpdateVoiceRoom(puzzle *schema.Puzzle, voiceRoom string) (*schema.Puzzle, error) {
+func (air *Airtable) UpdateVoiceRoomEvent(puzzle *schema.Puzzle, voiceRoomEvent string) (*schema.Puzzle, error) {
 	record, err := puzzle.AirtableRecord.UpdateRecordPartial(map[string]interface{}{
-		"Voice Room": voiceRoom,
+		"Voice Room Event": voiceRoomEvent,
 	})
 	if err != nil {
 		return nil, err
@@ -259,11 +259,11 @@ func (air *Airtable) parseRecord(record *airtable.Record) (*schema.Puzzle, error
 		SpreadsheetID:  air.stringField(record, "Spreadsheet ID"),
 		DiscordChannel: air.stringField(record, "Discord Channel"),
 
-		Pending:       pending,
-		LastBotStatus: lastBotStatus,
-		Archived:      air.boolField(record, "Archived"),
-		OriginalURL:   air.stringField(record, "Original URL"),
-		VoiceRoom:     air.stringField(record, "Voice Room"),
+		Pending:        pending,
+		LastBotStatus:  lastBotStatus,
+		Archived:       air.boolField(record, "Archived"),
+		OriginalURL:    air.stringField(record, "Original URL"),
+		VoiceRoomEvent: air.stringField(record, "Voice Room Event"),
 	}, nil
 }
 

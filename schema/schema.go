@@ -18,11 +18,11 @@ type Puzzle struct {
 	SpreadsheetID  string
 	DiscordChannel string
 
-	Pending       bool
-	LastBotStatus Status
-	Archived      bool
-	OriginalURL   string
-	VoiceRoom     string
+	Pending        bool
+	LastBotStatus  Status
+	Archived       bool
+	OriginalURL    string
+	VoiceRoomEvent string
 }
 
 type NewPuzzle struct {
