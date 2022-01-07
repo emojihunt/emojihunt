@@ -17,6 +17,11 @@ import (
 	"golang.org/x/time/rate"
 )
 
+type DiscoveryConfig struct {
+	CookieName  string `json:"cookie_name"`
+	CookieValue string `json:"cookie_value"`
+}
+
 type Poller struct {
 	cookie        *http.Cookie
 	airtable      *client.Airtable
@@ -46,12 +51,11 @@ const (
 
 var websocketRate = rate.Every(1 * time.Minute)
 
-func New(cookieName, cookieValue string, airtable *client.Airtable, discord *client.Discord, syncer *syncer.Syncer) *Poller {
-
+func New(airtable *client.Airtable, discord *client.Discord, syncer *syncer.Syncer, config *DiscoveryConfig) *Poller {
 	return &Poller{
 		cookie: &http.Cookie{
-			Name:   cookieName,
-			Value:  cookieValue,
+			Name:   config.CookieName,
+			Value:  config.CookieValue,
 			MaxAge: 0,
 		},
 		airtable:      airtable,

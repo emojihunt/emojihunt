@@ -23,13 +23,11 @@ var (
 )
 
 type secrets struct {
-	Airtable    *client.AirtableConfig `json:"airtable"`
-	Discord     *client.DiscordConfig  `json:"discord"`
-	GoogleDrive *client.DriveConfig    `json:"google_drive"`
-	Server      *server.ServerConfig   `json:"server"`
-
-	CookieName  string `json:"hunt_cookie_name"` // to log in to the Hunt website
-	CookieValue string `json:"hunt_cookie_value"`
+	Airtable      *client.AirtableConfig     `json:"airtable"`
+	Discord       *client.DiscordConfig      `json:"discord"`
+	GoogleDrive   *client.DriveConfig        `json:"google_drive"`
+	Server        *server.ServerConfig       `json:"server"`
+	Autodiscovery *discovery.DiscoveryConfig `json:"autodiscovery"`
 }
 
 func loadSecrets(path string) (secrets, error) {
@@ -84,19 +82,26 @@ func main() {
 	// Start internal engines
 	syncer := syncer.New(airtable, discord, drive)
 	dbpoller := database.NewPoller(airtable, discord, syncer)
-	dscvpoller := discovery.New(secrets.CookieName, secrets.CookieValue, airtable, discord, syncer)
-
-	err = discord.RegisterCommands([]*client.DiscordCommand{
-		bot.MakeDatabaseCommand(discord, dbpoller, dscvpoller),
+	botCommands := []*client.DiscordCommand{
 		bot.MakeEmojiNameCommand(),
 		bot.MakeHuntYetCommand(),
 		bot.MakeQMCommand(discord),
 		bot.MakeSolveCommand(ctx, airtable, discord, syncer),
 		bot.MakeStatusCommand(ctx, airtable, discord, syncer),
 		bot.MakeVoiceRoomCommand(airtable, discord),
-		dscvpoller.MakeApproveCommand(ctx),
-	})
-	if err != nil {
+	}
+	var dscvpoller *discovery.Poller
+	if secrets.Autodiscovery != nil {
+		dscvpoller = discovery.New(airtable, discord, syncer, secrets.Autodiscovery)
+		botCommands = append(botCommands, dscvpoller.MakeApproveCommand(ctx))
+	} else {
+		log.Printf("puzzle auto-discovery is disabled (no config found)")
+	}
+	botCommands = append(botCommands,
+		bot.MakeDatabaseCommand(discord, dbpoller, dscvpoller),
+	)
+
+	if err := discord.RegisterCommands(botCommands); err != nil {
 		log.Fatalf("failed to register discord commands: %v", err)
 	}
 
