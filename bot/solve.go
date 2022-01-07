@@ -3,6 +3,7 @@ package bot
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/gauravjsingh/emojihunt/client"
@@ -54,7 +55,7 @@ func MakeSolveCommand(ctx context.Context, air *client.Airtable, dis *client.Dis
 			var answer string
 			for _, opt := range i.IC.ApplicationCommandData().Options {
 				if opt.Name == "answer" {
-					answer = opt.StringValue()
+					answer = strings.ToUpper(opt.StringValue())
 				}
 			}
 			if answer == "" {
@@ -70,7 +71,7 @@ func MakeSolveCommand(ctx context.Context, air *client.Airtable, dis *client.Dis
 				if puzzle, err = air.MarkSolved(puzzle, newStatus, answer); err != nil {
 					return "", err
 				}
-				if puzzle, err = syn.IdempotentCreateUpdate(ctx, puzzle, true); err != nil {
+				if puzzle, err = syn.BasicUpdate(ctx, puzzle, true); err != nil {
 					return "", err
 				}
 				return fmt.Sprintf(

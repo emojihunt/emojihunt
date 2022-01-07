@@ -114,7 +114,7 @@ func (p *Poller) processPuzzle(ctx context.Context, puzzle *schema.Puzzle) error
 		return nil
 	}
 
-	_, err := p.syncer.IdempotentCreateUpdate(ctx, puzzle, false)
+	_, err := p.syncer.IdempotentCreateUpdate(ctx, puzzle)
 	return err
 }
 

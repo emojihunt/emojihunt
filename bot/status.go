@@ -66,7 +66,7 @@ func MakeStatusCommand(ctx context.Context, air *client.Airtable, dis *client.Di
 				if puzzle, err = air.UpdateStatusAndClearAnswer(puzzle, newStatus); err != nil {
 					return "", err
 				}
-				if puzzle, err = syn.IdempotentCreateUpdate(ctx, puzzle, false); err != nil {
+				if puzzle, err = syn.BasicUpdate(ctx, puzzle, true); err != nil {
 					return "", err
 				}
 				return reply, nil

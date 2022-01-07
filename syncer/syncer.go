@@ -23,7 +23,7 @@ func New(airtable *client.Airtable, discord *client.Discord, drive *client.Drive
 // information in Airtable. When a puzzle is newly added, it creates the
 // spreadsheet and Discord channel and links them in Airtable. When a puzzle's
 // status is updated, it handles that also.
-func (s *Syncer) IdempotentCreateUpdate(ctx context.Context, puzzle *schema.Puzzle, suppressSolveNotif bool) (*schema.Puzzle, error) {
+func (s *Syncer) IdempotentCreateUpdate(ctx context.Context, puzzle *schema.Puzzle) (*schema.Puzzle, error) {
 	// 1. Create the spreadsheet, if required
 	if puzzle.SpreadsheetID == "" {
 		spreadsheet, err := s.drive.CreateSheet(ctx, puzzle.Name, puzzle.Round.Name)
@@ -73,47 +73,62 @@ func (s *Syncer) IdempotentCreateUpdate(ctx context.Context, puzzle *schema.Puzz
 
 	// 3. Update the spreadsheet and Discord channel with new information, if required
 	if puzzle.Status != puzzle.LastBotStatus || puzzle.ShouldArchive() != puzzle.Archived {
-		if err := s.discordCreateUpdatePin(puzzle); err != nil {
-			return nil, fmt.Errorf("unable to set puzzle status message for %q: %w", puzzle.Name, err)
-		}
-
-		if err := s.discordUpdateChannel(puzzle); err != nil {
-			return nil, fmt.Errorf("unable to set channel category for %q: %v", puzzle.Name, err)
-		}
-
-		if err := s.driveUpdateSpreadsheet(ctx, puzzle); err != nil {
-			return nil, fmt.Errorf("unable to update spreadsheet title and folder for %q: %v", puzzle.Name, err)
-		}
-
-		// Update bot status in Airtable
 		var err error
-		puzzle, err = s.airtable.UpdateBotFields(puzzle, puzzle.Status, puzzle.ShouldArchive(), puzzle.Pending)
+		puzzle, err = s.BasicUpdate(ctx, puzzle, false)
 		if err != nil {
-			return nil, fmt.Errorf("failed to update bot fields for puzzle %q: %v", puzzle.Name, err)
-		}
-
-		// Send notifications
-		if puzzle.Status.IsSolved() {
-			if puzzle.Answer != "" {
-				// Puzzle solved and answer entered!
-				err = s.notifyPuzzleFullySolved(puzzle, suppressSolveNotif)
-			} else {
-				// Puzzle marked as solved but answer needs to be entered in
-				// Airtable...
-				err = s.notifyPuzzleSolvedMissingAnswer(puzzle)
-			}
-		}
-		if err != nil {
-			return nil, fmt.Errorf("error posting puzzle status announcement: %v", err)
+			return nil, err
 		}
 	}
 
 	return puzzle, nil
 }
 
+func (s *Syncer) BasicUpdate(ctx context.Context, puzzle *schema.Puzzle, botRequest bool) (*schema.Puzzle, error) {
+	var err error
+	if err := s.discordCreateUpdatePin(puzzle); err != nil {
+		return nil, fmt.Errorf("unable to set puzzle status message for %q: %w", puzzle.Name, err)
+	}
+
+	if err := s.discordUpdateChannel(puzzle); err != nil {
+		return nil, fmt.Errorf("unable to set channel category for %q: %v", puzzle.Name, err)
+	}
+
+	if err := s.driveUpdateSpreadsheet(ctx, puzzle); err != nil {
+		return nil, fmt.Errorf("unable to update spreadsheet title and folder for %q: %v", puzzle.Name, err)
+	}
+
+	// Update bot status in Airtable, unless we're in a bot handler and this has
+	// already been done.
+	if !botRequest {
+		var err error
+		puzzle, err = s.airtable.UpdateBotFields(puzzle, puzzle.Status, puzzle.ShouldArchive(), puzzle.Pending)
+		if err != nil {
+			return nil, fmt.Errorf("failed to update bot fields for puzzle %q: %v", puzzle.Name, err)
+		}
+	}
+
+	// Send notifications
+	if puzzle.Status.IsSolved() {
+		if puzzle.Answer != "" {
+			// Puzzle solved and answer entered! (Suppress puzzle channel
+			// notification if this is a bot request, since the bot will also
+			// respond in the puzzle channel.)
+			err = s.notifyPuzzleFullySolved(puzzle, botRequest)
+		} else {
+			// Puzzle marked as solved but answer needs to be entered in
+			// Airtable...
+			err = s.notifyPuzzleSolvedMissingAnswer(puzzle)
+		}
+	}
+	if err != nil {
+		return nil, fmt.Errorf("error posting puzzle status announcement: %v", err)
+	}
+	return puzzle, nil
+}
+
 func (s *Syncer) ForceUpdate(ctx context.Context, puzzle *schema.Puzzle) (*schema.Puzzle, error) {
 	var err error
-	puzzle, err = s.IdempotentCreateUpdate(ctx, puzzle, false)
+	puzzle, err = s.IdempotentCreateUpdate(ctx, puzzle)
 	if err != nil {
 		return nil, err
 	}

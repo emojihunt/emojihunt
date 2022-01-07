@@ -137,10 +137,13 @@ func (air *Airtable) UpdateStatusAndClearAnswer(puzzle *schema.Puzzle, status sc
 	var fields = make(map[string]interface{})
 	if status == schema.NotStarted {
 		fields["Status"] = nil
+		fields["Last Bot Status"] = nil
 	} else {
 		fields["Status"] = status.Pretty()
+		fields["Last Bot Status"] = string(status)
 	}
 	fields["Answer"] = nil
+	fields["Archived"] = false
 	record, err := puzzle.AirtableRecord.UpdateRecordPartial(fields)
 	if err != nil {
 		return nil, err
@@ -153,13 +156,13 @@ func (air *Airtable) MarkSolved(puzzle *schema.Puzzle, status schema.Status, ans
 		return nil, fmt.Errorf("tried to call MarkSolved() on with unsolved status %v", status)
 	}
 
-	var fields = make(map[string]interface{})
-	if status == schema.NotStarted {
-		fields["Status"] = nil
-	} else {
-		fields["Status"] = status.Pretty()
+	var fields = map[string]interface{}{
+		"Status": status.Pretty(),
+		"Answer": answer,
+		// Proactively set these fields to avoid a race with the other bot
+		"Last Bot Status": string(status),
+		"Archived":        true,
 	}
-	fields["Answer"] = answer
 	record, err := puzzle.AirtableRecord.UpdateRecordPartial(fields)
 	if err != nil {
 		return nil, err
