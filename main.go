@@ -18,11 +18,7 @@ import (
 	"github.com/gauravjsingh/emojihunt/syncer"
 )
 
-var (
-	secretsFile = flag.String("secrets_file", "secrets.json", "path to the flie that contains secrets used by the application")
-)
-
-type secrets struct {
+type Config struct {
 	Airtable      *client.AirtableConfig     `json:"airtable"`
 	Discord       *client.DiscordConfig      `json:"discord"`
 	GoogleDrive   *client.DriveConfig        `json:"google_drive"`
@@ -30,23 +26,20 @@ type secrets struct {
 	Autodiscovery *discovery.DiscoveryConfig `json:"autodiscovery"`
 }
 
-func loadSecrets(path string) (secrets, error) {
-	bs, err := ioutil.ReadFile(path)
-	if err != nil {
-		return secrets{}, fmt.Errorf("error reading secrets file at %q: %v", path, err)
-	}
-	s := secrets{}
-	if err := json.Unmarshal(bs, &s); err != nil {
-		return secrets{}, fmt.Errorf("error unmarshaling secrets from %q: %v", path, err)
-	}
-	return s, nil
-}
-
 func main() {
-	// Load secrets.json
-	secrets, err := loadSecrets(*secretsFile)
+	if len(os.Args) != 2 {
+		fmt.Printf("usage: %s CONFIG_FILE\n", os.Args[0])
+		os.Exit(2)
+	}
+
+	// Load config.json
+	bs, err := ioutil.ReadFile(os.Args[1])
 	if err != nil {
-		log.Fatalf("error loading secrets: %v", err)
+		log.Fatalf("error reading secrets file at %q: %v", os.Args[1], err)
+	}
+	config := Config{}
+	if err := json.Unmarshal(bs, &config); err != nil {
+		log.Fatalf("error unmarshaling secrets from %q: %v", os.Args[1], err)
 	}
 
 	// Set up our context, which is cancelled on Ctrl-C
@@ -66,15 +59,15 @@ func main() {
 	}()
 
 	// Set up clients
-	discord, err := client.NewDiscord(secrets.Discord)
+	discord, err := client.NewDiscord(config.Discord)
 	if err != nil {
 		log.Fatalf("error creating discord client: %v", err)
 	}
 	defer discord.Close()
 
-	airtable := client.NewAirtable(secrets.Airtable)
+	airtable := client.NewAirtable(config.Airtable)
 
-	drive, err := client.NewDrive(ctx, secrets.GoogleDrive)
+	drive, err := client.NewDrive(ctx, config.GoogleDrive)
 	if err != nil {
 		log.Fatalf("error creating drive integration: %v", err)
 	}
@@ -91,8 +84,8 @@ func main() {
 		bot.MakeVoiceRoomCommand(airtable, discord),
 	}
 	var dscvpoller *discovery.Poller
-	if secrets.Autodiscovery != nil {
-		dscvpoller = discovery.New(airtable, discord, syncer, secrets.Autodiscovery)
+	if config.Autodiscovery != nil {
+		dscvpoller = discovery.New(airtable, discord, syncer, config.Autodiscovery)
 		botCommands = append(botCommands, dscvpoller.MakeApproveCommand(ctx))
 	} else {
 		log.Printf("puzzle auto-discovery is disabled (no config found)")
@@ -110,8 +103,8 @@ func main() {
 	go dbpoller.Poll(ctx)
 	go dscvpoller.Poll(ctx)
 
-	if secrets.Server != nil {
-		server.Start(airtable, syncer, secrets.Server)
+	if config.Server != nil {
+		server.Start(airtable, syncer, config.Server)
 	} else {
 		log.Printf("no server config found, skipping (for development only!)")
 	}
