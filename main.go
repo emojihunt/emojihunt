@@ -101,7 +101,9 @@ func main() {
 	// Run!
 	log.Print("press ctrl+C to exit")
 	go dbpoller.Poll(ctx)
-	go dscvpoller.Poll(ctx)
+	if dscvpoller != nil {
+		go dscvpoller.Poll(ctx)
+	}
 
 	if config.Server != nil {
 		server.Start(airtable, syncer, config.Server)
