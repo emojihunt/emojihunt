@@ -53,6 +53,7 @@ func MakeVoiceRoomCommand(air *client.Airtable, dis *client.Discord) *client.Dis
 			}
 
 			var reply string
+			var newChannelID string
 			switch i.Subcommand.Name {
 			case "start":
 				channelOpt, err := dis.OptionByName(i.Subcommand.Options, "in")
@@ -60,11 +61,7 @@ func MakeVoiceRoomCommand(air *client.Airtable, dis *client.Discord) *client.Dis
 					return "", err
 				}
 				channel := channelOpt.ChannelValue(s)
-
-				puzzle, err = air.UpdateVoiceRoom(puzzle, channel.ID)
-				if err != nil {
-					return "", err
-				}
+				newChannelID = channel.ID
 				reply = fmt.Sprintf("Set the room for puzzle %q to %s", puzzle.Name, channel.Mention())
 			case "stop":
 				puzzle, err = air.UpdateVoiceRoom(puzzle, "")
@@ -77,28 +74,30 @@ func MakeVoiceRoomCommand(air *client.Airtable, dis *client.Discord) *client.Dis
 			}
 
 			return dis.ReplyAsync(s, i, func() (string, error) {
-				if err := voiceAsyncProcessing(air, dis, puzzle); err != nil {
+				puzzle, err := air.UpdateVoiceRoom(puzzle, newChannelID)
+				if err != nil {
+					return "", err
+				}
+				err = voiceSyncPinnedMessage(dis, puzzle)
+				if err != nil {
+					return "", err
+				}
+				puzzles, err := air.FindWithVoiceRoom()
+				if err != nil {
+					return "", err
+				}
+				events, err := dis.ListScheduledEvents()
+				if err != nil {
+					return "", err
+				}
+				err = voiceSyncEvents(air, dis, puzzles, puzzle, events)
+				if err != nil {
 					return "", err
 				}
 				return reply, nil
 			})
 		},
 	}
-}
-
-func voiceAsyncProcessing(air *client.Airtable, dis *client.Discord, puzzle *schema.Puzzle) error {
-	if err := voiceSyncPinnedMessage(dis, puzzle); err != nil {
-		return err
-	}
-	puzzles, err := air.FindWithVoiceRoom()
-	if err != nil {
-		return err
-	}
-	events, err := dis.ListScheduledEvents()
-	if err != nil {
-		return err
-	}
-	return voiceSyncEvents(air, dis, puzzles, puzzle, events)
 }
 
 func voiceSyncPinnedMessage(dis *client.Discord, puzzle *schema.Puzzle) error {
