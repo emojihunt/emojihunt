@@ -166,7 +166,11 @@ func voiceSyncEvents(air *client.Airtable, dis *client.Discord, puzzles []*schem
 					if puzzle.AirtableRecord.ID == newest.AirtableRecord.ID {
 						continue
 					}
-					if _, err := voiceSyncUnassignStalePuzzle(air, dis, puzzle); err != nil {
+					var err error
+					if puzzle, err = air.UpdateVoiceRoom(puzzle, ""); err != nil {
+						return err
+					}
+					if err = voiceSyncPinnedMessage(dis, puzzle); err != nil {
 						return err
 					}
 				}
@@ -194,16 +198,4 @@ func voiceSyncEvents(air *client.Airtable, dis *client.Discord, puzzles []*schem
 	}
 
 	return nil
-}
-
-func voiceSyncUnassignStalePuzzle(air *client.Airtable, dis *client.Discord, puzzle *schema.Puzzle) (*schema.Puzzle, error) {
-	var err error
-	if puzzle, err = air.UpdateVoiceRoom(puzzle, ""); err != nil {
-		return nil, err
-	}
-	if err = voiceSyncPinnedMessage(dis, puzzle); err != nil {
-		return nil, err
-	}
-	return puzzle, nil
-
 }
