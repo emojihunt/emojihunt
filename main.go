@@ -20,19 +20,16 @@ import (
 
 var (
 	secretsFile = flag.String("secrets_file", "secrets.json", "path to the flie that contains secrets used by the application")
-	certFile    = flag.String("certificate", "/etc/letsencrypt/live/huntbox.emojihunt.tech/fullchain.pem", "the path to the server certificate")
-	keyFile     = flag.String("private_key", "/etc/letsencrypt/live/huntbox.emojihunt.tech/privkey.pem", "the path to the server private key")
-	origin      = flag.String("origin", "https://huntbox.emojihunt.tech", "origin of the hunt server, for URLs")
 )
 
 type secrets struct {
 	Airtable    *client.AirtableConfig `json:"airtable"`
 	Discord     *client.DiscordConfig  `json:"discord"`
 	GoogleDrive *client.DriveConfig    `json:"google_drive"`
+	Server      *server.ServerConfig   `json:"server"`
 
-	HuntboxToken string `json:"huntbox_token"`
-	CookieName   string `json:"hunt_cookie_name"` // to log in to the Hunt website
-	CookieValue  string `json:"hunt_cookie_value"`
+	CookieName  string `json:"hunt_cookie_name"` // to log in to the Hunt website
+	CookieValue string `json:"hunt_cookie_value"`
 }
 
 func loadSecrets(path string) (secrets, error) {
@@ -108,8 +105,11 @@ func main() {
 	go dbpoller.Poll(ctx)
 	go dscvpoller.Poll(ctx)
 
-	server := server.New(airtable, syncer, secrets.HuntboxToken, *origin)
-	server.Start(*certFile, *keyFile)
+	if secrets.Server != nil {
+		server.Start(airtable, syncer, secrets.Server)
+	} else {
+		log.Printf("no server config found, skipping (for development only!)")
+	}
 
 	<-ctx.Done()
 }

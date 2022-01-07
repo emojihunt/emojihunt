@@ -13,29 +13,28 @@ import (
 	"github.com/gauravjsingh/emojihunt/syncer"
 )
 
+type ServerConfig struct {
+	SecretToken     string `json:"secret_token"`
+	CertificateFile string `json:"certificate_file"`
+	KeyFile         string `json:"key_file"`
+	Origin          string `json:"origin"`
+}
+
 type Server struct {
-	airtable *client.Airtable
-	syncer   *syncer.Syncer
-	secret   string
-	origin   string
+	airtable       *client.Airtable
+	syncer         *syncer.Syncer
+	secret, origin string
 }
 
-func New(airtable *client.Airtable, syncer *syncer.Syncer, secret, origin string) *Server {
-	return &Server{airtable, syncer, secret, origin}
-}
-
-func (s *Server) ResyncURL(puzzle *schema.Puzzle) string {
-	return fmt.Sprintf(
-		"%s/resync?token=%s&record=%s",
-		s.origin, s.secret, puzzle.AirtableRecord.ID,
-	)
-}
-
-func (s *Server) Start(certFile, keyFile string) {
+func Start(airtable *client.Airtable, syncer *syncer.Syncer, config *ServerConfig) error {
+	if config.SecretToken == "" {
+		return fmt.Errorf("secret token cannot be empty")
+	}
+	server := &Server{airtable, syncer, config.SecretToken, config.Origin}
 	go func() {
 		mux := http.NewServeMux()
-		mux.HandleFunc("/resync", s.resync)
-		err := http.ListenAndServeTLS(":443", certFile, keyFile, mux)
+		mux.HandleFunc("/resync", server.resync)
+		err := http.ListenAndServeTLS(":443", config.CertificateFile, config.KeyFile, mux)
 		panic(err)
 	}()
 	go func() {
@@ -49,6 +48,14 @@ func (s *Server) Start(certFile, keyFile string) {
 		err := http.ListenAndServe(":80", mux)
 		panic(err)
 	}()
+	return nil
+}
+
+func (s *Server) ResyncURL(puzzle *schema.Puzzle) string {
+	return fmt.Sprintf(
+		"%s/resync?token=%s&record=%s",
+		s.origin, s.secret, puzzle.AirtableRecord.ID,
+	)
 }
 
 func (s *Server) resync(w http.ResponseWriter, r *http.Request) {
