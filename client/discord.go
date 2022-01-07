@@ -37,8 +37,8 @@ type Discord struct {
 	// The Role ID for the QM role.
 	QMRole *discordgo.Role
 
-	appCommandHandlers map[string]DiscordCommandHandler
-	componentHandlers  map[string]DiscordCommandHandler
+	appCommandHandlers map[string]*DiscordCommand
+	componentHandlers  map[string]*DiscordCommand
 
 	mu                        sync.Mutex // hold while accessing everything below
 	scheduledEventsCache      map[string]*DiscordScheduledEvent
@@ -109,8 +109,8 @@ func NewDiscord(config *DiscordConfig) (*Discord, error) {
 		PuzzleCategory:            puzzleCategory,
 		SolvedCategory:            solvedCategory,
 		QMRole:                    qmRole,
-		appCommandHandlers:        make(map[string]DiscordCommandHandler),
-		componentHandlers:         make(map[string]DiscordCommandHandler),
+		appCommandHandlers:        make(map[string]*DiscordCommand),
+		componentHandlers:         make(map[string]*DiscordCommand),
 		scheduledEventsLastUpdate: time.Now().Add(-24 * time.Hour),
 	}
 	s.AddHandler(discord.commandHandler)

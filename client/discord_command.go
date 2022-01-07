@@ -15,11 +15,15 @@ type DiscordCommand struct {
 
 	ApplicationCommand *discordgo.ApplicationCommand // for InteractionApplicationCommand
 	CustomID           string                        // for InteractionMessageComponent
+
+	// For Message Components: disable non-link buttons after the first click
+	OnlyOnce bool
 }
 
 type DiscordCommandInput struct {
 	IC         *discordgo.InteractionCreate
 	User       *discordgo.User
+	Slug       string // command and subcommand, for logging
 	Command    string
 	Subcommand *discordgo.ApplicationCommandInteractionDataOption
 }
@@ -34,9 +38,9 @@ func (c *Discord) RegisterCommands(commands []*DiscordCommand) error {
 		switch command.InteractionType {
 		case discordgo.InteractionApplicationCommand:
 			appCommands = append(appCommands, command.ApplicationCommand)
-			c.appCommandHandlers[command.ApplicationCommand.Name] = command.Handler
+			c.appCommandHandlers[command.ApplicationCommand.Name] = command
 		case discordgo.InteractionMessageComponent:
-			c.componentHandlers[command.CustomID] = command.Handler
+			c.componentHandlers[command.CustomID] = command
 		default:
 			return fmt.Errorf("unknown interaction type: %v", command.InteractionType)
 		}
@@ -47,7 +51,7 @@ func (c *Discord) RegisterCommands(commands []*DiscordCommand) error {
 
 func (c *Discord) commandHandler(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	var idesc string
-	var handler DiscordCommandHandler
+	var command *DiscordCommand
 	var ok bool
 	input := &DiscordCommandInput{
 		IC:   i,
@@ -66,7 +70,7 @@ func (c *Discord) commandHandler(s *discordgo.Session, i *discordgo.InteractionC
 				input.Subcommand = opt
 			}
 		}
-		if handler, ok = c.appCommandHandlers[input.Command]; !ok {
+		if command, ok = c.appCommandHandlers[input.Command]; !ok {
 			log.Printf("discord: received unknown %s: %#v %#v", idesc, i, i.ApplicationCommandData())
 			return
 		}
@@ -74,7 +78,7 @@ func (c *Discord) commandHandler(s *discordgo.Session, i *discordgo.InteractionC
 		idesc = "component interaction"
 		input.Command = i.MessageComponentData().CustomID
 		parts := strings.Split(input.Command, "/")
-		if handler, ok = c.componentHandlers[parts[0]]; !ok {
+		if command, ok = c.componentHandlers[parts[0]]; !ok {
 			log.Printf("discord: received unknown %s: %#v %#v", idesc, i, i.MessageComponentData())
 			return
 		}
@@ -83,18 +87,29 @@ func (c *Discord) commandHandler(s *discordgo.Session, i *discordgo.InteractionC
 		return
 	}
 
-	var cmdName = input.Command
+	input.Slug = input.Command
 	if input.Subcommand != nil {
-		cmdName += " " + input.Subcommand.Name
+		input.Slug += " " + input.Subcommand.Name
 	}
-	log.Printf("discord: handling %s %q from @%s", idesc, cmdName, input.User.Username)
+	log.Printf("discord: handling %s %q from @%s", idesc, input.Slug, input.User.Username)
+	if command.OnlyOnce {
+		if err := c.enableMessageComponents(s, input.IC.Message, false); err != nil {
+			log.Printf("discord: error disabling message components for %q: %v", input.Slug, err)
+			return // time out; user will see "interaction failed" message
+		}
+	}
 
 	// Call the handler! We need to run our logic and call
 	// InteractionRespond within 3 seconds, otherwise Discord will report an
 	// error to the user.
-	reply, err := handler(s, input)
+	reply, err := command.Handler(s, input)
 	if err != nil {
-		log.Printf("discord: error handling %s %q: %s", idesc, input.Command, spew.Sdump(err))
+		if command.OnlyOnce {
+			if err := c.enableMessageComponents(s, input.IC.Message, true); err != nil {
+				log.Printf("discord: error reenabling message components for %q: %v", input.Slug, err)
+			}
+		}
+		log.Printf("discord: error handling %s %q: %s", idesc, input.Slug, spew.Sdump(err))
 		reply = fmt.Sprintf("🚨 Bot Error! Please ping in %s for help.\n```\n%s\n```", c.TechChannel.Mention(), spew.Sdump(err))
 	}
 
@@ -109,7 +124,7 @@ func (c *Discord) commandHandler(s *discordgo.Session, i *discordgo.InteractionC
 		})
 	}
 	if err != nil {
-		log.Printf("discord: error responding to %s %q: %s", idesc, input.Command, spew.Sdump(err))
+		log.Printf("discord: error responding to %s %q: %s", idesc, input.Slug, spew.Sdump(err))
 	}
 }
 
@@ -127,7 +142,10 @@ func (d *Discord) ReplyAsync(s *discordgo.Session, i *DiscordCommandInput, fn fu
 	go func() {
 		reply, err := fn()
 		if err != nil {
-			log.Printf("discord: error handling interaction %q: %s", i.Command, spew.Sdump(err))
+			if err := d.enableMessageComponents(s, i.IC.Message, true); err != nil {
+				log.Printf("discord: error reenabling message components for %q: %v", i.Slug, err)
+			}
+			log.Printf("discord: error handling interaction %q: %s", i.Slug, spew.Sdump(err))
 			reply = fmt.Sprintf("🚨 Bot Error! Please ping in %s for help.\n```\n%s\n```", d.TechChannel.Mention(), spew.Sdump(err))
 		}
 		_, err = s.InteractionResponseEdit(
@@ -136,10 +154,49 @@ func (d *Discord) ReplyAsync(s *discordgo.Session, i *DiscordCommandInput, fn fu
 			},
 		)
 		if err != nil {
-			log.Printf("discord: error responding to interaction %q: %s", i.Command, spew.Sdump(err))
+			log.Printf("discord: error responding to interaction %q: %s", i.Slug, spew.Sdump(err))
 		} else {
-			log.Printf("discord: finished async processing for interaction %q", i.Command)
+			log.Printf("discord: finished async processing for interaction %q", i.Slug)
 		}
 	}()
 	return discordMagicReplyDefer, nil
+}
+
+func (d *Discord) enableMessageComponents(s *discordgo.Session, message *discordgo.Message, enabled bool) error {
+	if len(message.Components) < 1 {
+		return nil
+	}
+
+	var result []discordgo.MessageComponent
+	for _, component := range message.Components {
+		if component.Type() != discordgo.ActionsRowComponent {
+			return fmt.Errorf("expected only actions rows at top level in %#v", message.Components)
+		}
+		rewritten := *(component.(*discordgo.ActionsRow))
+		rewritten.Components = make([]discordgo.MessageComponent, 0)
+		for _, item := range component.(*discordgo.ActionsRow).Components {
+			switch item.Type() {
+			case discordgo.ActionsRowComponent:
+				return fmt.Errorf("unexpected nested actions row in %#v", message.Components)
+			case discordgo.ButtonComponent:
+				moditem := *(item.(*discordgo.Button))
+				if moditem.Style != discordgo.LinkButton {
+					moditem.Disabled = !enabled
+				}
+				rewritten.Components = append(rewritten.Components, moditem)
+			case discordgo.SelectMenuComponent:
+				moditem := *(item.(*discordgo.SelectMenu))
+				moditem.Options = make([]discordgo.SelectMenuOption, 0)
+				rewritten.Components = append(rewritten.Components, moditem)
+			default:
+				return fmt.Errorf("unexpected message component type %v", item.Type())
+			}
+		}
+		result = append(result, rewritten)
+	}
+
+	edit := discordgo.NewMessageEdit(message.ChannelID, message.ID)
+	edit.Components = result
+	_, err := s.ChannelMessageEditComplex(edit)
+	return err
 }

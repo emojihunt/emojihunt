@@ -180,6 +180,7 @@ func (d *Poller) MakeApproveCommand(ctx context.Context) *client.DiscordCommand 
 	return &client.DiscordCommand{
 		InteractionType: discordgo.InteractionMessageComponent,
 		CustomID:        "discovery.approve",
+		OnlyOnce:        true,
 		Handler: func(s *discordgo.Session, i *client.DiscordCommandInput) (string, error) {
 			parts := strings.Split(i.Command, "/")
 			if len(parts) < 2 {
