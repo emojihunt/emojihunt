@@ -28,7 +28,7 @@ func (c *Discord) ListScheduledEvents() (map[string]*DiscordScheduledEvent, erro
 		return c.scheduledEventsCache, nil
 	}
 
-	bucket := discordgo.EndpointGuild(c.GuildID) + "/scheduled-events"
+	bucket := discordgo.EndpointGuild(c.Guild.ID) + "/scheduled-events"
 	resp, err := c.s.RequestWithBucketID("GET", bucket, nil, bucket)
 	if err != nil {
 		return nil, err
@@ -54,7 +54,7 @@ func (c *Discord) CreateScheduledEvent(event *DiscordScheduledEvent) (*DiscordSc
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
-	bucket := discordgo.EndpointGuild(c.GuildID) + "/scheduled-events"
+	bucket := discordgo.EndpointGuild(c.Guild.ID) + "/scheduled-events"
 	resp, err := c.s.RequestWithBucketID("POST", bucket, event, bucket)
 	if err != nil {
 		return nil, err
@@ -74,7 +74,7 @@ func (c *Discord) UpdateScheduledEvent(event *DiscordScheduledEvent, fields map[
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
-	bucket := discordgo.EndpointGuild(c.GuildID) + "/scheduled-events/" + event.ID
+	bucket := discordgo.EndpointGuild(c.Guild.ID) + "/scheduled-events/" + event.ID
 	resp, err := c.s.RequestWithBucketID("PATCH", bucket, fields, bucket)
 	if err != nil {
 		return nil, err
@@ -94,7 +94,7 @@ func (c *Discord) DeleteScheduledEvent(event *DiscordScheduledEvent) error {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
-	bucket := discordgo.EndpointGuild(c.GuildID) + "/scheduled-events/" + event.ID
+	bucket := discordgo.EndpointGuild(c.Guild.ID) + "/scheduled-events/" + event.ID
 	if _, err := c.s.RequestWithBucketID("DELETE", bucket, nil, bucket); err != nil {
 		return err
 	}

@@ -10,15 +10,19 @@ import (
 )
 
 type DiscordConfig struct {
-	GuildID                                            string
-	QMChannelName, GeneralChannelName, TechChannelName string
-	PuzzleCategoryName, SolvedCategoryName             string
-	QMRoleName                                         string
+	AuthToken        string `json:"auth_token"`
+	GuildID          string `json:"guild_id"`
+	QMChannelID      string `json:"qm_channel_id"`
+	GeneralChannelID string `json:"general_channel_id"`
+	TechChannelID    string `json:"tech_channel_id"`
+	PuzzleCategoryID string `json:"puzzle_category_id"`
+	SolvedCategoryID string `json:"solved_category_id"`
+	QMRoleID         string `json:"qm_role_id"`
 }
 
 type Discord struct {
-	s       *discordgo.Session
-	GuildID string
+	s     *discordgo.Session
+	Guild *discordgo.Guild
 	// The QM channel contains a central log of interesting bot actions, as well as the only place for
 	// advanced bot usage, such as puzzle or round creation.
 	QMChannel *discordgo.Channel
@@ -31,7 +35,7 @@ type Discord struct {
 	// The category for solved puzzles.
 	SolvedCategory *discordgo.Channel
 	// The Role ID for the QM role.
-	QMRoleID string
+	QMRole *discordgo.Role
 
 	appCommandHandlers map[string]DiscordCommandHandler
 	componentHandlers  map[string]DiscordCommandHandler
@@ -41,9 +45,9 @@ type Discord struct {
 	scheduledEventsLastUpdate time.Time
 }
 
-func NewDiscord(token string, c DiscordConfig) (*Discord, error) {
+func NewDiscord(config *DiscordConfig) (*Discord, error) {
 	// Initialize discordgo client
-	s, err := discordgo.New(token)
+	s, err := discordgo.New(config.AuthToken)
 	if err != nil {
 		return nil, err
 	}
@@ -52,57 +56,64 @@ func NewDiscord(token string, c DiscordConfig) (*Discord, error) {
 		return nil, err
 	}
 
-	// Map channel/etc. names in config to actual Discord API IDs
-	chs, err := s.GuildChannels(c.GuildID)
+	// Validate config
+	guild, err := s.Guild(config.GuildID)
 	if err != nil {
-		return nil, fmt.Errorf("error creating channel ID cache: %v", err)
+		return nil, err
 	}
-	var qm, puz, ar, gen, tech *discordgo.Channel
-	for _, ch := range chs {
-		switch ch.Name {
-		case c.QMChannelName:
-			qm = ch
-		case c.PuzzleCategoryName:
-			puz = ch
-		case c.SolvedCategoryName:
-			ar = ch
-		case c.GeneralChannelName:
-			gen = ch
-		case c.TechChannelName:
-			tech = ch
+	qmChannel, err := s.Channel(config.QMChannelID)
+	if err != nil {
+		return nil, err
+	}
+	generalChannel, err := s.Channel(config.GeneralChannelID)
+	if err != nil {
+		return nil, err
+	}
+	techChannel, err := s.Channel(config.TechChannelID)
+	if err != nil {
+		return nil, err
+	}
+	puzzleCategory, err := s.Channel(config.PuzzleCategoryID)
+	if err != nil {
+		return nil, err
+	} else if puzzleCategory.Type != discordgo.ChannelTypeGuildCategory {
+		return nil, fmt.Errorf("puzzle category is wrong type: %v", puzzleCategory.Type)
+	}
+	solvedCategory, err := s.Channel(config.SolvedCategoryID)
+	if err != nil {
+		return nil, err
+	} else if puzzleCategory.Type != discordgo.ChannelTypeGuildCategory {
+		return nil, fmt.Errorf("solved category is wrong type: %v", puzzleCategory.Type)
+	}
+	allRoles, err := s.GuildRoles(guild.ID)
+	if err != nil {
+		return nil, err
+	}
+	var qmRole *discordgo.Role
+	for _, role := range allRoles {
+		if role.ID == config.QMRoleID {
+			qmRole = role
 		}
 	}
-	roles, err := s.GuildRoles(c.GuildID)
-	if err != nil {
-		return nil, fmt.Errorf("error fetching roles: %v", err)
-	}
-	var qmRoleID string
-	for _, r := range roles {
-		if r.Name == c.QMRoleName {
-			qmRoleID = r.ID
-			break
-		}
-	}
-	if qmRoleID == "" {
-		return nil, fmt.Errorf("QM role %q not found in roles: %v", c.QMRoleName, roles)
+	if qmRole == nil {
+		return nil, fmt.Errorf("role %q not found in guild %q", config.QMRoleID, guild.ID)
 	}
 
 	// Set up slash commands; return
 	discord := &Discord{
 		s:                         s,
-		GuildID:                   c.GuildID,
-		QMChannel:                 qm,
-		GeneralChannel:            gen,
-		TechChannel:               tech,
-		PuzzleCategory:            puz,
-		SolvedCategory:            ar,
-		QMRoleID:                  qmRoleID,
+		Guild:                     guild,
+		QMChannel:                 qmChannel,
+		GeneralChannel:            generalChannel,
+		TechChannel:               techChannel,
+		PuzzleCategory:            puzzleCategory,
+		SolvedCategory:            solvedCategory,
+		QMRole:                    qmRole,
 		appCommandHandlers:        make(map[string]DiscordCommandHandler),
 		componentHandlers:         make(map[string]DiscordCommandHandler),
 		scheduledEventsLastUpdate: time.Now().Add(-24 * time.Hour),
 	}
 	s.AddHandler(discord.commandHandler)
-
 	return discord, nil
 }
 
@@ -142,7 +153,7 @@ func (c *Discord) ChannelSendRawID(chID, msg string) error {
 }
 
 func (c *Discord) CreateChannel(name string) (*discordgo.Channel, error) {
-	return c.s.GuildChannelCreateComplex(c.GuildID, discordgo.GuildChannelCreateData{
+	return c.s.GuildChannelCreateComplex(c.Guild.ID, discordgo.GuildChannelCreateData{
 		Name:     name,
 		Type:     discordgo.ChannelTypeGuildText,
 		ParentID: c.PuzzleCategory.ID,

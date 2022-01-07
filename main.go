@@ -21,7 +21,6 @@ import (
 var (
 	secretsFile  = flag.String("secrets_file", "secrets.json", "path to the flie that contains secrets used by the application")
 	rootFolderID = flag.String("root_folder_id", "1Mp8e1Sd7YXBwcgil62YCgslbQ6twmBlU", "the id of the google drive folder for this year")
-	guildID      = flag.String("discord_guild_id", "793599987694436374", "the id of the discord guild")
 	baseID       = flag.String("airtable_base_id", "appmjhGfZLui26Xow", "the id of the airtable base")
 	tableID      = flag.String("airtable_table_id", "tblXFBYI5RQIogbog", "the id of the table in the airtable base")
 	certFile     = flag.String("certificate", "/etc/letsencrypt/live/huntbox.emojihunt.tech/fullchain.pem", "the path to the server certificate")
@@ -30,12 +29,12 @@ var (
 )
 
 type secrets struct {
-	AirtableToken        string      `json:"airtable_token"`
-	DiscordToken         string      `json:"discord_token"`
-	HuntboxToken         string      `json:"huntbox_token"`
-	GoogleServiceAccount interface{} `json:"google_service_account"`
-	CookieName           string      `json:"hunt_cookie_name"` // to log in to the Hunt website
-	CookieValue          string      `json:"hunt_cookie_value"`
+	AirtableToken        string                `json:"airtable_token"`
+	Discord              *client.DiscordConfig `json:"discord"`
+	HuntboxToken         string                `json:"huntbox_token"`
+	GoogleServiceAccount interface{}           `json:"google_service_account"`
+	CookieName           string                `json:"hunt_cookie_name"` // to log in to the Hunt website
+	CookieValue          string                `json:"hunt_cookie_value"`
 }
 
 func loadSecrets(path string) (secrets, error) {
@@ -74,15 +73,7 @@ func main() {
 	}()
 
 	// Set up Discord client
-	dis, err := client.NewDiscord(secrets.DiscordToken, client.DiscordConfig{
-		GuildID:            *guildID,
-		QMChannelName:      "qm",
-		GeneralChannelName: "whats-going-on",
-		TechChannelName:    "tech",
-		SolvedCategoryName: "Solved",
-		PuzzleCategoryName: "Puzzles",
-		QMRoleName:         "QM",
-	})
+	dis, err := client.NewDiscord(secrets.Discord)
 	if err != nil {
 		log.Fatalf("error creating discord client: %v", err)
 	}

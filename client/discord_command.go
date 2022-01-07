@@ -41,7 +41,7 @@ func (c *Discord) RegisterCommands(commands []*DiscordCommand) error {
 			return fmt.Errorf("unknown interaction type: %v", command.InteractionType)
 		}
 	}
-	_, err := c.s.ApplicationCommandBulkOverwrite(c.s.State.User.ID, c.GuildID, appCommands)
+	_, err := c.s.ApplicationCommandBulkOverwrite(c.s.State.User.ID, c.Guild.ID, appCommands)
 	return err
 }
 
