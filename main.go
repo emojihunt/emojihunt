@@ -84,13 +84,18 @@ func main() {
 	// Start internal engines
 	syncer := syncer.New(airtable, discord, drive)
 	dbpoller := database.NewPoller(airtable, discord, syncer)
+
+	voiceRoomBot := bot.NewVoiceRoomBot(airtable, discord)
+	discord.AddHandler(voiceRoomBot.ScheduledEventUpdateHandler)
+
 	botCommands := []*client.DiscordCommand{
 		bot.MakeEmojiNameCommand(),
 		bot.MakeHuntYetCommand(),
 		bot.MakeQMCommand(discord),
 		bot.MakePuzzleCommand(ctx, airtable, discord, syncer),
-		bot.MakeVoiceRoomCommand(airtable, discord),
+		voiceRoomBot.MakeSlashCommand(),
 	}
+
 	var dscvpoller *discovery.Poller
 	if config.Autodiscovery != nil {
 		dscvpoller = discovery.New(airtable, discord, syncer, config.Autodiscovery)
@@ -105,8 +110,6 @@ func main() {
 	if err := discord.RegisterCommands(botCommands); err != nil {
 		log.Fatalf("failed to register discord commands: %v", err)
 	}
-
-	discord.AddHandler(bot.MakeVoiceRoomScheduledEventUpdateHandler(airtable, discord))
 
 	// Run!
 	log.Print("press ctrl+C to exit")
