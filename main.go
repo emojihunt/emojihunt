@@ -106,6 +106,8 @@ func main() {
 		log.Fatalf("failed to register discord commands: %v", err)
 	}
 
+	discord.AddHandler(bot.MakeVoiceRoomScheduledEventUpdateHandler(airtable, discord))
+
 	// Run!
 	log.Print("press ctrl+C to exit")
 	go dbpoller.Poll(ctx)

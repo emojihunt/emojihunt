@@ -43,6 +43,7 @@ type Discord struct {
 	mu                        sync.Mutex // hold while accessing everything below
 	scheduledEventsCache      map[string]*discordgo.GuildScheduledEvent
 	scheduledEventsLastUpdate time.Time
+	completedScheduledEvents  map[string]bool
 }
 
 func NewDiscord(config *DiscordConfig) (*Discord, error) {
@@ -52,7 +53,7 @@ func NewDiscord(config *DiscordConfig) (*Discord, error) {
 		return nil, err
 	}
 	// s.Debug = true // warning: it's *very* verbose
-	s.Identify.Intents = discordgo.IntentsGuildMessages
+	s.Identify.Intents = discordgo.IntentsGuildMessages | discordgo.IntentsGuildScheduledEvents
 	if err := s.Open(); err != nil {
 		return nil, err
 	}
@@ -113,9 +114,15 @@ func NewDiscord(config *DiscordConfig) (*Discord, error) {
 		appCommandHandlers:        make(map[string]*DiscordCommand),
 		componentHandlers:         make(map[string]*DiscordCommand),
 		scheduledEventsLastUpdate: time.Now().Add(-24 * time.Hour),
+		completedScheduledEvents:  make(map[string]bool),
 	}
 	s.AddHandler(discord.commandHandler)
 	return discord, nil
+}
+
+func (c *Discord) AddHandler(handler interface{}) {
+	// Remember to add your intent type to the Intents assignment above!
+	c.s.AddHandler(handler)
 }
 
 func (c *Discord) Close() error {

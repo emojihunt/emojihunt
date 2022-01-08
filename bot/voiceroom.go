@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/bwmarrin/discordgo"
+	"github.com/davecgh/go-spew/spew"
 	"github.com/gauravjsingh/emojihunt/client"
 	"github.com/gauravjsingh/emojihunt/schema"
 )
@@ -108,7 +109,7 @@ func MakeVoiceRoomCommand(air *client.Airtable, dis *client.Discord) *client.Dis
 				}
 
 				// Update Discord and Airtable
-				puzzle, err = voiceUpdateAirtableAndPinnedMessage(dis, air, puzzle, event)
+				puzzle, err = voiceUpdateAirtableAndPinnedMessage(air, dis, puzzle, event)
 				if err != nil {
 					return "", err
 				}
@@ -134,6 +135,9 @@ func MakeVoiceRoomCommand(air *client.Airtable, dis *client.Discord) *client.Dis
 					if _, ok := puzzlesByEvent[event.ID]; !ok {
 						// Event has no more puzzles; delete
 						log.Printf("deleting scheduled event %s in %s", event.ID, *event.ChannelID)
+						// Mark so we ignore the event-deleted webhook for this
+						// action.
+						dis.MarkScheduledEventComplete(event)
 						if err := dis.DeleteScheduledEvent(event); err != nil {
 							return "", err
 						}
@@ -153,7 +157,7 @@ func MakeVoiceRoomCommand(air *client.Airtable, dis *client.Discord) *client.Dis
 						// more than a few minutes). Un-assign all of the stale
 						// puzzles from the room.
 						for _, puzzle := range puzzles {
-							_, err = voiceUpdateAirtableAndPinnedMessage(dis, air, puzzle, nil)
+							_, err = voiceUpdateAirtableAndPinnedMessage(air, dis, puzzle, nil)
 							if err != nil {
 								return "", err
 							}
@@ -175,7 +179,34 @@ func MakeVoiceRoomCommand(air *client.Airtable, dis *client.Discord) *client.Dis
 	}
 }
 
-func voiceUpdateAirtableAndPinnedMessage(dis *client.Discord, air *client.Airtable, puzzle *schema.Puzzle, event *discordgo.GuildScheduledEvent) (*schema.Puzzle, error) {
+func MakeVoiceRoomScheduledEventUpdateHandler(air *client.Airtable, dis *client.Discord) func(s *discordgo.Session, i *discordgo.GuildScheduledEventUpdate) {
+	return func(s *discordgo.Session, i *discordgo.GuildScheduledEventUpdate) {
+		if i.Description != eventDescription || i.Status != discordgo.GuildScheduledEventStatusCompleted {
+			return
+		}
+
+		if !dis.MarkScheduledEventComplete(i.GuildScheduledEvent) {
+			log.Printf("discord: ignoring scheduled event completion event: already seen")
+			return
+		} else {
+			log.Printf("discord: processing scheduled event completion event for %q", i.Name)
+		}
+		puzzles, err := air.FindWithVoiceRoomEvent()
+		if err == nil {
+			for _, puzzle := range puzzles {
+				_, err = voiceUpdateAirtableAndPinnedMessage(air, dis, puzzle, nil)
+				if err != nil {
+					break
+				}
+			}
+		}
+		if err != nil {
+			log.Printf("discord: error processing scheduled event completion event: %v", spew.Sdump(err))
+		}
+	}
+}
+
+func voiceUpdateAirtableAndPinnedMessage(air *client.Airtable, dis *client.Discord, puzzle *schema.Puzzle, event *discordgo.GuildScheduledEvent) (*schema.Puzzle, error) {
 	// Update pinned message in channel
 	msg := "No voice room set. Use `/voice start` to start working in $room."
 	eventDesc := "unset"
