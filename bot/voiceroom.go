@@ -5,6 +5,7 @@ import (
 	"log"
 	"sort"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/bwmarrin/discordgo"
@@ -21,10 +22,11 @@ const (
 type VoiceRoomBot struct {
 	airtable *client.Airtable
 	discord  *client.Discord
+	mutex    sync.Mutex
 }
 
 func NewVoiceRoomBot(airtable *client.Airtable, discord *client.Discord) *VoiceRoomBot {
-	return &VoiceRoomBot{airtable, discord}
+	return &VoiceRoomBot{airtable, discord, sync.Mutex{}}
 }
 
 func (bot *VoiceRoomBot) MakeSlashCommand() *client.DiscordCommand {
@@ -59,6 +61,9 @@ func (bot *VoiceRoomBot) MakeSlashCommand() *client.DiscordCommand {
 		},
 		Async: true,
 		Handler: func(s *discordgo.Session, i *client.DiscordCommandInput) (string, error) {
+			bot.mutex.Lock()
+			defer bot.mutex.Unlock()
+
 			puzzle, err := bot.airtable.FindByDiscordChannel(i.IC.ChannelID)
 			if err != nil {
 				return "", fmt.Errorf("unable to get puzzle for channel ID %q", i.IC.ChannelID)
@@ -187,6 +192,9 @@ func (bot *VoiceRoomBot) ScheduledEventUpdateHandler(s *discordgo.Session, i *di
 	if i.Description != eventDescription || i.Status != discordgo.GuildScheduledEventStatusCompleted {
 		return
 	}
+
+	bot.mutex.Lock()
+	defer bot.mutex.Unlock()
 
 	// We don't have to worry about double-processing puzzles because, even
 	// though Discord *does* deliver events caused by the bot's own actions,
