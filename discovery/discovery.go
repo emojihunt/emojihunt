@@ -181,6 +181,7 @@ func (d *Poller) MakeApproveCommand(ctx context.Context) *client.DiscordCommand 
 		InteractionType: discordgo.InteractionMessageComponent,
 		CustomID:        "discovery.approve",
 		OnlyOnce:        true,
+		Async:           true,
 		Handler: func(s *discordgo.Session, i *client.DiscordCommandInput) (string, error) {
 			parts := strings.Split(i.Command, "/")
 			if len(parts) < 2 {
@@ -193,12 +194,10 @@ func (d *Poller) MakeApproveCommand(ctx context.Context) *client.DiscordCommand 
 				return fmt.Sprintf(":man_shrugging: Puzzle %q is already approved, %s!", puzzle.Name, i.User.Mention()), nil
 			}
 
-			return d.discord.ReplyAsync(s, i, func() (string, error) {
-				if _, err := d.syncer.ForceUpdate(ctx, puzzle); err != nil {
-					return "", err
-				}
-				return fmt.Sprintf(":ok_hand: I've created puzzle %q, %s!", puzzle.Name, i.User.Mention()), nil
-			})
+			if _, err := d.syncer.ForceUpdate(ctx, puzzle); err != nil {
+				return "", err
+			}
+			return fmt.Sprintf(":ok_hand: I've created puzzle %q, %s!", puzzle.Name, i.User.Mention()), nil
 		},
 	}
 }

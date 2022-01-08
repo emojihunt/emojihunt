@@ -18,6 +18,8 @@ type DiscordCommand struct {
 
 	// For Message Components: disable non-link buttons after the first click
 	OnlyOnce bool
+
+	Async bool
 }
 
 type DiscordCommandInput struct {
@@ -29,8 +31,6 @@ type DiscordCommandInput struct {
 }
 
 type DiscordCommandHandler func(*discordgo.Session, *DiscordCommandInput) (string, error)
-
-const discordMagicReplyDefer = "$DEFER$"
 
 func (c *Discord) RegisterCommands(commands []*DiscordCommand) error {
 	var appCommands []*discordgo.ApplicationCommand
@@ -99,9 +99,20 @@ func (c *Discord) commandHandler(s *discordgo.Session, i *discordgo.InteractionC
 		}
 	}
 
-	// Call the handler! We need to run our logic and call
-	// InteractionRespond within 3 seconds, otherwise Discord will report an
-	// error to the user.
+	// For async handlers, acknowledge the interaction immediately. This means
+	// we can take more than 3 seconds in Handler(). (If we don't do this,
+	// Discord will report an error to the user.)
+	if command.Async {
+		err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+			Type: discordgo.InteractionResponseDeferredChannelMessageWithSource,
+		})
+		if err != nil {
+			log.Printf("discord: error acknowledging %s %q: %s", idesc, input.Slug, spew.Sdump(err))
+			return
+		}
+	}
+
+	// Call the handler!
 	reply, err := command.Handler(s, input)
 	if err != nil {
 		if command.OnlyOnce {
@@ -113,10 +124,12 @@ func (c *Discord) commandHandler(s *discordgo.Session, i *discordgo.InteractionC
 		reply = fmt.Sprintf("🚨 Bot Error! Please ping in %s for help.\n```\n%s\n```", c.TechChannel.Mention(), spew.Sdump(err))
 	}
 
-	if reply == discordMagicReplyDefer {
-		err = s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
-			Type: discordgo.InteractionResponseDeferredChannelMessageWithSource,
-		})
+	if command.Async {
+		_, err = s.InteractionResponseEdit(
+			s.State.User.ID, input.IC.Interaction, &discordgo.WebhookEdit{
+				Content: reply,
+			},
+		)
 	} else {
 		err = s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 			Type: discordgo.InteractionResponseChannelMessageWithSource,
@@ -126,40 +139,6 @@ func (c *Discord) commandHandler(s *discordgo.Session, i *discordgo.InteractionC
 	if err != nil {
 		log.Printf("discord: error responding to %s %q: %s", idesc, input.Slug, spew.Sdump(err))
 	}
-}
-
-// When performing a long-running action in response to a Discord interaction
-// (slash command, message button), we have to send our initial response within
-// 3 seconds and defer the rest of the work to complete asynchronously. To do
-// this:
-//
-//   return ReplyAsync(s, i, func() (string, error) { ... })
-//
-// Discord will display "huntbot is thinking..." until the async function
-// completes.
-//
-func (d *Discord) ReplyAsync(s *discordgo.Session, i *DiscordCommandInput, fn func() (string, error)) (string, error) {
-	go func() {
-		reply, err := fn()
-		if err != nil {
-			if err := d.enableMessageComponents(s, i.IC.Message, true); err != nil {
-				log.Printf("discord: error reenabling message components for %q: %v", i.Slug, err)
-			}
-			log.Printf("discord: error handling interaction %q: %s", i.Slug, spew.Sdump(err))
-			reply = fmt.Sprintf("🚨 Bot Error! Please ping in %s for help.\n```\n%s\n```", d.TechChannel.Mention(), spew.Sdump(err))
-		}
-		_, err = s.InteractionResponseEdit(
-			s.State.User.ID, i.IC.Interaction, &discordgo.WebhookEdit{
-				Content: reply,
-			},
-		)
-		if err != nil {
-			log.Printf("discord: error responding to interaction %q: %s", i.Slug, spew.Sdump(err))
-		} else {
-			log.Printf("discord: finished async processing for interaction %q", i.Slug)
-		}
-	}()
-	return discordMagicReplyDefer, nil
 }
 
 func (d *Discord) OptionByName(options []*discordgo.ApplicationCommandInteractionDataOption, name string) (*discordgo.ApplicationCommandInteractionDataOption, error) {

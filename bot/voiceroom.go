@@ -48,6 +48,7 @@ func MakeVoiceRoomCommand(air *client.Airtable, dis *client.Discord) *client.Dis
 				},
 			},
 		},
+		Async: true,
 		Handler: func(s *discordgo.Session, i *client.DiscordCommandInput) (string, error) {
 			puzzle, err := air.FindByDiscordChannel(i.IC.ChannelID)
 			if err != nil {
@@ -70,108 +71,106 @@ func MakeVoiceRoomCommand(air *client.Airtable, dis *client.Discord) *client.Dis
 				return "", fmt.Errorf("unexpected /voice subcommand: %q", i.Subcommand.Name)
 			}
 
-			return dis.ReplyAsync(s, i, func() (string, error) {
-				// Search for an existing event for the given voice room
-				events, err := dis.ListScheduledEvents()
+			// Search for an existing event for the given voice room
+			events, err := dis.ListScheduledEvents()
+			if err != nil {
+				return "", err
+			}
+			var event *discordgo.GuildScheduledEvent
+			for _, item := range events {
+				if channel != nil && item.ChannelID != nil && *item.ChannelID == channel.ID {
+					event = item
+				}
+			}
+
+			// If there's no existing event in this voice room, create one
+			if event == nil && channel != nil {
+				log.Printf("creating scheduled event in %s", channel.Name)
+				start := time.Now().Add(5 * time.Minute)
+				event, err = dis.CreateScheduledEvent(&discordgo.GuildScheduledEvent{
+					ChannelID:          &channel.ID,
+					Name:               puzzle.Name,
+					PrivacyLevel:       discordgo.GuildScheduledEventPrivacyLevelGuildOnly,
+					ScheduledStartTime: &start,
+					Description:        eventDescription,
+					EntityType:         discordgo.GuildScheduledEventEntityTypeVoice,
+				})
 				if err != nil {
 					return "", err
 				}
-				var event *discordgo.GuildScheduledEvent
-				for _, item := range events {
-					if channel != nil && item.ChannelID != nil && *item.ChannelID == channel.ID {
-						event = item
-					}
-				}
+				// event.Status = discordgo.GuildScheduledEventStatusActive
 
-				// If there's no existing event in this voice room, create one
-				if event == nil && channel != nil {
-					log.Printf("creating scheduled event in %s", channel.Name)
-					start := time.Now().Add(5 * time.Minute)
-					event, err = dis.CreateScheduledEvent(&discordgo.GuildScheduledEvent{
-						ChannelID:          &channel.ID,
-						Name:               puzzle.Name,
-						PrivacyLevel:       discordgo.GuildScheduledEventPrivacyLevelGuildOnly,
-						ScheduledStartTime: &start,
-						Description:        eventDescription,
-						EntityType:         discordgo.GuildScheduledEventEntityTypeVoice,
-					})
-					if err != nil {
+				event, err = dis.UpdateScheduledEvent(event, map[string]interface{}{
+					"status": discordgo.GuildScheduledEventStatusActive,
+				})
+				if err != nil {
+					return "", err
+				}
+			}
+
+			// Update Discord and Airtable
+			puzzle, err = voiceUpdateAirtableAndPinnedMessage(air, dis, puzzle, event)
+			if err != nil {
+				return "", err
+			}
+
+			// Sync existing events with Airtable
+			puzzles, err := air.FindWithVoiceRoomEvent()
+			if err != nil {
+				return "", err
+			}
+			var eventsByID = make(map[string]*discordgo.GuildScheduledEvent)
+			var puzzlesByEvent = make(map[string][]*schema.Puzzle)
+			for _, puzzle := range puzzles {
+				if puzzle.VoiceRoomEvent == "" {
+					continue
+				}
+				puzzlesByEvent[puzzle.VoiceRoomEvent] = append(puzzlesByEvent[puzzle.VoiceRoomEvent], puzzle)
+			}
+			for _, event := range events {
+				if event.Description != eventDescription {
+					// Skip events not created by the bot
+					continue
+				}
+				if _, ok := puzzlesByEvent[event.ID]; !ok {
+					// Event has no more puzzles; delete
+					log.Printf("deleting scheduled event %s in %s", event.ID, *event.ChannelID)
+					if err := dis.DeleteScheduledEvent(event); err != nil {
 						return "", err
 					}
-					// event.Status = discordgo.GuildScheduledEventStatusActive
-
-					event, err = dis.UpdateScheduledEvent(event, map[string]interface{}{
-						"status": discordgo.GuildScheduledEventStatusActive,
-					})
-					if err != nil {
-						return "", err
-					}
 				}
-
-				// Update Discord and Airtable
-				puzzle, err = voiceUpdateAirtableAndPinnedMessage(air, dis, puzzle, event)
-				if err != nil {
-					return "", err
-				}
-
-				// Sync existing events with Airtable
-				puzzles, err := air.FindWithVoiceRoomEvent()
-				if err != nil {
-					return "", err
-				}
-				var eventsByID = make(map[string]*discordgo.GuildScheduledEvent)
-				var puzzlesByEvent = make(map[string][]*schema.Puzzle)
+				eventsByID[event.ID] = event
+			}
+			for eventID, puzzles := range puzzlesByEvent {
+				var puzzleNames []string
 				for _, puzzle := range puzzles {
-					if puzzle.VoiceRoomEvent == "" {
-						continue
-					}
-					puzzlesByEvent[puzzle.VoiceRoomEvent] = append(puzzlesByEvent[puzzle.VoiceRoomEvent], puzzle)
+					puzzleNames = append(puzzleNames, puzzle.Name)
 				}
-				for _, event := range events {
-					if event.Description != eventDescription {
-						// Skip events not created by the bot
-						continue
-					}
-					if _, ok := puzzlesByEvent[event.ID]; !ok {
-						// Event has no more puzzles; delete
-						log.Printf("deleting scheduled event %s in %s", event.ID, *event.ChannelID)
-						if err := dis.DeleteScheduledEvent(event); err != nil {
-							return "", err
-						}
-					}
-					eventsByID[event.ID] = event
-				}
-				for eventID, puzzles := range puzzlesByEvent {
-					var puzzleNames []string
-					for _, puzzle := range puzzles {
-						puzzleNames = append(puzzleNames, puzzle.Name)
-					}
-					eventTitle := strings.Join(sort.StringSlice(puzzleNames), " & ")
+				eventTitle := strings.Join(sort.StringSlice(puzzleNames), " & ")
 
-					if event, ok := events[eventID]; !ok {
-						// Someone must have stopped the event manually (or
-						// Discord stopped it because the voice room emptied for
-						// more than a few minutes). Un-assign all of the stale
-						// puzzles from the room.
-						for _, puzzle := range puzzles {
-							_, err = voiceUpdateAirtableAndPinnedMessage(air, dis, puzzle, nil)
-							if err != nil {
-								return "", err
-							}
-						}
-					} else if eventTitle != event.Name {
-						// Update event name
-						log.Printf("updating scheduled event %s in %s", event.ID, *event.ChannelID)
-						_, err = dis.UpdateScheduledEvent(event, map[string]interface{}{
-							"name": eventTitle,
-						})
+				if event, ok := events[eventID]; !ok {
+					// Someone must have stopped the event manually (or
+					// Discord stopped it because the voice room emptied for
+					// more than a few minutes). Un-assign all of the stale
+					// puzzles from the room.
+					for _, puzzle := range puzzles {
+						_, err = voiceUpdateAirtableAndPinnedMessage(air, dis, puzzle, nil)
 						if err != nil {
 							return "", err
 						}
 					}
+				} else if eventTitle != event.Name {
+					// Update event name
+					log.Printf("updating scheduled event %s in %s", event.ID, *event.ChannelID)
+					_, err = dis.UpdateScheduledEvent(event, map[string]interface{}{
+						"name": eventTitle,
+					})
+					if err != nil {
+						return "", err
+					}
 				}
-				return reply, nil
-			})
+			}
+			return reply, nil
 		},
 	}
 }

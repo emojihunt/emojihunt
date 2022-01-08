@@ -62,6 +62,7 @@ func MakePuzzleCommand(ctx context.Context, air *client.Airtable, dis *client.Di
 				},
 			},
 		},
+		Async: true,
 		Handler: func(s *discordgo.Session, i *client.DiscordCommandInput) (string, error) {
 			puzzle, err := air.FindByDiscordChannel(i.IC.ChannelID)
 			if err != nil {
@@ -110,15 +111,13 @@ func MakePuzzleCommand(ctx context.Context, air *client.Airtable, dis *client.Di
 				return "", fmt.Errorf("unexpected /puzzle subcommand: %q", i.Subcommand.Name)
 			}
 
-			return dis.ReplyAsync(s, i, func() (string, error) {
-				if puzzle, err = air.SetStatusAndAnswer(puzzle, newStatus, newAnswer); err != nil {
-					return "", err
-				}
-				if puzzle, err = syn.BasicUpdate(ctx, puzzle, true); err != nil {
-					return "", err
-				}
-				return reply, nil
-			})
+			if puzzle, err = air.SetStatusAndAnswer(puzzle, newStatus, newAnswer); err != nil {
+				return "", err
+			}
+			if puzzle, err = syn.BasicUpdate(ctx, puzzle, true); err != nil {
+				return "", err
+			}
+			return reply, nil
 		},
 	}
 }
