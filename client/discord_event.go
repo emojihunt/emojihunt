@@ -81,15 +81,3 @@ func (c *Discord) DeleteScheduledEvent(event *discordgo.GuildScheduledEvent) err
 
 	return nil
 }
-
-func (c *Discord) MarkScheduledEventComplete(event *discordgo.GuildScheduledEvent) (isNew bool) {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-
-	if _, ok := c.completedScheduledEvents[event.ID]; ok {
-		return false
-	} else {
-		c.completedScheduledEvents[event.ID] = true
-		return true
-	}
-}

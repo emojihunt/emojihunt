@@ -135,9 +135,6 @@ func MakeVoiceRoomCommand(air *client.Airtable, dis *client.Discord) *client.Dis
 					if _, ok := puzzlesByEvent[event.ID]; !ok {
 						// Event has no more puzzles; delete
 						log.Printf("deleting scheduled event %s in %s", event.ID, *event.ChannelID)
-						// Mark so we ignore the event-deleted webhook for this
-						// action.
-						dis.MarkScheduledEventComplete(event)
 						if err := dis.DeleteScheduledEvent(event); err != nil {
 							return "", err
 						}
@@ -185,12 +182,14 @@ func MakeVoiceRoomScheduledEventUpdateHandler(air *client.Airtable, dis *client.
 			return
 		}
 
-		if !dis.MarkScheduledEventComplete(i.GuildScheduledEvent) {
-			log.Printf("discord: ignoring scheduled event completion event: already seen")
-			return
-		} else {
-			log.Printf("discord: processing scheduled event completion event for %q", i.Name)
-		}
+		// We don't have to worry about double-processing puzzles because, even
+		// though Discord *does* deliver events caused by the bot's own actions,
+		// the bot uses *delete* to clean up events, while the Discord UI uses
+		// an *update* to the "Completed" status. We only listen for the update
+		// event, so we only see the human-triggered actions. (The bot does use
+		// updates to update the name and to start the event initally, but
+		// those events are filtered out by the condition above.)
+		log.Printf("discord: processing scheduled event completion event for %q", i.Name)
 		puzzles, err := air.FindWithVoiceRoomEvent()
 		if err == nil {
 			for _, puzzle := range puzzles {

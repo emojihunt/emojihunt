@@ -43,7 +43,6 @@ type Discord struct {
 	mu                        sync.Mutex // hold while accessing everything below
 	scheduledEventsCache      map[string]*discordgo.GuildScheduledEvent
 	scheduledEventsLastUpdate time.Time
-	completedScheduledEvents  map[string]bool
 }
 
 func NewDiscord(config *DiscordConfig) (*Discord, error) {
@@ -114,7 +113,6 @@ func NewDiscord(config *DiscordConfig) (*Discord, error) {
 		appCommandHandlers:        make(map[string]*DiscordCommand),
 		componentHandlers:         make(map[string]*DiscordCommand),
 		scheduledEventsLastUpdate: time.Now().Add(-24 * time.Hour),
-		completedScheduledEvents:  make(map[string]bool),
 	}
 	s.AddHandler(discord.commandHandler)
 	return discord, nil
