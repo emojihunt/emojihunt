@@ -85,7 +85,7 @@ func main() {
 	syncer := syncer.New(airtable, discord, drive)
 	dbpoller := database.NewPoller(airtable, discord, syncer)
 
-	voiceRoomBot := bot.NewVoiceRoomBot(airtable, discord)
+	voiceRoomBot := bot.NewVoiceRoomBot(airtable, discord, syncer)
 	discord.AddHandler(voiceRoomBot.ScheduledEventUpdateHandler)
 
 	botCommands := []*client.DiscordCommand{

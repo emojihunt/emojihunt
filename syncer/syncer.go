@@ -119,9 +119,20 @@ func (s *Syncer) BasicUpdate(ctx context.Context, puzzle *schema.Puzzle, botRequ
 			// Airtable...
 			err = s.notifyPuzzleSolvedMissingAnswer(puzzle)
 		}
-	}
-	if err != nil {
-		return nil, fmt.Errorf("error posting puzzle status announcement: %v", err)
+		if err != nil {
+			return nil, fmt.Errorf("error posting puzzle status announcement: %v", err)
+		}
+
+		// Also unset the voice room, if applicable
+		if puzzle.VoiceRoomEvent != "" {
+			puzzle, err = s.SetVoiceRoomNoSync(puzzle, nil)
+			if err != nil {
+				return nil, fmt.Errorf("error unsetting voice room: %v", err)
+			}
+			if err = s.SyncVoiceRooms(); err != nil {
+				return nil, err
+			}
+		}
 	}
 	return puzzle, nil
 }
