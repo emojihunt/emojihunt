@@ -41,7 +41,7 @@ type Discord struct {
 	componentHandlers  map[string]*DiscordCommand
 
 	mu                        sync.Mutex // hold while accessing everything below
-	scheduledEventsCache      map[string]*DiscordScheduledEvent
+	scheduledEventsCache      map[string]*discordgo.GuildScheduledEvent
 	scheduledEventsLastUpdate time.Time
 }
 

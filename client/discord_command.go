@@ -176,7 +176,7 @@ func (d *Discord) OptionByName(options []*discordgo.ApplicationCommandInteractio
 }
 
 func (d *Discord) enableMessageComponents(s *discordgo.Session, message *discordgo.Message, enabled bool) error {
-	if len(message.Components) < 1 {
+	if message == nil || len(message.Components) < 1 {
 		return nil
 	}
 
