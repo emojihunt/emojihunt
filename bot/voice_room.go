@@ -113,6 +113,15 @@ func (bot *VoiceRoomBot) MakeSlashCommand() *client.DiscordCommand {
 				}
 
 				event, err = bot.discord.UpdateScheduledEvent(event, map[string]interface{}{
+					// These fields are duplicative, but Discord occasionally
+					// appears to create the event with some fields missing
+					// (maybe a Discord bug?) so let's try and set them again to
+					// be sure.
+					"channel_id":  channel.ID,
+					"name":        puzzle.Name,
+					"description": syncer.VoiceRoomEventDescription,
+
+					// Start the event!
 					"status": discordgo.GuildScheduledEventStatusActive,
 				})
 				if err != nil {
