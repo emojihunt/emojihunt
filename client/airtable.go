@@ -268,10 +268,12 @@ func (air *Airtable) parseRecord(record *airtable.Record) (*schema.Puzzle, error
 	}
 
 	return &schema.Puzzle{
-		Name:   puzzleName,
-		Answer: air.stringField(record, "Answer"),
-		Rounds: rounds,
-		Status: status,
+		Name:        puzzleName,
+		Answer:      air.stringField(record, "Answer"),
+		Rounds:      rounds,
+		Status:      status,
+		Description: air.stringField(record, "Description"),
+		Notes:       air.stringField(record, "Notes"),
 
 		AirtableRecord: record,
 		PuzzleURL:      air.stringField(record, "Puzzle URL"),

@@ -8,10 +8,12 @@ import (
 )
 
 type Puzzle struct {
-	Name   string
-	Answer string
-	Rounds Rounds
-	Status Status
+	Name        string
+	Answer      string
+	Rounds      Rounds
+	Status      Status
+	Description string
+	Notes       string
 
 	AirtableRecord *airtable.Record
 	PuzzleURL      string

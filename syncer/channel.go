@@ -21,15 +21,6 @@ const (
 // updating non-status fields, such as the voice room.
 //
 func (s *Syncer) DiscordCreateUpdatePin(puzzle *schema.Puzzle) error {
-	voiceRoomMsg := voiceRoomDefaultMsg
-	if puzzle.VoiceRoomEvent != "" {
-		var err error
-		event, err := s.discord.GetScheduledEvent(puzzle.VoiceRoomEvent)
-		if err != nil {
-			return err
-		}
-		voiceRoomMsg = fmt.Sprintf("Join us in <#%s>!", *event.ChannelID)
-	}
 	roundHeader := "Round"
 	if len(puzzle.Rounds) > 1 {
 		roundHeader = "Rounds"
@@ -59,13 +50,39 @@ func (s *Syncer) DiscordCreateUpdatePin(puzzle *schema.Puzzle) error {
 				Value:  fmt.Sprintf("[Link](%s)", puzzle.SpreadsheetURL()),
 				Inline: true,
 			},
-			{
-				Name:   "Voice Room",
-				Value:  voiceRoomMsg,
-				Inline: false,
-			},
 		},
 	}
+
+	if puzzle.Description != "" {
+		embed.Fields = append(embed.Fields, &discordgo.MessageEmbedField{
+			Name:   "Description",
+			Value:  puzzle.Description,
+			Inline: false,
+		})
+	}
+
+	if puzzle.Notes != "" {
+		embed.Fields = append(embed.Fields, &discordgo.MessageEmbedField{
+			Name:   "Notes",
+			Value:  puzzle.Notes,
+			Inline: false,
+		})
+	}
+
+	voiceRoomMsg := voiceRoomDefaultMsg
+	if puzzle.VoiceRoomEvent != "" {
+		var err error
+		event, err := s.discord.GetScheduledEvent(puzzle.VoiceRoomEvent)
+		if err != nil {
+			return err
+		}
+		voiceRoomMsg = fmt.Sprintf("Join us in <#%s>!", *event.ChannelID)
+	}
+	embed.Fields = append(embed.Fields, &discordgo.MessageEmbedField{
+		Name:   "Voice Room",
+		Value:  voiceRoomMsg,
+		Inline: false,
+	})
 
 	return s.discord.CreateUpdatePin(puzzle.DiscordChannel, pinnedStatusHeader, embed)
 }
