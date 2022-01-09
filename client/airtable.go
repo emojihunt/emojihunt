@@ -4,20 +4,23 @@ import (
 	"fmt"
 	"sort"
 	"strings"
+	"time"
 
 	"github.com/gauravjsingh/emojihunt/schema"
 	"github.com/mehanizm/airtable"
 )
 
 type AirtableConfig struct {
-	APIKey  string `json:"api_key"`
-	BaseID  string `json:"base_id"`
-	TableID string `json:"table_id"`
+	APIKey    string `json:"api_key"`
+	BaseID    string `json:"base_id"`
+	TableID   string `json:"table_id"`
+	BotUserID string `json:"bot_user_id"`
 }
 
 type Airtable struct {
 	baseID, tableID string
 	table           *airtable.Table
+	BotUserID       string
 }
 
 const pageSize = 100 // most records returned per list request
@@ -32,7 +35,7 @@ const pendingSuffix = " [pending]" // puzzle name suffix for auto-added puzzles
 func NewAirtable(config *AirtableConfig) *Airtable {
 	client := airtable.NewClient(config.APIKey)
 	table := client.GetTable(config.BaseID, config.TableID)
-	return &Airtable{config.BaseID, config.TableID, table}
+	return &Airtable{config.BaseID, config.TableID, table, config.BotUserID}
 }
 
 func (air *Airtable) ListRecords() ([]schema.Puzzle, error) {
@@ -141,6 +144,7 @@ func (air *Airtable) SetStatusAndAnswer(puzzle *schema.Puzzle, status schema.Sta
 		"Status":          status.PrettyForAirtable(),
 		"Answer":          answer,
 		"Last Bot Status": status.TextForAirtable(),
+		"Last Bot Sync":   time.Now().Format(time.RFC3339),
 		"Archived":        status.IsSolved(),
 	}
 	record, err := puzzle.AirtableRecord.UpdateRecordPartial(fields)
@@ -160,6 +164,7 @@ func (air *Airtable) UpdateBotFields(puzzle *schema.Puzzle, lastBotStatus schema
 	}
 
 	fields["Archived"] = archived
+	fields["Last Bot Sync"] = time.Now().Format(time.RFC3339)
 
 	if puzzle.Pending != pending {
 		// The "pending" status is stored in the puzzle name
@@ -267,6 +272,13 @@ func (air *Airtable) parseRecord(record *airtable.Record) (*schema.Puzzle, error
 		pending = true
 	}
 
+	var lastModifiedBy string
+	if value, ok := record.Fields["Last Modified By"]; !ok {
+		return nil, fmt.Errorf("could not find Last Modified By field: %#v", record.Fields)
+	} else {
+		lastModifiedBy = value.(map[string]interface{})["id"].(string)
+	}
+
 	return &schema.Puzzle{
 		Name:        puzzleName,
 		Answer:      air.stringField(record, "Answer"),
@@ -280,11 +292,16 @@ func (air *Airtable) parseRecord(record *airtable.Record) (*schema.Puzzle, error
 		SpreadsheetID:  air.stringField(record, "Spreadsheet ID"),
 		DiscordChannel: air.stringField(record, "Discord Channel"),
 
-		Pending:        pending,
-		LastBotStatus:  lastBotStatus,
-		Archived:       air.boolField(record, "Archived"),
+		Pending:       pending,
+		LastBotStatus: lastBotStatus,
+		Archived:      air.boolField(record, "Archived"),
+		LastBotSync:   air.timeField(record, "Last Bot Sync"),
+
 		OriginalURL:    air.stringField(record, "Original URL"),
 		VoiceRoomEvent: air.stringField(record, "Voice Room Event"),
+
+		LastModified:   air.timeField(record, "Last Modified"),
+		LastModifiedBy: lastModifiedBy,
 	}, nil
 }
 
@@ -303,5 +320,17 @@ func (air *Airtable) boolField(record *airtable.Record, field string) bool {
 		return false
 	} else {
 		return value.(bool)
+	}
+}
+
+func (air *Airtable) timeField(record *airtable.Record, field string) *time.Time {
+	if value, ok := record.Fields[field]; !ok || value == "" {
+		return nil
+	} else {
+		if t, err := time.Parse(time.RFC3339, value.(string)); err != nil {
+			panic(fmt.Errorf("error parsing time: %v", err))
+		} else {
+			return &t
+		}
 	}
 }

@@ -3,6 +3,7 @@ package schema
 import (
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/mehanizm/airtable"
 )
@@ -20,11 +21,16 @@ type Puzzle struct {
 	SpreadsheetID  string
 	DiscordChannel string
 
-	Pending        bool
-	LastBotStatus  Status
-	Archived       bool
+	Pending       bool
+	LastBotStatus Status
+	Archived      bool
+	LastBotSync   *time.Time
+
 	OriginalURL    string
 	VoiceRoomEvent string
+
+	LastModified   *time.Time
+	LastModifiedBy string // user id
 }
 
 type NewPuzzle struct {

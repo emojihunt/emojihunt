@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"sync"
+	"time"
 
 	"github.com/gauravjsingh/emojihunt/client"
 	"github.com/gauravjsingh/emojihunt/schema"
@@ -17,6 +18,8 @@ type Syncer struct {
 
 	VoiceRoomMutex sync.Mutex
 }
+
+const modifyGracePeriod = 15 * time.Second
 
 func New(airtable *client.Airtable, discord *client.Discord, drive *client.Drive) *Syncer {
 	return &Syncer{airtable, discord, drive, sync.Mutex{}}
@@ -80,6 +83,17 @@ func (s *Syncer) IdempotentCreateUpdate(ctx context.Context, puzzle *schema.Puzz
 		puzzle, err = s.BasicUpdate(ctx, puzzle, false)
 		if err != nil {
 			return nil, err
+		}
+	} else if puzzle.LastModifiedBy != s.airtable.BotUserID && time.Since(*puzzle.LastModified) > modifyGracePeriod {
+		var err error
+		if err = s.DiscordCreateUpdatePin(puzzle); err != nil {
+			return nil, fmt.Errorf("unable to set puzzle status message for %q: %w", puzzle.Name, err)
+		}
+		puzzle, err = s.airtable.UpdateBotFields(puzzle, puzzle.Status, puzzle.ShouldArchive(), puzzle.Pending)
+		if err != nil {
+			return nil, fmt.Errorf("failed to update bot fields for puzzle %q: %v", puzzle.Name, err)
+		} else if puzzle.LastModifiedBy != s.airtable.BotUserID {
+			panic(fmt.Errorf("updated puzzle but user ID does not match bot's, existing to avoid infinite loop: %#v", puzzle))
 		}
 	}
 
