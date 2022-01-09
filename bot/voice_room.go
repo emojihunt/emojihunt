@@ -124,6 +124,9 @@ func (bot *VoiceRoomBot) MakeSlashCommand() *client.DiscordCommand {
 					// Start the event!
 					"status": discordgo.GuildScheduledEventStatusActive,
 				})
+				if event.Status != discordgo.GuildScheduledEventStatusActive {
+					log.Printf("Warning! UpdateScheduledEvent failed to start event: %v", event)
+				}
 				if err != nil {
 					return "", err
 				}
