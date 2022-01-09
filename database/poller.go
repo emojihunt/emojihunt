@@ -130,7 +130,7 @@ func (p *Poller) warnPuzzle(ctx context.Context, puzzle *schema.Puzzle) error {
 	if puzzle.PuzzleURL == "" {
 		msgs = append(msgs, "missing a URL")
 	}
-	if puzzle.Round.Name == "" {
+	if len(puzzle.Rounds) == 0 {
 		msgs = append(msgs, "missing a round")
 	}
 	if puzzle.Answer != "" && !puzzle.Status.IsSolved() {

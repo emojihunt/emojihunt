@@ -129,7 +129,9 @@ func (d *Poller) SyncPuzzles(puzzles []*DiscoveredPuzzle) error {
 	knownURLs := make(map[string]bool)
 	knownNames := make(map[string]bool)
 	for _, record := range records {
-		rounds[record.Round.Name] = record.Round
+		for _, round := range record.Rounds {
+			rounds[round.Name] = round
+		}
 		knownURLs[strings.ToUpper(record.PuzzleURL)] = true
 		knownURLs[strings.ToUpper(record.OriginalURL)] = true
 		knownNames[strings.ToUpper(record.Name)] = true
@@ -205,7 +207,7 @@ func (d *Poller) MakeApproveCommand(ctx context.Context) *client.DiscordCommand 
 func (d *Poller) notifyNewPuzzle(puzzle *schema.Puzzle) error {
 	msg := fmt.Sprintf(
 		"**%s New puzzle detected!** Name: %q, Round: %s, URL: %s",
-		puzzle.Round.Emoji, puzzle.Name, puzzle.Round.Name, puzzle.PuzzleURL,
+		puzzle.Rounds.Emojis(), puzzle.Name, puzzle.Rounds.Names(), puzzle.PuzzleURL,
 	)
 	components := []discordgo.MessageComponent{
 		discordgo.Button{

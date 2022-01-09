@@ -2,6 +2,7 @@ package client
 
 import (
 	"fmt"
+	"sort"
 	"strings"
 
 	"github.com/gauravjsingh/emojihunt/schema"
@@ -84,8 +85,10 @@ func (air *Airtable) FindByDiscordChannel(channel string) (*schema.Puzzle, error
 	if err != nil {
 		return nil, err
 	}
-	if len(response.Records) != 1 {
-		return nil, fmt.Errorf("expected 1 record, got: %#v", response.Records)
+	if len(response.Records) < 1 {
+		return nil, nil
+	} else if len(response.Records) > 1 {
+		return nil, fmt.Errorf("expected 0 or 1 record, got: %#v", response.Records)
 	}
 	return air.parseRecord(response.Records[0])
 }
@@ -228,7 +231,23 @@ func (air *Airtable) EditURL(puzzle *schema.Puzzle) string {
 }
 
 func (air *Airtable) parseRecord(record *airtable.Record) (*schema.Puzzle, error) {
-	round := schema.ParseRound(air.stringField(record, "Round"))
+	var rounds schema.Rounds
+	if raw, ok := record.Fields["Round"]; ok {
+		switch v := raw.(type) {
+		case string:
+			if raw != "" {
+				rounds = append(rounds, schema.ParseRound(raw.(string)))
+			}
+		case []interface{}:
+			for _, r := range raw.([]interface{}) {
+				rounds = append(rounds, schema.ParseRound(r.(string)))
+			}
+		default:
+			return nil, fmt.Errorf("airtable: can't handle round field of type %T", v)
+		}
+	}
+	sort.Sort(rounds)
+
 	status, err := schema.ParsePrettyStatus(air.stringField(record, "Status"))
 	if err != nil {
 		return nil, err
@@ -251,7 +270,7 @@ func (air *Airtable) parseRecord(record *airtable.Record) (*schema.Puzzle, error
 	return &schema.Puzzle{
 		Name:   puzzleName,
 		Answer: air.stringField(record, "Answer"),
-		Round:  round,
+		Rounds: rounds,
 		Status: status,
 
 		AirtableRecord: record,

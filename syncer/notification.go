@@ -12,7 +12,7 @@ func (s *Syncer) notifyNewPuzzle(puzzle *schema.Puzzle) error {
 	embed := &discordgo.MessageEmbed{
 		Author: &discordgo.MessageEmbedAuthor{
 			Name:    "A new puzzle is available!",
-			IconURL: puzzle.Round.TwemojiURL(),
+			IconURL: puzzle.Rounds[0].TwemojiURL(),
 		},
 		Title: puzzle.Name,
 		URL:   puzzle.PuzzleURL,
@@ -53,7 +53,7 @@ func (s *Syncer) notifyPuzzleFullySolved(puzzle *schema.Puzzle, suppressSolveNot
 	embed := &discordgo.MessageEmbed{
 		Author: &discordgo.MessageEmbedAuthor{
 			Name:    fmt.Sprintf("Puzzle %s!", puzzle.Status.SolvedVerb()),
-			IconURL: puzzle.Round.TwemojiURL(),
+			IconURL: puzzle.Rounds[0].TwemojiURL(),
 		},
 		Fields: []*discordgo.MessageEmbedField{
 			{

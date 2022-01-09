@@ -60,7 +60,12 @@ func (bot *VoiceRoomBot) MakeSlashCommand() *client.DiscordCommand {
 
 			puzzle, err := bot.airtable.FindByDiscordChannel(i.IC.ChannelID)
 			if err != nil {
-				return "", fmt.Errorf("unable to get puzzle for channel ID %q", i.IC.ChannelID)
+				return "", err
+			} else if puzzle == nil {
+				return ":butterfly: I can't find a puzzle associated with this channel. Is this a puzzle channel?", nil
+			} else if !puzzle.IsValid() {
+				return fmt.Sprintf("😰 I can't update this puzzle because it has errors in "+
+					"Airtable. Please check %s for more information...", bot.discord.QMChannel.Mention()), nil
 			}
 
 			var reply string

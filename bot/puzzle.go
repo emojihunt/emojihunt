@@ -66,7 +66,12 @@ func MakePuzzleCommand(ctx context.Context, air *client.Airtable, dis *client.Di
 		Handler: func(s *discordgo.Session, i *client.DiscordCommandInput) (string, error) {
 			puzzle, err := air.FindByDiscordChannel(i.IC.ChannelID)
 			if err != nil {
+				return "", err
+			} else if puzzle == nil {
 				return ":butterfly: I can't find a puzzle associated with this channel. Is this a puzzle channel?", nil
+			} else if !puzzle.IsValid() {
+				return fmt.Sprintf("😰 I can't update this puzzle because it has errors in "+
+					"Airtable. Please check %s for more information...", dis.QMChannel.Mention()), nil
 			}
 
 			var reply string

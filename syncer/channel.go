@@ -2,6 +2,7 @@ package syncer
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/gauravjsingh/emojihunt/schema"
@@ -29,14 +30,18 @@ func (s *Syncer) DiscordCreateUpdatePin(puzzle *schema.Puzzle) error {
 		}
 		voiceRoomMsg = fmt.Sprintf("Join us in <#%s>!", *event.ChannelID)
 	}
+	roundHeader := "Round"
+	if len(puzzle.Rounds) > 1 {
+		roundHeader = "Rounds"
+	}
 	embed := &discordgo.MessageEmbed{
 		Author: &discordgo.MessageEmbedAuthor{Name: pinnedStatusHeader},
 		Title:  puzzle.Name,
 		URL:    puzzle.PuzzleURL,
 		Fields: []*discordgo.MessageEmbedField{
 			{
-				Name:   "Round",
-				Value:  fmt.Sprintf("%v %v", puzzle.Round.Emoji, puzzle.Round.Name),
+				Name:   roundHeader,
+				Value:  strings.Join(puzzle.Rounds.EmojisAndNames(), ", "),
 				Inline: false,
 			},
 			{

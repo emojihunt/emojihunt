@@ -29,7 +29,7 @@ func New(airtable *client.Airtable, discord *client.Discord, drive *client.Drive
 func (s *Syncer) IdempotentCreateUpdate(ctx context.Context, puzzle *schema.Puzzle) (*schema.Puzzle, error) {
 	// 1. Create the spreadsheet, if required
 	if puzzle.SpreadsheetID == "" {
-		spreadsheet, err := s.drive.CreateSheet(ctx, puzzle.Name, puzzle.Round.Name)
+		spreadsheet, err := s.drive.CreateSheet(ctx, puzzle.Name, puzzle.Rounds[0].Name)
 		if err != nil {
 			return nil, fmt.Errorf("error creating spreadsheet for %q: %v", puzzle.Name, err)
 		}

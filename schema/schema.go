@@ -10,7 +10,7 @@ import (
 type Puzzle struct {
 	Name   string
 	Answer string
-	Round  Round
+	Rounds Rounds
 	Status Status
 
 	AirtableRecord *airtable.Record
@@ -39,7 +39,7 @@ func (p Puzzle) SpreadsheetURL() string {
 }
 
 func (p Puzzle) IsValid() bool {
-	return p.Name != "" && p.Round.Name != "" &&
+	return p.Name != "" && len(p.Rounds) > 0 &&
 		p.PuzzleURL != "" && (p.Status.IsSolved() || p.Answer == "")
 }
 
@@ -74,6 +74,36 @@ func (r Round) TwemojiURL() string {
 
 func (r Round) Serialize() string {
 	return r.Emoji + " " + r.Name
+}
+
+type Rounds []Round
+
+func (rs Rounds) Len() int           { return len(rs) }
+func (rs Rounds) Less(i, j int) bool { return rs[i].Name < rs[j].Name }
+func (rs Rounds) Swap(i, j int)      { rs[i], rs[j] = rs[j], rs[i] }
+
+func (rs Rounds) Emojis() string {
+	var emojis []string
+	for _, r := range rs {
+		emojis = append(emojis, r.Emoji)
+	}
+	return strings.Join(emojis, "")
+}
+
+func (rs Rounds) Names() string {
+	var names []string
+	for _, r := range rs {
+		names = append(names, r.Name)
+	}
+	return strings.Join(names, "–")
+}
+
+func (rs Rounds) EmojisAndNames() []string {
+	var result []string
+	for _, r := range rs {
+		result = append(result, fmt.Sprintf("%s %s", r.Emoji, r.Name))
+	}
+	return result
 }
 
 type Status string
