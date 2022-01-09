@@ -7,6 +7,10 @@ import (
 	"github.com/bwmarrin/discordgo"
 )
 
+func (c *Discord) GetScheduledEvent(id string) (*discordgo.GuildScheduledEvent, error) {
+	return c.s.GuildScheduledEvent(c.Guild.ID, id)
+}
+
 func (c *Discord) ListScheduledEvents() (map[string]*discordgo.GuildScheduledEvent, error) {
 	c.mu.Lock()
 	defer c.mu.Unlock()

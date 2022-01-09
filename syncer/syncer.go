@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"sync"
 
 	"github.com/gauravjsingh/emojihunt/client"
 	"github.com/gauravjsingh/emojihunt/schema"
@@ -13,10 +14,12 @@ type Syncer struct {
 	airtable *client.Airtable
 	discord  *client.Discord
 	drive    *client.Drive
+
+	VoiceRoomMutex sync.Mutex
 }
 
 func New(airtable *client.Airtable, discord *client.Discord, drive *client.Drive) *Syncer {
-	return &Syncer{airtable, discord, drive}
+	return &Syncer{airtable, discord, drive, sync.Mutex{}}
 }
 
 // IdempotentCreateUpdate synchronizes Discord and Google Drive with the puzzle
@@ -55,7 +58,7 @@ func (s *Syncer) IdempotentCreateUpdate(ctx context.Context, puzzle *schema.Puzz
 			return nil, fmt.Errorf("error setting discord channel for puzzle %q: %v", puzzle.Name, err)
 		}
 
-		err = s.discordCreateUpdatePin(puzzle)
+		err = s.DiscordCreateUpdatePin(puzzle)
 		if err != nil {
 			return nil, fmt.Errorf("error pinning info for puzzle %q: %v", puzzle.Name, err)
 		}
@@ -83,9 +86,14 @@ func (s *Syncer) IdempotentCreateUpdate(ctx context.Context, puzzle *schema.Puzz
 	return puzzle, nil
 }
 
+// BasicUpdate synchronizes Discord and sends notifications when the puzzle
+// status changes. It's called by IdempotentCreateUpdate. If you're calling this
+// from a slash command handler, and the is going to acknowledge the user in the
+// puzzle channel, you can set `botRequest=true` to suppress notifications to
+// the puzzle channel.
 func (s *Syncer) BasicUpdate(ctx context.Context, puzzle *schema.Puzzle, botRequest bool) (*schema.Puzzle, error) {
 	var err error
-	if err := s.discordCreateUpdatePin(puzzle); err != nil {
+	if err := s.DiscordCreateUpdatePin(puzzle); err != nil {
 		return nil, fmt.Errorf("unable to set puzzle status message for %q: %w", puzzle.Name, err)
 	}
 
@@ -125,11 +133,16 @@ func (s *Syncer) BasicUpdate(ctx context.Context, puzzle *schema.Puzzle, botRequ
 
 		// Also unset the voice room, if applicable
 		if puzzle.VoiceRoomEvent != "" {
-			puzzle, err = s.SetVoiceRoomNoSync(puzzle, nil)
+			s.VoiceRoomMutex.Lock()
+			defer s.VoiceRoomMutex.Unlock()
+			puzzle, err = s.airtable.UpdateVoiceRoomEvent(puzzle, "")
 			if err != nil {
 				return nil, fmt.Errorf("error unsetting voice room: %v", err)
 			}
-			if err = s.SyncVoiceRooms(); err != nil {
+			if err = s.DiscordCreateUpdatePin(puzzle); err != nil {
+				return nil, err
+			}
+			if err = s.SyncVoiceRooms(ctx); err != nil {
 				return nil, err
 			}
 		}
@@ -137,6 +150,9 @@ func (s *Syncer) BasicUpdate(ctx context.Context, puzzle *schema.Puzzle, botRequ
 	return puzzle, nil
 }
 
+// ForceUpdate is a big hammer that will update Discord and Google Drive,
+// including overwriting the channel name, spreadsheet name, etc. It also
+// re-sends any status change notifications.
 func (s *Syncer) ForceUpdate(ctx context.Context, puzzle *schema.Puzzle) (*schema.Puzzle, error) {
 	var err error
 	puzzle, err = s.IdempotentCreateUpdate(ctx, puzzle)
@@ -144,7 +160,7 @@ func (s *Syncer) ForceUpdate(ctx context.Context, puzzle *schema.Puzzle) (*schem
 		return nil, err
 	}
 
-	if err := s.discordCreateUpdatePin(puzzle); err != nil {
+	if err := s.DiscordCreateUpdatePin(puzzle); err != nil {
 		return nil, fmt.Errorf("unable to set puzzle status message for %q: %w", puzzle.Name, err)
 	}
 

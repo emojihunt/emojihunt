@@ -1,9 +1,9 @@
 package bot
 
 import (
+	"context"
 	"fmt"
 	"log"
-	"sync"
 	"time"
 
 	"github.com/bwmarrin/discordgo"
@@ -13,14 +13,14 @@ import (
 )
 
 type VoiceRoomBot struct {
+	ctx      context.Context
 	airtable *client.Airtable
 	discord  *client.Discord
 	syncer   *syncer.Syncer
-	mutex    sync.Mutex
 }
 
-func NewVoiceRoomBot(airtable *client.Airtable, discord *client.Discord, syncer *syncer.Syncer) *VoiceRoomBot {
-	return &VoiceRoomBot{airtable, discord, syncer, sync.Mutex{}}
+func NewVoiceRoomBot(ctx context.Context, airtable *client.Airtable, discord *client.Discord, syncer *syncer.Syncer) *VoiceRoomBot {
+	return &VoiceRoomBot{ctx, airtable, discord, syncer}
 }
 
 func (bot *VoiceRoomBot) MakeSlashCommand() *client.DiscordCommand {
@@ -55,8 +55,8 @@ func (bot *VoiceRoomBot) MakeSlashCommand() *client.DiscordCommand {
 		},
 		Async: true,
 		Handler: func(s *discordgo.Session, i *client.DiscordCommandInput) (string, error) {
-			bot.mutex.Lock()
-			defer bot.mutex.Unlock()
+			bot.syncer.VoiceRoomMutex.Lock()
+			defer bot.syncer.VoiceRoomMutex.Unlock()
 
 			puzzle, err := bot.airtable.FindByDiscordChannel(i.IC.ChannelID)
 			if err != nil {
@@ -116,10 +116,18 @@ func (bot *VoiceRoomBot) MakeSlashCommand() *client.DiscordCommand {
 			}
 
 			// Sync the change!
-			if puzzle, err = bot.syncer.SetVoiceRoomNoSync(puzzle, event); err != nil {
+			if event == nil {
+				puzzle, err = bot.airtable.UpdateVoiceRoomEvent(puzzle, "")
+			} else {
+				puzzle, err = bot.airtable.UpdateVoiceRoomEvent(puzzle, event.ID)
+			}
+			if err != nil {
 				return "", err
 			}
-			if err = bot.syncer.SyncVoiceRooms(); err != nil {
+			if err = bot.syncer.DiscordCreateUpdatePin(puzzle); err != nil {
+				return "", err
+			}
+			if err = bot.syncer.SyncVoiceRooms(bot.ctx); err != nil {
 				return "", err
 			}
 
@@ -133,8 +141,8 @@ func (bot *VoiceRoomBot) ScheduledEventUpdateHandler(s *discordgo.Session, i *di
 		return
 	}
 
-	bot.mutex.Lock()
-	defer bot.mutex.Unlock()
+	bot.syncer.VoiceRoomMutex.Lock()
+	defer bot.syncer.VoiceRoomMutex.Unlock()
 
 	// We don't have to worry about double-processing puzzles because, even
 	// though Discord *does* deliver events caused by the bot's own actions,
@@ -147,8 +155,11 @@ func (bot *VoiceRoomBot) ScheduledEventUpdateHandler(s *discordgo.Session, i *di
 	puzzles, err := bot.airtable.FindWithVoiceRoomEvent()
 	if err == nil {
 		for _, puzzle := range puzzles {
-			_, err = bot.syncer.SetVoiceRoomNoSync(puzzle, nil)
+			puzzle, err = bot.airtable.UpdateVoiceRoomEvent(puzzle, "")
 			if err != nil {
+				break
+			}
+			if err = bot.syncer.DiscordCreateUpdatePin(puzzle); err != nil {
 				break
 			}
 		}

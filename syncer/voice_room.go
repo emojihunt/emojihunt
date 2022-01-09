@@ -1,7 +1,7 @@
 package syncer
 
 import (
-	"fmt"
+	"context"
 	"log"
 	"sort"
 	"strings"
@@ -11,37 +11,17 @@ import (
 )
 
 const (
-	VoiceRoomStatusHeader     = "Working Room"
 	VoiceRoomEventDescription = "🤖 Event managed by Huntbot. Use `/voice` to modify!"
 )
 
-func (s *Syncer) SetVoiceRoomNoSync(puzzle *schema.Puzzle, event *discordgo.GuildScheduledEvent) (*schema.Puzzle, error) {
-	// Update pinned message in channel
-	msg := "No voice room set. Use `/voice start` to start working in $room."
-	eventDesc := "unset"
-	if event != nil {
-		msg = fmt.Sprintf("Join us in <#%s>!", *event.ChannelID)
-		eventDesc = event.ID
-	}
-	log.Printf("updating airtable and pinned message for %q: event %s", puzzle.Name, eventDesc)
-	embed := &discordgo.MessageEmbed{
-		Author:      &discordgo.MessageEmbedAuthor{Name: VoiceRoomStatusHeader},
-		Description: msg,
-	}
-	err := s.discord.CreateUpdatePin(puzzle.DiscordChannel, VoiceRoomStatusHeader, embed)
-	if err != nil {
-		return nil, err
-	}
-
-	// Update Airtable with new event
-	var eventID string
-	if event != nil {
-		eventID = event.ID
-	}
-	return s.airtable.UpdateVoiceRoomEvent(puzzle, eventID)
-}
-
-func (s *Syncer) SyncVoiceRooms() error {
+// SyncVoiceRooms synchronizes all Discord scheduled events with Airtable. If
+// any Airtable puzzles reference an event that's been deleted or completed in
+// Discord, the field will be cleared in Airtable. Otherwise, the scheduled
+// event in Discord will be updated to match Airtable.
+//
+// The caller *must* acquire VoiceRoomMutex before calling this function.
+//
+func (s *Syncer) SyncVoiceRooms(ctx context.Context) error {
 	events, err := s.discord.ListScheduledEvents()
 	if err != nil {
 		return err
@@ -62,6 +42,9 @@ func (s *Syncer) SyncVoiceRooms() error {
 	for _, event := range events {
 		if event.Description != VoiceRoomEventDescription {
 			// Skip events not created by the bot
+			continue
+		} else if event.Status != discordgo.GuildScheduledEventStatusActive {
+			// Skip completed and canceled events
 			continue
 		}
 		if _, ok := puzzlesByEvent[event.ID]; !ok {
@@ -86,8 +69,11 @@ func (s *Syncer) SyncVoiceRooms() error {
 			// more than a few minutes). Un-assign all of the stale
 			// puzzles from the room.
 			for _, puzzle := range puzzles {
-				_, err = s.SetVoiceRoomNoSync(puzzle, nil)
+				_, err = s.airtable.UpdateVoiceRoomEvent(puzzle, "")
 				if err != nil {
+					return err
+				}
+				if err = s.DiscordCreateUpdatePin(puzzle); err != nil {
 					return err
 				}
 			}

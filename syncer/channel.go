@@ -7,13 +7,28 @@ import (
 	"github.com/gauravjsingh/emojihunt/schema"
 )
 
-const pinnedStatusHeader = "Puzzle Information"
+const (
+	pinnedStatusHeader  = "Puzzle Information"
+	voiceRoomDefaultMsg = "Use `/voice start` to assign a voice room"
+)
 
-// discordCreateUpdatePin creates or updates the pinned message at the top of
+// DiscordCreateUpdatePin creates or updates the pinned message at the top of
 // the puzzle channel. This message contains information about the puzzle status
-// as well as links to the puzzle and the spreadsheet. It needs to be updated
-// when the puzzle status changes.
-func (s *Syncer) discordCreateUpdatePin(puzzle *schema.Puzzle) error {
+// as well as links to the puzzle and the spreadsheet.
+//
+// This function is called by BasicUpdate. Other packages need to call it when
+// updating non-status fields, such as the voice room.
+//
+func (s *Syncer) DiscordCreateUpdatePin(puzzle *schema.Puzzle) error {
+	voiceRoomMsg := voiceRoomDefaultMsg
+	if puzzle.VoiceRoomEvent != "" {
+		var err error
+		event, err := s.discord.GetScheduledEvent(puzzle.VoiceRoomEvent)
+		if err != nil {
+			return err
+		}
+		voiceRoomMsg = fmt.Sprintf("Join us in <#%s>!", *event.ChannelID)
+	}
 	embed := &discordgo.MessageEmbed{
 		Author: &discordgo.MessageEmbedAuthor{Name: pinnedStatusHeader},
 		Title:  puzzle.Name,
@@ -38,6 +53,11 @@ func (s *Syncer) discordCreateUpdatePin(puzzle *schema.Puzzle) error {
 				Name:   "Sheet",
 				Value:  fmt.Sprintf("[Link](%s)", puzzle.SpreadsheetURL()),
 				Inline: true,
+			},
+			{
+				Name:   "Voice Room",
+				Value:  voiceRoomMsg,
+				Inline: false,
 			},
 		},
 	}
