@@ -116,6 +116,9 @@ func NewDiscord(config *DiscordConfig) (*Discord, error) {
 		scheduledEventsLastUpdate: time.Now().Add(-24 * time.Hour),
 	}
 	s.AddHandler(discord.commandHandler)
+	s.AddHandler(func(s *discordgo.Session, r *discordgo.RateLimit) {
+		log.Printf("discord: hit rate limit at %q: %#v", r.URL, r.TooManyRequests)
+	})
 	return discord, nil
 }
 
