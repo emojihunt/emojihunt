@@ -12,6 +12,7 @@ import (
 	"github.com/davecgh/go-spew/spew"
 	"github.com/gauravjsingh/emojihunt/client"
 	"github.com/gauravjsingh/emojihunt/schema"
+	"github.com/gauravjsingh/emojihunt/state"
 	"github.com/gauravjsingh/emojihunt/syncer"
 )
 
@@ -26,37 +27,26 @@ type Poller struct {
 	airtable *client.Airtable
 	discord  *client.Discord
 	syncer   *syncer.Syncer
+	state    *state.State
 
 	mu           sync.Mutex           // hold while accessing everything below
-	enabled      bool                 // global killswitch, toggle with !huntbot kill/!huntbot start
 	lastWarnTime map[string]time.Time // airtable id -> when we last warned about a malformed puzzle
 }
 
-func NewPoller(airtable *client.Airtable, discord *client.Discord, syncer *syncer.Syncer) *Poller {
+func NewPoller(airtable *client.Airtable, discord *client.Discord, syncer *syncer.Syncer, state *state.State) *Poller {
 	return &Poller{
 		airtable:     airtable,
 		discord:      discord,
 		syncer:       syncer,
-		enabled:      true,
+		state:        state,
 		lastWarnTime: map[string]time.Time{},
 	}
 }
 
-func (p *Poller) Enable(enable bool) (changed bool) {
-	p.mu.Lock()
-	defer p.mu.Unlock()
-	if p.enabled == enable {
-		return false
-	} else {
-		p.enabled = enable
-		return true
-	}
-}
-
 func (p *Poller) isEnabled() bool {
-	p.mu.Lock()
-	defer p.mu.Unlock()
-	return p.enabled
+	p.state.Lock()
+	defer p.state.Unlock()
+	return !p.state.HuntbotDisabled
 }
 
 func (p *Poller) Poll(ctx context.Context) {

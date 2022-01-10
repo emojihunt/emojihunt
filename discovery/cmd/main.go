@@ -13,7 +13,7 @@ func main() {
 	disc := discovery.New(nil, nil, nil, &discovery.DiscoveryConfig{
 		CookieName:  "dummyCookie",
 		CookieValue: "dummyValue",
-	})
+	}, nil)
 	puzzles, err := disc.Scrape()
 	if err != nil {
 		fmt.Printf("fatal error: %#v\n", err)

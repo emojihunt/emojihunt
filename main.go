@@ -18,6 +18,7 @@ import (
 	"github.com/gauravjsingh/emojihunt/database"
 	"github.com/gauravjsingh/emojihunt/discovery"
 	"github.com/gauravjsingh/emojihunt/server"
+	"github.com/gauravjsingh/emojihunt/state"
 	"github.com/gauravjsingh/emojihunt/syncer"
 )
 
@@ -30,8 +31,8 @@ type Config struct {
 }
 
 func main() {
-	if len(os.Args) != 2 {
-		fmt.Printf("usage: %s CONFIG_FILE\n", os.Args[0])
+	if len(os.Args) != 3 {
+		fmt.Printf("usage: %s CONFIG_FILE STATE_FILE\n", os.Args[0])
 		os.Exit(2)
 	}
 
@@ -43,6 +44,12 @@ func main() {
 	config := Config{}
 	if err := json.Unmarshal(bs, &config); err != nil {
 		log.Fatalf("error unmarshaling secrets from %q: %v", os.Args[1], err)
+	}
+
+	// Load state.json
+	state, err := state.Load(os.Args[2])
+	if err != nil {
+		log.Fatalf("error reading state file at %q: %v", os.Args[2], err)
 	}
 
 	// Set up our context, which is cancelled on Ctrl-C
@@ -83,7 +90,7 @@ func main() {
 
 	// Start internal engines
 	syncer := syncer.New(airtable, discord, drive)
-	dbpoller := database.NewPoller(airtable, discord, syncer)
+	dbpoller := database.NewPoller(airtable, discord, syncer, state)
 
 	bot.RegisterEmojiNameBot(discord)
 	bot.RegisterHuntYetBot(discord)
@@ -93,13 +100,13 @@ func main() {
 
 	var dscvpoller *discovery.Poller
 	if config.Autodiscovery != nil {
-		dscvpoller = discovery.New(airtable, discord, syncer, config.Autodiscovery)
+		dscvpoller = discovery.New(airtable, discord, syncer, config.Autodiscovery, state)
 		dscvpoller.RegisterApproveCommand(ctx, discord)
 	} else {
 		log.Printf("puzzle auto-discovery is disabled (no config found)")
 	}
 
-	bot.RegisterHuntbotCommand(discord, dbpoller, dscvpoller)
+	bot.RegisterHuntbotCommand(discord, dbpoller, dscvpoller, state)
 
 	if err := discord.RegisterCommands(); err != nil {
 		log.Fatalf("failed to register discord commands: %v", err)

@@ -7,11 +7,11 @@ import (
 	"log"
 	"net/http"
 	"net/url"
-	"sync"
 	"time"
 
 	"github.com/davecgh/go-spew/spew"
 	"github.com/gauravjsingh/emojihunt/client"
+	"github.com/gauravjsingh/emojihunt/state"
 	"github.com/gauravjsingh/emojihunt/syncer"
 	"golang.org/x/net/websocket"
 	"golang.org/x/time/rate"
@@ -27,12 +27,10 @@ type Poller struct {
 	airtable      *client.Airtable
 	discord       *client.Discord
 	syncer        *syncer.Syncer
+	state         *state.State
 	wsLimiter     *rate.Limiter
 	newRounds     map[string]time.Time
 	lastWarnError time.Time
-
-	mu      sync.Mutex // hold while accessing everything below
-	enabled bool
 }
 
 type DiscoveredPuzzle struct {
@@ -51,7 +49,7 @@ const (
 
 var websocketRate = rate.Every(1 * time.Minute)
 
-func New(airtable *client.Airtable, discord *client.Discord, syncer *syncer.Syncer, config *DiscoveryConfig) *Poller {
+func New(airtable *client.Airtable, discord *client.Discord, syncer *syncer.Syncer, config *DiscoveryConfig, state *state.State) *Poller {
 	return &Poller{
 		cookie: &http.Cookie{
 			Name:   config.CookieName,
@@ -61,10 +59,10 @@ func New(airtable *client.Airtable, discord *client.Discord, syncer *syncer.Sync
 		airtable:      airtable,
 		discord:       discord,
 		syncer:        syncer,
+		state:         state,
 		wsLimiter:     rate.NewLimiter(websocketRate, websocketBurst),
 		newRounds:     make(map[string]time.Time),
 		lastWarnError: time.Now().Add(-24 * time.Hour),
-		enabled:       true,
 	}
 }
 
@@ -99,16 +97,10 @@ func (d *Poller) Poll(ctx context.Context) {
 	}
 }
 
-func (d *Poller) Enable(enable bool) {
-	d.mu.Lock()
-	defer d.mu.Unlock()
-	d.enabled = enable
-}
-
 func (d *Poller) isEnabled() bool {
-	d.mu.Lock()
-	defer d.mu.Unlock()
-	return d.enabled
+	d.state.Lock()
+	defer d.state.Unlock()
+	return !d.state.DiscoveryDisabled
 }
 
 func (d *Poller) logAndMaybeWarn(memo string, err error) {
