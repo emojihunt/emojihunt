@@ -12,11 +12,11 @@ import (
 // updated). The folder is based on the round, which shouldn't change after
 // creation but we update it to be sure.
 func (s *Syncer) driveUpdateSpreadsheet(ctx context.Context, puzzle *schema.Puzzle) error {
-	var title = puzzle.Name
+	var name = puzzle.Name
 	if puzzle.Status.IsSolved() {
-		title = "[SOLVED] " + title
+		name = "[SOLVED] " + name
 	}
-	if err := s.drive.SetSheetTitle(ctx, puzzle.SpreadsheetID, title); err != nil {
+	if err := s.drive.SetSheetTitle(ctx, puzzle.SpreadsheetID, name); err != nil {
 		return err
 	}
 

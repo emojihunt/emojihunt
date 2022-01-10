@@ -104,9 +104,9 @@ func (s *Syncer) discordUpdateChannel(puzzle *schema.Puzzle) error {
 		return err
 	}
 
-	var name = puzzle.Name
+	var title = puzzle.Title()
 	if puzzle.Status.IsSolved() {
-		name = "✅ " + name
+		title = "✅ " + title
 	}
-	return s.discord.SetChannelName(puzzle.DiscordChannel, name)
+	return s.discord.SetChannelName(puzzle.DiscordChannel, title)
 }

@@ -9,12 +9,13 @@ import (
 )
 
 type Puzzle struct {
-	Name        string
-	Answer      string
-	Rounds      Rounds
-	Status      Status
-	Description string
-	Notes       string
+	Name         string
+	Answer       string
+	Rounds       Rounds
+	Status       Status
+	Description  string
+	Notes        string
+	NameOverride string
 
 	AirtableRecord *airtable.Record
 	PuzzleURL      string
@@ -55,6 +56,15 @@ func (p Puzzle) ShouldArchive() bool {
 	// We shouldn't archive the channel until the answer has been filled in on
 	// Airtable
 	return p.Status.IsSolved() && p.Answer != ""
+}
+
+func (p Puzzle) Title() string {
+	// Puzzle name for Discord channel, spreadsheet, etc. (may be an abbreviated
+	// version of the full name, specified by the QM)
+	if p.NameOverride != "" {
+		return p.NameOverride
+	}
+	return p.Name
 }
 
 type Round struct {
