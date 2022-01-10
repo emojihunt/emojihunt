@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log"
 	"sync"
-	"time"
 
 	"github.com/gauravjsingh/emojihunt/client"
 	"github.com/gauravjsingh/emojihunt/schema"
@@ -18,8 +17,6 @@ type Syncer struct {
 
 	VoiceRoomMutex sync.Mutex
 }
-
-const modifyGracePeriod = 15 * time.Second
 
 func New(airtable *client.Airtable, discord *client.Discord, drive *client.Drive) *Syncer {
 	return &Syncer{airtable, discord, drive, sync.Mutex{}}
@@ -84,7 +81,7 @@ func (s *Syncer) IdempotentCreateUpdate(ctx context.Context, puzzle *schema.Puzz
 		if err != nil {
 			return nil, err
 		}
-	} else if puzzle.LastModifiedBy != s.airtable.BotUserID && time.Since(*puzzle.LastModified) > modifyGracePeriod {
+	} else if puzzle.LastModifiedBy != s.airtable.BotUserID {
 		var err error
 		if err = s.DiscordCreateUpdatePin(puzzle); err != nil {
 			return nil, fmt.Errorf("unable to set puzzle status message for %q: %w", puzzle.Name, err)

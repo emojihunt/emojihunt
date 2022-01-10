@@ -19,6 +19,7 @@ const (
 	pollInterval        = 10 * time.Second
 	initialWarningDelay = 1 * time.Minute
 	minWarningFrequency = 10 * time.Minute
+	modifyGracePeriod   = 8 * time.Second
 )
 
 type Poller struct {
@@ -78,13 +79,17 @@ func (p *Poller) Poll(ctx context.Context) {
 				failures = 0
 			}
 
+			listTimestamp := time.Now()
+
 			for _, puzzle := range puzzles {
 				if puzzle.Pending {
 					// Skip auto-added records that haven't been confirmed by a
 					// human
 					continue
 				}
-				err := p.processPuzzle(ctx, &puzzle)
+				// TODO: refresh puzzles from the API if our data is more than N
+				// seconds stale...
+				err := p.processPuzzle(ctx, &puzzle, &listTimestamp)
 				if err != nil {
 					// Log errors and keep going.
 					log.Printf("updating puzzle failed: %v", err)
@@ -103,7 +108,7 @@ func (p *Poller) Poll(ctx context.Context) {
 	}
 }
 
-func (p *Poller) processPuzzle(ctx context.Context, puzzle *schema.Puzzle) error {
+func (p *Poller) processPuzzle(ctx context.Context, puzzle *schema.Puzzle, timestamp *time.Time) error {
 	if !puzzle.IsValid() {
 		// Occasionally warn the QM about puzzles that are missing fields.
 		if puzzle.Name != "" {
@@ -111,6 +116,13 @@ func (p *Poller) processPuzzle(ctx context.Context, puzzle *schema.Puzzle) error
 				return fmt.Errorf("error warning about malformed puzzle %q: %v", puzzle.Name, err)
 			}
 		}
+		return nil
+	}
+
+	if timestamp.Sub(*puzzle.LastModified) < modifyGracePeriod {
+		// Wait a few seconds after edits before processing a puzzle. Since
+		// Airtable exposes as-you-type changes in the API, this delay is
+		// necessary to avoid picking up puzzles with  partially-entered text.
 		return nil
 	}
 
