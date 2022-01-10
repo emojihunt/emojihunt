@@ -178,8 +178,8 @@ func (d *Poller) SyncPuzzles(puzzles []*DiscoveredPuzzle) error {
 	return d.notifyNewRounds(skippedRounds)
 }
 
-func (d *Poller) MakeApproveCommand(ctx context.Context) *client.DiscordCommand {
-	return &client.DiscordCommand{
+func (d *Poller) RegisterApproveCommand(ctx context.Context, discord *client.Discord) {
+	command := &client.DiscordCommand{
 		InteractionType: discordgo.InteractionMessageComponent,
 		CustomID:        "discovery.approve",
 		OnlyOnce:        true,
@@ -202,6 +202,7 @@ func (d *Poller) MakeApproveCommand(ctx context.Context) *client.DiscordCommand 
 			return fmt.Sprintf(":ok_hand: I've created puzzle %q, %s!", puzzle.Name, i.User.Mention()), nil
 		},
 	}
+	discord.AddCommand(command)
 }
 
 func (d *Poller) notifyNewPuzzle(puzzle *schema.Puzzle) error {

@@ -32,21 +32,38 @@ type DiscordCommandInput struct {
 
 type DiscordCommandHandler func(*discordgo.Session, *DiscordCommandInput) (string, error)
 
-func (c *Discord) RegisterCommands(commands []*DiscordCommand) error {
+func (c *Discord) AddCommand(command *DiscordCommand) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	if c.commandsRegistered {
+		panic("can't call AddCommand() after RegisterCommands()")
+	}
+
+	switch command.InteractionType {
+	case discordgo.InteractionApplicationCommand:
+		c.appCommandHandlers[command.ApplicationCommand.Name] = command
+	case discordgo.InteractionMessageComponent:
+		c.componentHandlers[command.CustomID] = command
+	default:
+		panic(fmt.Errorf("unknown interaction type: %v", command.InteractionType))
+	}
+}
+
+func (c *Discord) RegisterCommands() error {
 	var appCommands []*discordgo.ApplicationCommand
-	for _, command := range commands {
-		switch command.InteractionType {
-		case discordgo.InteractionApplicationCommand:
-			appCommands = append(appCommands, command.ApplicationCommand)
-			c.appCommandHandlers[command.ApplicationCommand.Name] = command
-		case discordgo.InteractionMessageComponent:
-			c.componentHandlers[command.CustomID] = command
-		default:
-			return fmt.Errorf("unknown interaction type: %v", command.InteractionType)
-		}
+	for _, command := range c.appCommandHandlers {
+		appCommands = append(appCommands, command.ApplicationCommand)
 	}
 	_, err := c.s.ApplicationCommandBulkOverwrite(c.s.State.User.ID, c.Guild.ID, appCommands)
-	return err
+	if err != nil {
+		return err
+	}
+
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.commandsRegistered = true
+
+	return nil
 }
 
 func (c *Discord) commandHandler(s *discordgo.Session, i *discordgo.InteractionCreate) {

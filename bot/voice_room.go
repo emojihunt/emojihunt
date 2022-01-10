@@ -12,18 +12,20 @@ import (
 	"github.com/gauravjsingh/emojihunt/syncer"
 )
 
-type VoiceRoomBot struct {
+func RegisterVoiceRoomBot(ctx context.Context, airtable *client.Airtable, discord *client.Discord, syncer *syncer.Syncer) {
+	var bot = voiceRoomBot{ctx, airtable, discord, syncer}
+	discord.AddCommand(bot.makeSlashCommand())
+	discord.AddHandler(bot.scheduledEventUpdateHandler)
+}
+
+type voiceRoomBot struct {
 	ctx      context.Context
 	airtable *client.Airtable
 	discord  *client.Discord
 	syncer   *syncer.Syncer
 }
 
-func NewVoiceRoomBot(ctx context.Context, airtable *client.Airtable, discord *client.Discord, syncer *syncer.Syncer) *VoiceRoomBot {
-	return &VoiceRoomBot{ctx, airtable, discord, syncer}
-}
-
-func (bot *VoiceRoomBot) MakeSlashCommand() *client.DiscordCommand {
+func (bot *voiceRoomBot) makeSlashCommand() *client.DiscordCommand {
 	return &client.DiscordCommand{
 		InteractionType: discordgo.InteractionApplicationCommand,
 		ApplicationCommand: &discordgo.ApplicationCommand{
@@ -153,7 +155,7 @@ func (bot *VoiceRoomBot) MakeSlashCommand() *client.DiscordCommand {
 	}
 }
 
-func (bot *VoiceRoomBot) ScheduledEventUpdateHandler(s *discordgo.Session, i *discordgo.GuildScheduledEventUpdate) {
+func (bot *voiceRoomBot) scheduledEventUpdateHandler(s *discordgo.Session, i *discordgo.GuildScheduledEventUpdate) {
 	if i.Description != syncer.VoiceRoomEventDescription || i.Status != discordgo.GuildScheduledEventStatusCompleted {
 		return
 	}

@@ -85,29 +85,23 @@ func main() {
 	syncer := syncer.New(airtable, discord, drive)
 	dbpoller := database.NewPoller(airtable, discord, syncer)
 
-	voiceRoomBot := bot.NewVoiceRoomBot(ctx, airtable, discord, syncer)
-	discord.AddHandler(voiceRoomBot.ScheduledEventUpdateHandler)
-
-	botCommands := []*client.DiscordCommand{
-		bot.MakeEmojiNameCommand(),
-		bot.MakeHuntYetCommand(),
-		bot.MakeQMCommand(discord),
-		bot.MakePuzzleCommand(ctx, airtable, discord, syncer),
-		voiceRoomBot.MakeSlashCommand(),
-	}
+	bot.RegisterEmojiNameBot(discord)
+	bot.RegisterHuntYetBot(discord)
+	bot.RegisterPuzzleBot(ctx, airtable, discord, syncer)
+	bot.RegisterQMBot(discord)
+	bot.RegisterVoiceRoomBot(ctx, airtable, discord, syncer)
 
 	var dscvpoller *discovery.Poller
 	if config.Autodiscovery != nil {
 		dscvpoller = discovery.New(airtable, discord, syncer, config.Autodiscovery)
-		botCommands = append(botCommands, dscvpoller.MakeApproveCommand(ctx))
+		dscvpoller.RegisterApproveCommand(ctx, discord)
 	} else {
 		log.Printf("puzzle auto-discovery is disabled (no config found)")
 	}
-	botCommands = append(botCommands,
-		bot.MakeDatabaseCommand(discord, dbpoller, dscvpoller),
-	)
 
-	if err := discord.RegisterCommands(botCommands); err != nil {
+	bot.RegisterHuntbotCommand(discord, dbpoller, dscvpoller)
+
+	if err := discord.RegisterCommands(); err != nil {
 		log.Fatalf("failed to register discord commands: %v", err)
 	}
 

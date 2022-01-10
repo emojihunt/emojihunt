@@ -11,7 +11,19 @@ import (
 	"github.com/gauravjsingh/emojihunt/syncer"
 )
 
-func MakePuzzleCommand(ctx context.Context, air *client.Airtable, dis *client.Discord, syn *syncer.Syncer) *client.DiscordCommand {
+func RegisterPuzzleBot(ctx context.Context, airtable *client.Airtable, discord *client.Discord, syncer *syncer.Syncer) {
+	var bot = puzzleBot{ctx, airtable, discord, syncer}
+	discord.AddCommand(bot.makeSlashCommand())
+}
+
+type puzzleBot struct {
+	ctx      context.Context
+	airtable *client.Airtable
+	discord  *client.Discord
+	syncer   *syncer.Syncer
+}
+
+func (bot *puzzleBot) makeSlashCommand() *client.DiscordCommand {
 	return &client.DiscordCommand{
 		InteractionType: discordgo.InteractionApplicationCommand,
 		ApplicationCommand: &discordgo.ApplicationCommand{
@@ -90,14 +102,14 @@ func MakePuzzleCommand(ctx context.Context, air *client.Airtable, dis *client.Di
 		},
 		Async: true,
 		Handler: func(s *discordgo.Session, i *client.DiscordCommandInput) (string, error) {
-			puzzle, err := air.FindByDiscordChannel(i.IC.ChannelID)
+			puzzle, err := bot.airtable.FindByDiscordChannel(i.IC.ChannelID)
 			if err != nil {
 				return "", err
 			} else if puzzle == nil {
 				return ":butterfly: I can't find a puzzle associated with this channel. Is this a puzzle channel?", nil
 			} else if !puzzle.IsValid() {
 				return fmt.Sprintf("😰 I can't update this puzzle because it has errors in "+
-					"Airtable. Please check %s for more information...", dis.QMChannel.Mention()), nil
+					"Airtable. Please check %s for more information...", bot.discord.QMChannel.Mention()), nil
 			}
 
 			var reply string
@@ -105,7 +117,7 @@ func MakePuzzleCommand(ctx context.Context, air *client.Airtable, dis *client.Di
 			var newAnswer string
 			switch i.Subcommand.Name {
 			case "status":
-				if statusOpt, err := dis.OptionByName(i.Subcommand.Options, "to"); err != nil {
+				if statusOpt, err := bot.discord.OptionByName(i.Subcommand.Options, "to"); err != nil {
 					return "", err
 				} else if newStatus, err = schema.ParseTextStatus(statusOpt.StringValue()); err != nil {
 					return "", err
@@ -122,20 +134,20 @@ func MakePuzzleCommand(ctx context.Context, air *client.Airtable, dis *client.Di
 						"Was that right?", newStatus.Human(), puzzle.Answer)
 				}
 
-				if puzzle, err = air.SetStatusAndAnswer(puzzle, newStatus, newAnswer); err != nil {
+				if puzzle, err = bot.airtable.SetStatusAndAnswer(puzzle, newStatus, newAnswer); err != nil {
 					return "", err
 				}
-				if puzzle, err = syn.BasicUpdate(ctx, puzzle, true); err != nil {
+				if puzzle, err = bot.syncer.BasicUpdate(bot.ctx, puzzle, true); err != nil {
 					return "", err
 				}
 			case "solved":
-				if statusOpt, err := dis.OptionByName(i.Subcommand.Options, "as"); err != nil {
+				if statusOpt, err := bot.discord.OptionByName(i.Subcommand.Options, "as"); err != nil {
 					return "", err
 				} else if newStatus, err = schema.ParseTextStatus(statusOpt.StringValue()); err != nil {
 					return "", err
 				}
 
-				if answerOpt, err := dis.OptionByName(i.Subcommand.Options, "answer"); err != nil {
+				if answerOpt, err := bot.discord.OptionByName(i.Subcommand.Options, "answer"); err != nil {
 					return "", err
 				} else {
 					newAnswer = strings.ToUpper(answerOpt.StringValue())
@@ -146,15 +158,15 @@ func MakePuzzleCommand(ctx context.Context, air *client.Airtable, dis *client.Di
 					newStatus.SolvedNoun(), newAnswer,
 				)
 
-				if puzzle, err = air.SetStatusAndAnswer(puzzle, newStatus, newAnswer); err != nil {
+				if puzzle, err = bot.airtable.SetStatusAndAnswer(puzzle, newStatus, newAnswer); err != nil {
 					return "", err
 				}
-				if puzzle, err = syn.BasicUpdate(ctx, puzzle, true); err != nil {
+				if puzzle, err = bot.syncer.BasicUpdate(bot.ctx, puzzle, true); err != nil {
 					return "", err
 				}
 			case "description":
 				var newDescription string
-				if descriptionOpt, err := dis.OptionByName(i.Subcommand.Options, "is"); err == nil {
+				if descriptionOpt, err := bot.discord.OptionByName(i.Subcommand.Options, "is"); err == nil {
 					newDescription = descriptionOpt.StringValue()
 					reply = ":writing_hand: Updated puzzle description!"
 				} else {
@@ -164,15 +176,15 @@ func MakePuzzleCommand(ctx context.Context, air *client.Airtable, dis *client.Di
 					reply += fmt.Sprintf(" Previous description was: ```\n%s\n```", puzzle.Description)
 				}
 
-				if puzzle, err = air.SetDescription(puzzle, newDescription); err != nil {
+				if puzzle, err = bot.airtable.SetDescription(puzzle, newDescription); err != nil {
 					return "", err
 				}
-				if err = syn.DiscordCreateUpdatePin(puzzle); err != nil {
+				if err = bot.syncer.DiscordCreateUpdatePin(puzzle); err != nil {
 					return "", err
 				}
 			case "note":
 				var newNotes string
-				if notesOpt, err := dis.OptionByName(i.Subcommand.Options, "is"); err == nil {
+				if notesOpt, err := bot.discord.OptionByName(i.Subcommand.Options, "is"); err == nil {
 					newNotes = notesOpt.StringValue()
 					reply = ":writing_hand: Updated puzzle note!"
 				} else {
@@ -182,10 +194,10 @@ func MakePuzzleCommand(ctx context.Context, air *client.Airtable, dis *client.Di
 					reply += fmt.Sprintf(" Previous note was: ```\n%s\n```", puzzle.Notes)
 				}
 
-				if puzzle, err = air.SetNotes(puzzle, newNotes); err != nil {
+				if puzzle, err = bot.airtable.SetNotes(puzzle, newNotes); err != nil {
 					return "", err
 				}
-				if err = syn.DiscordCreateUpdatePin(puzzle); err != nil {
+				if err = bot.syncer.DiscordCreateUpdatePin(puzzle); err != nil {
 					return "", err
 				}
 			default:

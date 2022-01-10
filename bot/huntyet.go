@@ -8,6 +8,15 @@ import (
 	"github.com/gauravjsingh/emojihunt/client"
 )
 
+func RegisterHuntYetBot(discord *client.Discord) {
+	var bot = huntYetBot{discord}
+	discord.AddCommand(bot.makeSlashCommand())
+}
+
+type huntYetBot struct {
+	discord *client.Discord
+}
+
 type hunt struct {
 	start, end time.Time
 }
@@ -18,7 +27,7 @@ var hunts = []hunt{
 	{time.Date(2023, 1, 13, 17, 0, 0, 0, time.UTC), time.Date(2023, 1, 15, 23, 0, 0, 0, time.UTC)},
 }
 
-func MakeHuntYetCommand() *client.DiscordCommand {
+func (bot *huntYetBot) makeSlashCommand() *client.DiscordCommand {
 	return &client.DiscordCommand{
 		InteractionType: discordgo.InteractionApplicationCommand,
 		ApplicationCommand: &discordgo.ApplicationCommand{

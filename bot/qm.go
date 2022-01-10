@@ -7,7 +7,16 @@ import (
 	"github.com/gauravjsingh/emojihunt/client"
 )
 
-func MakeQMCommand(dis *client.Discord) *client.DiscordCommand {
+func RegisterQMBot(discord *client.Discord) {
+	var bot = qmBot{discord}
+	discord.AddCommand(bot.makeSlashCommand())
+}
+
+type qmBot struct {
+	discord *client.Discord
+}
+
+func (bot *qmBot) makeSlashCommand() *client.DiscordCommand {
 	return &client.DiscordCommand{
 		InteractionType: discordgo.InteractionApplicationCommand,
 		ApplicationCommand: &discordgo.ApplicationCommand{
@@ -29,13 +38,13 @@ func MakeQMCommand(dis *client.Discord) *client.DiscordCommand {
 		Handler: func(s *discordgo.Session, i *client.DiscordCommandInput) (string, error) {
 			switch i.Subcommand.Name {
 			case "start":
-				err := s.GuildMemberRoleAdd(dis.Guild.ID, i.User.ID, dis.QMRole.ID)
+				err := s.GuildMemberRoleAdd(bot.discord.Guild.ID, i.User.ID, bot.discord.QMRole.ID)
 				if err != nil {
 					return "", fmt.Errorf("unable to make %s a QM: %v", i.User.Mention(), err)
 				}
 				return fmt.Sprintf("%s is now a QM", i.User.Mention()), nil
 			case "stop":
-				err := s.GuildMemberRoleRemove(dis.Guild.ID, i.User.ID, dis.QMRole.ID)
+				err := s.GuildMemberRoleRemove(bot.discord.Guild.ID, i.User.ID, bot.discord.QMRole.ID)
 				if err != nil {
 					return "", fmt.Errorf("unable to remove %s from QM role: %v", i.User.Mention(), err)
 				}
