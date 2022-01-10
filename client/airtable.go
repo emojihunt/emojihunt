@@ -154,6 +154,28 @@ func (air *Airtable) SetStatusAndAnswer(puzzle *schema.Puzzle, status schema.Sta
 	return air.parseRecord(record)
 }
 
+func (air *Airtable) SetDescription(puzzle *schema.Puzzle, description string) (*schema.Puzzle, error) {
+	var fields = map[string]interface{}{
+		"Description": description,
+	}
+	record, err := puzzle.AirtableRecord.UpdateRecordPartial(fields)
+	if err != nil {
+		return nil, err
+	}
+	return air.parseRecord(record)
+}
+
+func (air *Airtable) SetNotes(puzzle *schema.Puzzle, notes string) (*schema.Puzzle, error) {
+	var fields = map[string]interface{}{
+		"Notes": notes,
+	}
+	record, err := puzzle.AirtableRecord.UpdateRecordPartial(fields)
+	if err != nil {
+		return nil, err
+	}
+	return air.parseRecord(record)
+}
+
 func (air *Airtable) UpdateBotFields(puzzle *schema.Puzzle, lastBotStatus schema.Status, archived, pending bool) (*schema.Puzzle, error) {
 	var fields = make(map[string]interface{})
 

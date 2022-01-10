@@ -60,6 +60,32 @@ func MakePuzzleCommand(ctx context.Context, air *client.Airtable, dis *client.Di
 						},
 					},
 				},
+				{
+					Name:        "description",
+					Description: "Use in a puzzle channel to add or update the description ✏️",
+					Type:        discordgo.ApplicationCommandOptionSubCommand,
+					Options: []*discordgo.ApplicationCommandOption{
+						{
+							Name:        "is",
+							Description: "What's the puzzle about?",
+							Required:    false,
+							Type:        discordgo.ApplicationCommandOptionString,
+						},
+					},
+				},
+				{
+					Name:        "note",
+					Description: "Use in a puzzle channel to add or update the note 💷",
+					Type:        discordgo.ApplicationCommandOptionSubCommand,
+					Options: []*discordgo.ApplicationCommandOption{
+						{
+							Name:        "is",
+							Description: "What should the note be set to?",
+							Required:    false,
+							Type:        discordgo.ApplicationCommandOptionString,
+						},
+					},
+				},
 			},
 		},
 		Async: true,
@@ -95,6 +121,13 @@ func MakePuzzleCommand(ctx context.Context, air *client.Airtable, dis *client.Di
 					reply = fmt.Sprintf(":woozy_face: Updated puzzle status to %s and cleared answer `%s`. "+
 						"Was that right?", newStatus.Human(), puzzle.Answer)
 				}
+
+				if puzzle, err = air.SetStatusAndAnswer(puzzle, newStatus, newAnswer); err != nil {
+					return "", err
+				}
+				if puzzle, err = syn.BasicUpdate(ctx, puzzle, true); err != nil {
+					return "", err
+				}
 			case "solved":
 				if statusOpt, err := dis.OptionByName(i.Subcommand.Options, "as"); err != nil {
 					return "", err
@@ -112,16 +145,53 @@ func MakePuzzleCommand(ctx context.Context, air *client.Airtable, dis *client.Di
 					"🎉 Congratulations on the %s! I'll record the answer `%s` and archive this channel.",
 					newStatus.SolvedNoun(), newAnswer,
 				)
+
+				if puzzle, err = air.SetStatusAndAnswer(puzzle, newStatus, newAnswer); err != nil {
+					return "", err
+				}
+				if puzzle, err = syn.BasicUpdate(ctx, puzzle, true); err != nil {
+					return "", err
+				}
+			case "description":
+				var newDescription string
+				if descriptionOpt, err := dis.OptionByName(i.Subcommand.Options, "is"); err == nil {
+					newDescription = descriptionOpt.StringValue()
+					reply = ":writing_hand: Updated puzzle description!"
+				} else {
+					reply = ":cl: Cleared puzzle description."
+				}
+				if puzzle.Description != "" {
+					reply += fmt.Sprintf(" Previous description was: ```\n%s\n```", puzzle.Description)
+				}
+
+				if puzzle, err = air.SetDescription(puzzle, newDescription); err != nil {
+					return "", err
+				}
+				if err = syn.DiscordCreateUpdatePin(puzzle); err != nil {
+					return "", err
+				}
+			case "note":
+				var newNotes string
+				if notesOpt, err := dis.OptionByName(i.Subcommand.Options, "is"); err == nil {
+					newNotes = notesOpt.StringValue()
+					reply = ":writing_hand: Updated puzzle note!"
+				} else {
+					reply = ":cl: Cleared puzzle note."
+				}
+				if puzzle.Notes != "" {
+					reply += fmt.Sprintf(" Previous note was: ```\n%s\n```", puzzle.Notes)
+				}
+
+				if puzzle, err = air.SetNotes(puzzle, newNotes); err != nil {
+					return "", err
+				}
+				if err = syn.DiscordCreateUpdatePin(puzzle); err != nil {
+					return "", err
+				}
 			default:
 				return "", fmt.Errorf("unexpected /puzzle subcommand: %q", i.Subcommand.Name)
 			}
 
-			if puzzle, err = air.SetStatusAndAnswer(puzzle, newStatus, newAnswer); err != nil {
-				return "", err
-			}
-			if puzzle, err = syn.BasicUpdate(ctx, puzzle, true); err != nil {
-				return "", err
-			}
 			return reply, nil
 		},
 	}
