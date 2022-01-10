@@ -228,11 +228,14 @@ func (d *Poller) notifyNewPuzzle(puzzle *schema.Puzzle) error {
 }
 
 func (d *Poller) notifyNewRounds(rounds map[string]bool) error {
+	d.state.Lock()
+	defer d.state.CommitAndUnlock()
+
 	var array []string
 	shouldNotify := false
 	for round := range rounds {
 		array = append(array, round)
-		lastNotified, ok := d.newRounds[round]
+		lastNotified, ok := d.state.DiscoveryNewRounds[round]
 		if !ok || time.Since(lastNotified) > roundNotifyFrequency {
 			shouldNotify = true
 		}
@@ -251,7 +254,7 @@ func (d *Poller) notifyNewRounds(rounds map[string]bool) error {
 	}
 
 	for round := range rounds {
-		d.newRounds[round] = time.Now()
+		d.state.DiscoveryNewRounds[round] = time.Now()
 	}
 	return nil
 }

@@ -4,11 +4,15 @@ import (
 	"encoding/json"
 	"os"
 	"sync"
+	"time"
 )
 
 type State struct {
-	HuntbotDisabled   bool `json:"huntbot_disabled"`
-	DiscoveryDisabled bool `json:"discovery_disabled"`
+	HuntbotDisabled    bool                 `json:"huntbot_disabled"`
+	DiscoveryDisabled  bool                 `json:"discovery_disabled"`
+	DiscoveryLastWarn  time.Time            `json:"discovery_last_warn"`
+	DiscoveryNewRounds map[string]time.Time `json:"discovery_new_rounds"`
+	AirtableLastWarn   map[string]time.Time `json:"airtable_last_warn"`
 
 	mutex    sync.Mutex `json:"-"`
 	filename string     `json:"-"`
@@ -21,6 +25,12 @@ func Load(filename string) (*State, error) {
 	}
 	var state State
 	err = json.Unmarshal(data, &state)
+	if state.DiscoveryNewRounds == nil {
+		state.DiscoveryNewRounds = make(map[string]time.Time)
+	}
+	if state.AirtableLastWarn == nil {
+		state.AirtableLastWarn = make(map[string]time.Time)
+	}
 	state.filename = filename
 	return &state, err
 }

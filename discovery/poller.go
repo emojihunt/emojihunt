@@ -23,14 +23,12 @@ type DiscoveryConfig struct {
 }
 
 type Poller struct {
-	cookie        *http.Cookie
-	airtable      *client.Airtable
-	discord       *client.Discord
-	syncer        *syncer.Syncer
-	state         *state.State
-	wsLimiter     *rate.Limiter
-	newRounds     map[string]time.Time
-	lastWarnError time.Time
+	cookie    *http.Cookie
+	airtable  *client.Airtable
+	discord   *client.Discord
+	syncer    *syncer.Syncer
+	state     *state.State
+	wsLimiter *rate.Limiter
 }
 
 type DiscoveredPuzzle struct {
@@ -56,13 +54,11 @@ func New(airtable *client.Airtable, discord *client.Discord, syncer *syncer.Sync
 			Value:  config.CookieValue,
 			MaxAge: 0,
 		},
-		airtable:      airtable,
-		discord:       discord,
-		syncer:        syncer,
-		state:         state,
-		wsLimiter:     rate.NewLimiter(websocketRate, websocketBurst),
-		newRounds:     make(map[string]time.Time),
-		lastWarnError: time.Now().Add(-24 * time.Hour),
+		airtable:  airtable,
+		discord:   discord,
+		syncer:    syncer,
+		state:     state,
+		wsLimiter: rate.NewLimiter(websocketRate, websocketBurst),
 	}
 }
 
@@ -104,11 +100,14 @@ func (d *Poller) isEnabled() bool {
 }
 
 func (d *Poller) logAndMaybeWarn(memo string, err error) {
+	d.state.Lock()
+	defer d.state.CommitAndUnlock()
+
 	log.Printf("discovery: %s: %v", memo, err)
-	if time.Since(d.lastWarnError) >= warnErrorFrequency {
+	if time.Since(d.state.DiscoveryLastWarn) >= warnErrorFrequency {
 		msg := fmt.Sprintf("discovery: %s: ```\n%s\n```", memo, spew.Sdump(err))
 		d.discord.ChannelSend(d.discord.TechChannel, msg)
-		d.lastWarnError = time.Now()
+		d.state.DiscoveryLastWarn = time.Now()
 	}
 }
 

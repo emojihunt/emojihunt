@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/bwmarrin/discordgo"
@@ -28,18 +27,14 @@ type Poller struct {
 	discord  *client.Discord
 	syncer   *syncer.Syncer
 	state    *state.State
-
-	mu           sync.Mutex           // hold while accessing everything below
-	lastWarnTime map[string]time.Time // airtable id -> when we last warned about a malformed puzzle
 }
 
 func NewPoller(airtable *client.Airtable, discord *client.Discord, syncer *syncer.Syncer, state *state.State) *Poller {
 	return &Poller{
-		airtable:     airtable,
-		discord:      discord,
-		syncer:       syncer,
-		state:        state,
-		lastWarnTime: map[string]time.Time{},
+		airtable: airtable,
+		discord:  discord,
+		syncer:   syncer,
+		state:    state,
 	}
 }
 
@@ -121,10 +116,11 @@ func (p *Poller) processPuzzle(ctx context.Context, puzzle *schema.Puzzle, times
 }
 
 func (p *Poller) warnPuzzle(ctx context.Context, puzzle *schema.Puzzle) error {
-	p.mu.Lock()
-	defer p.mu.Unlock()
-	if lastWarning, ok := p.lastWarnTime[puzzle.AirtableRecord.ID]; !ok {
-		p.lastWarnTime[puzzle.AirtableRecord.ID] = time.Now().Add(initialWarningDelay - minWarningFrequency)
+	p.state.Lock()
+	defer p.state.CommitAndUnlock()
+
+	if lastWarning, ok := p.state.AirtableLastWarn[puzzle.AirtableRecord.ID]; !ok {
+		p.state.AirtableLastWarn[puzzle.AirtableRecord.ID] = time.Now().Add(initialWarningDelay - minWarningFrequency)
 	} else if time.Since(lastWarning) <= minWarningFrequency {
 		return nil
 	}
@@ -154,6 +150,6 @@ func (p *Poller) warnPuzzle(ctx context.Context, puzzle *schema.Puzzle) error {
 	if err := p.discord.ChannelSendComponents(p.discord.QMChannel, msg, components); err != nil {
 		return err
 	}
-	p.lastWarnTime[puzzle.AirtableRecord.ID] = time.Now()
+	p.state.AirtableLastWarn[puzzle.AirtableRecord.ID] = time.Now()
 	return nil
 }
