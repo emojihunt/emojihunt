@@ -44,6 +44,7 @@ type Discord struct {
 	commandsRegistered        bool
 	scheduledEventsCache      map[string]*discordgo.GuildScheduledEvent
 	scheduledEventsLastUpdate time.Time
+	rateLimits                map[string]*time.Time // url -> retryAfter time
 }
 
 func NewDiscord(config *DiscordConfig) (*Discord, error) {
@@ -114,12 +115,28 @@ func NewDiscord(config *DiscordConfig) (*Discord, error) {
 		appCommandHandlers:        make(map[string]*DiscordCommand),
 		componentHandlers:         make(map[string]*DiscordCommand),
 		scheduledEventsLastUpdate: time.Now().Add(-24 * time.Hour),
+		rateLimits:                make(map[string]*time.Time),
 	}
 	s.AddHandler(discord.commandHandler)
 	s.AddHandler(func(s *discordgo.Session, r *discordgo.RateLimit) {
 		log.Printf("discord: hit rate limit at %q: %#v", r.URL, r.TooManyRequests)
+		expiry := time.Now().Add(r.TooManyRequests.RetryAfter)
+
+		discord.mu.Lock()
+		defer discord.mu.Unlock()
+		discord.rateLimits[r.URL] = &expiry
 	})
 	return discord, nil
+}
+
+func (c *Discord) CheckRateLimit(url string) *time.Time {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	limit := c.rateLimits[url]
+	if limit == nil || time.Now().After(*limit) {
+		return nil
+	}
+	return limit
 }
 
 func (c *Discord) AddHandler(handler interface{}) {

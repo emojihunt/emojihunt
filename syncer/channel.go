@@ -3,6 +3,7 @@ package syncer
 import (
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/gauravjsingh/emojihunt/schema"
@@ -108,5 +109,21 @@ func (s *Syncer) discordUpdateChannel(puzzle *schema.Puzzle) error {
 	if puzzle.Status.IsSolved() {
 		title = "✅ " + title
 	}
-	return s.discord.SetChannelName(puzzle.DiscordChannel, title)
+
+	var ch chan error
+	go func() {
+		ch <- s.discord.SetChannelName(puzzle.DiscordChannel, title)
+	}()
+	select {
+	case err := <-ch:
+		return err
+	case <-time.After(5 * time.Second):
+		rateLimit := s.discord.CheckRateLimit(discordgo.EndpointChannel(puzzle.DiscordChannel))
+		if rateLimit == nil {
+			return <-ch
+		}
+		msg := fmt.Sprintf(":snail: Hit Discord's rate limit on channel renaming. Channel will be "+
+			"renamed to %q in %s.", title, rateLimit.Sub(time.Now()).Round(time.Second))
+		return s.discord.ChannelSendRawID(puzzle.DiscordChannel, msg)
+	}
 }
