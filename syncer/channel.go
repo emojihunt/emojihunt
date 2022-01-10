@@ -110,6 +110,9 @@ func (s *Syncer) discordUpdateChannel(puzzle *schema.Puzzle) error {
 		title = "✅ " + title
 	}
 
+	// The Discord rate limit on channel renames is fairly restrictive (2 per 10
+	// minutes per channel), so finish renaming the channel asynchronously if we
+	// get rate-limited.
 	var ch chan error
 	go func() {
 		ch <- s.discord.SetChannelName(puzzle.DiscordChannel, title)
@@ -120,8 +123,14 @@ func (s *Syncer) discordUpdateChannel(puzzle *schema.Puzzle) error {
 	case <-time.After(5 * time.Second):
 		rateLimit := s.discord.CheckRateLimit(discordgo.EndpointChannel(puzzle.DiscordChannel))
 		if rateLimit == nil {
+			// No rate limiting detected; maybe the Discord request is just
+			// slow? Wait for it to finish.
 			return <-ch
 		}
+		// Being rate limited; goroutine will finish later. (TODO: this can
+		// still result in an incorrect result if multiple channel renames are
+		// blocked on the same rate limit -- which order they resolve in is
+		// arbitrary.)
 		msg := fmt.Sprintf(":snail: Hit Discord's rate limit on channel renaming. Channel will be "+
 			"renamed to %q in %s.", title, rateLimit.Sub(time.Now()).Round(time.Second))
 		return s.discord.ChannelSendRawID(puzzle.DiscordChannel, msg)
