@@ -113,7 +113,7 @@ func (s *Syncer) discordUpdateChannel(puzzle *schema.Puzzle) error {
 	// The Discord rate limit on channel renames is fairly restrictive (2 per 10
 	// minutes per channel), so finish renaming the channel asynchronously if we
 	// get rate-limited.
-	var ch chan error
+	ch := make(chan error)
 	go func() {
 		ch <- s.discord.SetChannelName(puzzle.DiscordChannel, title)
 	}()
