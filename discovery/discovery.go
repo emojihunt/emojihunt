@@ -189,10 +189,13 @@ func (d *Poller) RegisterApproveCommand(ctx context.Context, discord *client.Dis
 			if len(parts) < 2 {
 				return "", fmt.Errorf("could not parse Airtable ID from command: %q", i.Command)
 			}
-			puzzle, err := d.airtable.FindByID(parts[1])
+			puzzle, err := d.airtable.LockByID(parts[1])
 			if err != nil {
 				return "", err
-			} else if !puzzle.Pending {
+			}
+			defer puzzle.Unlock() // TODO: minimize critical section for writes
+
+			if !puzzle.Pending {
 				return fmt.Sprintf(":man_shrugging: Puzzle %q is already approved, %s!", puzzle.Name, i.User.Mention()), nil
 			}
 

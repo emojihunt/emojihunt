@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"sort"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/gauravjsingh/emojihunt/schema"
@@ -18,9 +19,20 @@ type AirtableConfig struct {
 }
 
 type Airtable struct {
+	BotUserID       string
 	baseID, tableID string
 	table           *airtable.Table
-	BotUserID       string
+
+	// A map of Airtable Record ID -> puzzle mutex. The puzzle mutex should be
+	// held while reading or writing the puzzle, and should be acquired before
+	// the voice room mutex (if needed).
+	mutexes *sync.Map
+
+	// Mutex mutex protects channelToRecord. It should be held briefly when
+	// updating the map. We should never perform an operation that could block,
+	// like acquiring another lock or making an API call, while holding mutex.
+	mutex           *sync.Mutex
+	channelToRecord map[string]string
 }
 
 const pageSize = 100 // most records returned per list request
@@ -33,221 +45,17 @@ const pendingSuffix = " [pending]" // puzzle name suffix for auto-added puzzles
 // we get suspended for 30 seconds.
 
 func NewAirtable(config *AirtableConfig) *Airtable {
-	client := airtable.NewClient(config.APIKey)
-	table := client.GetTable(config.BaseID, config.TableID)
-	return &Airtable{config.BaseID, config.TableID, table, config.BotUserID}
-}
-
-func (air *Airtable) ListRecords() ([]schema.Puzzle, error) {
-	var infos []schema.Puzzle
-	var offset = ""
-	for {
-		response, err := air.table.GetRecords().
-			PageSize(pageSize).
-			WithOffset(offset).
-			Do()
-		if err != nil {
-			return nil, err
-		}
-
-		for _, record := range response.Records {
-			if record.Deleted {
-				// Skip deleted records? I think this field is only used in
-				// response to DELETE requests, but let's check it just in case.
-				continue
-			}
-			info, err := air.parseRecord(record)
-			if err != nil {
-				return nil, err
-			}
-			infos = append(infos, *info)
-		}
-
-		if response.Offset != "" {
-			// More records exist, continue to next request
-			offset = response.Offset
-		} else {
-			// All done, return all records
-			return infos, nil
-		}
+	return &Airtable{
+		BotUserID: config.BotUserID,
+		baseID:    config.BaseID,
+		tableID:   config.TableID,
+		table: airtable.
+			NewClient(config.APIKey).
+			GetTable(config.BaseID, config.TableID),
+		mutexes:         &sync.Map{},
+		mutex:           &sync.Mutex{},
+		channelToRecord: make(map[string]string),
 	}
-}
-
-func (air *Airtable) ListWithVoiceRoomEvent() ([]*schema.Puzzle, error) {
-	response, err := air.table.GetRecords().
-		WithFilterFormula("{Voice Room Event}!=''").
-		Do()
-	if err != nil {
-		return nil, err
-	} else if response.Offset != "" {
-		// This shouldn't happen, but if it does we fail instead of spending too
-		// much of our rate limit on paginated requests.
-		return nil, fmt.Errorf("airtable query failed: too many records have a voice room")
-	}
-
-	var puzzles []*schema.Puzzle
-	for _, record := range response.Records {
-		puzzle, err := air.parseRecord(record)
-		if err != nil {
-			return nil, err
-		}
-		puzzles = append(puzzles, puzzle)
-	}
-	return puzzles, nil
-}
-
-func (air *Airtable) FindByID(id string) (*schema.Puzzle, error) {
-	record, err := air.table.GetRecord(id)
-	if err != nil {
-		return nil, err
-	}
-	return air.parseRecord(record)
-}
-
-func (air *Airtable) FindByDiscordChannel(channel string) (*schema.Puzzle, error) {
-	response, err := air.table.GetRecords().
-		WithFilterFormula(fmt.Sprintf("{Discord Channel}='%s'", channel)).
-		Do()
-	if err != nil {
-		return nil, err
-	}
-	if len(response.Records) < 1 {
-		return nil, nil
-	} else if len(response.Records) > 1 {
-		return nil, fmt.Errorf("expected 0 or 1 record, got: %#v", response.Records)
-	}
-	return air.parseRecord(response.Records[0])
-}
-
-func (air *Airtable) UpdateDiscordChannel(puzzle *schema.Puzzle, channel string) (*schema.Puzzle, error) {
-	record, err := puzzle.AirtableRecord.UpdateRecordPartial(map[string]interface{}{
-		"Discord Channel": channel,
-	})
-	if err != nil {
-		return nil, err
-	}
-	return air.parseRecord(record)
-}
-
-func (air *Airtable) UpdateSpreadsheetID(puzzle *schema.Puzzle, spreadsheet string) (*schema.Puzzle, error) {
-	record, err := puzzle.AirtableRecord.UpdateRecordPartial(map[string]interface{}{
-		"Spreadsheet ID": spreadsheet,
-	})
-	if err != nil {
-		return nil, err
-	}
-	return air.parseRecord(record)
-}
-
-func (air *Airtable) SetStatusAndAnswer(puzzle *schema.Puzzle, status schema.Status, answer string) (*schema.Puzzle, error) {
-	var fields = map[string]interface{}{
-		"Status":          status.PrettyForAirtable(),
-		"Answer":          answer,
-		"Last Bot Status": status.TextForAirtable(),
-		"Last Bot Sync":   time.Now().Format(time.RFC3339),
-		"Archived":        status.IsSolved(),
-	}
-	record, err := puzzle.AirtableRecord.UpdateRecordPartial(fields)
-	if err != nil {
-		return nil, err
-	}
-	return air.parseRecord(record)
-}
-
-func (air *Airtable) SetDescription(puzzle *schema.Puzzle, description string) (*schema.Puzzle, error) {
-	var fields = map[string]interface{}{
-		"Description": description,
-	}
-	record, err := puzzle.AirtableRecord.UpdateRecordPartial(fields)
-	if err != nil {
-		return nil, err
-	}
-	return air.parseRecord(record)
-}
-
-func (air *Airtable) SetNotes(puzzle *schema.Puzzle, notes string) (*schema.Puzzle, error) {
-	var fields = map[string]interface{}{
-		"Notes": notes,
-	}
-	record, err := puzzle.AirtableRecord.UpdateRecordPartial(fields)
-	if err != nil {
-		return nil, err
-	}
-	return air.parseRecord(record)
-}
-
-func (air *Airtable) UpdateBotFields(puzzle *schema.Puzzle, lastBotStatus schema.Status, archived, pending bool) (*schema.Puzzle, error) {
-	var fields = make(map[string]interface{})
-
-	if lastBotStatus == schema.NotStarted {
-		fields["Last Bot Status"] = nil
-	} else {
-		fields["Last Bot Status"] = string(lastBotStatus)
-	}
-
-	fields["Archived"] = archived
-	fields["Last Bot Sync"] = time.Now().Format(time.RFC3339)
-
-	if puzzle.Pending != pending {
-		// The "pending" status is stored in the puzzle name
-		puzzleName := puzzle.Name
-		if pending {
-			puzzle.Name += pendingSuffix
-		}
-		fields["Name"] = puzzleName
-	}
-
-	record, err := puzzle.AirtableRecord.UpdateRecordPartial(fields)
-	if err != nil {
-		return nil, err
-	}
-	return air.parseRecord(record)
-}
-
-func (air *Airtable) UpdateVoiceRoomEvent(puzzle *schema.Puzzle, voiceRoomEvent string) (*schema.Puzzle, error) {
-	record, err := puzzle.AirtableRecord.UpdateRecordPartial(map[string]interface{}{
-		"Voice Room Event": voiceRoomEvent,
-	})
-	if err != nil {
-		return nil, err
-	}
-	return air.parseRecord(record)
-}
-
-func (air *Airtable) AddPuzzles(puzzles []*schema.NewPuzzle) ([]*schema.Puzzle, error) {
-	var created []*schema.Puzzle
-	for i := 0; i < len(puzzles); i += 10 {
-		records := airtable.Records{}
-		limit := i + 10
-		if limit > len(puzzles) {
-			limit = len(puzzles)
-		}
-		for _, puzzle := range puzzles[i:limit] {
-			fields := map[string]interface{}{
-				"Name":         puzzle.Name + pendingSuffix,
-				"Round":        puzzle.Round.Serialize(),
-				"Puzzle URL":   puzzle.PuzzleURL,
-				"Original URL": puzzle.PuzzleURL,
-			}
-			records.Records = append(records.Records,
-				&airtable.Record{
-					Fields: fields,
-				},
-			)
-		}
-		response, err := air.table.AddRecords(&records)
-		if err != nil {
-			return nil, err
-		}
-		for _, record := range response.Records {
-			parsed, err := air.parseRecord(record)
-			if err != nil {
-				return nil, err
-			}
-			created = append(created, parsed)
-		}
-	}
-	return created, nil
 }
 
 func (air *Airtable) EditURL(puzzle *schema.Puzzle) string {

@@ -83,12 +83,13 @@ func (s *Server) resync(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	puzzle, err := s.airtable.FindByID(id)
+	puzzle, err := s.airtable.LockByID(id)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		fmt.Fprintf(w, "error: %#v\n", err)
 		return
 	}
+	defer puzzle.Unlock()
 
 	_, err = s.syncer.ForceUpdate(r.Context(), puzzle)
 	if err != nil {

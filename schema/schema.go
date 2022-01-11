@@ -32,6 +32,8 @@ type Puzzle struct {
 
 	LastModified   *time.Time
 	LastModifiedBy string // user id
+
+	Unlock func()
 }
 
 type NewPuzzle struct {

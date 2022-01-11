@@ -102,10 +102,13 @@ func (bot *puzzleBot) makeSlashCommand() *client.DiscordCommand {
 		},
 		Async: true,
 		Handler: func(s *discordgo.Session, i *client.DiscordCommandInput) (string, error) {
-			puzzle, err := bot.airtable.FindByDiscordChannel(i.IC.ChannelID)
+			puzzle, err := bot.airtable.LockByDiscordChannel(i.IC.ChannelID)
 			if err != nil {
 				return "", err
-			} else if puzzle == nil {
+			}
+			defer puzzle.Unlock() // TODO: minimize critical section for writes
+
+			if puzzle == nil {
 				return ":butterfly: I can't find a puzzle associated with this channel. Is this a puzzle channel?", nil
 			} else if !puzzle.IsValid() {
 				return fmt.Sprintf("😰 I can't update this puzzle because it has errors in "+
