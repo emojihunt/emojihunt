@@ -73,6 +73,29 @@ func (air *Airtable) ListRecords() ([]schema.Puzzle, error) {
 	}
 }
 
+func (air *Airtable) ListWithVoiceRoomEvent() ([]*schema.Puzzle, error) {
+	response, err := air.table.GetRecords().
+		WithFilterFormula("{Voice Room Event}!=''").
+		Do()
+	if err != nil {
+		return nil, err
+	} else if response.Offset != "" {
+		// This shouldn't happen, but if it does we fail instead of spending too
+		// much of our rate limit on paginated requests.
+		return nil, fmt.Errorf("airtable query failed: too many records have a voice room")
+	}
+
+	var puzzles []*schema.Puzzle
+	for _, record := range response.Records {
+		puzzle, err := air.parseRecord(record)
+		if err != nil {
+			return nil, err
+		}
+		puzzles = append(puzzles, puzzle)
+	}
+	return puzzles, nil
+}
+
 func (air *Airtable) FindByID(id string) (*schema.Puzzle, error) {
 	record, err := air.table.GetRecord(id)
 	if err != nil {
@@ -94,29 +117,6 @@ func (air *Airtable) FindByDiscordChannel(channel string) (*schema.Puzzle, error
 		return nil, fmt.Errorf("expected 0 or 1 record, got: %#v", response.Records)
 	}
 	return air.parseRecord(response.Records[0])
-}
-
-func (air *Airtable) FindWithVoiceRoomEvent() ([]*schema.Puzzle, error) {
-	response, err := air.table.GetRecords().
-		WithFilterFormula("{Voice Room Event}!=''").
-		Do()
-	if err != nil {
-		return nil, err
-	} else if response.Offset != "" {
-		// This shouldn't happen, but if it does we fail instead of spending too
-		// much of our rate limit on paginated requests.
-		return nil, fmt.Errorf("airtable query failed: too many records have a voice room")
-	}
-
-	var puzzles []*schema.Puzzle
-	for _, record := range response.Records {
-		puzzle, err := air.parseRecord(record)
-		if err != nil {
-			return nil, err
-		}
-		puzzles = append(puzzles, puzzle)
-	}
-	return puzzles, nil
 }
 
 func (air *Airtable) UpdateDiscordChannel(puzzle *schema.Puzzle, channel string) (*schema.Puzzle, error) {

@@ -171,7 +171,7 @@ func (bot *voiceRoomBot) scheduledEventUpdateHandler(s *discordgo.Session, i *di
 	// updates to update the name and to start the event initally, but
 	// those events are filtered out by the condition above.)
 	log.Printf("discord: processing scheduled event completion event for %q", i.Name)
-	puzzles, err := bot.airtable.FindWithVoiceRoomEvent()
+	puzzles, err := bot.airtable.ListWithVoiceRoomEvent()
 	if err == nil {
 		for _, puzzle := range puzzles {
 			puzzle, err = bot.airtable.UpdateVoiceRoomEvent(puzzle, "")

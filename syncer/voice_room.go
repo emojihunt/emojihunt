@@ -27,7 +27,7 @@ func (s *Syncer) SyncVoiceRooms(ctx context.Context) error {
 		return err
 	}
 
-	puzzles, err := s.airtable.FindWithVoiceRoomEvent()
+	puzzles, err := s.airtable.ListWithVoiceRoomEvent()
 	if err != nil {
 		return err
 	}
