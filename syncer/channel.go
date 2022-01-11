@@ -70,20 +70,22 @@ func (s *Syncer) DiscordCreateUpdatePin(puzzle *schema.Puzzle) error {
 		})
 	}
 
-	voiceRoomMsg := voiceRoomDefaultMsg
-	if puzzle.VoiceRoomEvent != "" {
-		var err error
-		event, err := s.discord.GetScheduledEvent(puzzle.VoiceRoomEvent)
-		if err != nil {
-			return err
+	if !puzzle.Status.IsSolved() {
+		voiceRoomMsg := voiceRoomDefaultMsg
+		if puzzle.VoiceRoomEvent != "" {
+			var err error
+			event, err := s.discord.GetScheduledEvent(puzzle.VoiceRoomEvent)
+			if err != nil {
+				return err
+			}
+			voiceRoomMsg = fmt.Sprintf("Join us in <#%s>!", *event.ChannelID)
 		}
-		voiceRoomMsg = fmt.Sprintf("Join us in <#%s>!", *event.ChannelID)
+		embed.Fields = append(embed.Fields, &discordgo.MessageEmbedField{
+			Name:   "Voice Room",
+			Value:  voiceRoomMsg,
+			Inline: false,
+		})
 	}
-	embed.Fields = append(embed.Fields, &discordgo.MessageEmbedField{
-		Name:   "Voice Room",
-		Value:  voiceRoomMsg,
-		Inline: false,
-	})
 
 	return s.discord.CreateUpdatePin(puzzle.DiscordChannel, pinnedStatusHeader, embed)
 }
@@ -127,10 +129,7 @@ func (s *Syncer) discordUpdateChannel(puzzle *schema.Puzzle) error {
 			// slow? Wait for it to finish.
 			return <-ch
 		}
-		// Being rate limited; goroutine will finish later. (TODO: this can
-		// still result in an incorrect result if multiple channel renames are
-		// blocked on the same rate limit -- which order they resolve in is
-		// arbitrary.)
+		// Being rate limited; goroutine will finish later.
 		msg := fmt.Sprintf(":snail: Hit Discord's rate limit on channel renaming. Channel will be "+
 			"renamed to %q in %s.", title, rateLimit.Sub(time.Now()).Round(time.Second))
 		return s.discord.ChannelSendRawID(puzzle.DiscordChannel, msg)
