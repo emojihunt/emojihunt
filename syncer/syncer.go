@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"sync"
+	"time"
 
 	"github.com/gauravjsingh/emojihunt/client"
 	"github.com/gauravjsingh/emojihunt/schema"
@@ -27,6 +28,11 @@ func New(airtable *client.Airtable, discord *client.Discord, drive *client.Drive
 // spreadsheet and Discord channel and links them in Airtable. When a puzzle's
 // status is updated, it handles that also.
 func (s *Syncer) IdempotentCreateUpdate(ctx context.Context, puzzle *schema.Puzzle) (*schema.Puzzle, error) {
+	// 0. Skip puzzles that are being actively edited by a human
+	if time.Since(*puzzle.LastModified) < s.airtable.ModifyGracePeriod {
+		return puzzle, nil
+	}
+
 	// 1. Create the spreadsheet, if required
 	if puzzle.SpreadsheetID == "" {
 		spreadsheet, err := s.drive.CreateSheet(ctx, puzzle.Name, puzzle.Rounds[0].Name)

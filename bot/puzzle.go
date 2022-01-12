@@ -110,11 +110,6 @@ func (bot *puzzleBot) makeSlashCommand() *client.DiscordCommand {
 			}
 			defer puzzle.Unlock() // TODO: minimize critical section for writes
 
-			if !puzzle.IsValid() {
-				return fmt.Sprintf("😰 I can't update this puzzle because it has errors in "+
-					"Airtable. Please check %s for more information...", bot.discord.QMChannel.Mention()), nil
-			}
-
 			var reply string
 			var newStatus schema.Status
 			var newAnswer string

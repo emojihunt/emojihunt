@@ -19,7 +19,6 @@ const (
 	pollInterval        = 10 * time.Second
 	initialWarningDelay = 1 * time.Minute
 	minWarningFrequency = 10 * time.Minute
-	modifyGracePeriod   = 8 * time.Second
 )
 
 type Poller struct {
@@ -50,7 +49,7 @@ func (p *Poller) Poll(ctx context.Context) {
 	failures := 0
 	for {
 		if p.isEnabled() {
-			puzzles, err := p.airtable.ListRecords()
+			invalid, needsSync, err := p.airtable.ListPuzzlesToAction()
 			if err != nil {
 				// Log errors always, but ping after 3 consecutive failures,
 				// then every 10, to avoid spam
@@ -64,21 +63,23 @@ func (p *Poller) Poll(ctx context.Context) {
 				failures = 0
 			}
 
-			listTimestamp := time.Now()
+			for _, puzzle := range invalid {
+				if err := p.warnPuzzle(ctx, &puzzle); err != nil {
+					log.Printf("error warning about malformed puzzle %q: %v", puzzle.Name, err)
+				}
+			}
 
-			for _, puzzle := range puzzles {
-				if puzzle.Pending {
-					// Skip auto-added records that haven't been confirmed by a
-					// human
+			for _, id := range needsSync {
+				puzzle, err := p.airtable.LockByID(id)
+				if err != nil {
+					log.Printf("failed to reload puzzle: %v", err)
 					continue
 				}
-				// TODO: refresh puzzles from the API if our data is more than N
-				// seconds stale...
-				err := p.processPuzzle(ctx, &puzzle, &listTimestamp)
-				if err != nil {
-					// Log errors and keep going.
+				if _, err = p.syncer.IdempotentCreateUpdate(ctx, puzzle); err != nil {
+					// Log errors and keep going
 					log.Printf("updating puzzle failed: %v", err)
 				}
+				puzzle.Unlock()
 			}
 		} else {
 			log.Printf("bot disabled, skipping update")
@@ -93,63 +94,28 @@ func (p *Poller) Poll(ctx context.Context) {
 	}
 }
 
-func (p *Poller) processPuzzle(ctx context.Context, puzzle *schema.Puzzle, timestamp *time.Time) error {
-	if !puzzle.IsValid() {
-		// Occasionally warn the QM about puzzles that are missing fields.
-		if puzzle.Name != "" {
-			if err := p.warnPuzzle(ctx, puzzle); err != nil {
-				return fmt.Errorf("error warning about malformed puzzle %q: %v", puzzle.Name, err)
-			}
-		}
-		return nil
-	}
-
-	if timestamp.Sub(*puzzle.LastModified) < modifyGracePeriod {
-		// Wait a few seconds after edits before processing a puzzle. Since
-		// Airtable exposes as-you-type changes in the API, this delay is
-		// necessary to avoid picking up puzzles with  partially-entered text.
-		return nil
-	}
-
-	_, err := p.syncer.IdempotentCreateUpdate(ctx, puzzle)
-	return err
-}
-
-func (p *Poller) warnPuzzle(ctx context.Context, puzzle *schema.Puzzle) error {
+func (p *Poller) warnPuzzle(ctx context.Context, puzzle *schema.InvalidPuzzle) error {
 	p.state.Lock()
 	defer p.state.CommitAndUnlock()
 
-	if lastWarning, ok := p.state.AirtableLastWarn[puzzle.AirtableRecord.ID]; !ok {
-		p.state.AirtableLastWarn[puzzle.AirtableRecord.ID] = time.Now().Add(initialWarningDelay - minWarningFrequency)
+	if lastWarning, ok := p.state.AirtableLastWarn[puzzle.RecordID]; !ok {
+		p.state.AirtableLastWarn[puzzle.RecordID] = time.Now().Add(initialWarningDelay - minWarningFrequency)
 	} else if time.Since(lastWarning) <= minWarningFrequency {
 		return nil
 	}
-	var msgs []string
-	if puzzle.PuzzleURL == "" {
-		msgs = append(msgs, "missing a URL")
-	}
-	if len(puzzle.Rounds) == 0 {
-		msgs = append(msgs, "missing a round")
-	}
-	if puzzle.Answer != "" && !puzzle.Status.IsSolved() {
-		msgs = append(msgs, "has an answer even though it's not marked solved")
-	}
-	if len(msgs) == 0 {
-		return fmt.Errorf("cannot warn about well-formatted puzzle %q: %v", puzzle.Name, puzzle)
-	}
 	msg := fmt.Sprintf("**:boom: Halp!** Errors with puzzle %q: %s.",
-		puzzle.Name, strings.Join(msgs, " and "))
+		puzzle.Name, strings.Join(puzzle.Problems, " and "))
 	components := []discordgo.MessageComponent{
 		discordgo.Button{
 			Label: "Edit in Airtable",
 			Style: discordgo.LinkButton,
 			Emoji: discordgo.ComponentEmoji{Name: "📝"},
-			URL:   p.airtable.EditURL(puzzle),
+			URL:   puzzle.EditURL,
 		},
 	}
 	if err := p.discord.ChannelSendComponents(p.discord.QMChannel, msg, components); err != nil {
 		return err
 	}
-	p.state.AirtableLastWarn[puzzle.AirtableRecord.ID] = time.Now()
+	p.state.AirtableLastWarn[puzzle.RecordID] = time.Now()
 	return nil
 }

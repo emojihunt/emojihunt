@@ -2,20 +2,149 @@ package client
 
 import (
 	"fmt"
-	"log"
+	"strings"
 	"sync"
+	"time"
 
 	"github.com/gauravjsingh/emojihunt/schema"
 )
 
-func (air *Airtable) ListRecords() ([]schema.Puzzle, error) {
+// ListPuzzlesToAction loads all puzzles from the Airtable API and returns two
+// lists: a list of schema.InvalidPuzzle objects representing puzzles that
+// failed basic validation (we can't even create the Discord channel and
+// spreadsheet because they're missing basic information), and a list of record
+// IDs for puzzles that need to be actioned by the syncer. No lock is held, so
+// the caller needs to re-load each puzzle in the latter list with LockByID and
+// make sure it still needs actioning.
+func (air *Airtable) ListPuzzlesToAction() ([]schema.InvalidPuzzle, []string, error) {
+	timestamp := time.Now()
+
+	puzzles, err := air.listRecordsWithFilter("")
+	if err != nil {
+		return nil, nil, err
+	}
+
+	var invalid []schema.InvalidPuzzle // invalid, notify the QM
+	var needsAction []string           // needs some kind of re-sync
+	for _, puzzle := range puzzles {
+		if puzzle.Pending {
+			// Skip auto-added records that haven't been confirmed by a human
+			continue
+		} else if timestamp.Sub(*puzzle.LastModified) < air.ModifyGracePeriod {
+			// Skip puzzles that are being actively edited by a human
+			continue
+		} else if problems := air.validatePuzzle(&puzzle); len(problems) > 0 {
+			invalid = append(invalid, schema.InvalidPuzzle{
+				RecordID: puzzle.AirtableRecord.ID,
+				Name:     puzzle.Name,
+				Problems: problems,
+				EditURL:  air.EditURL(&puzzle),
+			})
+		} else if puzzle.SpreadsheetID == "" || puzzle.DiscordChannel == "" {
+			needsAction = append(needsAction, puzzle.AirtableRecord.ID)
+		} else if puzzle.Status != puzzle.LastBotStatus || puzzle.ShouldArchive() != puzzle.Archived {
+			needsAction = append(needsAction, puzzle.AirtableRecord.ID)
+		} else if puzzle.LastModifiedBy != air.BotUserID {
+			needsAction = append(needsAction, puzzle.AirtableRecord.ID)
+		} else {
+			// no-op
+		}
+	}
+	return invalid, needsAction, nil
+}
+
+func (air *Airtable) validatePuzzle(puzzle *schema.Puzzle) []string {
+	var problems []string
+	if puzzle.Name == "" {
+		problems = append(problems, "missing puzzle name")
+	}
+	if len(puzzle.Rounds) == 0 {
+		problems = append(problems, "missing a round")
+	}
+	for _, round := range puzzle.Rounds {
+		if round.Name == "" || round.Emoji == "" {
+			problems = append(problems, fmt.Sprintf("invalid round %#v", round))
+		}
+	}
+	if puzzle.PuzzleURL == "" {
+		problems = append(problems, "missing puzzle URL")
+	}
+	if puzzle.Answer != "" && !puzzle.Status.IsSolved() {
+		problems = append(problems, "has an answer even though it's not solved")
+	}
+	return problems
+}
+
+// ListPuzzleFragmentsAndRounds returns a collection of all puzzle names and
+// URLs, and a collection of all known rounds. It's used by the discovery script
+// to deduplicate puzzles. No lock is held, but puzzle names, URLs and Original
+// URLs are ~immutable (the bot will never write to them, and humans rarely do),
+// so it's safe.
+//
+// Note that puzzle names and URLs are *uppercased* in the result map.
+//
+func (air *Airtable) ListPuzzleFragmentsAndRounds() (map[string]bool, map[string]schema.Round, error) {
+	puzzles, err := air.listRecordsWithFilter("")
+	if err != nil {
+		return nil, nil, err
+	}
+
+	var fragments = make(map[string]bool)
+	var rounds = make(map[string]schema.Round)
+	for _, puzzle := range puzzles {
+		fragments[strings.ToUpper(puzzle.Name)] = true
+		fragments[strings.ToUpper(puzzle.PuzzleURL)] = true
+		fragments[strings.ToUpper(puzzle.OriginalURL)] = true
+
+		for _, round := range puzzle.Rounds {
+			rounds[round.Name] = round
+		}
+	}
+	return fragments, rounds, nil
+}
+
+// ListWithVoiceRoom returns all records in Airtable with a voice room set.
+// Instead of locking all of the matching puzzles, we return a miniature struct
+// containing just the puzzle name and voice room ID. The puzzle name is safe to
+// access because it's ~immutable, and the voice room ID is safe to access
+// because it's only written when holding VoiceRoomMutex.
+//
+// The caller *must* acquire VoiceRoomMutex before calling this function.
+//
+func (air *Airtable) ListWithVoiceRoom() ([]schema.VoicePuzzle, error) {
+	puzzles, err := air.listRecordsWithFilter("{Voice Room}!=''")
+	if err != nil {
+		return nil, err
+	}
+
+	var voicePuzzles []schema.VoicePuzzle
+	for _, puzzle := range puzzles {
+		voicePuzzles = append(voicePuzzles, schema.VoicePuzzle{
+			RecordID:  puzzle.AirtableRecord.ID,
+			Name:      puzzle.Name,
+			VoiceRoom: puzzle.VoiceRoom,
+		})
+	}
+	return voicePuzzles, nil
+}
+
+// listRecordsWithFilter queries Airtable for all records matching the given
+// filter. To list all records, pass the empty string as the filter.
+//
+// This function is for internal use only: no locks are acquired and callers are
+// responsible for avoiding race conditions.
+//
+func (air *Airtable) listRecordsWithFilter(filter string) ([]schema.Puzzle, error) {
 	var puzzles []schema.Puzzle
 	var offset = ""
 	for {
-		response, err := air.table.GetRecords().
+		request := air.table.GetRecords().
 			PageSize(pageSize).
-			WithOffset(offset).
-			Do()
+			WithOffset(offset)
+		if filter != "" {
+			request = request.WithFilterFormula(filter)
+		}
+		response, err := request.Do()
 		if err != nil {
 			return nil, err
 		}
@@ -48,51 +177,6 @@ func (air *Airtable) ListRecords() ([]schema.Puzzle, error) {
 			return puzzles, nil
 		}
 	}
-}
-
-// ListWithVoiceRoom returns all records in Airtable with a voice room set.
-// Instead of locking all of the matching puzzles, we return a miniature struct
-// containing just the puzzle name and voice room ID. The puzzle name is safe to
-// access because it's ~immutable, and the voice room ID is safe to access
-// because it's only written when holding the voice room lock.
-//
-// The caller *must* acquire VoiceRoomMutex before calling this function.
-//
-func (air *Airtable) ListWithVoiceRoom() ([]schema.VoicePuzzle, error) {
-	response, err := air.table.GetRecords().
-		WithFilterFormula("{Voice Room}!=''").
-		Do()
-	if err != nil {
-		return nil, err
-	} else if response.Offset != "" {
-		// This shouldn't happen, but if it does we fail instead of spending too
-		// much of our rate limit on paginated requests.
-		return nil, fmt.Errorf("airtable query failed: too many records have a voice room")
-	}
-
-	var puzzles []schema.VoicePuzzle
-	air.mutex.Lock()
-	for _, record := range response.Records {
-		if record.Deleted {
-			continue
-		}
-		puzzle, err := air.parseRecord(record)
-		if err != nil {
-			air.mutex.Unlock()
-			return nil, err
-		} else if puzzle.DiscordChannel != "" {
-			// Keep Discord Channel -> Airtable ID cache up-to-date; this is
-			// why we need to be holding air.mu
-			air.channelToRecord[puzzle.DiscordChannel] = puzzle.AirtableRecord.ID
-		}
-		puzzles = append(puzzles, schema.VoicePuzzle{
-			RecordID:  puzzle.AirtableRecord.ID,
-			Name:      puzzle.Name,
-			VoiceRoom: puzzle.VoiceRoom,
-		})
-	}
-	air.mutex.Unlock()
-	return puzzles, nil
 }
 
 // LockByID locks the given Airtable record ID and loads the corresponding
@@ -173,8 +257,6 @@ func (air *Airtable) lockPuzzle(id string) func() {
 	// https://stackoverflow.com/a/64612611
 	value, _ := air.mutexes.LoadOrStore(id, &sync.Mutex{})
 	mu := value.(*sync.Mutex)
-	log.Printf("lock: acquiring %q", id)
 	mu.Lock()
-	log.Printf("lock: acquired %q", id)
-	return func() { mu.Unlock(); log.Printf("lock: released %q", id) }
+	return func() { mu.Unlock() }
 }

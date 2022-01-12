@@ -48,16 +48,18 @@ type VoicePuzzle struct {
 	VoiceRoom string
 }
 
+type InvalidPuzzle struct {
+	RecordID string
+	Name     string
+	Problems []string
+	EditURL  string
+}
+
 func (p Puzzle) SpreadsheetURL() string {
 	if p.SpreadsheetID == "" {
 		panic("called SpreadsheetURL() on a puzzle with no spreadsheet")
 	}
 	return fmt.Sprintf("https://docs.google.com/spreadsheets/d/%s", p.SpreadsheetID)
-}
-
-func (p Puzzle) IsValid() bool {
-	return p.Name != "" && len(p.Rounds) > 0 &&
-		p.PuzzleURL != "" && (p.Status.IsSolved() || p.Answer == "")
 }
 
 func (p Puzzle) ShouldArchive() bool {

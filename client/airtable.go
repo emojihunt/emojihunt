@@ -19,9 +19,12 @@ type AirtableConfig struct {
 }
 
 type Airtable struct {
-	BotUserID       string
-	baseID, tableID string
-	table           *airtable.Table
+	BotUserID         string
+	ModifyGracePeriod time.Duration
+
+	baseID  string
+	tableID string
+	table   *airtable.Table
 
 	// A map of Airtable Record ID -> puzzle mutex. The puzzle mutex should be
 	// held while reading or writing the puzzle, and should be acquired before
@@ -35,9 +38,11 @@ type Airtable struct {
 	channelToRecord map[string]string
 }
 
-const pageSize = 100 // most records returned per list request
-
-const pendingSuffix = " [pending]" // puzzle name suffix for auto-added puzzles
+const (
+	defaultGracePeriod = 8 * time.Second // delay before records are picked up by ListPuzzlesToAction
+	pageSize           = 100             // most records returned per list request
+	pendingSuffix      = " [pending]"    // puzzle name suffix for auto-added puzzles
+)
 
 // FYI the Airtable library has a built-in rate limiter that will block if we
 // exceed 4 requests per second. This will keep us under Airtable's 5
@@ -46,9 +51,11 @@ const pendingSuffix = " [pending]" // puzzle name suffix for auto-added puzzles
 
 func NewAirtable(config *AirtableConfig) *Airtable {
 	return &Airtable{
-		BotUserID: config.BotUserID,
-		baseID:    config.BaseID,
-		tableID:   config.TableID,
+		BotUserID:         config.BotUserID,
+		ModifyGracePeriod: defaultGracePeriod,
+
+		baseID:  config.BaseID,
+		tableID: config.TableID,
 		table: airtable.
 			NewClient(config.APIKey).
 			GetTable(config.BaseID, config.TableID),
