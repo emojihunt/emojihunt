@@ -126,7 +126,7 @@ func (s *Syncer) discordUpdateChannel(puzzle *schema.Puzzle) error {
 		}
 		// Being rate limited; goroutine will finish later.
 		msg := fmt.Sprintf(":snail: Hit Discord's rate limit on channel renaming. Channel will be "+
-			"renamed to %q in %s.", title, rateLimit.Sub(time.Now()).Round(time.Second))
+			"renamed to %q in %s.", title, time.Until(*rateLimit).Round(time.Second))
 		return s.discord.ChannelSendRawID(puzzle.DiscordChannel, msg)
 	}
 }
