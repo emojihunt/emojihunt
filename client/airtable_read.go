@@ -226,7 +226,7 @@ func (air *Airtable) LockByDiscordChannel(channel string) (*schema.Puzzle, error
 		return nil, nil
 	} else if len(response.Records) > 1 {
 		unlock()
-		return nil, fmt.Errorf("expected 0 or 1 record, got: %#v", response.Records)
+		return nil, fmt.Errorf("expected 0 or 1 record, got %d", len(response.Records))
 	}
 	puzzle, err := air.parseRecord(response.Records[0], unlock)
 	if err != nil {
