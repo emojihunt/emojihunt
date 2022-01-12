@@ -36,6 +36,11 @@ func (bot *qmBot) makeSlashCommand() *client.DiscordCommand {
 			},
 		},
 		Handler: func(s *discordgo.Session, i *client.DiscordCommandInput) (string, error) {
+			if i.IC.ChannelID != bot.discord.QMChannel.ID {
+				return fmt.Sprintf(":tv: Please use `/qm` commands in the %s channel...",
+					bot.discord.QMChannel.Mention()), nil
+			}
+
 			switch i.Subcommand.Name {
 			case "start":
 				err := s.GuildMemberRoleAdd(bot.discord.Guild.ID, i.User.ID, bot.discord.QMRole.ID)

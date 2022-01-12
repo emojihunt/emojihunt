@@ -53,6 +53,11 @@ func (bot *huntbotBot) makeSlashCommand() *client.DiscordCommand {
 			},
 		},
 		Handler: func(s *discordgo.Session, i *client.DiscordCommandInput) (string, error) {
+			if i.IC.ChannelID != bot.discord.TechChannel.ID {
+				return fmt.Sprintf(":tv: Please use `/huntbot` commands in the %s channel...",
+					bot.discord.TechChannel.Mention()), nil
+			}
+
 			bot.state.Lock()
 			defer bot.state.CommitAndUnlock()
 
