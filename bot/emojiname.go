@@ -43,7 +43,7 @@ func (bot *emojiNameBot) makeSlashCommand() *client.DiscordCommand {
 				names = append(names, e.Name)
 			}
 			return fmt.Sprintf(
-				"Our team name is %v which you can pronounce like so: %v.",
+				"Our team name is %s which you can pronounce like so: `%s`.",
 				strings.Join(chars, ""),
 				strings.Join(names, " — "),
 			), nil

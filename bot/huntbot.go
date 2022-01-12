@@ -68,12 +68,12 @@ func (bot *huntbotBot) makeSlashCommand() *client.DiscordCommand {
 					return "The bot was already disabled. Enable it with `/huntbot start`.", nil
 				}
 			case "start":
-				bot.state.DiscoveryDisabled = true
+				bot.state.DiscoveryDisabled = false
 				if bot.state.HuntbotDisabled {
 					bot.state.HuntbotDisabled = false
 					bot.discord.ChannelSend(bot.discord.TechChannel,
 						fmt.Sprintf("**bot enabled by %v**", i.User.Mention()))
-					return "Ok, I've enabled the bot for now. Disable it with `/huntbot kill``.", nil
+					return "Ok, I've enabled the bot for now. Disable it with `/huntbot kill`.", nil
 				} else {
 					return "The bot was already enabled. Disable it with `/huntbot kill`.", nil
 				}
@@ -84,7 +84,7 @@ func (bot *huntbotBot) makeSlashCommand() *client.DiscordCommand {
 				bot.state.DiscoveryDisabled = true
 				bot.discord.ChannelSend(bot.discord.TechChannel,
 					fmt.Sprintf("**discovery paused by %v**", i.User.Mention()))
-				return "Ok, I've paused puzzle auto-discovery for now. Re-enable it with `!huntbot start`. " +
+				return "Ok, I've paused puzzle auto-discovery for now. Re-enable it with `/huntbot start`. " +
 					"(This will also reenable the entire bot if the bot has been killed.)", nil
 			default:
 				return "", fmt.Errorf("unexpected /huntbot subcommand: %q", i.Subcommand.Name)
