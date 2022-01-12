@@ -63,34 +63,35 @@ func New(airtable *client.Airtable, discord *client.Discord, syncer *syncer.Sync
 }
 
 func (d *Poller) Poll(ctx context.Context) {
+	ch, err := d.openWebsocket()
+	if err != nil {
+		log.Printf("discovery: failed to open websocket: %v", err)
+	}
+
 	for {
-		ch, err := d.openWebsocket()
-		if err != nil {
-			log.Printf("discovery: failed to open websocket: %v", err)
+		if !d.isEnabled() {
+			time.Sleep(2 * time.Second)
+			continue
 		}
 
-		for {
-			if !d.isEnabled() {
-				time.Sleep(2 * time.Second)
+		puzzles, err := d.Scrape()
+		if err != nil {
+			d.logAndMaybeWarn("scraping error", err)
+		}
+
+		if err := d.SyncPuzzles(puzzles); err != nil {
+			d.logAndMaybeWarn("syncing error", err)
+		}
+
+		select {
+		case <-ctx.Done():
+			log.Print("exiting discovery poller due to signal")
+			return
+		case _, more := <-ch:
+			if !more {
 				continue
 			}
-
-			puzzles, err := d.Scrape()
-			if err != nil {
-				d.logAndMaybeWarn("scraping error", err)
-			}
-
-			if err := d.SyncPuzzles(puzzles); err != nil {
-				d.logAndMaybeWarn("syncing error", err)
-			}
-
-			select {
-			case <-ctx.Done():
-				log.Print("exiting discovery poller due to signal")
-				return
-			case <-ch:
-			case <-time.After(pollInterval):
-			}
+		case <-time.After(pollInterval):
 		}
 	}
 }
@@ -135,6 +136,7 @@ func (d *Poller) openWebsocket() (chan bool, error) {
 				log.Printf("discovery: ws (skipped due to rate limit): %q", scanner.Text())
 			}
 		}
+		close(ch)
 	}(ws, ch)
 	return ch, nil
 }
