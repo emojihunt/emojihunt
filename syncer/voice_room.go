@@ -54,7 +54,7 @@ func (s *Syncer) SyncVoiceRooms(ctx context.Context) error {
 				return err
 			}
 		}
-		eventsByChannel[*event.ChannelID] = event
+		eventsByChannel[*event.ChannelID] = event // TODO: many:1?
 	}
 	for channelID, puzzles := range puzzlesByChannel {
 		var puzzleNames []string
@@ -63,7 +63,7 @@ func (s *Syncer) SyncVoiceRooms(ctx context.Context) error {
 		}
 		eventTitle := strings.Join(sort.StringSlice(puzzleNames), " & ")
 
-		if event, ok := events[channelID]; !ok {
+		if event, ok := eventsByChannel[channelID]; !ok {
 			// Someone must have stopped the event manually (or
 			// Discord stopped it because the voice room emptied for
 			// more than a few minutes). Un-assign all of the stale
