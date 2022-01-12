@@ -5,27 +5,30 @@ import (
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/gauravjsingh/emojihunt/schema"
-	"github.com/mehanizm/airtable"
 )
 
-func (air *Airtable) UpdateDiscordChannel(puzzle *schema.Puzzle, channel string) (*schema.Puzzle, error) {
+// Set[...] updates the given fields in Airtable and returns the updated record.
+// The caller *must* hold the puzzle lock. The unlock function is passed through
+// to the updated puzzle object unchanged.
+
+func (air *Airtable) SetDiscordChannel(puzzle *schema.Puzzle, channel string) (*schema.Puzzle, error) {
 	record, err := puzzle.AirtableRecord.UpdateRecordPartial(map[string]interface{}{
 		"Discord Channel": channel,
 	})
 	if err != nil {
 		return nil, err
 	}
-	return air.parseRecord(record)
+	return air.parseRecord(record, puzzle.Unlock)
 }
 
-func (air *Airtable) UpdateSpreadsheetID(puzzle *schema.Puzzle, spreadsheet string) (*schema.Puzzle, error) {
+func (air *Airtable) SetSpreadsheetID(puzzle *schema.Puzzle, spreadsheet string) (*schema.Puzzle, error) {
 	record, err := puzzle.AirtableRecord.UpdateRecordPartial(map[string]interface{}{
 		"Spreadsheet ID": spreadsheet,
 	})
 	if err != nil {
 		return nil, err
 	}
-	return air.parseRecord(record)
+	return air.parseRecord(record, puzzle.Unlock)
 }
 
 func (air *Airtable) SetStatusAndAnswer(puzzle *schema.Puzzle, status schema.Status, answer string) (*schema.Puzzle, error) {
@@ -40,7 +43,7 @@ func (air *Airtable) SetStatusAndAnswer(puzzle *schema.Puzzle, status schema.Sta
 	if err != nil {
 		return nil, err
 	}
-	return air.parseRecord(record)
+	return air.parseRecord(record, puzzle.Unlock)
 }
 
 func (air *Airtable) SetDescription(puzzle *schema.Puzzle, description string) (*schema.Puzzle, error) {
@@ -51,7 +54,7 @@ func (air *Airtable) SetDescription(puzzle *schema.Puzzle, description string) (
 	if err != nil {
 		return nil, err
 	}
-	return air.parseRecord(record)
+	return air.parseRecord(record, puzzle.Unlock)
 }
 
 func (air *Airtable) SetNotes(puzzle *schema.Puzzle, notes string) (*schema.Puzzle, error) {
@@ -62,10 +65,10 @@ func (air *Airtable) SetNotes(puzzle *schema.Puzzle, notes string) (*schema.Puzz
 	if err != nil {
 		return nil, err
 	}
-	return air.parseRecord(record)
+	return air.parseRecord(record, puzzle.Unlock)
 }
 
-func (air *Airtable) UpdateBotFields(puzzle *schema.Puzzle, lastBotStatus schema.Status, archived, pending bool) (*schema.Puzzle, error) {
+func (air *Airtable) SetBotFields(puzzle *schema.Puzzle, lastBotStatus schema.Status, archived, pending bool) (*schema.Puzzle, error) {
 	var fields = make(map[string]interface{})
 
 	if lastBotStatus == schema.NotStarted {
@@ -90,10 +93,10 @@ func (air *Airtable) UpdateBotFields(puzzle *schema.Puzzle, lastBotStatus schema
 	if err != nil {
 		return nil, err
 	}
-	return air.parseRecord(record)
+	return air.parseRecord(record, puzzle.Unlock)
 }
 
-func (air *Airtable) UpdateVoiceRoom(puzzle *schema.Puzzle, channel *discordgo.Channel) (*schema.Puzzle, error) {
+func (air *Airtable) SetVoiceRoom(puzzle *schema.Puzzle, channel *discordgo.Channel) (*schema.Puzzle, error) {
 	var channelID string
 	if channel != nil {
 		channelID = channel.ID
@@ -104,41 +107,5 @@ func (air *Airtable) UpdateVoiceRoom(puzzle *schema.Puzzle, channel *discordgo.C
 	if err != nil {
 		return nil, err
 	}
-	return air.parseRecord(record)
-}
-
-func (air *Airtable) AddPuzzles(puzzles []*schema.NewPuzzle) ([]*schema.Puzzle, error) {
-	var created []*schema.Puzzle
-	for i := 0; i < len(puzzles); i += 10 {
-		records := airtable.Records{}
-		limit := i + 10
-		if limit > len(puzzles) {
-			limit = len(puzzles)
-		}
-		for _, puzzle := range puzzles[i:limit] {
-			fields := map[string]interface{}{
-				"Name":         puzzle.Name + pendingSuffix,
-				"Round":        puzzle.Round.Serialize(),
-				"Puzzle URL":   puzzle.PuzzleURL,
-				"Original URL": puzzle.PuzzleURL,
-			}
-			records.Records = append(records.Records,
-				&airtable.Record{
-					Fields: fields,
-				},
-			)
-		}
-		response, err := air.table.AddRecords(&records)
-		if err != nil {
-			return nil, err
-		}
-		for _, record := range response.Records {
-			parsed, err := air.parseRecord(record)
-			if err != nil {
-				return nil, err
-			}
-			created = append(created, parsed)
-		}
-	}
-	return created, nil
+	return air.parseRecord(record, puzzle.Unlock)
 }

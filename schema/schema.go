@@ -55,6 +55,18 @@ type InvalidPuzzle struct {
 	EditURL  string
 }
 
+type PuzzleEdit struct {
+	AirtableRecord *airtable.Record
+
+	Answer      interface{}
+	Status      interface{}
+	Description interface{}
+	Notes       interface{}
+
+	SpreadsheetID  interface{}
+	DiscordChannel interface{}
+}
+
 func (p Puzzle) SpreadsheetURL() string {
 	if p.SpreadsheetID == "" {
 		panic("called SpreadsheetURL() on a puzzle with no spreadsheet")

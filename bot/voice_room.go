@@ -85,7 +85,7 @@ func (bot *voiceRoomBot) makeSlashCommand() *client.DiscordCommand {
 			}
 
 			// Sync the change!
-			if puzzle, err = bot.airtable.UpdateVoiceRoom(puzzle, channel); err != nil {
+			if puzzle, err = bot.airtable.SetVoiceRoom(puzzle, channel); err != nil {
 				return "", err
 			}
 			if err = bot.syncer.DiscordCreateUpdatePin(puzzle); err != nil {
@@ -142,7 +142,7 @@ func (bot *voiceRoomBot) clearVoiceRoom(info *schema.VoicePuzzle, expectedVoiceR
 		// double-check that the puzzle hasn't changed.
 		return nil
 	}
-	puzzle, err = bot.airtable.UpdateVoiceRoom(puzzle, nil)
+	puzzle, err = bot.airtable.SetVoiceRoom(puzzle, nil)
 	if err != nil {
 		return err
 	}

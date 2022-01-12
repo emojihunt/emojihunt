@@ -156,7 +156,7 @@ func (air *Airtable) listRecordsWithFilter(filter string) ([]schema.Puzzle, erro
 				// response to DELETE requests, but let's check it just in case.
 				continue
 			}
-			puzzle, err := air.parseRecord(record)
+			puzzle, err := air.parseRecord(record, nil)
 			if err != nil {
 				air.mutex.Unlock()
 				return nil, err
@@ -190,7 +190,7 @@ func (air *Airtable) LockByID(id string) (*schema.Puzzle, error) {
 		unlock()
 		return nil, err
 	}
-	puzzle, err := air.parseRecord(record)
+	puzzle, err := air.parseRecord(record, unlock)
 	if err != nil {
 		unlock()
 		return nil, err
@@ -200,8 +200,6 @@ func (air *Airtable) LockByID(id string) (*schema.Puzzle, error) {
 		air.channelToRecord[puzzle.DiscordChannel] = puzzle.AirtableRecord.ID
 		air.mutex.Unlock()
 	}
-
-	puzzle.Unlock = unlock
 	return puzzle, nil
 }
 
@@ -230,7 +228,7 @@ func (air *Airtable) LockByDiscordChannel(channel string) (*schema.Puzzle, error
 		unlock()
 		return nil, fmt.Errorf("expected 0 or 1 record, got: %#v", response.Records)
 	}
-	puzzle, err := air.parseRecord(response.Records[0])
+	puzzle, err := air.parseRecord(response.Records[0], unlock)
 	if err != nil {
 		unlock()
 		return nil, err
@@ -248,8 +246,6 @@ func (air *Airtable) LockByDiscordChannel(channel string) (*schema.Puzzle, error
 		air.mutex.Unlock()
 		return air.LockByDiscordChannel(channel)
 	}
-
-	puzzle.Unlock = unlock
 	return puzzle, nil
 }
 

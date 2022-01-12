@@ -125,7 +125,7 @@ func (d *Poller) SyncPuzzles(puzzles []*DiscoveredPuzzle) error {
 		return err
 	}
 
-	var newPuzzles []*schema.NewPuzzle
+	var newPuzzles []schema.NewPuzzle
 	skippedRounds := make(map[string]bool)
 	for _, puzzle := range puzzleMap {
 		if fragments[strings.ToUpper(puzzle.URL.String())] ||
@@ -140,7 +140,7 @@ func (d *Poller) SyncPuzzles(puzzles []*DiscoveredPuzzle) error {
 			continue
 		}
 		log.Printf("discovery: preparing to add puzzle %q (%s) in round %q", puzzle.Name, puzzle.URL.String(), puzzle.Round)
-		newPuzzles = append(newPuzzles, &schema.NewPuzzle{
+		newPuzzles = append(newPuzzles, schema.NewPuzzle{
 			Name:      puzzle.Name,
 			Round:     round,
 			PuzzleURL: puzzle.URL.String(),
@@ -156,10 +156,15 @@ func (d *Poller) SyncPuzzles(puzzles []*DiscoveredPuzzle) error {
 		return err
 	}
 
+	var errs []error
 	for _, puzzle := range created {
-		if err := d.notifyNewPuzzle(puzzle); err != nil {
-			return err
+		if err := d.notifyNewPuzzle(&puzzle); err != nil {
+			errs = append(errs, err)
 		}
+		puzzle.Unlock()
+	}
+	if len(errs) > 0 {
+		return fmt.Errorf("errors sending new puzzle notifications: %#v", errs)
 	}
 
 	return d.notifyNewRounds(skippedRounds)

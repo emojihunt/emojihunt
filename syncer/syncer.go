@@ -40,7 +40,7 @@ func (s *Syncer) IdempotentCreateUpdate(ctx context.Context, puzzle *schema.Puzz
 			return nil, fmt.Errorf("error creating spreadsheet for %q: %v", puzzle.Name, err)
 		}
 
-		puzzle, err = s.airtable.UpdateSpreadsheetID(puzzle, spreadsheet)
+		puzzle, err = s.airtable.SetSpreadsheetID(puzzle, spreadsheet)
 		if err != nil {
 			return nil, fmt.Errorf("error setting spreadsheet id for puzzle %q: %v", puzzle.Name, err)
 		}
@@ -59,7 +59,7 @@ func (s *Syncer) IdempotentCreateUpdate(ctx context.Context, puzzle *schema.Puzz
 			return nil, fmt.Errorf("error creating discord channel for %q: %v", puzzle.Name, err)
 		}
 
-		puzzle, err = s.airtable.UpdateDiscordChannel(puzzle, channel.ID)
+		puzzle, err = s.airtable.SetDiscordChannel(puzzle, channel.ID)
 		if err != nil {
 			return nil, fmt.Errorf("error setting discord channel for puzzle %q: %v", puzzle.Name, err)
 		}
@@ -92,7 +92,7 @@ func (s *Syncer) IdempotentCreateUpdate(ctx context.Context, puzzle *schema.Puzz
 		if err = s.DiscordCreateUpdatePin(puzzle); err != nil {
 			return nil, fmt.Errorf("unable to set puzzle status message for %q: %w", puzzle.Name, err)
 		}
-		puzzle, err = s.airtable.UpdateBotFields(puzzle, puzzle.Status, puzzle.ShouldArchive(), puzzle.Pending)
+		puzzle, err = s.airtable.SetBotFields(puzzle, puzzle.Status, puzzle.ShouldArchive(), puzzle.Pending)
 		if err != nil {
 			return nil, fmt.Errorf("failed to update bot fields for puzzle %q: %v", puzzle.Name, err)
 		} else if puzzle.LastModifiedBy != s.airtable.BotUserID {
@@ -126,7 +126,7 @@ func (s *Syncer) BasicUpdate(ctx context.Context, puzzle *schema.Puzzle, botRequ
 	// already been done.
 	if !botRequest {
 		var err error
-		puzzle, err = s.airtable.UpdateBotFields(puzzle, puzzle.Status, puzzle.ShouldArchive(), puzzle.Pending)
+		puzzle, err = s.airtable.SetBotFields(puzzle, puzzle.Status, puzzle.ShouldArchive(), puzzle.Pending)
 		if err != nil {
 			return nil, fmt.Errorf("failed to update bot fields for puzzle %q: %v", puzzle.Name, err)
 		}
@@ -152,7 +152,7 @@ func (s *Syncer) BasicUpdate(ctx context.Context, puzzle *schema.Puzzle, botRequ
 		if puzzle.VoiceRoom != "" {
 			s.VoiceRoomMutex.Lock()
 			defer s.VoiceRoomMutex.Unlock()
-			puzzle, err = s.airtable.UpdateVoiceRoom(puzzle, nil)
+			puzzle, err = s.airtable.SetVoiceRoom(puzzle, nil)
 			if err != nil {
 				return nil, fmt.Errorf("error unsetting voice room: %v", err)
 			}
@@ -190,7 +190,7 @@ func (s *Syncer) ForceUpdate(ctx context.Context, puzzle *schema.Puzzle) (*schem
 	}
 
 	// Update bot status in Airtable and *mark as not pending* if applicable
-	puzzle, err = s.airtable.UpdateBotFields(puzzle, puzzle.Status, puzzle.ShouldArchive(), false)
+	puzzle, err = s.airtable.SetBotFields(puzzle, puzzle.Status, puzzle.ShouldArchive(), false)
 	if err != nil {
 		return nil, err
 	}

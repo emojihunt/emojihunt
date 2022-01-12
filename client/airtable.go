@@ -72,7 +72,7 @@ func (air *Airtable) EditURL(puzzle *schema.Puzzle) string {
 	)
 }
 
-func (air *Airtable) parseRecord(record *airtable.Record) (*schema.Puzzle, error) {
+func (air *Airtable) parseRecord(record *airtable.Record, unlock func()) (*schema.Puzzle, error) {
 	var rounds schema.Rounds
 	if raw, ok := record.Fields["Round"]; ok {
 		switch v := raw.(type) {
@@ -140,6 +140,8 @@ func (air *Airtable) parseRecord(record *airtable.Record) (*schema.Puzzle, error
 
 		LastModified:   air.timeField(record, "Last Modified"),
 		LastModifiedBy: lastModifiedBy,
+
+		Unlock: unlock,
 	}, nil
 }
 
