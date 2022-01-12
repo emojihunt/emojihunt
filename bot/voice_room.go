@@ -139,9 +139,9 @@ func (bot *voiceRoomBot) makeSlashCommand() *client.DiscordCommand {
 
 			// Sync the change!
 			if event == nil {
-				puzzle, err = bot.airtable.UpdateVoiceRoomEvent(puzzle, "")
+				puzzle, err = bot.airtable.UpdateVoiceRoom(puzzle, nil)
 			} else {
-				puzzle, err = bot.airtable.UpdateVoiceRoomEvent(puzzle, event.ID)
+				puzzle, err = bot.airtable.UpdateVoiceRoom(puzzle, channel)
 			}
 			if err != nil {
 				return "", err
@@ -174,10 +174,11 @@ func (bot *voiceRoomBot) scheduledEventUpdateHandler(s *discordgo.Session, i *di
 	// updates to update the name and to start the event initally, but
 	// those events are filtered out by the condition above.)
 	log.Printf("discord: processing scheduled event completion event for %q", i.Name)
-	puzzles, err := bot.airtable.ListWithVoiceRoomEvent()
+	puzzles, err := bot.airtable.ListWithVoiceRoom()
 	if err == nil {
 		for _, puzzle := range puzzles {
-			puzzle, err = bot.airtable.UpdateVoiceRoomEvent(puzzle, "")
+			// TODO: this clears *all* voice rooms, incorrectly!
+			puzzle, err = bot.airtable.UpdateVoiceRoom(puzzle, nil)
 			if err != nil {
 				break
 			}

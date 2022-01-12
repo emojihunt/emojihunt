@@ -128,8 +128,8 @@ func (air *Airtable) parseRecord(record *airtable.Record) (*schema.Puzzle, error
 		Archived:      air.boolField(record, "Archived"),
 		LastBotSync:   air.timeField(record, "Last Bot Sync"),
 
-		OriginalURL:    air.stringField(record, "Original URL"),
-		VoiceRoomEvent: air.stringField(record, "Voice Room Event"),
+		OriginalURL: air.stringField(record, "Original URL"),
+		VoiceRoom:   air.stringField(record, "Voice Room"),
 
 		LastModified:   air.timeField(record, "Last Modified"),
 		LastModifiedBy: lastModifiedBy,

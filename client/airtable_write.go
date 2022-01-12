@@ -3,6 +3,7 @@ package client
 import (
 	"time"
 
+	"github.com/bwmarrin/discordgo"
 	"github.com/gauravjsingh/emojihunt/schema"
 	"github.com/mehanizm/airtable"
 )
@@ -92,9 +93,13 @@ func (air *Airtable) UpdateBotFields(puzzle *schema.Puzzle, lastBotStatus schema
 	return air.parseRecord(record)
 }
 
-func (air *Airtable) UpdateVoiceRoomEvent(puzzle *schema.Puzzle, voiceRoomEvent string) (*schema.Puzzle, error) {
+func (air *Airtable) UpdateVoiceRoom(puzzle *schema.Puzzle, channel *discordgo.Channel) (*schema.Puzzle, error) {
+	var channelID string
+	if channel != nil {
+		channelID = channel.ID
+	}
 	record, err := puzzle.AirtableRecord.UpdateRecordPartial(map[string]interface{}{
-		"Voice Room Event": voiceRoomEvent,
+		"Voice Room": channelID,
 	})
 	if err != nil {
 		return nil, err

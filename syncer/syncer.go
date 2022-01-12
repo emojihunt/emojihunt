@@ -143,10 +143,10 @@ func (s *Syncer) BasicUpdate(ctx context.Context, puzzle *schema.Puzzle, botRequ
 		}
 
 		// Also unset the voice room, if applicable
-		if puzzle.VoiceRoomEvent != "" {
+		if puzzle.VoiceRoom != "" {
 			s.VoiceRoomMutex.Lock()
 			defer s.VoiceRoomMutex.Unlock()
-			puzzle, err = s.airtable.UpdateVoiceRoomEvent(puzzle, "")
+			puzzle, err = s.airtable.UpdateVoiceRoom(puzzle, nil)
 			if err != nil {
 				return nil, fmt.Errorf("error unsetting voice room: %v", err)
 			}

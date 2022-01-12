@@ -72,13 +72,8 @@ func (s *Syncer) DiscordCreateUpdatePin(puzzle *schema.Puzzle) error {
 
 	if !puzzle.Status.IsSolved() {
 		voiceRoomMsg := voiceRoomDefaultMsg
-		if puzzle.VoiceRoomEvent != "" {
-			var err error
-			event, err := s.discord.GetScheduledEvent(puzzle.VoiceRoomEvent)
-			if err != nil {
-				return err
-			}
-			voiceRoomMsg = fmt.Sprintf("Join us in <#%s>!", *event.ChannelID)
+		if puzzle.VoiceRoom != "" {
+			voiceRoomMsg = fmt.Sprintf("Join us in <#%s>!", puzzle.VoiceRoom)
 		}
 		embed.Fields = append(embed.Fields, &discordgo.MessageEmbedField{
 			Name:   "Voice Room",

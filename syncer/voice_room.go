@@ -27,17 +27,17 @@ func (s *Syncer) SyncVoiceRooms(ctx context.Context) error {
 		return err
 	}
 
-	puzzles, err := s.airtable.ListWithVoiceRoomEvent()
+	puzzles, err := s.airtable.ListWithVoiceRoom()
 	if err != nil {
 		return err
 	}
-	var eventsByID = make(map[string]*discordgo.GuildScheduledEvent)
-	var puzzlesByEvent = make(map[string][]*schema.Puzzle)
+	var eventsByChannel = make(map[string]*discordgo.GuildScheduledEvent)
+	var puzzlesByChannel = make(map[string][]*schema.Puzzle)
 	for _, puzzle := range puzzles {
-		if puzzle.VoiceRoomEvent == "" {
+		if puzzle.VoiceRoom == "" {
 			continue
 		}
-		puzzlesByEvent[puzzle.VoiceRoomEvent] = append(puzzlesByEvent[puzzle.VoiceRoomEvent], puzzle)
+		puzzlesByChannel[puzzle.VoiceRoom] = append(puzzlesByChannel[puzzle.VoiceRoom], puzzle)
 	}
 	for _, event := range events {
 		if event.Description != VoiceRoomEventDescription {
@@ -47,29 +47,29 @@ func (s *Syncer) SyncVoiceRooms(ctx context.Context) error {
 			// Skip completed and canceled events
 			continue
 		}
-		if _, ok := puzzlesByEvent[event.ID]; !ok {
+		if _, ok := puzzlesByChannel[*event.ChannelID]; !ok {
 			// Event has no more puzzles; delete
 			log.Printf("deleting scheduled event %s in %s", event.ID, *event.ChannelID)
 			if err := s.discord.DeleteScheduledEvent(event); err != nil {
 				return err
 			}
 		}
-		eventsByID[event.ID] = event
+		eventsByChannel[*event.ChannelID] = event
 	}
-	for eventID, puzzles := range puzzlesByEvent {
+	for channelID, puzzles := range puzzlesByChannel {
 		var puzzleNames []string
 		for _, puzzle := range puzzles {
 			puzzleNames = append(puzzleNames, puzzle.Name)
 		}
 		eventTitle := strings.Join(sort.StringSlice(puzzleNames), " & ")
 
-		if event, ok := events[eventID]; !ok {
+		if event, ok := events[channelID]; !ok {
 			// Someone must have stopped the event manually (or
 			// Discord stopped it because the voice room emptied for
 			// more than a few minutes). Un-assign all of the stale
 			// puzzles from the room.
 			for _, puzzle := range puzzles {
-				_, err = s.airtable.UpdateVoiceRoomEvent(puzzle, "")
+				_, err = s.airtable.UpdateVoiceRoom(puzzle, nil)
 				if err != nil {
 					return err
 				}

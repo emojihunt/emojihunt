@@ -27,8 +27,8 @@ type Puzzle struct {
 	Archived      bool
 	LastBotSync   *time.Time
 
-	OriginalURL    string
-	VoiceRoomEvent string
+	OriginalURL string
+	VoiceRoom   string
 
 	LastModified   *time.Time
 	LastModifiedBy string // user id

@@ -50,9 +50,9 @@ func (air *Airtable) ListRecords() ([]schema.Puzzle, error) {
 	}
 }
 
-func (air *Airtable) ListWithVoiceRoomEvent() ([]*schema.Puzzle, error) {
+func (air *Airtable) ListWithVoiceRoom() ([]*schema.Puzzle, error) {
 	response, err := air.table.GetRecords().
-		WithFilterFormula("{Voice Room Event}!=''").
+		WithFilterFormula("{Voice Room}!=''").
 		Do()
 	if err != nil {
 		return nil, err
