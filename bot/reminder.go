@@ -96,8 +96,7 @@ func (bot *reminderBot) notificationLoop() {
 		// Wake up on next 1-minute boundary
 		wait := time.Until(time.Now().Add(time.Minute).Truncate(time.Minute))
 		if wait < 30*time.Second {
-			log.Printf("reminder: rounding up to minimum sleep of 30s")
-			wait = 30 * time.Second
+			wait += 1 * time.Minute
 		}
 		time.Sleep(wait)
 	}
