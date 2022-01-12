@@ -2,6 +2,7 @@ package syncer
 
 import (
 	"fmt"
+	"log"
 	"strings"
 	"time"
 
@@ -22,6 +23,8 @@ const (
 // updating non-status fields, such as the voice room.
 //
 func (s *Syncer) DiscordCreateUpdatePin(puzzle *schema.Puzzle) error {
+	log.Printf("syncer: updating pin for %q", puzzle.Name)
+
 	roundHeader := "Round"
 	if len(puzzle.Rounds) > 1 {
 		roundHeader = "Rounds"

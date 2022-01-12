@@ -103,6 +103,8 @@ func (s *Syncer) IdempotentCreateUpdate(ctx context.Context, puzzle *schema.Puzz
 // the user in the puzzle channel, you can set `botRequest=true` to suppress
 // notifications to the puzzle channel.
 func (s *Syncer) HandleStatusChange(ctx context.Context, puzzle *schema.Puzzle, botRequest bool) (*schema.Puzzle, error) {
+	log.Printf("syncer: handling status change for %q", puzzle.Name)
+
 	var err error
 	if err := s.DiscordCreateUpdatePin(puzzle); err != nil {
 		return nil, fmt.Errorf("unable to set puzzle status message for %q: %w", puzzle.Name, err)
