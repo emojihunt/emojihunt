@@ -4,11 +4,11 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"time"
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/davecgh/go-spew/spew"
 	"github.com/gauravjsingh/emojihunt/client"
+	"github.com/gauravjsingh/emojihunt/schema"
 	"github.com/gauravjsingh/emojihunt/syncer"
 )
 
@@ -89,61 +89,8 @@ func (bot *voiceRoomBot) makeSlashCommand() *client.DiscordCommand {
 				return "", fmt.Errorf("unexpected /voice subcommand: %q", i.Subcommand.Name)
 			}
 
-			// Search for an existing event for the given voice room
-			events, err := bot.discord.ListScheduledEvents()
-			if err != nil {
-				return "", err
-			}
-			var event *discordgo.GuildScheduledEvent
-			for _, item := range events {
-				if channel != nil && item.ChannelID != nil && *item.ChannelID == channel.ID {
-					event = item
-				}
-			}
-
-			// If there's no existing event in this voice room, create one
-			if event == nil && channel != nil {
-				log.Printf("creating scheduled event in %s", channel.Name)
-				start := time.Now().Add(5 * time.Minute)
-				event, err = bot.discord.CreateScheduledEvent(&discordgo.GuildScheduledEvent{
-					ChannelID:          &channel.ID,
-					Name:               puzzle.Name,
-					PrivacyLevel:       discordgo.GuildScheduledEventPrivacyLevelGuildOnly,
-					ScheduledStartTime: &start,
-					Description:        syncer.VoiceRoomEventDescription,
-					EntityType:         discordgo.GuildScheduledEventEntityTypeVoice,
-				})
-				if err != nil {
-					return "", err
-				}
-
-				event, err = bot.discord.UpdateScheduledEvent(event, map[string]interface{}{
-					// These fields are duplicative, but Discord occasionally
-					// appears to create the event with some fields missing
-					// (maybe a Discord bug?) so let's try and set them again to
-					// be sure.
-					"channel_id":  channel.ID,
-					"name":        puzzle.Name,
-					"description": syncer.VoiceRoomEventDescription,
-
-					// Start the event!
-					"status": discordgo.GuildScheduledEventStatusActive,
-				})
-				if event.Status != discordgo.GuildScheduledEventStatusActive {
-					log.Printf("Warning! UpdateScheduledEvent failed to start event: %v", event)
-				}
-				if err != nil {
-					return "", err
-				}
-			}
-
 			// Sync the change!
-			if event == nil {
-				puzzle, err = bot.airtable.UpdateVoiceRoom(puzzle, nil)
-			} else {
-				puzzle, err = bot.airtable.UpdateVoiceRoom(puzzle, channel)
-			}
-			if err != nil {
+			if puzzle, err = bot.airtable.UpdateVoiceRoom(puzzle, channel); err != nil {
 				return "", err
 			}
 			if err = bot.syncer.DiscordCreateUpdatePin(puzzle); err != nil {
@@ -163,9 +110,6 @@ func (bot *voiceRoomBot) scheduledEventUpdateHandler(s *discordgo.Session, i *di
 		return
 	}
 
-	bot.syncer.VoiceRoomMutex.Lock()
-	defer bot.syncer.VoiceRoomMutex.Unlock()
-
 	// We don't have to worry about double-processing puzzles because, even
 	// though Discord *does* deliver events caused by the bot's own actions,
 	// the bot uses *delete* to clean up events, while the Discord UI uses
@@ -174,17 +118,14 @@ func (bot *voiceRoomBot) scheduledEventUpdateHandler(s *discordgo.Session, i *di
 	// updates to update the name and to start the event initally, but
 	// those events are filtered out by the condition above.)
 	log.Printf("discord: processing scheduled event completion event for %q", i.Name)
+
+	bot.syncer.VoiceRoomMutex.Lock()
 	puzzles, err := bot.airtable.ListWithVoiceRoom()
+	bot.syncer.VoiceRoomMutex.Unlock()
+
 	if err == nil {
-		for _, puzzle := range puzzles {
-			if puzzle.VoiceRoom != *i.ChannelID {
-				continue
-			}
-			puzzle, err = bot.airtable.UpdateVoiceRoom(puzzle, nil)
-			if err != nil {
-				break
-			}
-			if err = bot.syncer.DiscordCreateUpdatePin(puzzle); err != nil {
+		for _, info := range puzzles {
+			if err = bot.clearVoiceRoom(&info, *i.ChannelID); err != nil {
 				break
 			}
 		}
@@ -192,4 +133,23 @@ func (bot *voiceRoomBot) scheduledEventUpdateHandler(s *discordgo.Session, i *di
 	if err != nil {
 		log.Printf("discord: error processing scheduled event completion event: %v", spew.Sdump(err))
 	}
+}
+
+func (bot *voiceRoomBot) clearVoiceRoom(info *schema.VoicePuzzle, expectedVoiceRoom string) error {
+	puzzle, err := bot.airtable.LockByID(info.RecordID)
+	if err != nil {
+		return err
+	}
+	defer puzzle.Unlock()
+	if puzzle.VoiceRoom != expectedVoiceRoom {
+		// We've let go of VoiceRoomMutex (since we aren't allowed to
+		// acquire the puzzle lock when holding it), so we need to
+		// double-check that the puzzle hasn't changed.
+		return nil
+	}
+	puzzle, err = bot.airtable.UpdateVoiceRoom(puzzle, nil)
+	if err != nil {
+		return err
+	}
+	return bot.syncer.DiscordCreateUpdatePin(puzzle)
 }

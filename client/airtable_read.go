@@ -50,7 +50,15 @@ func (air *Airtable) ListRecords() ([]schema.Puzzle, error) {
 	}
 }
 
-func (air *Airtable) ListWithVoiceRoom() ([]*schema.Puzzle, error) {
+// ListWithVoiceRoom returns all records in Airtable with a voice room set.
+// Instead of locking all of the matching puzzles, we return a miniature struct
+// containing just the puzzle name and voice room ID. The puzzle name is safe to
+// access because it's ~immutable, and the voice room ID is safe to access
+// because it's only written when holding the voice room lock.
+//
+// The caller *must* acquire VoiceRoomMutex before calling this function.
+//
+func (air *Airtable) ListWithVoiceRoom() ([]schema.VoicePuzzle, error) {
 	response, err := air.table.GetRecords().
 		WithFilterFormula("{Voice Room}!=''").
 		Do()
@@ -62,7 +70,7 @@ func (air *Airtable) ListWithVoiceRoom() ([]*schema.Puzzle, error) {
 		return nil, fmt.Errorf("airtable query failed: too many records have a voice room")
 	}
 
-	var puzzles []*schema.Puzzle
+	var puzzles []schema.VoicePuzzle
 	air.mutex.Lock()
 	for _, record := range response.Records {
 		if record.Deleted {
@@ -77,7 +85,11 @@ func (air *Airtable) ListWithVoiceRoom() ([]*schema.Puzzle, error) {
 			// why we need to be holding air.mu
 			air.channelToRecord[puzzle.DiscordChannel] = puzzle.AirtableRecord.ID
 		}
-		puzzles = append(puzzles, puzzle)
+		puzzles = append(puzzles, schema.VoicePuzzle{
+			RecordID:  puzzle.AirtableRecord.ID,
+			Name:      puzzle.Name,
+			VoiceRoom: puzzle.VoiceRoom,
+		})
 	}
 	air.mutex.Unlock()
 	return puzzles, nil

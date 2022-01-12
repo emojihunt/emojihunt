@@ -42,6 +42,12 @@ type NewPuzzle struct {
 	PuzzleURL string
 }
 
+type VoicePuzzle struct {
+	RecordID  string
+	Name      string
+	VoiceRoom string
+}
+
 func (p Puzzle) SpreadsheetURL() string {
 	if p.SpreadsheetID == "" {
 		panic("called SpreadsheetURL() on a puzzle with no spreadsheet")

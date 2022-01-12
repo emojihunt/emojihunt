@@ -5,6 +5,7 @@ import (
 	"log"
 	"sort"
 	"strings"
+	"time"
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/gauravjsingh/emojihunt/schema"
@@ -14,10 +15,8 @@ const (
 	VoiceRoomEventDescription = "🤖 Event managed by Huntbot. Use `/voice` to modify!"
 )
 
-// SyncVoiceRooms synchronizes all Discord scheduled events with Airtable. If
-// any Airtable puzzles reference an event that's been deleted or completed in
-// Discord, the field will be cleared in Airtable. Otherwise, the scheduled
-// event in Discord will be updated to match Airtable.
+// SyncVoiceRooms synchronizes all Discord scheduled events with Airtable,
+// creating and deleting events so that Discord matches the state in Airtable.
 //
 // The caller *must* acquire VoiceRoomMutex before calling this function.
 //
@@ -26,13 +25,13 @@ func (s *Syncer) SyncVoiceRooms(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-
 	puzzles, err := s.airtable.ListWithVoiceRoom()
 	if err != nil {
 		return err
 	}
+
+	var puzzlesByChannel = make(map[string][]schema.VoicePuzzle)
 	var eventsByChannel = make(map[string]*discordgo.GuildScheduledEvent)
-	var puzzlesByChannel = make(map[string][]*schema.Puzzle)
 	for _, puzzle := range puzzles {
 		if puzzle.VoiceRoom == "" {
 			continue
@@ -54,7 +53,7 @@ func (s *Syncer) SyncVoiceRooms(ctx context.Context) error {
 				return err
 			}
 		}
-		eventsByChannel[*event.ChannelID] = event // TODO: many:1?
+		eventsByChannel[*event.ChannelID] = event
 	}
 	for channelID, puzzles := range puzzlesByChannel {
 		var puzzleNames []string
@@ -64,18 +63,37 @@ func (s *Syncer) SyncVoiceRooms(ctx context.Context) error {
 		eventTitle := strings.Join(sort.StringSlice(puzzleNames), " & ")
 
 		if event, ok := eventsByChannel[channelID]; !ok {
-			// Someone must have stopped the event manually (or
-			// Discord stopped it because the voice room emptied for
-			// more than a few minutes). Un-assign all of the stale
-			// puzzles from the room.
-			for _, puzzle := range puzzles {
-				_, err = s.airtable.UpdateVoiceRoom(puzzle, nil)
-				if err != nil {
-					return err
-				}
-				if err = s.DiscordCreateUpdatePin(puzzle); err != nil {
-					return err
-				}
+			// If there's no existing event for this voice room, create one
+			log.Printf("creating scheduled event in %q", channelID)
+			start := time.Now().Add(5 * time.Minute)
+			event, err = s.discord.CreateScheduledEvent(&discordgo.GuildScheduledEvent{
+				ChannelID:          &channelID,
+				Name:               eventTitle,
+				PrivacyLevel:       discordgo.GuildScheduledEventPrivacyLevelGuildOnly,
+				ScheduledStartTime: &start,
+				Description:        VoiceRoomEventDescription,
+				EntityType:         discordgo.GuildScheduledEventEntityTypeVoice,
+			})
+			if err != nil {
+				return err
+			}
+			event, err = s.discord.UpdateScheduledEvent(event, map[string]interface{}{
+				// These fields are duplicative, but Discord occasionally
+				// appears to create the event with some fields missing
+				// (maybe a Discord bug?) so let's try and set them again to
+				// be sure.
+				"channel_id":  channelID,
+				"name":        eventTitle,
+				"description": VoiceRoomEventDescription,
+
+				// Start the event!
+				"status": discordgo.GuildScheduledEventStatusActive,
+			})
+			if event.Status != discordgo.GuildScheduledEventStatusActive {
+				log.Printf("Warning! UpdateScheduledEvent failed to start event: %v", event)
+			}
+			if err != nil {
+				return err
 			}
 		} else if eventTitle != event.Name {
 			// Update event name
