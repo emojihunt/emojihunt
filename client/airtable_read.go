@@ -33,6 +33,9 @@ func (air *Airtable) ListPuzzlesToAction() ([]schema.InvalidPuzzle, []string, er
 		} else if timestamp.Sub(*puzzle.LastModified) < air.ModifyGracePeriod {
 			// Skip puzzles that are being actively edited by a human
 			continue
+		} else if puzzle.DiscordChannel == "-" {
+			// Skip puzzles that a QM has set to ignore
+			continue
 		} else if problems := air.validatePuzzle(&puzzle); len(problems) > 0 {
 			invalid = append(invalid, schema.InvalidPuzzle{
 				RecordID: puzzle.AirtableRecord.ID,
