@@ -39,7 +39,7 @@ type Airtable struct {
 }
 
 const (
-	defaultGracePeriod = 8 * time.Second // delay before records are picked up by ListPuzzlesToAction
+	defaultGracePeriod = 3 * time.Second // delay before records are picked up by ListPuzzlesToAction
 	pageSize           = 100             // most records returned per list request
 	pendingSuffix      = " [pending]"    // puzzle name suffix for auto-added puzzles
 )
