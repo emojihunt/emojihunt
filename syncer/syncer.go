@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log"
 	"sync"
-	"time"
 
 	"github.com/gauravjsingh/emojihunt/client"
 	"github.com/gauravjsingh/emojihunt/schema"
@@ -28,11 +27,6 @@ func New(airtable *client.Airtable, discord *client.Discord, drive *client.Drive
 // spreadsheet and Discord channel and links them in Airtable. When a puzzle's
 // status is updated, it handles that also.
 func (s *Syncer) IdempotentCreateUpdate(ctx context.Context, puzzle *schema.Puzzle) (*schema.Puzzle, error) {
-	// 0. Skip puzzles that are being actively edited by a human
-	if time.Since(*puzzle.LastModified) < s.airtable.ModifyGracePeriod {
-		return puzzle, nil
-	}
-
 	// 1. Create the spreadsheet, if required
 	if puzzle.SpreadsheetID == "" {
 		spreadsheet, err := s.drive.CreateSheet(ctx, puzzle.Name, puzzle.Rounds[0].Name)
@@ -83,7 +77,7 @@ func (s *Syncer) IdempotentCreateUpdate(ctx context.Context, puzzle *schema.Puzz
 	// 3. Update the spreadsheet and Discord channel with new information, if required
 	if puzzle.Status != puzzle.LastBotStatus || puzzle.ShouldArchive() != puzzle.Archived {
 		var err error
-		puzzle, err = s.BasicUpdate(ctx, puzzle, false)
+		puzzle, err = s.HandleStatusChange(ctx, puzzle, false)
 		if err != nil {
 			return nil, err
 		}
@@ -103,12 +97,12 @@ func (s *Syncer) IdempotentCreateUpdate(ctx context.Context, puzzle *schema.Puzz
 	return puzzle, nil
 }
 
-// BasicUpdate synchronizes Discord and sends notifications when the puzzle
-// status changes. It's called by IdempotentCreateUpdate. If you're calling this
-// from a slash command handler, and the is going to acknowledge the user in the
-// puzzle channel, you can set `botRequest=true` to suppress notifications to
-// the puzzle channel.
-func (s *Syncer) BasicUpdate(ctx context.Context, puzzle *schema.Puzzle, botRequest bool) (*schema.Puzzle, error) {
+// HandleStatusChange synchronizes Discord and sends notifications when the
+// puzzle status changes. It's called by IdempotentCreateUpdate. If you're
+// calling this from a slash command handler, and the is going to acknowledge
+// the user in the puzzle channel, you can set `botRequest=true` to suppress
+// notifications to the puzzle channel.
+func (s *Syncer) HandleStatusChange(ctx context.Context, puzzle *schema.Puzzle, botRequest bool) (*schema.Puzzle, error) {
 	var err error
 	if err := s.DiscordCreateUpdatePin(puzzle); err != nil {
 		return nil, fmt.Errorf("unable to set puzzle status message for %q: %w", puzzle.Name, err)

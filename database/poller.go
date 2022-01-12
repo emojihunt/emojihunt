@@ -75,6 +75,10 @@ func (p *Poller) Poll(ctx context.Context) {
 					log.Printf("failed to reload puzzle: %v", err)
 					continue
 				}
+				if time.Since(*puzzle.LastModified) < p.airtable.ModifyGracePeriod {
+					puzzle.Unlock()
+					continue
+				}
 				if _, err = p.syncer.IdempotentCreateUpdate(ctx, puzzle); err != nil {
 					// Log errors and keep going
 					log.Printf("updating puzzle failed: %v", err)

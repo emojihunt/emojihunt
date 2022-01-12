@@ -112,21 +112,25 @@ func (bot *voiceRoomBot) scheduledEventUpdateHandler(s *discordgo.Session, i *di
 	// event, so we only see the human-triggered actions. (The bot does use
 	// updates to update the name and to start the event initally, but
 	// those events are filtered out by the condition above.)
-	log.Printf("discord: processing scheduled event completion event for %q", i.Name)
+	log.Printf("discord: processing scheduled event completion for %q", i.Name)
 
 	bot.syncer.VoiceRoomMutex.Lock()
 	puzzles, err := bot.airtable.ListWithVoiceRoom()
 	bot.syncer.VoiceRoomMutex.Unlock()
 
-	if err == nil {
-		for _, info := range puzzles {
-			if err = bot.clearVoiceRoom(&info, *i.ChannelID); err != nil {
-				break
-			}
+	if err != nil {
+		log.Printf("discord: error processing scheduled event completion: %v", spew.Sdump(err))
+		return
+	}
+
+	var errs []error
+	for _, info := range puzzles {
+		if err = bot.clearVoiceRoom(&info, *i.ChannelID); err != nil {
+			errs = append(errs, err)
 		}
 	}
-	if err != nil {
-		log.Printf("discord: error processing scheduled event completion event: %v", spew.Sdump(err))
+	if len(errs) > 0 {
+		log.Printf("discord: errors processing scheduled event completion: %v", spew.Sdump(errs))
 	}
 }
 
@@ -136,12 +140,14 @@ func (bot *voiceRoomBot) clearVoiceRoom(info *schema.VoicePuzzle, expectedVoiceR
 		return err
 	}
 	defer puzzle.Unlock()
+
 	if puzzle.VoiceRoom != expectedVoiceRoom {
 		// We've let go of VoiceRoomMutex (since we aren't allowed to
 		// acquire the puzzle lock when holding it), so we need to
 		// double-check that the puzzle hasn't changed.
 		return nil
 	}
+
 	puzzle, err = bot.airtable.SetVoiceRoom(puzzle, nil)
 	if err != nil {
 		return err

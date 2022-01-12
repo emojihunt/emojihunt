@@ -11,6 +11,7 @@ import (
 
 	"github.com/andybalholm/cascadia"
 	"github.com/bwmarrin/discordgo"
+	"github.com/davecgh/go-spew/spew"
 	"github.com/gauravjsingh/emojihunt/client"
 	"github.com/gauravjsingh/emojihunt/schema"
 	"golang.org/x/net/html"
@@ -164,7 +165,7 @@ func (d *Poller) SyncPuzzles(puzzles []*DiscoveredPuzzle) error {
 		puzzle.Unlock()
 	}
 	if len(errs) > 0 {
-		return fmt.Errorf("errors sending new puzzle notifications: %#v", errs)
+		return fmt.Errorf("errors sending new puzzle notifications: %#v", spew.Sdump(errs))
 	}
 
 	return d.notifyNewRounds(skippedRounds)

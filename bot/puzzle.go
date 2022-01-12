@@ -108,7 +108,7 @@ func (bot *puzzleBot) makeSlashCommand() *client.DiscordCommand {
 			} else if puzzle == nil {
 				return ":butterfly: I can't find a puzzle associated with this channel. Is this a puzzle channel?", nil
 			}
-			defer puzzle.Unlock() // TODO: minimize critical section for writes
+			defer puzzle.Unlock()
 
 			var reply string
 			var newStatus schema.Status
@@ -135,7 +135,7 @@ func (bot *puzzleBot) makeSlashCommand() *client.DiscordCommand {
 				if puzzle, err = bot.airtable.SetStatusAndAnswer(puzzle, newStatus, newAnswer); err != nil {
 					return "", err
 				}
-				if puzzle, err = bot.syncer.BasicUpdate(bot.ctx, puzzle, true); err != nil {
+				if puzzle, err = bot.syncer.HandleStatusChange(bot.ctx, puzzle, true); err != nil {
 					return "", err
 				}
 			case "solved":
@@ -159,7 +159,7 @@ func (bot *puzzleBot) makeSlashCommand() *client.DiscordCommand {
 				if puzzle, err = bot.airtable.SetStatusAndAnswer(puzzle, newStatus, newAnswer); err != nil {
 					return "", err
 				}
-				if puzzle, err = bot.syncer.BasicUpdate(bot.ctx, puzzle, true); err != nil {
+				if puzzle, err = bot.syncer.HandleStatusChange(bot.ctx, puzzle, true); err != nil {
 					return "", err
 				}
 			case "description":
