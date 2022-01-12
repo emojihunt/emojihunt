@@ -63,32 +63,34 @@ func New(airtable *client.Airtable, discord *client.Discord, syncer *syncer.Sync
 }
 
 func (d *Poller) Poll(ctx context.Context) {
-	ch, err := d.openWebsocket()
-	if err != nil {
-		log.Printf("discovery: failed to open websocket: %v", err)
-	}
-
 	for {
-		if !d.isEnabled() {
-			time.Sleep(2 * time.Second)
-			continue
-		}
-
-		puzzles, err := d.Scrape()
+		ch, err := d.openWebsocket()
 		if err != nil {
-			d.logAndMaybeWarn("scraping error", err)
+			log.Printf("discovery: failed to open websocket: %v", err)
 		}
 
-		if err := d.SyncPuzzles(puzzles); err != nil {
-			d.logAndMaybeWarn("syncing error", err)
-		}
+		for {
+			if !d.isEnabled() {
+				time.Sleep(2 * time.Second)
+				continue
+			}
 
-		select {
-		case <-ctx.Done():
-			log.Print("exiting discovery poller due to signal")
-			return
-		case <-ch:
-		case <-time.After(pollInterval):
+			puzzles, err := d.Scrape()
+			if err != nil {
+				d.logAndMaybeWarn("scraping error", err)
+			}
+
+			if err := d.SyncPuzzles(puzzles); err != nil {
+				d.logAndMaybeWarn("syncing error", err)
+			}
+
+			select {
+			case <-ctx.Done():
+				log.Print("exiting discovery poller due to signal")
+				return
+			case <-ch:
+			case <-time.After(pollInterval):
+			}
 		}
 	}
 }
@@ -116,6 +118,7 @@ func (d *Poller) openWebsocket() (chan bool, error) {
 		return nil, nil
 	}
 
+	log.Printf("discovery: (re-)connecting to websocket...")
 	ch := make(chan bool)
 	ws, err := websocket.Dial(websocketURL.String(), "", websocketOrigin)
 	if err != nil {
