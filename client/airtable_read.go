@@ -2,6 +2,7 @@ package client
 
 import (
 	"fmt"
+	"sort"
 	"strings"
 	"sync"
 	"time"
@@ -129,6 +130,37 @@ func (air *Airtable) ListWithVoiceRoom() ([]schema.VoicePuzzle, error) {
 		})
 	}
 	return voicePuzzles, nil
+}
+
+// ListWithReminder returns all records in Airtable with a reminder set. Instead
+// of locking all of the matching puzzles, we return a miniature struct
+// containing just the puzzle name, channel ID, and reminder time. The puzzle
+// name and channel ID are safe to access because they're ~immutable; the
+// reminder time is loaded at the current timestamp without coordination, which
+// is less ideal but close enough.
+//
+// Results are returned in sorted order.
+//
+func (air *Airtable) ListWithReminder() ([]schema.ReminderPuzzle, error) {
+	puzzles, err := air.listRecordsWithFilter("{Reminder}!=''")
+	if err != nil {
+		return nil, err
+	}
+
+	var reminderPuzzles schema.ReminderPuzzles
+	for _, puzzle := range puzzles {
+		if puzzle.Reminder == nil {
+			return nil, fmt.Errorf("Airtable returned puzzle with nil reminder: %#v", puzzle)
+		}
+		reminderPuzzles = append(reminderPuzzles, schema.ReminderPuzzle{
+			RecordID:       puzzle.AirtableRecord.ID,
+			Name:           puzzle.Name,
+			DiscordChannel: puzzle.DiscordChannel,
+			Reminder:       *puzzle.Reminder,
+		})
+	}
+	sort.Sort(reminderPuzzles)
+	return reminderPuzzles, nil
 }
 
 // listRecordsWithFilter queries Airtable for all records matching the given

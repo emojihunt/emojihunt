@@ -96,6 +96,7 @@ func main() {
 	bot.RegisterHuntYetBot(discord)
 	bot.RegisterPuzzleBot(ctx, airtable, discord, syncer)
 	bot.RegisterQMBot(discord)
+	bot.RegisterReminderBot(airtable, discord, state)
 	bot.RegisterVoiceRoomBot(ctx, airtable, discord, syncer)
 
 	var dscvpoller *discovery.Poller

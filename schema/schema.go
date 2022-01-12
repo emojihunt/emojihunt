@@ -29,6 +29,7 @@ type Puzzle struct {
 
 	OriginalURL string
 	VoiceRoom   string
+	Reminder    *time.Time
 
 	LastModified   *time.Time
 	LastModifiedBy string // user id
@@ -42,18 +43,31 @@ type NewPuzzle struct {
 	PuzzleURL string
 }
 
-type VoicePuzzle struct {
-	RecordID  string
-	Name      string
-	VoiceRoom string
-}
-
 type InvalidPuzzle struct {
 	RecordID string
 	Name     string
 	Problems []string
 	EditURL  string
 }
+
+type VoicePuzzle struct {
+	RecordID  string
+	Name      string
+	VoiceRoom string
+}
+
+type ReminderPuzzle struct {
+	RecordID       string
+	Name           string
+	DiscordChannel string
+	Reminder       time.Time
+}
+
+type ReminderPuzzles []ReminderPuzzle
+
+func (rps ReminderPuzzles) Len() int           { return len(rps) }
+func (rps ReminderPuzzles) Less(i, j int) bool { return rps[i].Reminder.Before(rps[j].Reminder) }
+func (rps ReminderPuzzles) Swap(i, j int)      { rps[i], rps[j] = rps[j], rps[i] }
 
 func (p Puzzle) SpreadsheetURL() string {
 	if p.SpreadsheetID == "" {

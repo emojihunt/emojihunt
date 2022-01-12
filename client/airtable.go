@@ -137,6 +137,7 @@ func (air *Airtable) parseRecord(record *airtable.Record, unlock func()) (*schem
 
 		OriginalURL: air.stringField(record, "Original URL"),
 		VoiceRoom:   air.stringField(record, "Voice Room"),
+		Reminder:    air.timeField(record, "Reminder"),
 
 		LastModified:   air.timeField(record, "Last Modified"),
 		LastModifiedBy: lastModifiedBy,
