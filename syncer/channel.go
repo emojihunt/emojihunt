@@ -3,7 +3,6 @@ package syncer
 import (
 	"fmt"
 	"log"
-	"strconv"
 	"strings"
 	"time"
 
@@ -17,8 +16,6 @@ const (
 	pinnedStatusHeader   = "Puzzle Information"
 	voiceRoomDefaultMsg  = "Use `/voice start` to assign a voice room"
 )
-
-var solvedSuffixes = []string{"A", "B", "C"}
 
 // DiscordCreateUpdatePin creates or updates the pinned message at the top of
 // the puzzle channel. This message contains information about the puzzle status
@@ -109,11 +106,7 @@ func (s *Syncer) discordUpdateChannel(puzzle *schema.Puzzle) error {
 		return err
 	}
 	if puzzle.ShouldArchive() {
-		i, err := strconv.ParseUint(puzzle.DiscordChannel, 10, 64)
-		if err != nil {
-			return err
-		}
-		targetName = solvedCategoryPrefix + solvedSuffixes[i%uint64(len(solvedSuffixes))]
+		targetName = solvedCategoryPrefix + puzzle.ArchiveCategory()
 	} else {
 		targetName = roundCategoryPrefix + puzzle.Rounds[0].Name
 	}
