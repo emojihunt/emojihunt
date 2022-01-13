@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"strings"
 	"sync"
 
 	"github.com/gauravjsingh/emojihunt/client"
@@ -111,6 +112,12 @@ func (s *Syncer) IdempotentCreateUpdate(ctx context.Context, puzzle *schema.Puzz
 func (s *Syncer) HandleStatusChange(ctx context.Context, puzzle *schema.Puzzle, botRequest bool) (*schema.Puzzle, error) {
 	log.Printf("syncer: handling status change for %q", puzzle.Name)
 
+	if problems := puzzle.Problems(); len(problems) > 0 {
+		return nil, fmt.Errorf("puzzle has problems, skipping: %s", strings.Join(problems, " and "))
+	} else if puzzle.SpreadsheetID == "-" || puzzle.DiscordChannel == "-" {
+		return nil, errors.New("puzzle is a placeholder puzzle, skipping")
+	}
+
 	var err error
 	err = s.parallelHardUpdate(ctx, puzzle)
 	if err != nil {
@@ -169,7 +176,9 @@ func (s *Syncer) HandleStatusChange(ctx context.Context, puzzle *schema.Puzzle, 
 // including overwriting the channel name, spreadsheet name, etc. It also
 // re-sends any status change notifications.
 func (s *Syncer) ForceUpdate(ctx context.Context, puzzle *schema.Puzzle) (*schema.Puzzle, error) {
-	if puzzle.SpreadsheetID == "-" || puzzle.DiscordChannel == "-" {
+	if problems := puzzle.Problems(); len(problems) > 0 {
+		return nil, fmt.Errorf("puzzle has problems, skipping: %s", strings.Join(problems, " and "))
+	} else if puzzle.SpreadsheetID == "-" || puzzle.DiscordChannel == "-" {
 		return nil, errors.New("puzzle is a placeholder puzzle, skipping")
 	}
 

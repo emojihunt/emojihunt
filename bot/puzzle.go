@@ -110,6 +110,11 @@ func (bot *puzzleBot) makeSlashCommand() *client.DiscordCommand {
 			}
 			defer puzzle.Unlock()
 
+			if problems := puzzle.Problems(); len(problems) > 0 {
+				return fmt.Sprintf(":cold_sweat: I can't update this puzzle because it has errors in "+
+					"Airtable. Please check %s for more information...", bot.discord.QMChannel.Mention()), nil
+			}
+
 			var reply string
 			var newStatus schema.Status
 			var newAnswer string

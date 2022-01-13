@@ -52,11 +52,11 @@ func (air *Airtable) ListPuzzlesToAction() ([]schema.InvalidPuzzle, []string, er
 		} else if puzzle.DiscordChannel == "-" {
 			// Skip puzzles that a QM has set to ignore
 			continue
-		} else if problems := air.validatePuzzle(&puzzle); len(problems) > 0 {
+		} else if len(puzzle.Problems()) > 0 {
 			invalid = append(invalid, schema.InvalidPuzzle{
 				RecordID: puzzle.AirtableRecord.ID,
 				Name:     puzzle.Name,
-				Problems: problems,
+				Problems: puzzle.Problems(),
 				EditURL:  air.EditURL(&puzzle),
 			})
 		} else if puzzle.SpreadsheetID == "" || puzzle.DiscordChannel == "" {
@@ -70,28 +70,6 @@ func (air *Airtable) ListPuzzlesToAction() ([]schema.InvalidPuzzle, []string, er
 		}
 	}
 	return invalid, needsAction, nil
-}
-
-func (air *Airtable) validatePuzzle(puzzle *schema.Puzzle) []string {
-	var problems []string
-	if puzzle.Name == "" {
-		problems = append(problems, "missing puzzle name")
-	}
-	if len(puzzle.Rounds) == 0 {
-		problems = append(problems, "missing a round")
-	}
-	for _, round := range puzzle.Rounds {
-		if round.Name == "" || round.Emoji == "" {
-			problems = append(problems, fmt.Sprintf("invalid round %#v", round))
-		}
-	}
-	if puzzle.PuzzleURL == "" {
-		problems = append(problems, "missing puzzle URL")
-	}
-	if puzzle.Answer != "" && !puzzle.Status.IsSolved() {
-		problems = append(problems, "has an answer even though it's not solved")
-	}
-	return problems
 }
 
 // ListPuzzleFragmentsAndRounds returns a collection of all puzzle names and

@@ -106,6 +106,28 @@ func (p Puzzle) Title() string {
 	return p.Name
 }
 
+func (p Puzzle) Problems() []string {
+	var problems []string
+	if p.Name == "" {
+		problems = append(problems, "missing puzzle name")
+	}
+	if len(p.Rounds) == 0 {
+		problems = append(problems, "missing a round")
+	}
+	for _, round := range p.Rounds {
+		if round.Name == "" || round.Emoji == "" {
+			problems = append(problems, fmt.Sprintf("invalid round %#v", round))
+		}
+	}
+	if p.PuzzleURL == "" {
+		problems = append(problems, "missing puzzle URL")
+	}
+	if p.Answer != "" && !p.Status.IsSolved() {
+		problems = append(problems, "has an answer even though it's not solved")
+	}
+	return problems
+}
+
 type Round struct {
 	Name  string
 	Emoji string
