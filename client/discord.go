@@ -126,8 +126,13 @@ func NewDiscord(config *DiscordConfig) (*Discord, error) {
 	}
 	s.AddHandler(discord.commandHandler)
 	s.AddHandler(func(s *discordgo.Session, r *discordgo.RateLimit) {
-		log.Printf("discord: hit rate limit at %q: %#v", r.URL, r.TooManyRequests)
 		expiry := time.Now().Add(r.TooManyRequests.RetryAfter)
+		log.Printf("discord: hit rate limit at %q (wait %s): %#v", r.URL, expiry, r.TooManyRequests)
+
+		msg := fmt.Sprintf(":sloth: Hit Discord rate limit on %s; blocked for %s", r.URL, expiry)
+		if err := discord.ChannelSend(discord.TechChannel, msg); err != nil {
+			log.Printf("discord: failed to send rate limit notification: %v", err)
+		}
 
 		discord.mu.Lock()
 		defer discord.mu.Unlock()
