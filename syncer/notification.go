@@ -7,38 +7,22 @@ import (
 	"github.com/gauravjsingh/emojihunt/schema"
 )
 
-// notifyNewPuzzle sends the "A new puzzle is available!" message to #general.
+// notifyNewPuzzle sends the "New puzzle!" message to #more-eyes.
 func (s *Syncer) notifyNewPuzzle(puzzle *schema.Puzzle) error {
-	embed := &discordgo.MessageEmbed{
-		Author: &discordgo.MessageEmbedAuthor{
-			Name:    "A new puzzle is available!",
-			IconURL: puzzle.Rounds[0].TwemojiURL(),
-		},
-		Title: puzzle.Name,
-		URL:   puzzle.PuzzleURL,
-		Fields: []*discordgo.MessageEmbedField{
-			{
-				Name:   "Channel",
-				Value:  fmt.Sprintf("<#%s>", puzzle.DiscordChannel),
-				Inline: true,
-			},
-			{
-				Name:   "Puzzle",
-				Value:  fmt.Sprintf("[Link](%s)", puzzle.PuzzleURL),
-				Inline: true,
-			},
-			{
-				Name:   "Sheet",
-				Value:  fmt.Sprintf("[Link](%s)", puzzle.SpreadsheetURL()),
-				Inline: true,
-			},
-		},
-	}
-	return s.discord.ChannelSendEmbed(s.discord.GeneralChannel, embed)
+	msg := fmt.Sprintf("%s **New puzzle!** <#%s>",
+		puzzle.Rounds.Emojis(), puzzle.DiscordChannel)
+	return s.discord.ChannelSend(s.discord.MoreEyesChannel, msg)
+}
+
+// notifyPuzzleWorking sends the "Work started on puzzle" message to #more-eyes.
+func (s *Syncer) notifyPuzzleWorking(puzzle *schema.Puzzle) error {
+	msg := fmt.Sprintf("%s Work started on puzzle <#%s>",
+		puzzle.Rounds.Emojis(), puzzle.DiscordChannel)
+	return s.discord.ChannelSend(s.discord.MoreEyesChannel, msg)
 }
 
 // notifyPuzzleFullySolved sends the two "Puzzle solved!" (or "Puzzle
-// backsolved!") messages: one to the puzzle channel, and another to #general.
+// backsolved!") messages: one to the puzzle channel, and another to #the-kitchen.
 func (s *Syncer) notifyPuzzleFullySolved(puzzle *schema.Puzzle, suppressSolveNotif bool) error {
 	if !suppressSolveNotif {
 		msg := fmt.Sprintf(
@@ -50,25 +34,9 @@ func (s *Syncer) notifyPuzzleFullySolved(puzzle *schema.Puzzle, suppressSolveNot
 		}
 	}
 
-	embed := &discordgo.MessageEmbed{
-		Author: &discordgo.MessageEmbedAuthor{
-			Name:    fmt.Sprintf("Puzzle %s!", puzzle.Status.SolvedVerb()),
-			IconURL: puzzle.Rounds[0].TwemojiURL(),
-		},
-		Fields: []*discordgo.MessageEmbedField{
-			{
-				Name:   "Channel",
-				Value:  fmt.Sprintf("<#%s>", puzzle.DiscordChannel),
-				Inline: true,
-			},
-			{
-				Name:   "Answer",
-				Value:  fmt.Sprintf("`%s`", puzzle.Answer),
-				Inline: true,
-			},
-		},
-	}
-	return s.discord.ChannelSendEmbed(s.discord.GeneralChannel, embed)
+	msg := fmt.Sprintf("%s Puzzle <#%s> was %s! Answer: `%s`.",
+		puzzle.Rounds.Emojis(), puzzle.DiscordChannel, puzzle.Status.SolvedVerb(), puzzle.Answer)
+	return s.discord.ChannelSend(s.discord.KitchenChannel, msg)
 }
 
 // notifyPuzzleSolvedMissingAnswer sends messages to the puzzle channel and to

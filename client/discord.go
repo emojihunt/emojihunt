@@ -10,32 +10,30 @@ import (
 )
 
 type DiscordConfig struct {
-	AuthToken        string `json:"auth_token"`
-	GuildID          string `json:"guild_id"`
-	QMChannelID      string `json:"qm_channel_id"`
-	GeneralChannelID string `json:"general_channel_id"`
-	TechChannelID    string `json:"tech_channel_id"`
-	PuzzleCategoryID string `json:"puzzle_category_id"`
-	SolvedCategoryID string `json:"solved_category_id"`
-	QMRoleID         string `json:"qm_role_id"`
+	AuthToken         string `json:"auth_token"`
+	GuildID           string `json:"guild_id"`
+	QMChannelID       string `json:"qm_channel_id"`
+	KitchenChannelID  string `json:"kitchen_channel_id"`
+	MoreEyesChannelID string `json:"more_eyes_channel_id"`
+	TechChannelID     string `json:"tech_channel_id"`
+	PuzzleCategoryID  string `json:"puzzle_category_id"`
+	SolvedCategoryID  string `json:"solved_category_id"`
+	QMRoleID          string `json:"qm_role_id"`
 }
 
 type Discord struct {
 	s     *discordgo.Session
 	Guild *discordgo.Guild
-	// The QM channel contains a central log of interesting bot actions, as well as the only place for
-	// advanced bot usage, such as puzzle or round creation.
-	QMChannel *discordgo.Channel
-	// The general channel has all users, and has announcements from the bot.
-	GeneralChannel *discordgo.Channel
-	// The tech channel has error messages.
-	TechChannel *discordgo.Channel
-	// The puzzle channel category.
-	PuzzleCategory *discordgo.Channel
-	// The category for solved puzzles.
-	SolvedCategory *discordgo.Channel
-	// The Role ID for the QM role.
-	QMRole *discordgo.Role
+
+	KitchenChannel  *discordgo.Channel // for solves, to celebrate
+	MoreEyesChannel *discordgo.Channel // for verbose puzzle updates
+	QMChannel       *discordgo.Channel // for puzzle maintenance
+	TechChannel     *discordgo.Channel // for error messages
+
+	PuzzleCategory *discordgo.Channel // for unsolved puzzles
+	SolvedCategory *discordgo.Channel // for solved puzzles
+
+	QMRole *discordgo.Role // so QMs show up in the sidebar
 
 	appCommandHandlers map[string]*DiscordCommand
 	componentHandlers  map[string]*DiscordCommand
@@ -62,19 +60,27 @@ func NewDiscord(config *DiscordConfig) (*Discord, error) {
 	// Validate config
 	guild, err := s.Guild(config.GuildID)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to load guild %s: %v", config.GuildID, err)
+	}
+	kitchenChannel, err := s.Channel(config.KitchenChannelID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load kitchen channel %q: %v",
+			config.KitchenChannelID, err)
+	}
+	moreEyesChannel, err := s.Channel(config.MoreEyesChannelID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load more eyes channel %q: %v",
+			config.MoreEyesChannelID, err)
 	}
 	qmChannel, err := s.Channel(config.QMChannelID)
 	if err != nil {
-		return nil, err
-	}
-	generalChannel, err := s.Channel(config.GeneralChannelID)
-	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to load qm channel %q: %v",
+			config.QMChannelID, err)
 	}
 	techChannel, err := s.Channel(config.TechChannelID)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to load tech channel %q: %v",
+			config.TechChannelID, err)
 	}
 	puzzleCategory, err := s.Channel(config.PuzzleCategoryID)
 	if err != nil {
@@ -106,8 +112,9 @@ func NewDiscord(config *DiscordConfig) (*Discord, error) {
 	discord := &Discord{
 		s:                         s,
 		Guild:                     guild,
+		KitchenChannel:            kitchenChannel,
+		MoreEyesChannel:           moreEyesChannel,
 		QMChannel:                 qmChannel,
-		GeneralChannel:            generalChannel,
 		TechChannel:               techChannel,
 		PuzzleCategory:            puzzleCategory,
 		SolvedCategory:            solvedCategory,

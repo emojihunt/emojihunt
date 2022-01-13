@@ -159,6 +159,10 @@ func (s *Syncer) HandleStatusChange(ctx context.Context, puzzle *schema.Puzzle, 
 				return nil, err
 			}
 		}
+	} else if puzzle.Status == schema.Working {
+		if err = s.notifyPuzzleWorking(puzzle); err != nil {
+			return nil, err
+		}
 	}
 	return puzzle, nil
 }
