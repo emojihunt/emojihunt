@@ -149,11 +149,6 @@ func (c *Discord) ChannelSend(ch *discordgo.Channel, msg string) error {
 	return err
 }
 
-func (c *Discord) ChannelSendEmbed(ch *discordgo.Channel, embed *discordgo.MessageEmbed) error {
-	_, err := c.s.ChannelMessageSendEmbed(ch.ID, embed)
-	return err
-}
-
 func (c *Discord) ChannelSendComponents(ch *discordgo.Channel, msg string, components []discordgo.MessageComponent) error {
 	var actionsRow []discordgo.MessageComponent
 	if components != nil {
