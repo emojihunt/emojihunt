@@ -169,8 +169,8 @@ func (s *Syncer) HandleStatusChange(ctx context.Context, puzzle *schema.Puzzle, 
 // including overwriting the channel name, spreadsheet name, etc. It also
 // re-sends any status change notifications.
 func (s *Syncer) ForceUpdate(ctx context.Context, puzzle *schema.Puzzle) (*schema.Puzzle, error) {
-	if len(puzzle.SpreadsheetID) <= 1 || len(puzzle.DiscordChannel) <= 1 {
-		return nil, errors.New("puzzle is missing a spreadsheet or Discord channel, skipping")
+	if puzzle.SpreadsheetID == "-" || puzzle.DiscordChannel == "-" {
+		return nil, errors.New("puzzle is a placeholder puzzle, skipping")
 	}
 
 	var err error
