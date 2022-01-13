@@ -63,7 +63,7 @@ func (bot *voiceRoomBot) makeSlashCommand() *client.DiscordCommand {
 			} else if puzzle == nil {
 				return ":butterfly: I can't find a puzzle associated with this channel. Is this a puzzle channel?", nil
 			}
-			defer puzzle.Unlock() // TODO: minimize critical section for writes
+			defer puzzle.Unlock()
 
 			bot.syncer.VoiceRoomMutex.Lock()
 			defer bot.syncer.VoiceRoomMutex.Unlock()

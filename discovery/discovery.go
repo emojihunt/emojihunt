@@ -186,7 +186,7 @@ func (d *Poller) RegisterApproveCommand(ctx context.Context, discord *client.Dis
 			if err != nil {
 				return "", err
 			}
-			defer puzzle.Unlock() // TODO: minimize critical section for writes
+			defer puzzle.Unlock()
 
 			if !puzzle.Pending {
 				return fmt.Sprintf(":man_shrugging: Puzzle %q is already approved, %s!", puzzle.Name, i.User.Mention()), nil
