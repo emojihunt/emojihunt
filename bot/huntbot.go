@@ -90,34 +90,34 @@ func (bot *huntbotBot) makeSlashCommand() *client.DiscordCommand {
 			bot.state.Lock()
 			defer bot.state.CommitAndUnlock()
 
+			var reply string
 			switch i.Subcommand.Name {
 			case "kill":
 				bot.state.DiscoveryDisabled = true
 				if !bot.state.HuntbotDisabled {
 					bot.state.HuntbotDisabled = true
-					bot.discord.ChannelSend(bot.discord.TechChannel,
-						fmt.Sprintf("**bot disabled by %v**", i.User.Mention()))
-					return "Ok, I've disabled the bot for now.  Enable it with `/huntbot start`.", nil
+					reply = "Ok, I've disabled the bot for now.  Enable it with `/huntbot start`."
 				} else {
-					return "The bot was already disabled. Enable it with `/huntbot start`.", nil
+					reply = "The bot was already disabled. Enable it with `/huntbot start`."
 				}
+				bot.discord.UpdateStatus(bot.state) // best-effort, ignore errors
+				return reply, nil
 			case "start":
 				bot.state.DiscoveryDisabled = false
 				if bot.state.HuntbotDisabled {
 					bot.state.HuntbotDisabled = false
-					bot.discord.ChannelSend(bot.discord.TechChannel,
-						fmt.Sprintf("**bot enabled by %v**", i.User.Mention()))
-					return "Ok, I've enabled the bot for now. Disable it with `/huntbot kill`.", nil
+					reply = "Ok, I've enabled the bot for now. Disable it with `/huntbot kill`."
 				} else {
-					return "The bot was already enabled. Disable it with `/huntbot kill`.", nil
+					reply = "The bot was already enabled. Disable it with `/huntbot kill`."
 				}
+				bot.discord.UpdateStatus(bot.state) // best-effort, ignore errors
+				return reply, nil
 			case "nodiscovery":
 				if bot.discovery == nil {
 					return "Huntbot is running without puzzle auto-discovery configured.", nil
 				}
 				bot.state.DiscoveryDisabled = true
-				bot.discord.ChannelSend(bot.discord.TechChannel,
-					fmt.Sprintf("**discovery paused by %v**", i.User.Mention()))
+				bot.discord.UpdateStatus(bot.state) // best-effort, ignore errors
 				return "Ok, I've paused puzzle auto-discovery for now. Re-enable it with `/huntbot start`. " +
 					"(This will also reenable the entire bot if the bot has been killed.)", nil
 			case "yikes":

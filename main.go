@@ -75,7 +75,7 @@ func main() {
 	}()
 
 	// Set up clients
-	discord, err := client.NewDiscord(config.Discord)
+	discord, err := client.NewDiscord(config.Discord, state)
 	if err != nil {
 		log.Fatalf("error creating discord client: %v", err)
 	}

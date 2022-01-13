@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/bwmarrin/discordgo"
+	"github.com/gauravjsingh/emojihunt/state"
 )
 
 type DiscordConfig struct {
@@ -40,7 +41,7 @@ type Discord struct {
 	rateLimits                map[string]*time.Time // url -> retryAfter time
 }
 
-func NewDiscord(config *DiscordConfig) (*Discord, error) {
+func NewDiscord(config *DiscordConfig, state *state.State) (*Discord, error) {
 	// Initialize discordgo client
 	s, err := discordgo.New(config.AuthToken)
 	if err != nil {
@@ -48,6 +49,9 @@ func NewDiscord(config *DiscordConfig) (*Discord, error) {
 	}
 	// s.Debug = true // warning: it's *very* verbose
 	s.Identify.Intents = discordgo.IntentsGuildMessages | discordgo.IntentsGuildScheduledEvents
+	state.Lock()
+	s.Identify.Presence.Status = discordComputeBotStatus(state)
+	state.Unlock()
 	if err := s.Open(); err != nil {
 		return nil, err
 	}
@@ -142,6 +146,24 @@ func (c *Discord) AddHandler(handler interface{}) {
 
 func (c *Discord) Close() error {
 	return c.s.Close()
+}
+
+// Update the bot's status (idle/active). The caller must hold the state lock.
+func (c *Discord) UpdateStatus(state *state.State) error {
+	return c.s.UpdateStatusComplex(discordgo.UpdateStatusData{
+		Status: discordComputeBotStatus(state),
+	})
+}
+
+// Caller must hold the state lock
+func discordComputeBotStatus(state *state.State) string {
+	if state.HuntbotDisabled {
+		return "dnd"
+	} else if state.DiscoveryDisabled {
+		return "idle"
+	} else {
+		return "online"
+	}
 }
 
 func (c *Discord) ChannelSend(ch *discordgo.Channel, msg string) error {
