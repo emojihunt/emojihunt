@@ -116,7 +116,8 @@ func (p Puzzle) Problems() []string {
 	}
 	for _, round := range p.Rounds {
 		if round.Name == "" || round.Emoji == "" {
-			problems = append(problems, fmt.Sprintf("invalid round %#v", round))
+			problems = append(problems, "invalid round (did you put a space between the "+
+				"emoji and the round name?)")
 		}
 	}
 	if p.PuzzleURL == "" {
