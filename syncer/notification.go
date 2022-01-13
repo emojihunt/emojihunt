@@ -34,7 +34,7 @@ func (s *Syncer) notifyPuzzleFullySolved(puzzle *schema.Puzzle, suppressSolveNot
 		}
 	}
 
-	msg := fmt.Sprintf("%s Puzzle <#%s> was %s! Answer: `%s`.",
+	msg := fmt.Sprintf("%s Puzzle <#%s> was **%s!** Answer: `%s`.",
 		puzzle.Rounds.Emojis(), puzzle.DiscordChannel, puzzle.Status.SolvedVerb(), puzzle.Answer)
 	return s.discord.ChannelSend(s.discord.KitchenChannel, msg)
 }
