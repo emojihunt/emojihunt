@@ -182,16 +182,18 @@ func (s *Syncer) ForceUpdate(ctx context.Context, puzzle *schema.Puzzle) (*schem
 		return nil, err
 	}
 
-	if err := s.DiscordCreateUpdatePin(puzzle); err != nil {
-		return nil, fmt.Errorf("unable to set puzzle status message for %q: %w", puzzle.Name, err)
-	}
-
-	if err := s.discordUpdateChannel(puzzle); err != nil {
-		return nil, fmt.Errorf("unable to set channel category for %q: %v", puzzle.Name, err)
-	}
-
-	if err := s.driveUpdateSpreadsheet(ctx, puzzle); err != nil {
-		return nil, fmt.Errorf("unable to update spreadsheet title and folder for %q: %v", puzzle.Name, err)
+	var wg sync.WaitGroup
+	var ch = make(chan error, 3)
+	wg.Add(3)
+	go func() { ch <- s.DiscordCreateUpdatePin(puzzle); wg.Done() }()
+	go func() { ch <- s.discordUpdateChannel(puzzle); wg.Done() }()
+	go func() { ch <- s.driveUpdateSpreadsheet(ctx, puzzle); wg.Done() }()
+	wg.Wait()
+	close(ch)
+	for err := range ch {
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	// Update bot status in Airtable and *mark as not pending* if applicable
