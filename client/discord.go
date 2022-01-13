@@ -16,8 +16,6 @@ type DiscordConfig struct {
 	KitchenChannelID  string `json:"kitchen_channel_id"`
 	MoreEyesChannelID string `json:"more_eyes_channel_id"`
 	TechChannelID     string `json:"tech_channel_id"`
-	PuzzleCategoryID  string `json:"puzzle_category_id"`
-	SolvedCategoryID  string `json:"solved_category_id"`
 	QMRoleID          string `json:"qm_role_id"`
 }
 
@@ -29,9 +27,6 @@ type Discord struct {
 	MoreEyesChannel *discordgo.Channel // for verbose puzzle updates
 	QMChannel       *discordgo.Channel // for puzzle maintenance
 	TechChannel     *discordgo.Channel // for error messages
-
-	PuzzleCategory *discordgo.Channel // for unsolved puzzles
-	SolvedCategory *discordgo.Channel // for solved puzzles
 
 	QMRole *discordgo.Role // so QMs show up in the sidebar
 
@@ -62,6 +57,7 @@ func NewDiscord(config *DiscordConfig) (*Discord, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to load guild %s: %v", config.GuildID, err)
 	}
+
 	kitchenChannel, err := s.Channel(config.KitchenChannelID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to load kitchen channel %q: %v",
@@ -82,18 +78,7 @@ func NewDiscord(config *DiscordConfig) (*Discord, error) {
 		return nil, fmt.Errorf("failed to load tech channel %q: %v",
 			config.TechChannelID, err)
 	}
-	puzzleCategory, err := s.Channel(config.PuzzleCategoryID)
-	if err != nil {
-		return nil, err
-	} else if puzzleCategory.Type != discordgo.ChannelTypeGuildCategory {
-		return nil, fmt.Errorf("puzzle category is wrong type: %v", puzzleCategory.Type)
-	}
-	solvedCategory, err := s.Channel(config.SolvedCategoryID)
-	if err != nil {
-		return nil, err
-	} else if puzzleCategory.Type != discordgo.ChannelTypeGuildCategory {
-		return nil, fmt.Errorf("solved category is wrong type: %v", puzzleCategory.Type)
-	}
+
 	allRoles, err := s.GuildRoles(guild.ID)
 	if err != nil {
 		return nil, err
@@ -116,8 +101,6 @@ func NewDiscord(config *DiscordConfig) (*Discord, error) {
 		MoreEyesChannel:           moreEyesChannel,
 		QMChannel:                 qmChannel,
 		TechChannel:               techChannel,
-		PuzzleCategory:            puzzleCategory,
-		SolvedCategory:            solvedCategory,
 		QMRole:                    qmRole,
 		appCommandHandlers:        make(map[string]*DiscordCommand),
 		componentHandlers:         make(map[string]*DiscordCommand),
@@ -193,9 +176,8 @@ func (c *Discord) ChannelSendRawID(chID, msg string) error {
 
 func (c *Discord) CreateChannel(name string) (*discordgo.Channel, error) {
 	return c.s.GuildChannelCreateComplex(c.Guild.ID, discordgo.GuildChannelCreateData{
-		Name:     name,
-		Type:     discordgo.ChannelTypeGuildText,
-		ParentID: c.PuzzleCategory.ID,
+		Name: name,
+		Type: discordgo.ChannelTypeGuildText,
 	})
 }
 
