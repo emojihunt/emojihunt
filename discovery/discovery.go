@@ -19,7 +19,7 @@ import (
 
 var (
 	// URL of the "All Puzzles" page on the hunt website
-	puzzleListURL, _ = url.Parse("http://puzzles.mit.edu/2021/puzzles.html")
+	puzzleListURL, _ = url.Parse("")
 
 	// URL of the Websocket endpoint
 	websocketURL    *url.URL = nil
