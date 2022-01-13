@@ -10,24 +10,25 @@ import (
 )
 
 var (
-	secretsFile = flag.String("secrets_file", "secrets.json", "path to the flie that contains secrets used by the application")
-	guildID     = flag.String("guild_id", "793599987694436374", "the id of the discord guild")
+	config_file = flag.String("config_file", "config.json", "path to the flie that contains secrets used by the application")
 	category    = flag.String("category", "", "name of category to delete from")
 	dryRun      = flag.Bool("dry_run", true, "whether to run in dry run mode or not")
 )
 
 func main() {
-	bs, err := ioutil.ReadFile(*secretsFile)
+	bs, err := ioutil.ReadFile(*config_file)
 	if err != nil {
 		log.Fatalf("error opening secrets.json: %v", err)
 	}
 
-	var secrets map[string]interface{}
-	if err := json.Unmarshal(bs, &secrets); err != nil {
+	var config map[string]interface{}
+	if err := json.Unmarshal(bs, &config); err != nil {
 		log.Fatalf("error parsing secrets.json: %v", err)
 	}
 
-	dg, err := discordgo.New(secrets["discord_token"].(string))
+	discordConfig := config["discord"].(map[string]interface{})
+
+	dg, err := discordgo.New(discordConfig["auth_token"].(string))
 	if err != nil {
 		log.Fatalf("error creating discordgo client: %v", err)
 	}
@@ -38,7 +39,7 @@ func main() {
 		log.Fatalf("error opening discord connection: %v", err)
 	}
 
-	chs, err := dg.GuildChannels(*guildID)
+	chs, err := dg.GuildChannels(discordConfig["guild_id"].(string))
 	if err != nil {
 		log.Fatalf("error listing channels: %v", err)
 	}
