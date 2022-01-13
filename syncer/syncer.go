@@ -112,22 +112,14 @@ func (s *Syncer) HandleStatusChange(ctx context.Context, puzzle *schema.Puzzle, 
 	log.Printf("syncer: handling status change for %q", puzzle.Name)
 
 	var err error
-	if err := s.DiscordCreateUpdatePin(puzzle); err != nil {
-		return nil, fmt.Errorf("unable to set puzzle status message for %q: %w", puzzle.Name, err)
-	}
-
-	if err := s.discordUpdateChannel(puzzle); err != nil {
-		return nil, fmt.Errorf("unable to set channel category for %q: %v", puzzle.Name, err)
-	}
-
-	if err := s.driveUpdateSpreadsheet(ctx, puzzle); err != nil {
-		return nil, fmt.Errorf("unable to update spreadsheet title and folder for %q: %v", puzzle.Name, err)
+	err = s.parallelHardUpdate(ctx, puzzle)
+	if err != nil {
+		return nil, err
 	}
 
 	// Update bot status in Airtable, unless we're in a bot handler and this has
 	// already been done.
 	if !botRequest {
-		var err error
 		puzzle, err = s.airtable.SetBotFields(puzzle, puzzle.Status, puzzle.ShouldArchive(), puzzle.Pending)
 		if err != nil {
 			return nil, fmt.Errorf("failed to update bot fields for puzzle %q: %v", puzzle.Name, err)
@@ -187,6 +179,23 @@ func (s *Syncer) ForceUpdate(ctx context.Context, puzzle *schema.Puzzle) (*schem
 		return nil, err
 	}
 
+	err = s.parallelHardUpdate(ctx, puzzle)
+	if err != nil {
+		return nil, err
+	}
+
+	// Update bot status in Airtable and *mark as not pending* if applicable
+	puzzle, err = s.airtable.SetBotFields(puzzle, puzzle.Status, puzzle.ShouldArchive(), false)
+	if err != nil {
+		return nil, err
+	}
+	return puzzle, nil
+}
+
+// parallelHardUpdate updates the Discord pinned message, the Discord channel
+// name/category, and the Google spreadsheet name. It's called when the puzzle
+// status changes, and as part of ForceUpdate().
+func (s *Syncer) parallelHardUpdate(ctx context.Context, puzzle *schema.Puzzle) error {
 	var wg sync.WaitGroup
 	var ch = make(chan error, 3)
 	wg.Add(3)
@@ -197,14 +206,8 @@ func (s *Syncer) ForceUpdate(ctx context.Context, puzzle *schema.Puzzle) (*schem
 	close(ch)
 	for err := range ch {
 		if err != nil {
-			return nil, err
+			return err
 		}
 	}
-
-	// Update bot status in Airtable and *mark as not pending* if applicable
-	puzzle, err = s.airtable.SetBotFields(puzzle, puzzle.Status, puzzle.ShouldArchive(), false)
-	if err != nil {
-		return nil, err
-	}
-	return puzzle, nil
+	return nil
 }
