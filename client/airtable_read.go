@@ -10,6 +10,21 @@ import (
 	"github.com/gauravjsingh/emojihunt/schema"
 )
 
+// ListApprovedPuzzles returns a list of all known record IDs.
+func (air *Airtable) ListApprovedPuzzles() ([]string, error) {
+	var ids []string
+	puzzles, err := air.listRecordsWithFilter("")
+	if err != nil {
+		return nil, err
+	}
+	for _, puzzle := range puzzles {
+		if !puzzle.Pending {
+			ids = append(ids, puzzle.AirtableRecord.ID)
+		}
+	}
+	return ids, nil
+}
+
 // ListPuzzlesToAction loads all puzzles from the Airtable API and returns two
 // lists: a list of schema.InvalidPuzzle objects representing puzzles that
 // failed basic validation (we can't even create the Discord channel and

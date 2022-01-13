@@ -99,8 +99,8 @@ type Round struct {
 func ParseRound(raw string) Round {
 	parts := strings.SplitN(raw, " ", 2)
 	if len(parts) != 2 {
-		// Return an empty Round object; we have to check for this (see
-		// IsValid(), above) and notify the QM so they can fix it.
+		// Return an empty Round object; we have to check for this and notify
+		// the QM so they can fix it.
 		return Round{}
 	}
 	return Round{parts[1], parts[0]}

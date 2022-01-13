@@ -74,7 +74,7 @@ func (s *Server) resync(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	log.Printf("processing resync request: %q", r.URL.Query().Get("record"))
+	log.Printf("processing re-sync request: %q", r.URL.Query().Get("record"))
 
 	id := r.URL.Query().Get("record")
 	if id == "" {

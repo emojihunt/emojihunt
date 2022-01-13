@@ -107,7 +107,7 @@ func main() {
 		log.Printf("puzzle auto-discovery is disabled (no config found)")
 	}
 
-	bot.RegisterHuntbotCommand(discord, dbpoller, dscvpoller, state)
+	bot.RegisterHuntbotCommand(ctx, airtable, discord, dbpoller, dscvpoller, syncer, state)
 
 	if err := discord.RegisterCommands(); err != nil {
 		log.Fatalf("failed to register discord commands: %v", err)
