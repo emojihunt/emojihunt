@@ -116,7 +116,7 @@ func (bot *reminderBot) processNotifications(since time.Time) (*time.Time, error
 			target := puzzle.Reminder.Add(delay)
 			if target.Before(now) && target.After(since) {
 				msg = fmt.Sprintf(":hourglass_flowing_sand: Reminder: %q in %s",
-					puzzle.Name, time.Until(puzzle.Reminder).Truncate(time.Minute))
+					puzzle.Name, time.Until(puzzle.Reminder).Round(time.Minute))
 			}
 		}
 		if puzzle.Reminder.Before(now) && puzzle.Reminder.After(since) {
