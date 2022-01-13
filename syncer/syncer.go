@@ -15,11 +15,16 @@ type Syncer struct {
 	discord  *client.Discord
 	drive    *client.Drive
 
-	VoiceRoomMutex sync.Mutex
+	VoiceRoomMutex       sync.Mutex
+	DiscordCategoryMutex sync.Mutex
 }
 
 func New(airtable *client.Airtable, discord *client.Discord, drive *client.Drive) *Syncer {
-	return &Syncer{airtable, discord, drive, sync.Mutex{}}
+	return &Syncer{
+		airtable: airtable,
+		discord:  discord,
+		drive:    drive,
+	}
 }
 
 // IdempotentCreateUpdate synchronizes Discord and Google Drive with the puzzle

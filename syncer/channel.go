@@ -3,6 +3,7 @@ package syncer
 import (
 	"fmt"
 	"log"
+	"strconv"
 	"strings"
 	"time"
 
@@ -11,9 +12,13 @@ import (
 )
 
 const (
-	pinnedStatusHeader  = "Puzzle Information"
-	voiceRoomDefaultMsg = "Use `/voice start` to assign a voice room"
+	roundCategoryPrefix  = "Round: "
+	solvedCategoryPrefix = "Solved "
+	pinnedStatusHeader   = "Puzzle Information"
+	voiceRoomDefaultMsg  = "Use `/voice start` to assign a voice room"
 )
+
+var solvedSuffixes = []string{"A", "B", "C"}
 
 // DiscordCreateUpdatePin creates or updates the pinned message at the top of
 // the puzzle channel. This message contains information about the puzzle status
@@ -93,26 +98,47 @@ func (s *Syncer) DiscordCreateUpdatePin(puzzle *schema.Puzzle) error {
 // solved puzzles), and the puzzle name includes a check mark when the puzzle is
 // solved. It needs to be called when the puzzle status changes.
 func (s *Syncer) discordUpdateChannel(puzzle *schema.Puzzle) error {
-	var category *discordgo.Channel
-	if puzzle.ShouldArchive() {
-		category = s.discord.SolvedCategory
-	} else {
-		category = s.discord.PuzzleCategory
-	}
+	s.DiscordCategoryMutex.Lock()
+	defer s.DiscordCategoryMutex.Unlock()
+	log.Printf("syncer: updating discord channel for %q", puzzle.Name)
 
-	err := s.discord.SetChannelCategory(puzzle.DiscordChannel, category)
+	// Find which category the puzzle should belong to
+	var targetName string
+	categories, err := s.discord.GetChannelCategories()
 	if err != nil {
 		return err
 	}
-
-	var title = puzzle.Title()
-	if puzzle.Status.IsSolved() {
-		title = "✅ " + title
+	if puzzle.ShouldArchive() {
+		i, err := strconv.ParseUint(puzzle.DiscordChannel, 10, 64)
+		if err != nil {
+			return err
+		}
+		targetName = solvedCategoryPrefix + solvedSuffixes[i%uint64(len(solvedSuffixes))]
+	} else {
+		targetName = roundCategoryPrefix + puzzle.Rounds[0].Name
+	}
+	var category *discordgo.Channel
+	if item, ok := categories[targetName]; !ok {
+		// We need to create the category
+		log.Printf("syncer: creating discord category %q", targetName)
+		if category, err = s.discord.CreateCategory(targetName); err != nil {
+			return err
+		}
+	} else {
+		category = item
+	}
+	// Move puzzle channel to the selected category
+	if err = s.discord.SetChannelCategory(puzzle.DiscordChannel, category); err != nil {
+		return err
 	}
 
 	// The Discord rate limit on channel renames is fairly restrictive (2 per 10
 	// minutes per channel), so finish renaming the channel asynchronously if we
 	// get rate-limited.
+	var title = puzzle.Title()
+	if puzzle.Status.IsSolved() {
+		title = "✅ " + title
+	}
 	ch := make(chan error)
 	go func() {
 		ch <- s.discord.SetChannelName(puzzle.DiscordChannel, title)

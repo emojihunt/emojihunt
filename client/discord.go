@@ -199,6 +199,25 @@ func (c *Discord) SetChannelName(chID, name string) error {
 	return err
 }
 
+func (c *Discord) GetChannelCategories() (map[string]*discordgo.Channel, error) {
+	channels, err := c.s.GuildChannels(c.Guild.ID)
+	if err != nil {
+		return nil, err
+	}
+
+	var categories = make(map[string]*discordgo.Channel)
+	for _, channel := range channels {
+		if channel.Type == discordgo.ChannelTypeGuildCategory {
+			categories[channel.Name] = channel
+		}
+	}
+	return categories, nil
+}
+
+func (c *Discord) CreateCategory(name string) (*discordgo.Channel, error) {
+	return c.s.GuildChannelCreate(c.Guild.ID, name, discordgo.ChannelTypeGuildCategory)
+}
+
 func (c *Discord) SetChannelCategory(chID string, category *discordgo.Channel) error {
 	ch, err := c.s.Channel(chID)
 	if err != nil {

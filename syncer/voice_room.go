@@ -21,6 +21,7 @@ const (
 // The caller *must* acquire VoiceRoomMutex before calling this function.
 //
 func (s *Syncer) SyncVoiceRooms(ctx context.Context) error {
+	log.Printf("syncer: syncing voice rooms")
 	events, err := s.discord.ListScheduledEvents()
 	if err != nil {
 		return err

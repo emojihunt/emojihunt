@@ -2,6 +2,7 @@ package syncer
 
 import (
 	"context"
+	"log"
 
 	"github.com/gauravjsingh/emojihunt/schema"
 )
@@ -12,6 +13,7 @@ import (
 // updated). The folder is based on the round, which shouldn't change after
 // creation but we update it to be sure.
 func (s *Syncer) driveUpdateSpreadsheet(ctx context.Context, puzzle *schema.Puzzle) error {
+	log.Printf("syncer: updating spreadsheet for %q", puzzle.Name)
 	var name = puzzle.Name
 	if puzzle.Status.IsSolved() {
 		name = "[SOLVED] " + name
