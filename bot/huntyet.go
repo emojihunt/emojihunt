@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/bwmarrin/discordgo"
-	"github.com/gauravjsingh/emojihunt/client"
+	"github.com/emojihunt/emojihunt/client"
 )
 
 func RegisterHuntYetBot(discord *client.Discord) {

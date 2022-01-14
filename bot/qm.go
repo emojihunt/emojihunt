@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"github.com/bwmarrin/discordgo"
-	"github.com/gauravjsingh/emojihunt/client"
+	"github.com/emojihunt/emojihunt/client"
 )
 
 func RegisterQMBot(discord *client.Discord) {

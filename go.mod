@@ -1,4 +1,4 @@
-module github.com/gauravjsingh/emojihunt
+module github.com/emojihunt/emojihunt
 
 go 1.17
 

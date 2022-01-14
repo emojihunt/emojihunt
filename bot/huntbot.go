@@ -7,12 +7,12 @@ import (
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/davecgh/go-spew/spew"
-	"github.com/gauravjsingh/emojihunt/client"
-	"github.com/gauravjsingh/emojihunt/database"
-	"github.com/gauravjsingh/emojihunt/discovery"
-	"github.com/gauravjsingh/emojihunt/schema"
-	"github.com/gauravjsingh/emojihunt/state"
-	"github.com/gauravjsingh/emojihunt/syncer"
+	"github.com/emojihunt/emojihunt/client"
+	"github.com/emojihunt/emojihunt/database"
+	"github.com/emojihunt/emojihunt/discovery"
+	"github.com/emojihunt/emojihunt/schema"
+	"github.com/emojihunt/emojihunt/state"
+	"github.com/emojihunt/emojihunt/syncer"
 )
 
 func RegisterHuntbotCommand(ctx context.Context, airtable *client.Airtable, discord *client.Discord,

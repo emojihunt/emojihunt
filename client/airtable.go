@@ -7,7 +7,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/gauravjsingh/emojihunt/schema"
+	"github.com/emojihunt/emojihunt/schema"
 	"github.com/mehanizm/airtable"
 )
 

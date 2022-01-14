@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 
-	"github.com/gauravjsingh/emojihunt/discovery"
+	"github.com/emojihunt/emojihunt/discovery"
 )
 
 // This tool can help you out when you're adjusting the CSS selectors for a new

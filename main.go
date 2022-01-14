@@ -13,13 +13,13 @@ import (
 
 	_ "net/http/pprof"
 
-	"github.com/gauravjsingh/emojihunt/bot"
-	"github.com/gauravjsingh/emojihunt/client"
-	"github.com/gauravjsingh/emojihunt/database"
-	"github.com/gauravjsingh/emojihunt/discovery"
-	"github.com/gauravjsingh/emojihunt/server"
-	"github.com/gauravjsingh/emojihunt/state"
-	"github.com/gauravjsingh/emojihunt/syncer"
+	"github.com/emojihunt/emojihunt/bot"
+	"github.com/emojihunt/emojihunt/client"
+	"github.com/emojihunt/emojihunt/database"
+	"github.com/emojihunt/emojihunt/discovery"
+	"github.com/emojihunt/emojihunt/server"
+	"github.com/emojihunt/emojihunt/state"
+	"github.com/emojihunt/emojihunt/syncer"
 )
 
 type Config struct {

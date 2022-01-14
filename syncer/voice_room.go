@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/bwmarrin/discordgo"
-	"github.com/gauravjsingh/emojihunt/schema"
+	"github.com/emojihunt/emojihunt/schema"
 )
 
 const (

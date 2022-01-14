@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"github.com/bwmarrin/discordgo"
-	"github.com/gauravjsingh/emojihunt/schema"
+	"github.com/emojihunt/emojihunt/schema"
 )
 
 // notifyNewPuzzle sends the "New puzzle!" message to #more-eyes.

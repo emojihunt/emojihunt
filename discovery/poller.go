@@ -10,9 +10,9 @@ import (
 	"time"
 
 	"github.com/davecgh/go-spew/spew"
-	"github.com/gauravjsingh/emojihunt/client"
-	"github.com/gauravjsingh/emojihunt/state"
-	"github.com/gauravjsingh/emojihunt/syncer"
+	"github.com/emojihunt/emojihunt/client"
+	"github.com/emojihunt/emojihunt/state"
+	"github.com/emojihunt/emojihunt/syncer"
 	"golang.org/x/net/websocket"
 	"golang.org/x/time/rate"
 )

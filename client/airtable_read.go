@@ -7,7 +7,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/gauravjsingh/emojihunt/schema"
+	"github.com/emojihunt/emojihunt/schema"
 )
 
 // ListApprovedPuzzles returns a list of all known record IDs.

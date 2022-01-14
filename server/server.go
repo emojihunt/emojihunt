@@ -8,9 +8,9 @@ import (
 	"strings"
 
 	"github.com/davecgh/go-spew/spew"
-	"github.com/gauravjsingh/emojihunt/client"
-	"github.com/gauravjsingh/emojihunt/schema"
-	"github.com/gauravjsingh/emojihunt/syncer"
+	"github.com/emojihunt/emojihunt/client"
+	"github.com/emojihunt/emojihunt/schema"
+	"github.com/emojihunt/emojihunt/syncer"
 )
 
 type ServerConfig struct {

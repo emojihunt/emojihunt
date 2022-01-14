@@ -7,8 +7,8 @@ import (
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/davecgh/go-spew/spew"
-	"github.com/gauravjsingh/emojihunt/client"
-	"github.com/gauravjsingh/emojihunt/state"
+	"github.com/emojihunt/emojihunt/client"
+	"github.com/emojihunt/emojihunt/state"
 )
 
 var timemit, _ = time.LoadLocation("America/New_York")

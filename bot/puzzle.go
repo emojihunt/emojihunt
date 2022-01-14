@@ -6,9 +6,9 @@ import (
 	"strings"
 
 	"github.com/bwmarrin/discordgo"
-	"github.com/gauravjsingh/emojihunt/client"
-	"github.com/gauravjsingh/emojihunt/schema"
-	"github.com/gauravjsingh/emojihunt/syncer"
+	"github.com/emojihunt/emojihunt/client"
+	"github.com/emojihunt/emojihunt/schema"
+	"github.com/emojihunt/emojihunt/syncer"
 )
 
 func RegisterPuzzleBot(ctx context.Context, airtable *client.Airtable, discord *client.Discord, syncer *syncer.Syncer) {

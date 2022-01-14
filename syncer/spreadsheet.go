@@ -4,7 +4,7 @@ import (
 	"context"
 	"log"
 
-	"github.com/gauravjsingh/emojihunt/schema"
+	"github.com/emojihunt/emojihunt/schema"
 )
 
 // driveUpdateSpreadsheet sets the spreadsheet's title and parent folder. The

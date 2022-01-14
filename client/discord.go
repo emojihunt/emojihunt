@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/bwmarrin/discordgo"
-	"github.com/gauravjsingh/emojihunt/state"
+	"github.com/emojihunt/emojihunt/state"
 )
 
 type DiscordConfig struct {

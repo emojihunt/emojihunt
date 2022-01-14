@@ -12,8 +12,8 @@ import (
 	"github.com/andybalholm/cascadia"
 	"github.com/bwmarrin/discordgo"
 	"github.com/davecgh/go-spew/spew"
-	"github.com/gauravjsingh/emojihunt/client"
-	"github.com/gauravjsingh/emojihunt/schema"
+	"github.com/emojihunt/emojihunt/client"
+	"github.com/emojihunt/emojihunt/schema"
 	"golang.org/x/net/html"
 )
 

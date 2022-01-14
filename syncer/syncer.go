@@ -8,8 +8,8 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/gauravjsingh/emojihunt/client"
-	"github.com/gauravjsingh/emojihunt/schema"
+	"github.com/emojihunt/emojihunt/client"
+	"github.com/emojihunt/emojihunt/schema"
 )
 
 type Syncer struct {

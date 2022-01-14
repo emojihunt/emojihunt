@@ -6,8 +6,8 @@ import (
 	"strings"
 
 	"github.com/bwmarrin/discordgo"
-	"github.com/gauravjsingh/emojihunt/client"
-	"github.com/gauravjsingh/emojihunt/emojiname"
+	"github.com/emojihunt/emojihunt/client"
+	"github.com/emojihunt/emojihunt/emojiname"
 )
 
 func RegisterEmojiNameBot(discord *client.Discord) {
