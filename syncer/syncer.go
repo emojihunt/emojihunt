@@ -22,6 +22,9 @@ type Syncer struct {
 }
 
 func New(airtable *client.Airtable, discord *client.Discord, drive *client.Drive) *Syncer {
+	if airtable.BotUserID == "" {
+		panic("BotUserID must be set!")
+	}
 	return &Syncer{
 		airtable: airtable,
 		discord:  discord,
@@ -97,7 +100,7 @@ func (s *Syncer) IdempotentCreateUpdate(ctx context.Context, puzzle *schema.Puzz
 		if err != nil {
 			return nil, fmt.Errorf("failed to update bot fields for puzzle %q: %v", puzzle.Name, err)
 		} else if puzzle.LastModifiedBy != s.airtable.BotUserID {
-			panic(fmt.Errorf("updated puzzle but user ID does not match bot's, existing to avoid infinite loop: %#v", puzzle))
+			log.Printf("WARNING! updated puzzle but user ID does not match bot's, watch out for infinite loop!")
 		}
 	}
 
