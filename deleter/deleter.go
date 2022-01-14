@@ -10,7 +10,7 @@ import (
 )
 
 var (
-	config_file = flag.String("config_file", "config.json", "path to the flie that contains secrets used by the application")
+	config_file = flag.String("config_file", "config.json", "path to the file that contains config used by the application")
 	category    = flag.String("category", "", "name of category to delete from")
 	dryRun      = flag.Bool("dry_run", true, "whether to run in dry run mode or not")
 )
@@ -18,12 +18,12 @@ var (
 func main() {
 	bs, err := ioutil.ReadFile(*config_file)
 	if err != nil {
-		log.Fatalf("error opening secrets.json: %v", err)
+		log.Fatalf("error opening config.json: %v", err)
 	}
 
 	var config map[string]interface{}
 	if err := json.Unmarshal(bs, &config); err != nil {
-		log.Fatalf("error parsing secrets.json: %v", err)
+		log.Fatalf("error parsing config.json: %v", err)
 	}
 
 	discordConfig := config["discord"].(map[string]interface{})

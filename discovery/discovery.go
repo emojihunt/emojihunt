@@ -67,7 +67,7 @@ func (d *Poller) Scrape() ([]*DiscoveredPuzzle, error) {
 
 	container := containerSelector.MatchFirst(root)
 	if container == nil {
-		return nil, fmt.Errorf("container not found")
+		return nil, fmt.Errorf("container not found, did login succeed?")
 	}
 
 	node := container.FirstChild

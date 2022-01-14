@@ -39,11 +39,11 @@ func main() {
 	// Load config.json
 	bs, err := ioutil.ReadFile(os.Args[1])
 	if err != nil {
-		log.Fatalf("error reading secrets file at %q: %v", os.Args[1], err)
+		log.Fatalf("error reading config file at %q: %v", os.Args[1], err)
 	}
 	config := Config{}
 	if err := json.Unmarshal(bs, &config); err != nil {
-		log.Fatalf("error unmarshaling secrets from %q: %v", os.Args[1], err)
+		log.Fatalf("error unmarshaling config from %q: %v", os.Args[1], err)
 	}
 
 	// Load state.json
