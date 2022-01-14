@@ -20,7 +20,7 @@ import (
 
 var (
 	// URL of the "All Puzzles" page on the hunt website
-	puzzleListURL, _ = url.Parse("https://www.starrats.org/puzzles/")
+	puzzleListURL, _ = url.Parse("https://www.bookspace.world/puzzles/")
 
 	// URL of the Websocket endpoint
 	websocketURL, _ = url.Parse("wss://www.starrats.org/ws/team")
