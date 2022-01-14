@@ -38,7 +38,7 @@ type DiscoveredPuzzle struct {
 }
 
 const (
-	pollInterval         = 1 * time.Minute
+	pollInterval         = 20 * time.Second
 	roundNotifyFrequency = 10 * time.Minute
 	warnErrorFrequency   = 10 * time.Minute
 	newPuzzleLimit       = 10
