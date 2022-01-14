@@ -67,6 +67,7 @@ func New(airtable *client.Airtable, discord *client.Discord, syncer *syncer.Sync
 }
 
 func (d *Poller) Poll(ctx context.Context) {
+reconnect:
 	for {
 		ch, err := d.openWebsocket()
 		if err != nil {
@@ -94,7 +95,7 @@ func (d *Poller) Poll(ctx context.Context) {
 				return
 			case _, more := <-ch:
 				if !more {
-					break
+					continue reconnect
 				}
 			case <-time.After(pollInterval):
 			}
