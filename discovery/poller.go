@@ -152,6 +152,7 @@ func (d *Poller) openWebsocket() (chan bool, error) {
 				log.Printf("discovery: ws (skipped due to rate limit): %q", scanner.Text())
 			}
 		}
+		log.Printf("discovery: closing ws channel")
 	}(ws, ch)
 	return ch, nil
 }
