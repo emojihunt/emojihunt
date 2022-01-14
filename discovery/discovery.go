@@ -15,30 +15,20 @@ import (
 	"github.com/emojihunt/emojihunt/client"
 	"github.com/emojihunt/emojihunt/schema"
 	"golang.org/x/net/html"
+	"golang.org/x/net/html/atom"
 )
 
 var (
 	// URL of the "All Puzzles" page on the hunt website
-	puzzleListURL, _ = url.Parse("")
+	puzzleListURL, _ = url.Parse("https://www.starrats.org/puzzles/")
 
 	// URL of the Websocket endpoint
-	websocketURL    *url.URL = nil
-	websocketOrigin          = "" // fmt.Sprintf("https://%s/", websocketURL.Host)
+	websocketURL, _ = url.Parse("wss://www.starrats.org/ws/team")
+	websocketOrigin = "https://" + websocketURL.Host
 
-	// A "group" is the HTML element that contains the round name and all of the
-	// puzzles in that round. This is a CSS selector that matches all of the
-	// groups in the page. This selector is run on the root of the document.
-	groupSelector = cascadia.MustCompile(".info div section")
-
-	// A CSS selector that matches the round name element, i.e. an element whose
-	// contents are the name of the round. This selector is run on each group.
-	roundNameSelector = cascadia.MustCompile("a h3")
-
-	// A CSS selector that matches each of the puzzles in the group. This
-	// selector is expected to match <a> tags where the "href" attribute is the
-	// puzzle URL and the immediate contents of the tag are the name of the
-	// puzzle. This selector is run on each group.
-	puzzleSelector = cascadia.MustCompile("td a")
+	containerSelector = cascadia.MustCompile("section#main-content")
+	roundNameSelector = cascadia.MustCompile("a")
+	puzzleSelector    = cascadia.MustCompile("tr td:nth-child(2) a")
 )
 
 // EXAMPLES
@@ -75,42 +65,58 @@ func (d *Poller) Scrape() ([]*DiscoveredPuzzle, error) {
 		return nil, err
 	}
 
-	groups := groupSelector.MatchAll(root)
-	if len(groups) < 1 {
-		return nil, fmt.Errorf("failed to parse puzzle list: no groups found")
+	container := containerSelector.MatchFirst(root)
+	if container == nil {
+		return nil, fmt.Errorf("container not found")
 	}
 
-	for _, group := range groups {
-		nameNode := roundNameSelector.MatchFirst(group)
-		if nameNode == nil {
-			return nil, fmt.Errorf("round name not found for group: %#v", group)
-		}
-		roundName := strings.TrimSpace(nameNode.FirstChild.Data)
+	node := container.FirstChild
+	for {
+		if node.DataAtom == atom.H2 {
+			nameNode := roundNameSelector.MatchFirst(node)
+			if nameNode == nil {
+				return nil, fmt.Errorf("round name not found for node: %#v", node)
+			}
+			roundName := strings.TrimSpace(nameNode.FirstChild.Data)
 
-		puzzleNodes := puzzleSelector.MatchAll(group)
-		if len(puzzleNodes) < 1 {
-			return nil, fmt.Errorf("no puzzles found for group: %#v", group)
-		}
-		for _, puzzleNode := range puzzleNodes {
-			var u *url.URL
-			for _, attr := range puzzleNode.Attr {
-				if attr.Key == "href" {
-					u, err = url.Parse(attr.Val)
-					if err != nil {
-						return nil, fmt.Errorf("invalid puzzle url: %#v", u)
+			node = node.NextSibling
+			if node.Type == html.TextNode {
+				node = node.NextSibling
+			}
+			if node.DataAtom != atom.Table {
+				return nil, fmt.Errorf("puzzle table not found, got: %#v", node)
+			}
+
+			puzzleNodes := puzzleSelector.MatchAll(node)
+			if len(puzzleNodes) < 1 {
+				return nil, fmt.Errorf("no puzzles found for node: %#v", node)
+			}
+			for _, puzzleNode := range puzzleNodes {
+				var u *url.URL
+				for _, attr := range puzzleNode.Attr {
+					if attr.Key == "href" {
+						u, err = url.Parse(attr.Val)
+						if err != nil {
+							return nil, fmt.Errorf("invalid puzzle url: %#v", u)
+						}
 					}
 				}
+				if u == nil {
+					return nil, fmt.Errorf("could not find puzzle url for puzzle: %#v", puzzleNode)
+				}
+				puzzles = append(puzzles, &DiscoveredPuzzle{
+					Name:  strings.TrimSpace(puzzleNode.FirstChild.Data),
+					URL:   puzzleListURL.ResolveReference(u),
+					Round: roundName,
+				})
 			}
-			if u == nil {
-				return nil, fmt.Errorf("could not find puzzle url for puzzle: %#v", puzzleNode)
-			}
-			puzzles = append(puzzles, &DiscoveredPuzzle{
-				Name:  strings.TrimSpace(puzzleNode.FirstChild.Data),
-				URL:   puzzleListURL.ResolveReference(u),
-				Round: roundName,
-			})
+		}
+
+		if node = node.NextSibling; node == nil {
+			break
 		}
 	}
+
 	return puzzles, nil
 }
 

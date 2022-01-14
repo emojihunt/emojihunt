@@ -65,7 +65,7 @@ func New(airtable *client.Airtable, discord *client.Discord, syncer *syncer.Sync
 func (d *Poller) Poll(ctx context.Context) {
 	ch, err := d.openWebsocket()
 	if err != nil {
-		log.Printf("discovery: failed to open websocket: %v", err)
+		log.Printf("discovery: failed to open websocket: %v", spew.Sprint(err))
 	}
 
 	for {
