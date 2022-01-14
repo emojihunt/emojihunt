@@ -3,6 +3,7 @@ package discovery
 import (
 	"bufio"
 	"context"
+	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
@@ -20,10 +21,12 @@ import (
 type DiscoveryConfig struct {
 	CookieName  string `json:"cookie_name"`
 	CookieValue string `json:"cookie_value"`
+	AuthToken   string `json:"auth_token"`
 }
 
 type Poller struct {
 	cookie    *http.Cookie
+	token     string
 	airtable  *client.Airtable
 	discord   *client.Discord
 	syncer    *syncer.Syncer
@@ -54,6 +57,7 @@ func New(airtable *client.Airtable, discord *client.Discord, syncer *syncer.Sync
 			Value:  config.CookieValue,
 			MaxAge: 0,
 		},
+		token:     config.AuthToken,
 		airtable:  airtable,
 		discord:   discord,
 		syncer:    syncer,
@@ -125,6 +129,18 @@ func (d *Poller) openWebsocket() (chan bool, error) {
 	if err != nil {
 		return nil, err
 	}
+	log.Printf("discovery: opened websocket connection to %q", websocketURL.String())
+	data, err := json.Marshal(map[string]interface{}{
+		"type": "AUTH",
+		"data": d.token,
+	})
+	if err != nil {
+		return nil, err
+	}
+	log.Printf("discovery: wrote AUTH message to websocket")
+	if _, err := ws.Write(data); err != nil {
+		return nil, err
+	}
 	go func(ws *websocket.Conn, ch chan bool) {
 		defer close(ch)
 		scanner := bufio.NewScanner(ws)
@@ -136,7 +152,6 @@ func (d *Poller) openWebsocket() (chan bool, error) {
 				log.Printf("discovery: ws (skipped due to rate limit): %q", scanner.Text())
 			}
 		}
-		close(ch)
 	}(ws, ch)
 	return ch, nil
 }
