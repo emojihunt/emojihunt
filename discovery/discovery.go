@@ -209,7 +209,7 @@ func (d *Poller) RegisterApproveCommand(ctx context.Context, discord *client.Dis
 
 func (d *Poller) notifyNewPuzzle(puzzle *schema.Puzzle) error {
 	msg := fmt.Sprintf(
-		"**%s New puzzle detected!** Name: %q, Round: %s, URL: %s",
+		"**%s New puzzle detected!** Name: %q, Round: %s, URL: <%s>",
 		puzzle.Rounds.Emojis(), puzzle.Name, puzzle.Rounds.Names(), puzzle.PuzzleURL,
 	)
 	components := []discordgo.MessageComponent{
