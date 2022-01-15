@@ -83,7 +83,14 @@ func (d *Poller) Scrape() ([]*DiscoveredPuzzle, error) {
 			if node.Type == html.TextNode {
 				node = node.NextSibling
 			}
-			if node.DataAtom != atom.Table {
+			switch node.DataAtom {
+			case atom.Table:
+				// Puzzles; continues below.
+			case atom.H2:
+				// Skips straight to next round (maybe a sub-round).
+				continue
+			default:
+				// Unknown structure.
 				return nil, fmt.Errorf("puzzle table not found, got: %#v", node)
 			}
 
