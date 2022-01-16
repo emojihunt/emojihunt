@@ -75,7 +75,7 @@ func (p *Poller) Poll(ctx context.Context) {
 					log.Printf("failed to reload puzzle: %v", err)
 					continue
 				}
-				if time.Since(*puzzle.LastModified) < p.airtable.ModifyGracePeriod {
+				if puzzle.LastModified == nil || time.Since(*puzzle.LastModified) < p.airtable.ModifyGracePeriod {
 					puzzle.Unlock()
 					continue
 				}

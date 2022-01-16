@@ -110,9 +110,7 @@ func (air *Airtable) parseRecord(record *airtable.Record, unlock func()) (*schem
 	}
 
 	var lastModifiedBy string
-	if value, ok := record.Fields["Last Modified By"]; !ok {
-		return nil, fmt.Errorf("could not find Last Modified By field: %#v", record.Fields)
-	} else {
+	if value, ok := record.Fields["Last Modified By"]; ok {
 		lastModifiedBy = value.(map[string]interface{})["id"].(string)
 	}
 

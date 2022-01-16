@@ -91,7 +91,7 @@ func (s *Syncer) IdempotentCreateUpdate(ctx context.Context, puzzle *schema.Puzz
 		if err != nil {
 			return nil, err
 		}
-	} else if puzzle.LastModifiedBy != s.airtable.BotUserID {
+	} else if puzzle.LastModifiedBy != s.airtable.BotUserID && puzzle.LastModifiedBy != "" {
 		var err error
 		if err = s.DiscordCreateUpdatePin(puzzle); err != nil {
 			return nil, fmt.Errorf("unable to set puzzle status message for %q: %w", puzzle.Name, err)

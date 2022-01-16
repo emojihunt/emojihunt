@@ -46,7 +46,7 @@ func (air *Airtable) ListPuzzlesToAction() ([]schema.InvalidPuzzle, []string, er
 		if puzzle.Pending {
 			// Skip auto-added records that haven't been confirmed by a human
 			continue
-		} else if timestamp.Sub(*puzzle.LastModified) < air.ModifyGracePeriod {
+		} else if puzzle.LastModified == nil || timestamp.Sub(*puzzle.LastModified) < air.ModifyGracePeriod {
 			// Skip puzzles that are being actively edited by a human
 			continue
 		} else if puzzle.DiscordChannel == "-" {
@@ -63,7 +63,7 @@ func (air *Airtable) ListPuzzlesToAction() ([]schema.InvalidPuzzle, []string, er
 			needsAction = append(needsAction, puzzle.AirtableRecord.ID)
 		} else if puzzle.Status != puzzle.LastBotStatus || puzzle.ShouldArchive() != puzzle.Archived {
 			needsAction = append(needsAction, puzzle.AirtableRecord.ID)
-		} else if puzzle.LastModifiedBy != air.BotUserID {
+		} else if puzzle.LastModifiedBy != air.BotUserID && puzzle.LastModifiedBy != "" {
 			needsAction = append(needsAction, puzzle.AirtableRecord.ID)
 		} else {
 			// no-op
