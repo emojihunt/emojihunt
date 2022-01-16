@@ -23,7 +23,7 @@ var (
 	puzzleListURL, _ = url.Parse("https://www.bookspace.world/puzzles/")
 
 	// URL of the Websocket endpoint
-	websocketURL, _ = url.Parse("wss://www.starrats.org/ws/team")
+	websocketURL, _ = url.Parse("wss://www.bookspace.world/ws/team")
 	websocketOrigin = "https://" + websocketURL.Host
 
 	containerSelector = cascadia.MustCompile("section#main-content")
