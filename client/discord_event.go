@@ -8,7 +8,7 @@ import (
 )
 
 func (c *Discord) GetScheduledEvent(id string) (*discordgo.GuildScheduledEvent, error) {
-	return c.s.GuildScheduledEvent(c.Guild.ID, id)
+	return c.s.GuildScheduledEvent(c.Guild.ID, id, false)
 }
 
 func (c *Discord) ListScheduledEvents() (map[string]*discordgo.GuildScheduledEvent, error) {
@@ -21,7 +21,7 @@ func (c *Discord) ListScheduledEvents() (map[string]*discordgo.GuildScheduledEve
 		return c.scheduledEventsCache, nil
 	}
 
-	raw, err := c.s.GuildScheduledEvents(c.Guild.ID)
+	raw, err := c.s.GuildScheduledEvents(c.Guild.ID, false)
 	if err != nil {
 		return nil, err
 	}
@@ -37,12 +37,11 @@ func (c *Discord) ListScheduledEvents() (map[string]*discordgo.GuildScheduledEve
 	return events, nil
 }
 
-func (c *Discord) CreateScheduledEvent(event *discordgo.GuildScheduledEvent) (*discordgo.GuildScheduledEvent, error) {
+func (c *Discord) CreateScheduledEvent(params *discordgo.GuildScheduledEventParams) (*discordgo.GuildScheduledEvent, error) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
-	var err error
-	event, err = c.s.GuildScheduledEventCreate(c.Guild.ID, event)
+	event, err := c.s.GuildScheduledEventCreate(c.Guild.ID, params)
 	if err != nil {
 		return nil, err
 	}

@@ -200,7 +200,9 @@ func (c *Discord) CreateChannel(name string) (*discordgo.Channel, error) {
 }
 
 func (c *Discord) SetChannelName(chID, name string) error {
-	_, err := c.s.ChannelEdit(chID, name)
+	_, err := c.s.ChannelEdit(chID, &discordgo.ChannelEdit{
+		Name: name,
+	})
 	return err
 }
 

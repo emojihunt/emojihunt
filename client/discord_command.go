@@ -143,8 +143,8 @@ func (c *Discord) commandHandler(s *discordgo.Session, i *discordgo.InteractionC
 
 	if command.Async {
 		_, err = s.InteractionResponseEdit(
-			s.State.User.ID, input.IC.Interaction, &discordgo.WebhookEdit{
-				Content: reply,
+			input.IC.Interaction, &discordgo.WebhookEdit{
+				Content: &reply,
 			},
 		)
 	} else {

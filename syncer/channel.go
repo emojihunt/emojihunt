@@ -23,7 +23,6 @@ const (
 //
 // This function is called by BasicUpdate. Other packages need to call it when
 // updating non-status fields, such as the voice room.
-//
 func (s *Syncer) DiscordCreateUpdatePin(puzzle *schema.Puzzle) error {
 	log.Printf("syncer: updating pin for %q", puzzle.Name)
 

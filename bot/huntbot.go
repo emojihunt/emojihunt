@@ -157,11 +157,12 @@ func (bot *huntbotBot) fullResync(s *discordgo.Session, i *client.DiscordCommand
 			puzzle.Unlock()
 
 			if j%10 == 0 {
+				msg := fmt.Sprintf(
+					":warning: Initiated full re-sync! (%d / %d)", j, len(puzzles),
+				)
 				_, err = s.InteractionResponseEdit(
-					s.State.User.ID, i.IC.Interaction, &discordgo.WebhookEdit{
-						Content: fmt.Sprintf(
-							":warning: Initiated full re-sync! (%d / %d)", j, len(puzzles),
-						),
+					i.IC.Interaction, &discordgo.WebhookEdit{
+						Content: &msg,
 					},
 				)
 				if err != nil {
@@ -186,8 +187,8 @@ func (bot *huntbotBot) fullResync(s *discordgo.Session, i *client.DiscordCommand
 		msg = ":recycle: Full re-sync completed successfully!"
 	}
 	_, err = s.InteractionResponseEdit(
-		s.State.User.ID, i.IC.Interaction, &discordgo.WebhookEdit{
-			Content: msg,
+		i.IC.Interaction, &discordgo.WebhookEdit{
+			Content: &msg,
 		},
 	)
 	if err != nil {

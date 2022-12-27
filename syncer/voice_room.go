@@ -19,7 +19,6 @@ const (
 // creating and deleting events so that Discord matches the state in Airtable.
 //
 // The caller *must* acquire VoiceRoomMutex before calling this function.
-//
 func (s *Syncer) SyncVoiceRooms(ctx context.Context) error {
 	log.Printf("syncer: syncing voice rooms")
 	events, err := s.discord.ListScheduledEvents()
@@ -47,14 +46,14 @@ func (s *Syncer) SyncVoiceRooms(ctx context.Context) error {
 			// Skip completed and canceled events
 			continue
 		}
-		if _, ok := puzzlesByChannel[*event.ChannelID]; !ok {
+		if _, ok := puzzlesByChannel[event.ChannelID]; !ok {
 			// Event has no more puzzles; delete
-			log.Printf("deleting scheduled event %s in %s", event.ID, *event.ChannelID)
+			log.Printf("deleting scheduled event %s in %s", event.ID, event.ChannelID)
 			if err := s.discord.DeleteScheduledEvent(event); err != nil {
 				return err
 			}
 		}
-		eventsByChannel[*event.ChannelID] = event
+		eventsByChannel[event.ChannelID] = event
 	}
 	for channelID, puzzles := range puzzlesByChannel {
 		var puzzleNames []string
@@ -67,8 +66,8 @@ func (s *Syncer) SyncVoiceRooms(ctx context.Context) error {
 			// If there's no existing event for this voice room, create one
 			log.Printf("creating scheduled event in %q", channelID)
 			start := time.Now().Add(5 * time.Minute)
-			event, err = s.discord.CreateScheduledEvent(&discordgo.GuildScheduledEvent{
-				ChannelID:          &channelID,
+			event, err = s.discord.CreateScheduledEvent(&discordgo.GuildScheduledEventParams{
+				ChannelID:          channelID,
 				Name:               eventTitle,
 				PrivacyLevel:       discordgo.GuildScheduledEventPrivacyLevelGuildOnly,
 				ScheduledStartTime: &start,
@@ -98,7 +97,7 @@ func (s *Syncer) SyncVoiceRooms(ctx context.Context) error {
 			}
 		} else if eventTitle != event.Name {
 			// Update event name
-			log.Printf("updating scheduled event %s in %s", event.ID, *event.ChannelID)
+			log.Printf("updating scheduled event %s in %s", event.ID, event.ChannelID)
 			_, err = s.discord.UpdateScheduledEvent(event, map[string]interface{}{
 				"name": eventTitle,
 			})

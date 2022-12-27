@@ -130,7 +130,7 @@ func (bot *voiceRoomBot) scheduledEventUpdateHandler(s *discordgo.Session, i *di
 
 	var errs []error
 	for _, info := range puzzles {
-		if err = bot.clearVoiceRoom(&info, *i.ChannelID); err != nil {
+		if err = bot.clearVoiceRoom(&info, i.ChannelID); err != nil {
 			errs = append(errs, err)
 		}
 	}

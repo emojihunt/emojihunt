@@ -31,5 +31,3 @@ require (
 	google.golang.org/grpc v1.51.0 // indirect
 	google.golang.org/protobuf v1.28.1 // indirect
 )
-
-replace github.com/bwmarrin/discordgo => github.com/emojihunt/discordgo v0.23.3-0.20220108005428-3a3cf1749a31

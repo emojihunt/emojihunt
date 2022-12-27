@@ -79,7 +79,6 @@ func (air *Airtable) ListPuzzlesToAction() ([]schema.InvalidPuzzle, []string, er
 // so it's safe.
 //
 // Note that puzzle names and URLs are *uppercased* in the result map.
-//
 func (air *Airtable) ListPuzzleFragmentsAndRounds() (map[string]bool, map[string]schema.Round, error) {
 	puzzles, err := air.listRecordsWithFilter("")
 	if err != nil {
@@ -107,7 +106,6 @@ func (air *Airtable) ListPuzzleFragmentsAndRounds() (map[string]bool, map[string
 // because it's only written when holding VoiceRoomMutex.
 //
 // The caller *must* acquire VoiceRoomMutex before calling this function.
-//
 func (air *Airtable) ListWithVoiceRoom() ([]schema.VoicePuzzle, error) {
 	puzzles, err := air.listRecordsWithFilter("{Voice Room}!=''")
 	if err != nil {
@@ -133,7 +131,6 @@ func (air *Airtable) ListWithVoiceRoom() ([]schema.VoicePuzzle, error) {
 // is less ideal but close enough.
 //
 // Results are returned in sorted order.
-//
 func (air *Airtable) ListWithReminder() ([]schema.ReminderPuzzle, error) {
 	puzzles, err := air.listRecordsWithFilter("{Reminder}!=''")
 	if err != nil {
@@ -161,7 +158,6 @@ func (air *Airtable) ListWithReminder() ([]schema.ReminderPuzzle, error) {
 //
 // This function is for internal use only: no locks are acquired and callers are
 // responsible for avoiding race conditions.
-//
 func (air *Airtable) listRecordsWithFilter(filter string) ([]schema.Puzzle, error) {
 	var puzzles []schema.Puzzle
 	var offset = ""
