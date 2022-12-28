@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"flag"
-	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -29,14 +28,14 @@ type Config struct {
 	Autodiscovery *discovery.DiscoveryConfig `json:"autodiscovery"`
 }
 
-func main() {
-	if len(os.Args) != 3 {
-		fmt.Printf("usage: %s CONFIG_FILE STATE_FILE\n", os.Args[0])
-		os.Exit(2)
-	}
+var (
+	config_file = flag.String("config", "config.json", "path to the configuration file")
+	state_file  = flag.String("state", "state.json", "path to the state file")
+)
 
-	// Load config.json
-	bs, err := os.ReadFile(os.Args[1])
+func main() {
+	// Load configuration
+	bs, err := os.ReadFile(*config_file)
 	if err != nil {
 		log.Fatalf("error reading config file at %q: %v", os.Args[1], err)
 	}
@@ -45,8 +44,8 @@ func main() {
 		log.Fatalf("error unmarshaling config from %q: %v", os.Args[1], err)
 	}
 
-	// Load state.json
-	state, err := state.Load(os.Args[2])
+	// Load state
+	state, err := state.Load(*state_file)
 	if err != nil {
 		log.Fatalf("error reading state file at %q: %v", os.Args[2], err)
 	}
@@ -126,6 +125,10 @@ func main() {
 	}
 
 	<-ctx.Done()
+}
+
+func init() {
+	flag.Parse()
 }
 
 func init() {

@@ -10,7 +10,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/andybalholm/cascadia"
 	"github.com/bwmarrin/discordgo"
 	"github.com/davecgh/go-spew/spew"
 	"github.com/emojihunt/emojihunt/client"
@@ -18,62 +17,9 @@ import (
 	"golang.org/x/net/html"
 )
 
-var (
-	// URL of the "All Puzzles" page on the hunt website
-	puzzleListURL, _ = url.Parse("https://puzzles.mit.edu/2022/puzzles/")
-
-	// URL of the Websocket endpoint
-	websocketURL, _ = url.Parse("")
-	websocketOrigin = "https://" + websocketURL.Host
-
-	// Group Mode: in many years (2021, 2020, etc.), the puzzle list is grouped
-	// by round, and there is some grouping element (e.g. a <section>) for each
-	// round that contains both the round name and the list of puzzles.
-	//
-	// In other years (2022), the puzzle list is presented as a sequence of
-	// alternating round names (e.g. <h2>) and puzzle lists (e.g. <table>) with
-	// no grouping element. If this is the case, set `groupedMode=false` and use
-	// the group selector to select the overall container. Note that the round
-	// name element must be an *immediate* child of the container, and the
-	// puzzle list element must be its immediate sibling.
-	//
-	groupedMode   = false
-	groupSelector = cascadia.MustCompile("section#main-content")
-
-	roundNameSelector  = cascadia.MustCompile("h2")
-	puzzleListSelector = cascadia.MustCompile("table")
-
-	// Don't change this, probably
-	puzzleItemSelector = cascadia.MustCompile("a")
-)
-
-// EXAMPLES
-//
-// 2022 (https://puzzles.mit.edu/2022/puzzles/)
-// - Group:       `section#main-content` (group mode off)
-// - Round Name:  `h2`
-// - Puzzle List: `table`
-//
-// 2021 (https://puzzles.mit.edu/2021/puzzles.html)
-// - Group:       `.info div section` (group mode on)
-// - Round Name:  `a h3`
-// - Puzzle List: `table`
-//
-// 2020 (https://puzzles.mit.edu/2020/puzzles/)
-// - Group:       `#loplist > li:not(:first-child)` (group mode on)
-// - Round Name:  `a`
-// - Puzzle List: `ul li a`
-//
-// 2019 (https://puzzles.mit.edu/2019/puzzle.html)
-// - Group:       `.puzzle-list-section:nth-child(2) .round-list-item` (group mode on)
-// - Round Name:  `.round-list-header`
-// - Puzzle List: `.round-list-item`
-// - Puzzle Item: `.puzzle-list-item a`
-//
-
 func (d *Poller) Scrape() ([]*DiscoveredPuzzle, error) {
 	// Download
-	req, err := http.NewRequest("GET", puzzleListURL.String(), nil)
+	req, err := http.NewRequest("GET", d.puzzlesURL.String(), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -92,33 +38,33 @@ func (d *Poller) Scrape() ([]*DiscoveredPuzzle, error) {
 		return nil, err
 	}
 
-	if groupedMode {
-		groups := groupSelector.MatchAll(root)
+	if d.groupMode {
+		groups := d.groupSelector.MatchAll(root)
 		if len(groups) == 0 {
 			return nil, fmt.Errorf("no groups found")
 		}
 
 		for _, group := range groups {
-			nameNode := roundNameSelector.MatchFirst(group)
+			nameNode := d.roundNameSelector.MatchFirst(group)
 			if nameNode == nil {
 				return nil, fmt.Errorf("round name node not found in group: %#v", group)
 			}
 
-			puzzleListNode := puzzleListSelector.MatchFirst(group)
+			puzzleListNode := d.puzzleListSelector.MatchFirst(group)
 			if puzzleListNode == nil {
 				return nil, fmt.Errorf("puzzle list node not found in group: %#v", group)
 			}
 			discovered = append(discovered, [2]*html.Node{nameNode, puzzleListNode})
 		}
 	} else {
-		container := groupSelector.MatchFirst(root)
+		container := d.groupSelector.MatchFirst(root)
 		if container == nil {
 			return nil, fmt.Errorf("container not found, did login succeed?")
 		}
 
 		node := container.FirstChild
 		for {
-			if roundNameSelector.Match(node) {
+			if d.roundNameSelector.Match(node) {
 				nameNode := node
 
 				node = node.NextSibling
@@ -126,10 +72,10 @@ func (d *Poller) Scrape() ([]*DiscoveredPuzzle, error) {
 					// Skip over text nodes.
 					node = node.NextSibling
 				}
-				if puzzleListSelector.Match(node) {
+				if d.puzzleListSelector.Match(node) {
 					// Puzzle list found!
 					discovered = append(discovered, [2]*html.Node{nameNode, node})
-				} else if roundNameSelector.Match(node) {
+				} else if d.roundNameSelector.Match(node) {
 					// Another round heading! This is probably a sub-round;
 					// start over treating the new heading as the round name.
 					continue
@@ -159,7 +105,7 @@ func (d *Poller) Scrape() ([]*DiscoveredPuzzle, error) {
 		collectText(nameNode, &roundBuf)
 		roundName := strings.TrimSpace(roundBuf.String())
 
-		puzzleItemNodes := puzzleItemSelector.MatchAll(puzzleListNode)
+		puzzleItemNodes := d.puzzleItemSelector.MatchAll(puzzleListNode)
 		if len(puzzleItemNodes) == 0 {
 			return nil, fmt.Errorf("no puzzle item nodes found in puzzle list: %#v", puzzleListNode)
 		}
@@ -182,7 +128,7 @@ func (d *Poller) Scrape() ([]*DiscoveredPuzzle, error) {
 
 			puzzles = append(puzzles, &DiscoveredPuzzle{
 				Name:  strings.TrimSpace(puzzleBuf.String()),
-				URL:   puzzleListURL.ResolveReference(u),
+				URL:   d.puzzlesURL.ResolveReference(u),
 				Round: roundName,
 			})
 		}

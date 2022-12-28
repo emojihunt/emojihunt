@@ -10,6 +10,7 @@ import (
 	"net/url"
 	"time"
 
+	"github.com/andybalholm/cascadia"
 	"github.com/davecgh/go-spew/spew"
 	"github.com/emojihunt/emojihunt/client"
 	"github.com/emojihunt/emojihunt/state"
@@ -19,14 +20,73 @@ import (
 )
 
 type DiscoveryConfig struct {
+	// URL of the "All Puzzles" page on the hunt website
+	PuzzlesURL  string `json:"puzzles_url"`
 	CookieName  string `json:"cookie_name"`
 	CookieValue string `json:"cookie_value"`
-	AuthToken   string `json:"auth_token"`
+
+	// Group Mode: in many years (2021, 2020, etc.), the puzzle list is grouped
+	// by round, and there is some grouping element (e.g. a <section>) for each
+	// round that contains both the round name and the list of puzzles.
+	//
+	// In other years (2022), the puzzle list is presented as a sequence of
+	// alternating round names (e.g. <h2>) and puzzle lists (e.g. <table>) with
+	// no grouping element. If this is the case, set `groupedMode=false` and use
+	// the group selector to select the overall container. Note that the round
+	// name element must be an *immediate* child of the container, and the
+	// puzzle list element must be its immediate sibling.
+	//
+	// EXAMPLES
+	//
+	// 2022 (https://puzzles.mit.edu/2022/puzzles/)
+	// - Group:       `section#main-content` (group mode off)
+	// - Round Name:  `h2`
+	// - Puzzle List: `table`
+	//
+	// 2021 (https://puzzles.mit.edu/2021/puzzles.html)
+	// - Group:       `.info div section` (group mode on)
+	// - Round Name:  `a h3`
+	// - Puzzle List: `table`
+	//
+	// 2020 (https://puzzles.mit.edu/2020/puzzles/)
+	// - Group:       `#loplist > li:not(:first-child)` (group mode on)
+	// - Round Name:  `a`
+	// - Puzzle List: `ul li a`
+	//
+	// 2019 (https://puzzles.mit.edu/2019/puzzle.html)
+	// - Group:       `.puzzle-list-section:nth-child(2) .round-list-item` (group mode on)
+	// - Round Name:  `.round-list-header`
+	// - Puzzle List: `.round-list-item`
+	// - Puzzle Item: `.puzzle-list-item a`
+	//
+	GroupMode          bool   `json:"group_mode"`
+	GroupSelector      string `json:"group_selector"`
+	RoundNameSelector  string `json:"round_name_selector"`
+	PuzzleListSelector string `json:"puzzle_list_selector"`
+
+	// Optional: defaults to "a" (this is probably what you want)
+	PuzzleItemSelector string `json:"puzzle_item_selector"`
+
+	// URL of the websocket endpoint (optional)
+	WebsocketURL string `json:"websocket_url"`
+
+	// Token to send in the AUTH message (optional)
+	WebsocketToken string `json:"websocket_token"`
 }
 
 type Poller struct {
-	cookie    *http.Cookie
-	token     string
+	puzzlesURL *url.URL
+	cookie     *http.Cookie
+
+	groupMode          bool
+	groupSelector      cascadia.Selector
+	roundNameSelector  cascadia.Selector
+	puzzleListSelector cascadia.Selector
+	puzzleItemSelector cascadia.Selector
+
+	wsURL   *url.URL
+	wsToken string
+
 	airtable  *client.Airtable
 	discord   *client.Discord
 	syncer    *syncer.Syncer
@@ -51,13 +111,41 @@ const (
 var websocketRate = rate.Every(1 * time.Minute)
 
 func New(airtable *client.Airtable, discord *client.Discord, syncer *syncer.Syncer, config *DiscoveryConfig, state *state.State) *Poller {
+	puzzlesURL, err := url.Parse(config.PuzzlesURL)
+	if err != nil {
+		panic(err)
+	}
+
+	var wsURL *url.URL
+	if config.WebsocketURL != "" {
+		wsURL, err = url.Parse(config.WebsocketURL)
+		if err != nil {
+			panic(err)
+		}
+	}
+
+	itemSelector := config.PuzzleItemSelector
+	if itemSelector == "" {
+		itemSelector = "a"
+	}
+
 	return &Poller{
+		puzzlesURL: puzzlesURL,
 		cookie: &http.Cookie{
 			Name:   config.CookieName,
 			Value:  config.CookieValue,
 			MaxAge: 0,
 		},
-		token:     config.AuthToken,
+
+		groupMode:          config.GroupMode,
+		groupSelector:      cascadia.MustCompile(config.GroupSelector),
+		roundNameSelector:  cascadia.MustCompile(config.RoundNameSelector),
+		puzzleListSelector: cascadia.MustCompile(config.PuzzleListSelector),
+		puzzleItemSelector: cascadia.MustCompile(itemSelector),
+
+		wsURL:   wsURL,
+		wsToken: config.WebsocketToken,
+
 		airtable:  airtable,
 		discord:   discord,
 		syncer:    syncer,
@@ -122,20 +210,20 @@ func (d *Poller) logAndMaybeWarn(memo string, err error) {
 }
 
 func (d *Poller) openWebsocket() (chan bool, error) {
-	if websocketURL == nil {
+	if d.wsURL == nil {
 		return nil, nil
 	}
 
 	log.Printf("discovery: (re-)connecting to websocket...")
 	ch := make(chan bool)
-	ws, err := websocket.Dial(websocketURL.String(), "", websocketOrigin)
+	ws, err := websocket.Dial(d.wsURL.String(), "", "https://"+d.wsURL.Host)
 	if err != nil {
 		return nil, err
 	}
-	log.Printf("discovery: opened websocket connection to %q", websocketURL.String())
+	log.Printf("discovery: opened websocket connection to %q", d.wsURL.String())
 	data, err := json.Marshal(map[string]interface{}{
 		"type": "AUTH",
-		"data": d.token,
+		"data": d.wsToken,
 	})
 	if err != nil {
 		return nil, err

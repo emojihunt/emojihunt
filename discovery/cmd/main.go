@@ -11,7 +11,7 @@ import (
 )
 
 var (
-	config_file = flag.String("config_file", "config.json", "path to the file that contains config used by the application")
+	config_file = flag.String("config", "config.json", "path to the configuration file")
 )
 
 // This tool can help you out when you're adjusting the CSS selectors for a new
@@ -23,16 +23,20 @@ func main() {
 		log.Fatalf("error opening config.json: %v", err)
 	}
 
-	var config map[string]interface{}
-	if err := json.Unmarshal(bs, &config); err != nil {
+	var raw map[string]interface{}
+	if err := json.Unmarshal(bs, &raw); err != nil {
 		log.Fatalf("error parsing config.json: %v", err)
 	}
+	node, err := json.Marshal(raw["autodiscovery"])
+	if err != nil {
+		log.Fatalf("error navigating config.json: %v", err)
+	}
+	config := discovery.DiscoveryConfig{}
+	if err := json.Unmarshal(node, &config); err != nil {
+		log.Fatalf("error parsing autodiscovery node: %v", err)
+	}
 
-	discoveryConfig := config["autodiscovery"].(map[string]interface{})
-	disc := discovery.New(nil, nil, nil, &discovery.DiscoveryConfig{
-		CookieName:  discoveryConfig["cookie_name"].(string),
-		CookieValue: discoveryConfig["cookie_value"].(string),
-	}, nil)
+	disc := discovery.New(nil, nil, nil, &config, nil)
 	puzzles, err := disc.Scrape()
 	if err != nil {
 		fmt.Printf("fatal error: %#v\n", err)
@@ -45,10 +49,17 @@ func main() {
 			panic("blank round name")
 		}
 		if puzzle.Round != currentRound {
-			fmt.Printf("\nRound: \"%s\"\n", puzzle.Round)
+			if currentRound != "" {
+				fmt.Println()
+			}
+			fmt.Printf("Round: \"%s\"\n", puzzle.Round)
 			currentRound = puzzle.Round
 		}
-		fmt.Printf(" - %s\t(%s)\n", puzzle.Name, puzzle.URL.String())
+		if len(puzzle.Name) <= 32 {
+			fmt.Printf(" - %-32s  %s\n", puzzle.Name, puzzle.URL.String())
+		} else {
+			fmt.Printf(" - %s\n   %s\n", puzzle.Name, puzzle.URL.String())
+		}
 	}
 }
 
