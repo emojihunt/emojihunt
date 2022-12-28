@@ -74,11 +74,6 @@ func (bot *huntbotBot) makeSlashCommand() *client.DiscordCommand {
 						},
 					},
 				},
-				{
-					Name:        "error",
-					Description: "Test error message 💥",
-					Type:        discordgo.ApplicationCommandOptionSubCommand,
-				},
 			},
 		},
 		Handler: func(s *discordgo.Session, i *client.DiscordCommandInput) (string, error) {
