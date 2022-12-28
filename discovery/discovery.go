@@ -1,6 +1,7 @@
 package discovery
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"log"
@@ -15,33 +16,59 @@ import (
 	"github.com/emojihunt/emojihunt/client"
 	"github.com/emojihunt/emojihunt/schema"
 	"golang.org/x/net/html"
-	"golang.org/x/net/html/atom"
 )
 
 var (
 	// URL of the "All Puzzles" page on the hunt website
-	puzzleListURL, _ = url.Parse("https://www.bookspace.world/puzzles/")
+	puzzleListURL, _ = url.Parse("https://puzzles.mit.edu/2022/puzzles/")
 
 	// URL of the Websocket endpoint
-	websocketURL, _ = url.Parse("wss://www.bookspace.world/ws/team")
+	websocketURL, _ = url.Parse("")
 	websocketOrigin = "https://" + websocketURL.Host
 
-	containerSelector = cascadia.MustCompile("section#main-content")
-	roundNameSelector = cascadia.MustCompile("a")
-	puzzleSelector    = cascadia.MustCompile("tr td:nth-child(2) a")
+	// Group Mode: in many years (2021, 2020, etc.), the puzzle list is grouped
+	// by round, and there is some grouping element (e.g. a <section>) for each
+	// round that contains both the round name and the list of puzzles.
+	//
+	// In other years (2022), the puzzle list is presented as a sequence of
+	// alternating round names (e.g. <h2>) and puzzle lists (e.g. <table>) with
+	// no grouping element. If this is the case, set `groupedMode=false` and use
+	// the group selector to select the overall container. Note that the round
+	// name element must be an *immediate* child of the container, and the
+	// puzzle list element must be its immediate sibling.
+	//
+	groupedMode   = false
+	groupSelector = cascadia.MustCompile("section#main-content")
+
+	roundNameSelector  = cascadia.MustCompile("h2")
+	puzzleListSelector = cascadia.MustCompile("table")
+
+	// Don't change this, probably
+	puzzleItemSelector = cascadia.MustCompile("a")
 )
 
 // EXAMPLES
 //
-// 2021 (http://puzzles.mit.edu/2021/puzzles.html)
-// - Group:      `.info div section`
-// - Round Name: `a h3`
-// - Puzzle:     `td a`
+// 2022 (https://puzzles.mit.edu/2022/puzzles/)
+// - Group:       `section#main-content` (group mode off)
+// - Round Name:  `h2`
+// - Puzzle List: `table`
 //
-// 2020 (http://puzzles.mit.edu/2020/puzzles/)
-// - Group:      `#loplist > li`
-// - Round Name: `a`
-// - Puzzle:     `ul li a`
+// 2021 (https://puzzles.mit.edu/2021/puzzles.html)
+// - Group:       `.info div section` (group mode on)
+// - Round Name:  `a h3`
+// - Puzzle List: `table`
+//
+// 2020 (https://puzzles.mit.edu/2020/puzzles/)
+// - Group:       `#loplist > li:not(:first-child)` (group mode on)
+// - Round Name:  `a`
+// - Puzzle List: `ul li a`
+//
+// 2019 (https://puzzles.mit.edu/2019/puzzle.html)
+// - Group:       `.puzzle-list-section:nth-child(2) .round-list-item` (group mode on)
+// - Round Name:  `.round-list-header`
+// - Puzzle List: `.round-list-item`
+// - Puzzle Item: `.puzzle-list-item a`
 //
 
 func (d *Poller) Scrape() ([]*DiscoveredPuzzle, error) {
@@ -58,72 +85,108 @@ func (d *Poller) Scrape() ([]*DiscoveredPuzzle, error) {
 		return nil, fmt.Errorf("failed to fetch puzzle list: status code %v", res.Status)
 	}
 
-	// Parse
-	var puzzles []*DiscoveredPuzzle
+	// Parse round structure
+	var discovered [][2]*html.Node
 	root, err := html.Parse(res.Body)
 	if err != nil {
 		return nil, err
 	}
 
-	container := containerSelector.MatchFirst(root)
-	if container == nil {
-		return nil, fmt.Errorf("container not found, did login succeed?")
+	if groupedMode {
+		groups := groupSelector.MatchAll(root)
+		if len(groups) == 0 {
+			return nil, fmt.Errorf("no groups found")
+		}
+
+		for _, group := range groups {
+			nameNode := roundNameSelector.MatchFirst(group)
+			if nameNode == nil {
+				return nil, fmt.Errorf("round name node not found in group: %#v", group)
+			}
+
+			puzzleListNode := puzzleListSelector.MatchFirst(group)
+			if puzzleListNode == nil {
+				return nil, fmt.Errorf("puzzle list node not found in group: %#v", group)
+			}
+			discovered = append(discovered, [2]*html.Node{nameNode, puzzleListNode})
+		}
+	} else {
+		container := groupSelector.MatchFirst(root)
+		if container == nil {
+			return nil, fmt.Errorf("container not found, did login succeed?")
+		}
+
+		node := container.FirstChild
+		for {
+			if roundNameSelector.Match(node) {
+				nameNode := node
+
+				node = node.NextSibling
+				for node.Type == html.TextNode {
+					// Skip over text nodes.
+					node = node.NextSibling
+				}
+				if puzzleListSelector.Match(node) {
+					// Puzzle list found!
+					discovered = append(discovered, [2]*html.Node{nameNode, node})
+				} else if roundNameSelector.Match(node) {
+					// Another round heading! This is probably a sub-round;
+					// start over treating the new heading as the round name.
+					continue
+				} else {
+					// Unknown structure, abort.
+					return nil, fmt.Errorf("puzzle table not found, got: %#v", node)
+				}
+			}
+
+			// Advance to next node.
+			node = node.NextSibling
+			if node == nil {
+				break
+			}
+		}
+
+		if len(discovered) == 0 {
+			return nil, fmt.Errorf("no rounds found in container: %#v", container)
+		}
 	}
 
-	node := container.FirstChild
-	for {
-		if node.DataAtom == atom.H2 {
-			nameNode := roundNameSelector.MatchFirst(node)
-			if nameNode == nil {
-				return nil, fmt.Errorf("round name not found for node: %#v", node)
-			}
-			roundName := strings.TrimSpace(nameNode.FirstChild.Data)
+	// Parse out individual puzzles
+	var puzzles []*DiscoveredPuzzle
+	for _, pair := range discovered {
+		nameNode, puzzleListNode := pair[0], pair[1]
+		var roundBuf bytes.Buffer
+		collectText(nameNode, &roundBuf)
+		roundName := strings.TrimSpace(roundBuf.String())
 
-			node = node.NextSibling
-			if node.Type == html.TextNode {
-				node = node.NextSibling
-			}
-			switch node.DataAtom {
-			case atom.Table:
-				// Puzzles; continues below.
-			case atom.H2:
-				// Skips straight to next round (maybe a sub-round).
-				continue
-			default:
-				// Unknown structure.
-				return nil, fmt.Errorf("puzzle table not found, got: %#v", node)
-			}
+		puzzleItemNodes := puzzleItemSelector.MatchAll(puzzleListNode)
+		if len(puzzleItemNodes) == 0 {
+			return nil, fmt.Errorf("no puzzle item nodes found in puzzle list: %#v", puzzleListNode)
+		}
+		for _, item := range puzzleItemNodes {
+			var puzzleBuf bytes.Buffer
+			collectText(item, &puzzleBuf)
 
-			puzzleNodes := puzzleSelector.MatchAll(node)
-			if len(puzzleNodes) < 1 {
-				return nil, fmt.Errorf("no puzzles found for node: %#v", node)
-			}
-			for _, puzzleNode := range puzzleNodes {
-				var u *url.URL
-				for _, attr := range puzzleNode.Attr {
-					if attr.Key == "href" {
-						u, err = url.Parse(attr.Val)
-						if err != nil {
-							return nil, fmt.Errorf("invalid puzzle url: %#v", u)
-						}
+			var u *url.URL
+			for _, attr := range item.Attr {
+				if attr.Key == "href" {
+					u, err = url.Parse(attr.Val)
+					if err != nil {
+						return nil, fmt.Errorf("invalid puzzle url: %#v", u)
 					}
 				}
-				if u == nil {
-					return nil, fmt.Errorf("could not find puzzle url for puzzle: %#v", puzzleNode)
-				}
-				puzzles = append(puzzles, &DiscoveredPuzzle{
-					Name:  strings.TrimSpace(puzzleNode.FirstChild.Data),
-					URL:   puzzleListURL.ResolveReference(u),
-					Round: roundName,
-				})
 			}
-		}
+			if u == nil {
+				return nil, fmt.Errorf("could not find puzzle url for puzzle: %#v", item)
+			}
 
-		if node = node.NextSibling; node == nil {
-			break
+			puzzles = append(puzzles, &DiscoveredPuzzle{
+				Name:  strings.TrimSpace(puzzleBuf.String()),
+				URL:   puzzleListURL.ResolveReference(u),
+				Round: roundName,
+			})
 		}
 	}
-
 	return puzzles, nil
 }
 
@@ -266,4 +329,14 @@ func (d *Poller) notifyNewRounds(rounds map[string]bool) error {
 		d.state.DiscoveryNewRounds[round] = time.Now()
 	}
 	return nil
+}
+
+func collectText(n *html.Node, buf *bytes.Buffer) {
+	// https://stackoverflow.com/a/18275336
+	if n.Type == html.TextNode {
+		buf.WriteString(n.Data)
+	}
+	for c := n.FirstChild; c != nil; c = c.NextSibling {
+		collectText(c, buf)
+	}
 }
