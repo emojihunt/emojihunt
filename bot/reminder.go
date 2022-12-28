@@ -11,7 +11,7 @@ import (
 	"github.com/emojihunt/emojihunt/state"
 )
 
-var timemit, _ = time.LoadLocation("America/New_York")
+var eastern, _ = time.LoadLocation("America/New_York")
 var notifications = []time.Duration{
 	-2 * time.Hour,
 	-1 * time.Hour,
@@ -59,9 +59,9 @@ func (bot *reminderBot) makeSlashCommand() *client.DiscordCommand {
 					suffix = " (warning: in more than 3 days?!)"
 				}
 				msg += fmt.Sprintf(
-					" • %s @ %s TIMEMIT%s\n",
+					" • %s @ %s ET%s\n",
 					puzzle.Name,
-					puzzle.Reminder.In(timemit).Format("Mon 3:04 PM"),
+					puzzle.Reminder.In(eastern).Format("Mon 3:04 PM"),
 					suffix,
 				)
 			}
@@ -121,8 +121,8 @@ func (bot *reminderBot) processNotifications(since time.Time) (*time.Time, error
 		}
 		if puzzle.Reminder.Before(now) && puzzle.Reminder.After(since) {
 			msg = fmt.Sprintf(":alarm_clock: It's time! Puzzle %q has a reminder set for "+
-				"now (%s TIMEMIT)",
-				puzzle.Name, puzzle.Reminder.In(timemit).Format("Mon 3:04 PM"))
+				"now (%s ET)",
+				puzzle.Name, puzzle.Reminder.In(eastern).Format("Mon 3:04 PM"))
 		}
 
 		if msg != "" {
