@@ -61,7 +61,7 @@ func (bot *puzzleBot) makeSlashCommand() *client.DiscordCommand {
 							Type:        discordgo.ApplicationCommandOptionString,
 							Choices: []*discordgo.ApplicationCommandOptionChoice{
 								{Name: "🏅 Solved", Value: schema.Solved},
-								{Name: "🤦‍♀️ Backsolved", Value: schema.Backsolved},
+								{Name: "🤦 Backsolved", Value: schema.Backsolved},
 							},
 						},
 						{
@@ -74,7 +74,7 @@ func (bot *puzzleBot) makeSlashCommand() *client.DiscordCommand {
 				},
 				{
 					Name:        "description",
-					Description: "Use in a puzzle channel to add or update the description ✏️",
+					Description: "Use in a puzzle channel to add or update the description 📝",
 					Type:        discordgo.ApplicationCommandOptionSubCommand,
 					Options: []*discordgo.ApplicationCommandOption{
 						{
