@@ -65,9 +65,8 @@ func (air *Airtable) ListPuzzlesToAction() ([]schema.InvalidPuzzle, []string, er
 			needsAction = append(needsAction, puzzle.AirtableRecord.ID)
 		} else if puzzle.LastModifiedBy != air.BotUserID && puzzle.LastModifiedBy != "" {
 			needsAction = append(needsAction, puzzle.AirtableRecord.ID)
-		} else {
-			// no-op
 		}
+		// else no-op
 	}
 	return invalid, needsAction, nil
 }

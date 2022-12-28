@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
@@ -37,7 +36,7 @@ func main() {
 	}
 
 	// Load config.json
-	bs, err := ioutil.ReadFile(os.Args[1])
+	bs, err := os.ReadFile(os.Args[1])
 	if err != nil {
 		log.Fatalf("error reading config file at %q: %v", os.Args[1], err)
 	}

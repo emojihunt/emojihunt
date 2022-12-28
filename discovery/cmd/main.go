@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	"io/ioutil"
 	"log"
+	"os"
 
 	"github.com/emojihunt/emojihunt/discovery"
 )
@@ -18,7 +18,7 @@ var (
 // hunt. Rin `go run ./publisher/cmd` in the root of the project to scrape the
 // given URL and print the puzzles that were found.
 func main() {
-	bs, err := ioutil.ReadFile(*config_file)
+	bs, err := os.ReadFile(*config_file)
 	if err != nil {
 		log.Fatalf("error opening config.json: %v", err)
 	}

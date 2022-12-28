@@ -3,8 +3,8 @@ package main
 import (
 	"encoding/json"
 	"flag"
-	"io/ioutil"
 	"log"
+	"os"
 
 	"github.com/bwmarrin/discordgo"
 )
@@ -16,7 +16,7 @@ var (
 )
 
 func main() {
-	bs, err := ioutil.ReadFile(*config_file)
+	bs, err := os.ReadFile(*config_file)
 	if err != nil {
 		log.Fatalf("error opening config.json: %v", err)
 	}
