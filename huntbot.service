@@ -1,0 +1,12 @@
+[Unit]
+Description=Huntbot
+Requires=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=/home/huntbot/emojihunt
+ExecStart=/usr/local/bin/go run . config.json state.json
+Environment="HOME=/root"
+
+[Install]
+WantedBy=multi-user.target
