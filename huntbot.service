@@ -5,7 +5,7 @@ Requires=network.target
 [Service]
 Type=simple
 WorkingDirectory=/home/huntbot/emojihunt
-ExecStart=/usr/local/bin/go run . config.json state.json
+ExecStart=/usr/local/bin/go run .
 Environment="HOME=/root"
 
 [Install]
