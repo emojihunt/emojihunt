@@ -118,7 +118,7 @@ func NewDiscord(config *DiscordConfig, state *state.State) (*Discord, error) {
 		log.Printf("discord: hit rate limit at %q (wait %s): %#v", r.URL, wait, r.TooManyRequests)
 
 		msg := fmt.Sprintf(":sloth: Hit Discord rate limit on %s; blocked for %s", r.URL, wait)
-		if err := discord.ChannelSend(discord.TechChannel, msg); err != nil {
+		if _, err := discord.ChannelSend(discord.TechChannel, msg); err != nil {
 			log.Printf("discord: failed to send rate limit notification: %v", err)
 		}
 
@@ -166,12 +166,17 @@ func discordComputeBotStatus(state *state.State) string {
 	}
 }
 
-func (c *Discord) ChannelSend(ch *discordgo.Channel, msg string) error {
-	_, err := c.s.ChannelMessageSend(ch.ID, msg)
-	return err
+func (c *Discord) ChannelSend(ch *discordgo.Channel, msg string) (string, error) {
+	sent, err := c.s.ChannelMessageSend(ch.ID, msg)
+	if err != nil {
+		return "", err
+	}
+	return sent.ID, err
 }
 
-func (c *Discord) ChannelSendComponents(ch *discordgo.Channel, msg string, components []discordgo.MessageComponent) error {
+func (c *Discord) ChannelSendComponents(ch *discordgo.Channel, msg string,
+	components []discordgo.MessageComponent) (string, error) {
+
 	var actionsRow []discordgo.MessageComponent
 	if components != nil {
 		actionsRow = []discordgo.MessageComponent{
@@ -180,11 +185,14 @@ func (c *Discord) ChannelSendComponents(ch *discordgo.Channel, msg string, compo
 			},
 		}
 	}
-	_, err := c.s.ChannelMessageSendComplex(ch.ID, &discordgo.MessageSend{
+	sent, err := c.s.ChannelMessageSendComplex(ch.ID, &discordgo.MessageSend{
 		Content:    msg,
 		Components: actionsRow,
 	})
-	return err
+	if err != nil {
+		return "", err
+	}
+	return sent.ID, nil
 }
 
 func (c *Discord) ChannelSendRawID(chID, msg string) error {

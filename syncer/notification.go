@@ -11,14 +11,16 @@ import (
 func (s *Syncer) notifyNewPuzzle(puzzle *schema.Puzzle) error {
 	msg := fmt.Sprintf("%s **New puzzle!** <#%s>",
 		puzzle.Rounds.Emojis(), puzzle.DiscordChannel)
-	return s.discord.ChannelSend(s.discord.MoreEyesChannel, msg)
+	_, err := s.discord.ChannelSend(s.discord.MoreEyesChannel, msg)
+	return err
 }
 
 // notifyPuzzleWorking sends the "Work started on puzzle" message to #more-eyes.
 func (s *Syncer) notifyPuzzleWorking(puzzle *schema.Puzzle) error {
 	msg := fmt.Sprintf("%s Work started on puzzle <#%s>",
 		puzzle.Rounds.Emojis(), puzzle.DiscordChannel)
-	return s.discord.ChannelSend(s.discord.MoreEyesChannel, msg)
+	_, err := s.discord.ChannelSend(s.discord.MoreEyesChannel, msg)
+	return err
 }
 
 // notifyPuzzleFullySolved sends the two "Puzzle solved!" (or "Puzzle
@@ -36,7 +38,8 @@ func (s *Syncer) notifyPuzzleFullySolved(puzzle *schema.Puzzle, suppressSolveNot
 
 	msg := fmt.Sprintf("%s Puzzle <#%s> was **%s!** Answer: `%s`.",
 		puzzle.Rounds.Emojis(), puzzle.DiscordChannel, puzzle.Status.SolvedVerb(), puzzle.Answer)
-	return s.discord.ChannelSend(s.discord.KitchenChannel, msg)
+	_, err := s.discord.ChannelSend(s.discord.KitchenChannel, msg)
+	return err
 }
 
 // notifyPuzzleSolvedMissingAnswer sends messages to the puzzle channel and to
@@ -63,5 +66,6 @@ func (s *Syncer) notifyPuzzleSolvedMissingAnswer(puzzle *schema.Puzzle) error {
 			URL:   s.airtable.EditURL(puzzle),
 		},
 	}
-	return s.discord.ChannelSendComponents(s.discord.QMChannel, msg, components)
+	_, err := s.discord.ChannelSendComponents(s.discord.QMChannel, msg, components)
+	return err
 }

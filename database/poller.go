@@ -117,7 +117,7 @@ func (p *Poller) warnPuzzle(ctx context.Context, puzzle *schema.InvalidPuzzle) e
 			URL:   puzzle.EditURL,
 		},
 	}
-	if err := p.discord.ChannelSendComponents(p.discord.QMChannel, msg, components); err != nil {
+	if _, err := p.discord.ChannelSendComponents(p.discord.QMChannel, msg, components); err != nil {
 		return err
 	}
 	p.state.AirtableLastWarn[puzzle.RecordID] = time.Now()
