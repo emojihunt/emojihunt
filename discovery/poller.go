@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/andybalholm/cascadia"
@@ -93,6 +94,11 @@ type Poller struct {
 	syncer    *syncer.Syncer
 	state     *state.State
 	wsLimiter *rate.Limiter
+
+	// Mutex mutex protects roundCreation and must be held when updating it (and
+	// while creating new rounds).
+	mutex         *sync.Mutex
+	roundCreation map[string]*context.CancelFunc
 }
 
 type DiscoveredPuzzle struct {
@@ -102,13 +108,14 @@ type DiscoveredPuzzle struct {
 }
 
 const (
-	pollInterval       = 20 * time.Second
-	pollTimeout        = 90 * time.Second
-	warnErrorFrequency = 10 * time.Minute
-	preCreationPause   = 10 * time.Second
-	newPuzzleLimit     = 15
-	newRoundLimit      = 3
-	websocketBurst     = 3
+	pollInterval        = 20 * time.Second
+	pollTimeout         = 90 * time.Second
+	warnErrorFrequency  = 10 * time.Minute
+	puzzleCreationPause = 10 * time.Second
+	roundCreationPause  = 30 * time.Second
+	newPuzzleLimit      = 15
+	newRoundLimit       = 3
+	websocketBurst      = 3
 )
 
 var websocketRate = rate.Every(1 * time.Minute)
@@ -154,10 +161,15 @@ func New(airtable *client.Airtable, discord *client.Discord, syncer *syncer.Sync
 		syncer:    syncer,
 		state:     state,
 		wsLimiter: rate.NewLimiter(websocketRate, websocketBurst),
+
+		mutex:         &sync.Mutex{},
+		roundCreation: make(map[string]*context.CancelFunc),
 	}
 }
 
 func (d *Poller) Poll(ctx context.Context) {
+	d.pollerInitRoundCreation()
+
 reconnect:
 	for {
 		ch, err := d.openWebsocket()
@@ -183,6 +195,21 @@ reconnect:
 				}
 			case <-time.After(pollInterval):
 			}
+		}
+	}
+}
+
+func (d *Poller) pollerInitRoundCreation() {
+	d.state.Lock()
+	defer d.state.CommitAndUnlock()
+
+	for name, messageID := range d.state.DiscoveryNewRounds {
+		err := d.startOrCancelRoundCreation(name, messageID)
+		if err != nil {
+			// new-round notification has probably been deleted
+			log.Printf("error kicking off round creation for %q, resetting round (%s)",
+				name, spew.Sdump(err))
+			delete(d.state.DiscoveryNewRounds, name)
 		}
 	}
 }

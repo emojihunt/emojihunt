@@ -7,34 +7,31 @@ import (
 	"github.com/davecgh/go-spew/spew"
 )
 
-type DiscordReactionHandler func(*discordgo.Session, *discordgo.MessageReaction, *discordgo.Message) error
+type DiscordReactionHandler func(*discordgo.Session, *discordgo.MessageReaction, string) error
 
+func (c *Discord) AddReactionHandler(handler *DiscordReactionHandler) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	c.reactionHandlers = append(c.reactionHandlers, handler)
+}
 func (c *Discord) reactionAddHandler(s *discordgo.Session, r *discordgo.MessageReactionAdd) {
-	c.reactionCommon(s, "add", r.MessageReaction)
+	c.reactionCommon(s, r.MessageReaction, "add ")
 }
 
 func (c *Discord) reactionRemoveHandler(s *discordgo.Session, r *discordgo.MessageReactionRemove) {
-	c.reactionCommon(s, "remove", r.MessageReaction)
+	c.reactionCommon(s, r.MessageReaction, "remove ")
 }
 
 func (c *Discord) reactionRemoveAllHandler(s *discordgo.Session, r *discordgo.MessageReactionRemoveAll) {
-	c.reactionCommon(s, "remove all", r.MessageReaction)
+	c.reactionCommon(s, r.MessageReaction, "remove-all")
 }
 
-func (c *Discord) reactionCommon(s *discordgo.Session, kind string, r *discordgo.MessageReaction) {
-	log.Printf("discord: handling reaction %s %s on message %q from user %s",
-		kind, r.Emoji.Name, r.MessageID, r.UserID)
-
-	msg, err := s.ChannelMessage(r.ChannelID, r.MessageID)
-	if err != nil {
-		log.Printf("discord: error fetching message %q", r.MessageID)
-		return
-	}
-
+func (c *Discord) reactionCommon(s *discordgo.Session, r *discordgo.MessageReaction, kind string) {
 	for _, handler := range c.reactionHandlers {
-		err := (*handler)(s, r, msg)
+		err := (*handler)(s, r, kind)
 		if err != nil {
-			log.Printf("discord: error handling reaction %s %s on message %q: %s",
+			log.Printf("discord: error handling reaction %s%s on message %q: %s",
 				kind, r.Emoji.Name, r.MessageID, spew.Sdump(err))
 		}
 	}

@@ -97,7 +97,7 @@ func (d *Poller) handleNewPuzzles(ctx context.Context, newPuzzles []schema.NewPu
 		return err
 	}
 
-	time.Sleep(preCreationPause)
+	time.Sleep(puzzleCreationPause)
 
 	var errs []error
 	for _, puzzle := range created {
@@ -135,7 +135,7 @@ func (d *Poller) handleNewRounds(ctx context.Context, newRounds map[string][]*Di
 			continue
 		}
 
-		msg := fmt.Sprintf("```*** ❓ NEW ROUND : \"%s\" ***\n\n", name)
+		msg := fmt.Sprintf("```*** ❓ NEW ROUND: \"%s\" ***\n\n", name)
 		for i, puzzle := range puzzles {
 			if i == newPuzzleLimit {
 				msg += fmt.Sprintf("(...and more, %d in total...)\n\n", len(puzzles))
@@ -143,7 +143,8 @@ func (d *Poller) handleNewRounds(ctx context.Context, newRounds map[string][]*Di
 			}
 			msg += fmt.Sprintf("%s\n%s\n\n", puzzle.Name, puzzle.URL)
 		}
-		msg += "React to propose an emoji for this round.\n```\n"
+		msg += "Reminder: use `/huntbot kill` to stop the bot.\n\n"
+		msg += ">> REACT TO PROPOSE AN EMOJI FOR THIS ROUND <<\n```\n"
 
 		id, err := d.discord.ChannelSend(d.discord.QMChannel, msg)
 		if err != nil {

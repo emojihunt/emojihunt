@@ -100,6 +100,7 @@ func main() {
 	var dscvpoller *discovery.Poller
 	if config.Autodiscovery != nil {
 		dscvpoller = discovery.New(airtable, discord, syncer, config.Autodiscovery, state)
+		dscvpoller.RegisterReactionHandler(discord)
 	} else {
 		log.Printf("puzzle auto-discovery is disabled (no config found)")
 	}
