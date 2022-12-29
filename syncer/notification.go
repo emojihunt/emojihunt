@@ -24,7 +24,8 @@ func (s *Syncer) notifyPuzzleWorking(puzzle *schema.Puzzle) error {
 }
 
 // notifyPuzzleFullySolved sends the two "Puzzle solved!" (or "Puzzle
-// backsolved!") messages: one to the puzzle channel, and another to #the-kitchen.
+// backsolved!") messages: one to the puzzle channel, and another to
+// #hanging-out.
 func (s *Syncer) notifyPuzzleFullySolved(puzzle *schema.Puzzle, suppressSolveNotif bool) error {
 	if !suppressSolveNotif {
 		msg := fmt.Sprintf(
@@ -38,7 +39,7 @@ func (s *Syncer) notifyPuzzleFullySolved(puzzle *schema.Puzzle, suppressSolveNot
 
 	msg := fmt.Sprintf("%s Puzzle <#%s> was **%s!** Answer: `%s`.",
 		puzzle.Rounds.Emojis(), puzzle.DiscordChannel, puzzle.Status.SolvedVerb(), puzzle.Answer)
-	_, err := s.discord.ChannelSend(s.discord.KitchenChannel, msg)
+	_, err := s.discord.ChannelSend(s.discord.HangingOutChannel, msg)
 	return err
 }
 

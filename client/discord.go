@@ -11,23 +11,23 @@ import (
 )
 
 type DiscordConfig struct {
-	AuthToken         string `json:"auth_token"`
-	GuildID           string `json:"guild_id"`
-	QMChannelID       string `json:"qm_channel_id"`
-	KitchenChannelID  string `json:"kitchen_channel_id"`
-	MoreEyesChannelID string `json:"more_eyes_channel_id"`
-	TechChannelID     string `json:"tech_channel_id"`
-	QMRoleID          string `json:"qm_role_id"`
+	AuthToken           string `json:"auth_token"`
+	GuildID             string `json:"guild_id"`
+	QMChannelID         string `json:"qm_channel_id"`
+	HangingOutChannelID string `json:"hanging_out_channel_id"`
+	MoreEyesChannelID   string `json:"more_eyes_channel_id"`
+	TechChannelID       string `json:"tech_channel_id"`
+	QMRoleID            string `json:"qm_role_id"`
 }
 
 type Discord struct {
 	s     *discordgo.Session
 	Guild *discordgo.Guild
 
-	KitchenChannel  *discordgo.Channel // for solves, to celebrate
-	MoreEyesChannel *discordgo.Channel // for verbose puzzle updates
-	QMChannel       *discordgo.Channel // for puzzle maintenance
-	TechChannel     *discordgo.Channel // for error messages
+	HangingOutChannel *discordgo.Channel // for solves, to celebrate
+	MoreEyesChannel   *discordgo.Channel // for verbose puzzle updates
+	QMChannel         *discordgo.Channel // for puzzle maintenance
+	TechChannel       *discordgo.Channel // for error messages
 
 	QMRole *discordgo.Role // so QMs show up in the sidebar
 
@@ -64,14 +64,14 @@ func NewDiscord(config *DiscordConfig, state *state.State) (*Discord, error) {
 		return nil, fmt.Errorf("failed to load guild %s: %v", config.GuildID, err)
 	}
 
-	kitchenChannel, err := s.Channel(config.KitchenChannelID)
+	hangingOutChannel, err := s.Channel(config.HangingOutChannelID)
 	if err != nil {
-		return nil, fmt.Errorf("failed to load kitchen channel %q: %v",
-			config.KitchenChannelID, err)
+		return nil, fmt.Errorf("failed to load hanging-out channel %q: %v",
+			config.HangingOutChannelID, err)
 	}
 	moreEyesChannel, err := s.Channel(config.MoreEyesChannelID)
 	if err != nil {
-		return nil, fmt.Errorf("failed to load more eyes channel %q: %v",
+		return nil, fmt.Errorf("failed to load more-eyes channel %q: %v",
 			config.MoreEyesChannelID, err)
 	}
 	qmChannel, err := s.Channel(config.QMChannelID)
@@ -103,7 +103,7 @@ func NewDiscord(config *DiscordConfig, state *state.State) (*Discord, error) {
 	discord := &Discord{
 		s:                         s,
 		Guild:                     guild,
-		KitchenChannel:            kitchenChannel,
+		HangingOutChannel:         hangingOutChannel,
 		MoreEyesChannel:           moreEyesChannel,
 		QMChannel:                 qmChannel,
 		TechChannel:               techChannel,

@@ -8,7 +8,7 @@
     "discord": {
         "auth_token": "Bot ********",
         "guild_id": "793599987694436374",
-        "kitchen_channel_id": "793599987694436377",
+        "hanging_out_channel_id": "793599987694436377",
         "more_eyes_channel_id": "793607709022748683",
         "qm_channel_id": "795780814846689321",
         "tech_channel_id": "795033372979626004",

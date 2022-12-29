@@ -12,7 +12,6 @@ import (
 
 	"github.com/davecgh/go-spew/spew"
 	"github.com/emojihunt/emojihunt/schema"
-	"github.com/emojihunt/emojihunt/state"
 	"golang.org/x/net/html"
 )
 
@@ -148,7 +147,7 @@ func (d *Poller) SyncPuzzles(ctx context.Context, puzzles []*DiscoveredPuzzle) e
 	}
 
 	var newPuzzles []schema.NewPuzzle
-	skippedRounds := make(map[string][]string)
+	skippedRounds := make(map[string][]*DiscoveredPuzzle)
 	for _, puzzle := range puzzleMap {
 		if fragments[strings.ToUpper(puzzle.URL.String())] ||
 			fragments[strings.ToUpper(puzzle.Name)] {
@@ -157,7 +156,7 @@ func (d *Poller) SyncPuzzles(ctx context.Context, puzzles []*DiscoveredPuzzle) e
 		}
 		round, ok := rounds[puzzle.Round]
 		if !ok {
-			skippedRounds[puzzle.Round] = append(skippedRounds[puzzle.Round], puzzle.Name)
+			skippedRounds[puzzle.Round] = append(skippedRounds[puzzle.Round], puzzle)
 			continue
 		}
 		log.Printf("discovery: preparing to add puzzle %q (%s) in round %q", puzzle.Name, puzzle.URL.String(), puzzle.Round)
@@ -185,7 +184,7 @@ func (d *Poller) SyncPuzzles(ctx context.Context, puzzles []*DiscoveredPuzzle) e
 	if len(newPuzzles) > newPuzzleLimit {
 		paused = true
 		msg += fmt.Sprintf(
-			"💥 Too many puzzles! Stopped for safety, please contact #%s.\n",
+			"💥 Too many new puzzles! Puzzle creation paused, please contact #%s.\n",
 			d.discord.TechChannel.Name,
 		)
 	} else {
@@ -224,6 +223,15 @@ func (d *Poller) SyncPuzzles(ctx context.Context, puzzles []*DiscoveredPuzzle) e
 		return fmt.Errorf("errors sending new puzzle notifications: %#v", spew.Sdump(errs))
 	}
 
+	if len(skippedRounds) > newRoundLimit {
+		msg := fmt.Sprintf(
+			"```💥 Too many new rounds! Round creation paused, please contact #%s.\n```\n",
+			d.discord.TechChannel.Name,
+		)
+		_, err = d.discord.ChannelSend(d.discord.QMChannel, msg)
+		return err
+	}
+
 	errs = make([]error, 0)
 	for name, puzzles := range skippedRounds {
 		if err := d.notifyNewRound(name, puzzles); err != nil {
@@ -236,7 +244,7 @@ func (d *Poller) SyncPuzzles(ctx context.Context, puzzles []*DiscoveredPuzzle) e
 	return nil
 }
 
-func (d *Poller) notifyNewRound(name string, puzzles []string) error {
+func (d *Poller) notifyNewRound(name string, puzzles []*DiscoveredPuzzle) error {
 	d.state.Lock()
 	defer d.state.CommitAndUnlock()
 
@@ -244,18 +252,18 @@ func (d *Poller) notifyNewRound(name string, puzzles []string) error {
 		return nil
 	}
 
-	msg := fmt.Sprintf("**:interrobang: New Round: \"%s\"**\n```", name)
+	msg := fmt.Sprintf("```*** ❓ NEW ROUND : \"%s\" ***\n\n", name)
 	for _, puzzle := range puzzles {
-		msg += fmt.Sprintf("%s\n", puzzle)
+		msg += fmt.Sprintf("%s\n%s\n\n", puzzle.Name, puzzle.URL)
 	}
-	msg += "```"
+	msg += "React to propose an emoji for this round.\n```\n"
 
 	id, err := d.discord.ChannelSend(d.discord.QMChannel, msg)
 	if err != nil {
 		return err
 	}
 
-	d.state.DiscoveryNewRounds[name] = state.NewRound{CreationMessage: id, SecondsLeft: -1}
+	d.state.DiscoveryNewRounds[name] = id
 	return nil
 }
 
