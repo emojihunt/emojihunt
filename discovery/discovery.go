@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
+	"time"
 
 	"github.com/davecgh/go-spew/spew"
 	"github.com/emojihunt/emojihunt/schema"
@@ -167,11 +168,34 @@ func (d *Poller) SyncPuzzles(ctx context.Context, puzzles []*DiscoveredPuzzle) e
 		})
 	}
 
-	if len(newPuzzles) > newPuzzleLimit {
-		return fmt.Errorf("too many new puzzles; aborting for safety (%d)", len(newPuzzles))
+	if len(newPuzzles) == 0 {
+		return nil
 	}
 
-	// TODO: alert QMs and delay...
+	msg := "```\n*** 🧐 NEW PUZZLES ***\n\n"
+	for i, puzzle := range newPuzzles {
+		if i == newPuzzleLimit {
+			msg += fmt.Sprintf("(...and more, %d in total...)\n\n", len(newPuzzles))
+			break
+		}
+		msg += fmt.Sprintf("%s %s\n%s\n\n", puzzle.Round.Emoji, puzzle.Name, puzzle.PuzzleURL)
+	}
+
+	var paused bool
+	if len(newPuzzles) > newPuzzleLimit {
+		paused = true
+		msg += "💥 Too many puzzles! Stopped for safety, please contact #tech.\n"
+	} else {
+		msg += "Reminder: use `/huntbot kill` to stop the bot.\n"
+	}
+	msg += "```\n"
+
+	_, err = d.discord.ChannelSend(d.discord.QMChannel, msg)
+	if err != nil {
+		return err
+	} else if paused {
+		return nil
+	}
 
 	// Warning! Puzzle locks are acquired here and must be released before this
 	// function returns.
@@ -180,10 +204,16 @@ func (d *Poller) SyncPuzzles(ctx context.Context, puzzles []*DiscoveredPuzzle) e
 		return err
 	}
 
+	time.Sleep(preCreationPause)
+
 	var errs []error
 	for _, puzzle := range created {
-		if _, err := d.syncer.ForceUpdate(ctx, &puzzle); err != nil {
-			errs = append(errs, err)
+		if d.state.IsKilled() {
+			errs = append(errs, fmt.Errorf("huntbot is disabled"))
+		} else {
+			if _, err := d.syncer.ForceUpdate(ctx, &puzzle); err != nil {
+				errs = append(errs, err)
+			}
 		}
 		puzzle.Unlock()
 	}

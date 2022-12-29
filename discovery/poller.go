@@ -102,8 +102,10 @@ type DiscoveredPuzzle struct {
 
 const (
 	pollInterval       = 20 * time.Second
+	pollTimeout        = 90 * time.Second
 	warnErrorFrequency = 10 * time.Minute
-	newPuzzleLimit     = 10
+	preCreationPause   = 10 * time.Second
+	newPuzzleLimit     = 15
 	websocketBurst     = 3
 )
 
