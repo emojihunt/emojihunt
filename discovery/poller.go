@@ -101,11 +101,10 @@ type DiscoveredPuzzle struct {
 }
 
 const (
-	pollInterval         = 20 * time.Second
-	roundNotifyFrequency = 10 * time.Minute
-	warnErrorFrequency   = 10 * time.Minute
-	newPuzzleLimit       = 10
-	websocketBurst       = 3
+	pollInterval       = 20 * time.Second
+	warnErrorFrequency = 10 * time.Minute
+	newPuzzleLimit     = 10
+	websocketBurst     = 3
 )
 
 var websocketRate = rate.Every(1 * time.Minute)

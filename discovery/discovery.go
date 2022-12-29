@@ -8,12 +8,12 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
-	"time"
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/davecgh/go-spew/spew"
 	"github.com/emojihunt/emojihunt/client"
 	"github.com/emojihunt/emojihunt/schema"
+	"github.com/emojihunt/emojihunt/state"
 	"golang.org/x/net/html"
 )
 
@@ -149,7 +149,7 @@ func (d *Poller) SyncPuzzles(puzzles []*DiscoveredPuzzle) error {
 	}
 
 	var newPuzzles []schema.NewPuzzle
-	skippedRounds := make(map[string]bool)
+	skippedRounds := make(map[string][]string)
 	for _, puzzle := range puzzleMap {
 		if fragments[strings.ToUpper(puzzle.URL.String())] ||
 			fragments[strings.ToUpper(puzzle.Name)] {
@@ -159,7 +159,7 @@ func (d *Poller) SyncPuzzles(puzzles []*DiscoveredPuzzle) error {
 		round, ok := rounds[puzzle.Round]
 		if !ok {
 			log.Printf("discovery: skipping puzzle %q due to unknown round %q", puzzle.Name, puzzle.Round)
-			skippedRounds[puzzle.Round] = true
+			skippedRounds[puzzle.Round] = append(skippedRounds[puzzle.Round], puzzle.Name)
 			continue
 		}
 		log.Printf("discovery: preparing to add puzzle %q (%s) in round %q", puzzle.Name, puzzle.URL.String(), puzzle.Round)
@@ -190,7 +190,16 @@ func (d *Poller) SyncPuzzles(puzzles []*DiscoveredPuzzle) error {
 		return fmt.Errorf("errors sending new puzzle notifications: %#v", spew.Sdump(errs))
 	}
 
-	return d.notifyNewRounds(skippedRounds)
+	errs = make([]error, 0)
+	for name, puzzles := range skippedRounds {
+		if err := d.notifyNewRound(name, puzzles); err != nil {
+			errs = append(errs, err)
+		}
+	}
+	if len(errs) > 0 {
+		return fmt.Errorf("errors sending new round notifications: %#v", spew.Sdump(errs))
+	}
+	return nil
 }
 
 func (d *Poller) RegisterApproveCommand(ctx context.Context, discord *client.Discord) {
@@ -242,38 +251,30 @@ func (d *Poller) notifyNewPuzzle(puzzle *schema.Puzzle) error {
 			CustomID: "discovery.approve/" + puzzle.AirtableRecord.ID,
 		},
 	}
-	return d.discord.ChannelSendComponents(d.discord.QMChannel, msg, components)
+	_, err := d.discord.ChannelSendComponents(d.discord.QMChannel, msg, components)
+	return err
 }
 
-func (d *Poller) notifyNewRounds(rounds map[string]bool) error {
+func (d *Poller) notifyNewRound(name string, puzzles []string) error {
 	d.state.Lock()
 	defer d.state.CommitAndUnlock()
 
-	var array []string
-	shouldNotify := false
-	for round := range rounds {
-		array = append(array, round)
-		lastNotified, ok := d.state.DiscoveryNewRounds[round]
-		if !ok || time.Since(lastNotified) > roundNotifyFrequency {
-			shouldNotify = true
-		}
-	}
-	if !shouldNotify {
+	if _, ok := d.state.DiscoveryNewRounds[name]; ok {
 		return nil
 	}
 
-	msg := fmt.Sprintf(
-		"**:ferris_wheel: New rounds are available!** Please add at least one puzzle from " +
-			"each round to Airtable (after that, puzzle auto-discovery can take over). Rounds: " +
-			strings.Join(array, ", "),
-	)
-	if err := d.discord.ChannelSend(d.discord.QMChannel, msg); err != nil {
+	msg := fmt.Sprintf("**:interrobang: New Round: \"%s\"**\n```", name)
+	for _, puzzle := range puzzles {
+		msg += fmt.Sprintf("%s\n", puzzle)
+	}
+	msg += "```"
+
+	id, err := d.discord.ChannelSend(d.discord.QMChannel, msg)
+	if err != nil {
 		return err
 	}
 
-	for round := range rounds {
-		d.state.DiscoveryNewRounds[round] = time.Now()
-	}
+	d.state.DiscoveryNewRounds[name] = state.NewRound{CreationMessage: id, SecondsLeft: -1}
 	return nil
 }
 
