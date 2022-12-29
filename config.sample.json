@@ -1,49 +1,45 @@
 {
     "airtable": {
         "api_key": "pat***.********",
-        "base_id": "app***",
-        "table_id": "tbl***",
-        "bot_user_id": "usr***"
+        "base_id": "appy4MPYyL3XDvbj1",
+        "table_id": "tbl9q67rERpnZFpjL",
+        "bot_user_id": "usrVXpRghqUkWY7R2"
     },
     "discord": {
         "auth_token": "Bot ********",
-        "guild_id": "793599987694436374",
-        "hanging_out_channel_id": "793599987694436377",
-        "more_eyes_channel_id": "793607709022748683",
-        "qm_channel_id": "795780814846689321",
-        "tech_channel_id": "795033372979626004",
-        "qm_role_id": "793618399322046515"
+        "guild_id": "1058090773582721214",
+        "hanging_out_channel_id": "1058090774488678532",
+        "more_eyes_channel_id": "1058092531688157266",
+        "qm_channel_id": "1058092560926646282",
+        "tech_channel_id": "1058092586398650448",
+        "qm_role_id": "1058092621475614751"
     },
     "google_drive": {
-        "root_folder_id": "1g****pt",
+        "root_folder_id": "1KNcBa-GjA9Uz8LJ5OYs_zfWRvFRDVu1d",
         "service_account": {
             "type": "service_account",
             "project_id": "emojihunt",
-            "private_key_id": "89****ad",
+            "private_key_id": "64c33de4798dab5722613e3d1ca007c55338dac6",
             "private_key": "-----BEGIN PRIVATE KEY-----\nMII****\n-----END PRIVATE KEY-----\n",
-            "client_email": "huntbot@emojihunt.iam.gserviceaccount.com",
-            "client_id": "110618883473185560775",
+            "client_email": "huntbot-dev@emojihunt.iam.gserviceaccount.com",
+            "client_id": "118272435726566970857",
             "auth_uri": "https://accounts.google.com/o/oauth2/auth",
             "token_uri": "https://oauth2.googleapis.com/token",
             "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
-            "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/huntbot%40emojihunt.iam.gserviceaccount.com"
+            "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/huntbot-dev%40emojihunt.iam.gserviceaccount.com"
         }
     },
     "server": {
-        "secret_token": "****",
+        "secret_token": "*** INSERT RANDOM TOKEN HERE ***",
         "certificate_file": "/etc/letsencrypt/live/www.example.org/fullchain.pem",
         "key_file": "/etc/letsencrypt/live/www.example.org/privkey.pem",
         "origin": "https://www.example.org"
     },
     "autodiscovery": {
-        "puzzles_url": "https://puzzles.mit.edu/2022/puzzles/",
-        "cookie_name": "session",
-        "cookie_value": "***",
-        "group_mode": false,
-        "group_selector": "section#main-content",
-        "round_name_selector": "h2",
-        "puzzle_list_selector": "table",
-        "websocket_url": "wss://www.bookspace.world/ws/team",
-        "websocket_token": "****"
+        "puzzles_url": "https://2021.teammatehunt.com/puzzles",
+        "group_mode": true,
+        "group_selector": ".round",
+        "round_name_selector": ".header h3",
+        "puzzle_list_selector": ".round-puzzles"
     }
 }
