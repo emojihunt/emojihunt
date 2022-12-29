@@ -22,6 +22,13 @@ type State struct {
 
 func Load(filename string) (*State, error) {
 	data, err := os.ReadFile(filename)
+	if os.IsNotExist(err) {
+		err = os.WriteFile(filename, []byte("{}\n"), 0640)
+		if err != nil {
+			return nil, err
+		}
+		data, err = os.ReadFile(filename)
+	}
 	if err != nil {
 		return nil, err
 	}
