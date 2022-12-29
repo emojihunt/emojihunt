@@ -27,7 +27,6 @@ type voiceRoomBot struct {
 
 func (bot *voiceRoomBot) makeSlashCommand() *client.DiscordCommand {
 	return &client.DiscordCommand{
-		InteractionType: discordgo.InteractionApplicationCommand,
 		ApplicationCommand: &discordgo.ApplicationCommand{
 			Name:        "voice",
 			Description: "Assign puzzles to voice rooms",

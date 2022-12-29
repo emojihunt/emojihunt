@@ -25,7 +25,6 @@ type puzzleBot struct {
 
 func (bot *puzzleBot) makeSlashCommand() *client.DiscordCommand {
 	return &client.DiscordCommand{
-		InteractionType: discordgo.InteractionApplicationCommand,
 		ApplicationCommand: &discordgo.ApplicationCommand{
 			Name:        "puzzle",
 			Description: "Use in a puzzle channel to update puzzle information 🧩",

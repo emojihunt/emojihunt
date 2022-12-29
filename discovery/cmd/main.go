@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"flag"
 	"fmt"
@@ -37,7 +38,7 @@ func main() {
 	}
 
 	disc := discovery.New(nil, nil, nil, &config, nil)
-	puzzles, err := disc.Scrape()
+	puzzles, err := disc.Scrape(context.Background())
 	if err != nil {
 		fmt.Printf("fatal error: %#v\n", err)
 		return

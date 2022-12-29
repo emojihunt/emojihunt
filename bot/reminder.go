@@ -34,7 +34,6 @@ type reminderBot struct {
 
 func (bot *reminderBot) makeSlashCommand() *client.DiscordCommand {
 	return &client.DiscordCommand{
-		InteractionType: discordgo.InteractionApplicationCommand,
 		ApplicationCommand: &discordgo.ApplicationCommand{
 			Name:        "reminders",
 			Description: "List all puzzle reminders ⏱️",

@@ -68,7 +68,7 @@ func (air *Airtable) SetNotes(puzzle *schema.Puzzle, notes string) (*schema.Puzz
 	return air.parseRecord(record, puzzle.Unlock)
 }
 
-func (air *Airtable) SetBotFields(puzzle *schema.Puzzle, lastBotStatus schema.Status, archived, pending bool) (*schema.Puzzle, error) {
+func (air *Airtable) SetBotFields(puzzle *schema.Puzzle, lastBotStatus schema.Status, archived bool) (*schema.Puzzle, error) {
 	var fields = make(map[string]interface{})
 
 	if lastBotStatus == schema.NotStarted {
@@ -79,15 +79,6 @@ func (air *Airtable) SetBotFields(puzzle *schema.Puzzle, lastBotStatus schema.St
 
 	fields["Archived"] = archived
 	fields["Last Bot Sync"] = time.Now().Format(time.RFC3339)
-
-	if puzzle.Pending != pending {
-		// The "pending" status is stored in the puzzle name
-		puzzleName := puzzle.Name
-		if pending {
-			puzzle.Name += pendingSuffix
-		}
-		fields["Name"] = puzzleName
-	}
 
 	record, err := puzzle.AirtableRecord.UpdateRecordPartial(fields)
 	if err != nil {

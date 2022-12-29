@@ -29,7 +29,6 @@ var hunts = []hunt{
 
 func (bot *huntYetBot) makeSlashCommand() *client.DiscordCommand {
 	return &client.DiscordCommand{
-		InteractionType: discordgo.InteractionApplicationCommand,
 		ApplicationCommand: &discordgo.ApplicationCommand{
 			Name:        "huntyet",
 			Description: "IS IT HUNT YET??? ⏳",

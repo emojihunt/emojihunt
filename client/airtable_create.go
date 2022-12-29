@@ -19,7 +19,7 @@ func (air *Airtable) AddPuzzles(puzzles []schema.NewPuzzle) ([]schema.Puzzle, er
 		}
 		for _, puzzle := range puzzles[i:limit] {
 			fields := map[string]interface{}{
-				"Name":         puzzle.Name + pendingSuffix,
+				"Name":         puzzle.Name,
 				"Round":        puzzle.Round.Serialize(),
 				"Puzzle URL":   puzzle.PuzzleURL,
 				"Original URL": puzzle.PuzzleURL,

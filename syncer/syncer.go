@@ -96,7 +96,7 @@ func (s *Syncer) IdempotentCreateUpdate(ctx context.Context, puzzle *schema.Puzz
 		if err = s.DiscordCreateUpdatePin(puzzle); err != nil {
 			return nil, fmt.Errorf("unable to set puzzle status message for %q: %w", puzzle.Name, err)
 		}
-		puzzle, err = s.airtable.SetBotFields(puzzle, puzzle.Status, puzzle.ShouldArchive(), puzzle.Pending)
+		puzzle, err = s.airtable.SetBotFields(puzzle, puzzle.Status, puzzle.ShouldArchive())
 		if err != nil {
 			return nil, fmt.Errorf("failed to update bot fields for puzzle %q: %v", puzzle.Name, err)
 		} else if puzzle.LastModifiedBy != s.airtable.BotUserID {
@@ -130,7 +130,7 @@ func (s *Syncer) HandleStatusChange(ctx context.Context, puzzle *schema.Puzzle, 
 	// Update bot status in Airtable, unless we're in a bot handler and this has
 	// already been done.
 	if !botRequest {
-		puzzle, err = s.airtable.SetBotFields(puzzle, puzzle.Status, puzzle.ShouldArchive(), puzzle.Pending)
+		puzzle, err = s.airtable.SetBotFields(puzzle, puzzle.Status, puzzle.ShouldArchive())
 		if err != nil {
 			return nil, fmt.Errorf("failed to update bot fields for puzzle %q: %v", puzzle.Name, err)
 		}
@@ -196,8 +196,8 @@ func (s *Syncer) ForceUpdate(ctx context.Context, puzzle *schema.Puzzle) (*schem
 		return nil, err
 	}
 
-	// Update bot status in Airtable and *mark as not pending* if applicable
-	puzzle, err = s.airtable.SetBotFields(puzzle, puzzle.Status, puzzle.ShouldArchive(), false)
+	// Update bot status in Airtable
+	puzzle, err = s.airtable.SetBotFields(puzzle, puzzle.Status, puzzle.ShouldArchive())
 	if err != nil {
 		return nil, err
 	}

@@ -3,7 +3,6 @@ package client
 import (
 	"fmt"
 	"sort"
-	"strings"
 	"sync"
 	"time"
 
@@ -41,7 +40,6 @@ type Airtable struct {
 const (
 	defaultGracePeriod = 3 * time.Second // delay before records are picked up by ListPuzzlesToAction
 	pageSize           = 100             // most records returned per list request
-	pendingSuffix      = " [pending]"    // puzzle name suffix for auto-added puzzles
 )
 
 // FYI the Airtable library has a built-in rate limiter that will block if we
@@ -100,22 +98,13 @@ func (air *Airtable) parseRecord(record *airtable.Record, unlock func()) (*schem
 		return nil, err
 	}
 
-	puzzleName := air.stringField(record, "Name")
-	pending := false
-	if strings.HasSuffix(puzzleName, pendingSuffix) {
-		// Ideally the "pending" status would be stored in a separate field, but
-		// we want it to be obvious to humans viewing the Airtable.
-		puzzleName = strings.TrimSuffix(puzzleName, pendingSuffix)
-		pending = true
-	}
-
 	var lastModifiedBy string
 	if value, ok := record.Fields["Last Modified By"]; ok {
 		lastModifiedBy = value.(map[string]interface{})["id"].(string)
 	}
 
 	return &schema.Puzzle{
-		Name:         puzzleName,
+		Name:         air.stringField(record, "Name"),
 		Answer:       air.stringField(record, "Answer"),
 		Rounds:       rounds,
 		Status:       status,
@@ -128,7 +117,6 @@ func (air *Airtable) parseRecord(record *airtable.Record, unlock func()) (*schem
 		SpreadsheetID:  air.stringField(record, "Spreadsheet ID"),
 		DiscordChannel: air.stringField(record, "Discord Channel"),
 
-		Pending:       pending,
 		LastBotStatus: lastBotStatus,
 		Archived:      air.boolField(record, "Archived"),
 		LastBotSync:   air.timeField(record, "Last Bot Sync"),

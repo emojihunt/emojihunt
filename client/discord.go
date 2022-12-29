@@ -32,7 +32,6 @@ type Discord struct {
 	QMRole *discordgo.Role // so QMs show up in the sidebar
 
 	appCommandHandlers map[string]*DiscordCommand
-	componentHandlers  map[string]*DiscordCommand
 	reactionHandlers   map[string]*DiscordReactionHandler
 
 	mu                        sync.Mutex // hold while accessing everything below
@@ -110,7 +109,6 @@ func NewDiscord(config *DiscordConfig, state *state.State) (*Discord, error) {
 		TechChannel:               techChannel,
 		QMRole:                    qmRole,
 		appCommandHandlers:        make(map[string]*DiscordCommand),
-		componentHandlers:         make(map[string]*DiscordCommand),
 		reactionHandlers:          make(map[string]*DiscordReactionHandler),
 		scheduledEventsLastUpdate: time.Now().Add(-24 * time.Hour),
 		rateLimits:                make(map[string]*time.Time),

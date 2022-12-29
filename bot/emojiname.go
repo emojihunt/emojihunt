@@ -21,7 +21,6 @@ type emojiNameBot struct {
 
 func (bot *emojiNameBot) makeSlashCommand() *client.DiscordCommand {
 	return &client.DiscordCommand{
-		InteractionType: discordgo.InteractionApplicationCommand,
 		ApplicationCommand: &discordgo.ApplicationCommand{
 			Name:        "name",
 			Description: "Generate a team name 🌊🎨🎡",

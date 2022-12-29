@@ -167,14 +167,18 @@ reconnect:
 				continue
 			}
 
-			puzzles, err := d.Scrape()
+			ctx, cancel := context.WithTimeout(context.Background(), pollInterval*3)
+
+			puzzles, err := d.Scrape(ctx)
 			if err != nil {
 				d.logAndMaybeWarn("scraping error", err)
 			}
 
-			if err := d.SyncPuzzles(puzzles); err != nil {
+			if err := d.SyncPuzzles(ctx, puzzles); err != nil {
 				d.logAndMaybeWarn("syncing error", err)
 			}
+
+			cancel()
 
 			select {
 			case <-ctx.Done():

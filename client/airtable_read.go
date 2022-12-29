@@ -10,17 +10,15 @@ import (
 	"github.com/emojihunt/emojihunt/schema"
 )
 
-// ListApprovedPuzzles returns a list of all known record IDs.
-func (air *Airtable) ListApprovedPuzzles() ([]string, error) {
+// ListPuzzles returns a list of all known record IDs.
+func (air *Airtable) ListPuzzles() ([]string, error) {
 	var ids []string
 	puzzles, err := air.listRecordsWithFilter("")
 	if err != nil {
 		return nil, err
 	}
 	for _, puzzle := range puzzles {
-		if !puzzle.Pending {
-			ids = append(ids, puzzle.AirtableRecord.ID)
-		}
+		ids = append(ids, puzzle.AirtableRecord.ID)
 	}
 	return ids, nil
 }
@@ -43,10 +41,7 @@ func (air *Airtable) ListPuzzlesToAction() ([]schema.InvalidPuzzle, []string, er
 	var invalid []schema.InvalidPuzzle // invalid, notify the QM
 	var needsAction []string           // needs some kind of re-sync
 	for _, puzzle := range puzzles {
-		if puzzle.Pending {
-			// Skip auto-added records that haven't been confirmed by a human
-			continue
-		} else if puzzle.LastModified == nil || timestamp.Sub(*puzzle.LastModified) < air.ModifyGracePeriod {
+		if puzzle.LastModified == nil || timestamp.Sub(*puzzle.LastModified) < air.ModifyGracePeriod {
 			// Skip puzzles that are being actively edited by a human
 			continue
 		} else if puzzle.DiscordChannel == "-" {

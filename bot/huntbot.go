@@ -41,7 +41,6 @@ type huntbotBot struct {
 
 func (bot *huntbotBot) makeSlashCommand() *client.DiscordCommand {
 	return &client.DiscordCommand{
-		InteractionType: discordgo.InteractionApplicationCommand,
 		ApplicationCommand: &discordgo.ApplicationCommand{
 			Name:        "huntbot",
 			Description: "Robot control panel 🤖",
@@ -134,7 +133,7 @@ func (bot *huntbotBot) makeSlashCommand() *client.DiscordCommand {
 func (bot *huntbotBot) fullResync(s *discordgo.Session, i *client.DiscordCommandInput) {
 	var errs = make(map[string]error)
 
-	puzzles, err := bot.airtable.ListApprovedPuzzles()
+	puzzles, err := bot.airtable.ListPuzzles()
 	if err == nil {
 		for j, id := range puzzles {
 			var puzzle *schema.Puzzle

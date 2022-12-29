@@ -9,17 +9,15 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/bwmarrin/discordgo"
 	"github.com/davecgh/go-spew/spew"
-	"github.com/emojihunt/emojihunt/client"
 	"github.com/emojihunt/emojihunt/schema"
 	"github.com/emojihunt/emojihunt/state"
 	"golang.org/x/net/html"
 )
 
-func (d *Poller) Scrape() ([]*DiscoveredPuzzle, error) {
+func (d *Poller) Scrape(ctx context.Context) ([]*DiscoveredPuzzle, error) {
 	// Download
-	req, err := http.NewRequest("GET", d.puzzlesURL.String(), nil)
+	req, err := http.NewRequestWithContext(ctx, "GET", d.puzzlesURL.String(), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -136,7 +134,7 @@ func (d *Poller) Scrape() ([]*DiscoveredPuzzle, error) {
 	return puzzles, nil
 }
 
-func (d *Poller) SyncPuzzles(puzzles []*DiscoveredPuzzle) error {
+func (d *Poller) SyncPuzzles(ctx context.Context, puzzles []*DiscoveredPuzzle) error {
 	puzzleMap := make(map[string]*DiscoveredPuzzle)
 	for _, puzzle := range puzzles {
 		puzzleMap[puzzle.URL.String()] = puzzle
@@ -158,7 +156,6 @@ func (d *Poller) SyncPuzzles(puzzles []*DiscoveredPuzzle) error {
 		}
 		round, ok := rounds[puzzle.Round]
 		if !ok {
-			log.Printf("discovery: skipping puzzle %q due to unknown round %q", puzzle.Name, puzzle.Round)
 			skippedRounds[puzzle.Round] = append(skippedRounds[puzzle.Round], puzzle.Name)
 			continue
 		}
@@ -174,6 +171,10 @@ func (d *Poller) SyncPuzzles(puzzles []*DiscoveredPuzzle) error {
 		return fmt.Errorf("too many new puzzles; aborting for safety (%d)", len(newPuzzles))
 	}
 
+	// TODO: alert QMs and delay...
+
+	// Warning! Puzzle locks are acquired here and must be released before this
+	// function returns.
 	created, err := d.airtable.AddPuzzles(newPuzzles)
 	if err != nil {
 		return err
@@ -181,7 +182,7 @@ func (d *Poller) SyncPuzzles(puzzles []*DiscoveredPuzzle) error {
 
 	var errs []error
 	for _, puzzle := range created {
-		if err := d.notifyNewPuzzle(&puzzle); err != nil {
+		if _, err := d.syncer.ForceUpdate(ctx, &puzzle); err != nil {
 			errs = append(errs, err)
 		}
 		puzzle.Unlock()
@@ -200,59 +201,6 @@ func (d *Poller) SyncPuzzles(puzzles []*DiscoveredPuzzle) error {
 		return fmt.Errorf("errors sending new round notifications: %#v", spew.Sdump(errs))
 	}
 	return nil
-}
-
-func (d *Poller) RegisterApproveCommand(ctx context.Context, discord *client.Discord) {
-	command := &client.DiscordCommand{
-		InteractionType: discordgo.InteractionMessageComponent,
-		CustomID:        "discovery.approve",
-		OnlyOnce:        true,
-		Async:           true,
-		Handler: func(s *discordgo.Session, i *client.DiscordCommandInput) (string, error) {
-			parts := strings.Split(i.Command, "/")
-			if len(parts) < 2 {
-				return "", fmt.Errorf("could not parse Airtable ID from command: %q", i.Command)
-			}
-			puzzle, err := d.airtable.LockByID(parts[1])
-			if err != nil {
-				return "", err
-			}
-			defer puzzle.Unlock()
-
-			if !puzzle.Pending {
-				return fmt.Sprintf(":man_shrugging: Puzzle %q is already approved, %s!", puzzle.Name, i.User.Mention()), nil
-			}
-
-			if _, err := d.syncer.ForceUpdate(ctx, puzzle); err != nil {
-				return "", err
-			}
-			return fmt.Sprintf(":ok_hand: I've created puzzle %q, %s!", puzzle.Name, i.User.Mention()), nil
-		},
-	}
-	discord.AddCommand(command)
-}
-
-func (d *Poller) notifyNewPuzzle(puzzle *schema.Puzzle) error {
-	msg := fmt.Sprintf(
-		"**%s New puzzle detected!** Name: %q, Round: %s, URL: <%s>",
-		puzzle.Rounds.Emojis(), puzzle.Name, puzzle.Rounds.Names(), puzzle.PuzzleURL,
-	)
-	components := []discordgo.MessageComponent{
-		discordgo.Button{
-			Label: "Edit in Airtable",
-			Style: discordgo.LinkButton,
-			Emoji: discordgo.ComponentEmoji{Name: "📝"},
-			URL:   d.airtable.EditURL(puzzle),
-		},
-		discordgo.Button{
-			Label:    "Approve",
-			Style:    discordgo.SuccessButton,
-			Emoji:    discordgo.ComponentEmoji{Name: "🔨"},
-			CustomID: "discovery.approve/" + puzzle.AirtableRecord.ID,
-		},
-	}
-	_, err := d.discord.ChannelSendComponents(d.discord.QMChannel, msg, components)
-	return err
 }
 
 func (d *Poller) notifyNewRound(name string, puzzles []string) error {
