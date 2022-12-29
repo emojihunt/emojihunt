@@ -100,7 +100,7 @@ func (c *Discord) commandHandler(s *discordgo.Session, i *discordgo.InteractionC
 	reply, err := command.Handler(s, input)
 	if err != nil {
 		log.Printf("discord: error handling command %q: %s", input.Slug, spew.Sdump(err))
-		reply = fmt.Sprintf("🚨 Bot Error! Please ping in %s for help.\n```\n%s\n```", c.TechChannel.Mention(), spew.Sdump(err))
+		reply = fmt.Sprintf("```*** 🚨 BOT ERROR ***\n\n%s\nPlease ping in #%s for help.\n```", spew.Sdump(err), c.TechChannel.Name)
 	}
 
 	if command.Async {

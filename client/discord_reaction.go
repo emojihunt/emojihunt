@@ -22,7 +22,8 @@ func (c *Discord) reactionRemoveAllHandler(s *discordgo.Session, r *discordgo.Me
 }
 
 func (c *Discord) reactionCommon(s *discordgo.Session, kind string, r *discordgo.MessageReaction) {
-	log.Printf("discord: handling reaction %s %s on message %q from user %s", kind, r.Emoji.Name, r.MessageID, r.UserID)
+	log.Printf("discord: handling reaction %s %s on message %q from user %s",
+		kind, r.Emoji.Name, r.MessageID, r.UserID)
 
 	msg, err := s.ChannelMessage(r.ChannelID, r.MessageID)
 	if err != nil {
@@ -33,7 +34,8 @@ func (c *Discord) reactionCommon(s *discordgo.Session, kind string, r *discordgo
 	for _, handler := range c.reactionHandlers {
 		err := (*handler)(s, r, msg)
 		if err != nil {
-			log.Printf("discord: error handling reaction %s %s on message %q: %s", kind, r.Emoji.Name, r.MessageID, spew.Sdump(err))
+			log.Printf("discord: error handling reaction %s %s on message %q: %s",
+				kind, r.Emoji.Name, r.MessageID, spew.Sdump(err))
 		}
 	}
 }

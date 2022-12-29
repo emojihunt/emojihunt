@@ -184,7 +184,10 @@ func (d *Poller) SyncPuzzles(ctx context.Context, puzzles []*DiscoveredPuzzle) e
 	var paused bool
 	if len(newPuzzles) > newPuzzleLimit {
 		paused = true
-		msg += "💥 Too many puzzles! Stopped for safety, please contact #tech.\n"
+		msg += fmt.Sprintf(
+			"💥 Too many puzzles! Stopped for safety, please contact #%s.\n",
+			d.discord.TechChannel.Name,
+		)
 	} else {
 		msg += "Reminder: use `/huntbot kill` to stop the bot.\n"
 	}

@@ -80,10 +80,14 @@ func (bot *reminderBot) notificationLoop() {
 		if err != nil {
 			log.Printf("reminder: error: %s", spew.Sprint(err))
 			if time.Since(bot.state.ReminderWarnError).Truncate(time.Minute) >= warnErrorFrequency {
-				msg := fmt.Sprintf(":alarm_clock: Error processing reminders: ```\n%s\n```", spew.Sprint(err))
+				msg := fmt.Sprintf("```*** ERROR PROCESSING REMINDERS ***\n\n%s\n```", spew.Sprint(err))
 				_, err = bot.discord.ChannelSend(bot.discord.TechChannel, msg)
 				if err != nil {
-					log.Printf("reminder: error notifying #tech of error: %s", spew.Sprint(err))
+					log.Printf(
+						"reminder: error notifying #%s of error: %s",
+						bot.discord.TechChannel.Name,
+						spew.Sprint(err),
+					)
 				}
 				bot.state.ReminderWarnError = time.Now()
 			}

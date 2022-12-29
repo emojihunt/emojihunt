@@ -8,6 +8,7 @@ import (
 	"log"
 	"net/http"
 	"net/url"
+	"strings"
 	"time"
 
 	"github.com/andybalholm/cascadia"
@@ -211,7 +212,7 @@ func (d *Poller) logAndMaybeWarn(memo string, err error) {
 
 	log.Printf("discovery: %s: %v", memo, err)
 	if time.Since(d.state.DiscoveryLastWarn) >= warnErrorFrequency {
-		msg := fmt.Sprintf("discovery: %s: ```\n%s\n```", memo, spew.Sdump(err))
+		msg := fmt.Sprintf("```*** PUZZLE DISCOVERY %s ***\n\n%s```", strings.ToUpper(memo), spew.Sdump(err))
 		d.discord.ChannelSend(d.discord.TechChannel, msg)
 		d.state.DiscoveryLastWarn = time.Now()
 	}

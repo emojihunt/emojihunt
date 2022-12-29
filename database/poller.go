@@ -47,10 +47,10 @@ func (p *Poller) Poll(ctx context.Context) {
 			if err != nil {
 				// Log errors always, but ping after 3 consecutive failures,
 				// then every 10, to avoid spam
-				log.Printf("polling sheet failed: %v", err)
+				log.Printf("polling airtable failed: %v", err)
 				failures++
 				if failures%10 == 3 {
-					msg := fmt.Sprintf("polling sheet failed: ```\n%s\n```", spew.Sdump(err))
+					msg := fmt.Sprintf("```*** POLLING AIRTABLE FAILED ***\n\n%s```", spew.Sdump(err))
 					p.discord.ChannelSend(p.discord.TechChannel, msg)
 				}
 			} else {

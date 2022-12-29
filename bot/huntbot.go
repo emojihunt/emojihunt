@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"strings"
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/davecgh/go-spew/spew"
@@ -77,7 +78,7 @@ func (bot *huntbotBot) makeSlashCommand() *client.DiscordCommand {
 		},
 		Handler: func(s *discordgo.Session, i *client.DiscordCommandInput) (string, error) {
 			if i.IC.ChannelID != bot.discord.QMChannel.ID {
-				return fmt.Sprintf(":tv: Please use `/huntbot` commands in the %s channel...",
+				return fmt.Sprintf(":tv: Please use `/huntbot` commands in the %s channel.",
 					bot.discord.QMChannel.Mention()), nil
 			}
 
@@ -175,11 +176,11 @@ func (bot *huntbotBot) fullResync(s *discordgo.Session, i *client.DiscordCommand
 	var msg string
 	if err != nil {
 		log.Printf("huntbot yikes: failed to re-sync: %v", err)
-		msg = fmt.Sprintf(":warning: Full re-sync failed: ```\n%s\n```", spew.Sdump(err))
+		msg = fmt.Sprintf("```*** ⚠️ FULL RE-SYNC FAILED ***\n\n%s```", spew.Sdump(err))
 	} else if len(errs) > 0 {
-		msg = ":warning: Full re-sync succeeded with errors:\n"
+		msg = "```*** FULL RE-SYNC COMPLETED WITH ERRORS ***\n\n"
 		for name, err := range errs {
-			msg += fmt.Sprintf("%s\n```%s\n```\n", name, spew.Sdump(err))
+			msg += fmt.Sprintf("%s: %s\n", strings.ToUpper(name), spew.Sdump(err))
 		}
 	} else {
 		log.Printf("huntbot yikes: completed successfully")
