@@ -158,7 +158,7 @@ func (c *Discord) commandHandler(s *discordgo.Session, i *discordgo.InteractionC
 	}
 }
 
-func (d *Discord) OptionByName(options []*discordgo.ApplicationCommandInteractionDataOption, name string) (*discordgo.ApplicationCommandInteractionDataOption, error) {
+func (c *Discord) OptionByName(options []*discordgo.ApplicationCommandInteractionDataOption, name string) (*discordgo.ApplicationCommandInteractionDataOption, error) {
 	var result *discordgo.ApplicationCommandInteractionDataOption
 	for _, opt := range options {
 		if opt.Name == name {
@@ -171,7 +171,7 @@ func (d *Discord) OptionByName(options []*discordgo.ApplicationCommandInteractio
 	return result, nil
 }
 
-func (d *Discord) enableMessageComponents(s *discordgo.Session, message *discordgo.Message, enabled bool) error {
+func (c *Discord) enableMessageComponents(s *discordgo.Session, message *discordgo.Message, enabled bool) error {
 	if message == nil || len(message.Components) < 1 {
 		return nil
 	}

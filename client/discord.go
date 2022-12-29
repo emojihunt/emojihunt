@@ -33,6 +33,7 @@ type Discord struct {
 
 	appCommandHandlers map[string]*DiscordCommand
 	componentHandlers  map[string]*DiscordCommand
+	reactionHandlers   map[string]*DiscordReactionHandler
 
 	mu                        sync.Mutex // hold while accessing everything below
 	commandsRegistered        bool
@@ -48,7 +49,9 @@ func NewDiscord(config *DiscordConfig, state *state.State) (*Discord, error) {
 		return nil, err
 	}
 	// s.Debug = true // warning: it's *very* verbose
-	s.Identify.Intents = discordgo.IntentsGuildMessages | discordgo.IntentsGuildScheduledEvents
+	s.Identify.Intents = discordgo.IntentsGuildMessages |
+		discordgo.IntentsGuildScheduledEvents |
+		discordgo.IntentsGuildMessageReactions
 	state.Lock()
 	s.Identify.Presence.Status = discordComputeBotStatus(state)
 	state.Unlock()
@@ -108,10 +111,14 @@ func NewDiscord(config *DiscordConfig, state *state.State) (*Discord, error) {
 		QMRole:                    qmRole,
 		appCommandHandlers:        make(map[string]*DiscordCommand),
 		componentHandlers:         make(map[string]*DiscordCommand),
+		reactionHandlers:          make(map[string]*DiscordReactionHandler),
 		scheduledEventsLastUpdate: time.Now().Add(-24 * time.Hour),
 		rateLimits:                make(map[string]*time.Time),
 	}
 	s.AddHandler(discord.commandHandler)
+	s.AddHandler(discord.reactionAddHandler)
+	s.AddHandler(discord.reactionRemoveHandler)
+	s.AddHandler(discord.reactionRemoveAllHandler)
 	s.AddHandler(func(s *discordgo.Session, r *discordgo.RateLimit) {
 		expiry := time.Now().Add(r.TooManyRequests.RetryAfter)
 		wait := time.Until(expiry).Round(time.Second)
