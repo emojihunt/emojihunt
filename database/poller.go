@@ -16,7 +16,7 @@ import (
 )
 
 const (
-	pollInterval        = 10 * time.Second
+	pollInterval        = 15 * time.Second
 	initialWarningDelay = 1 * time.Minute
 	minWarningFrequency = 10 * time.Minute
 )
