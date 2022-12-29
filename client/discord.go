@@ -122,7 +122,7 @@ func NewDiscord(config *DiscordConfig, state *state.State) (*Discord, error) {
 		wait := time.Until(expiry).Round(time.Second)
 		log.Printf("discord: hit rate limit at %q (wait %s): %#v", r.URL, wait, r.TooManyRequests)
 
-		msg := fmt.Sprintf(":sloth: Hit Discord rate limit on %s; blocked for %s", r.URL, wait)
+		msg := fmt.Sprintf("```*** 🦥 DISCORD RATE LIMIT ***\n\n%s\n\nBlocked for %s.\n```", r.URL, wait)
 		if _, err := discord.ChannelSend(discord.TechChannel, msg); err != nil {
 			log.Printf("discord: failed to send rate limit notification: %v", err)
 		}
@@ -172,6 +172,9 @@ func discordComputeBotStatus(state *state.State) string {
 }
 
 func (c *Discord) ChannelSend(ch *discordgo.Channel, msg string) (string, error) {
+	if len(msg) > 1950 {
+		msg = msg[:1950] + "... [truncated]"
+	}
 	sent, err := c.s.ChannelMessageSend(ch.ID, msg)
 	if err != nil {
 		return "", err
