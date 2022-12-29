@@ -77,9 +77,12 @@ func (bot *huntbotBot) makeSlashCommand() *client.DiscordCommand {
 			},
 		},
 		Handler: func(s *discordgo.Session, i *client.DiscordCommandInput) (string, error) {
-			if i.IC.ChannelID != bot.discord.QMChannel.ID {
-				return fmt.Sprintf(":tv: Please use `/huntbot` commands in the %s channel.",
-					bot.discord.QMChannel.Mention()), nil
+			if i.IC.ChannelID != bot.discord.QMChannel.ID && i.IC.ChannelID != bot.discord.TechChannel.ID {
+				return fmt.Sprintf(
+					":tv: Please use `/huntbot` commands in the %s or %s channel.",
+					bot.discord.QMChannel.Mention(),
+					bot.discord.TechChannel.Mention(),
+				), nil
 			}
 
 			bot.state.Lock()
