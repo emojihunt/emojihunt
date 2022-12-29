@@ -136,6 +136,11 @@ func (bot *huntbotBot) fullResync(s *discordgo.Session, i *client.DiscordCommand
 	puzzles, err := bot.airtable.ListPuzzles()
 	if err == nil {
 		for j, id := range puzzles {
+			if bot.state.IsKilled() {
+				err = fmt.Errorf("huntbot is disabled")
+				break
+			}
+
 			var puzzle *schema.Puzzle
 			puzzle, err = bot.airtable.LockByID(id)
 			if err != nil {
@@ -160,7 +165,7 @@ func (bot *huntbotBot) fullResync(s *discordgo.Session, i *client.DiscordCommand
 					},
 				)
 				if err != nil {
-					err = fmt.Errorf("huntbot yikes: failed to update with progress: %v", err)
+					err = fmt.Errorf("failed to update with progress: %v", err)
 					break
 				}
 			}

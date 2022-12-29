@@ -62,3 +62,9 @@ func (s *State) CommitAndUnlock() {
 		panic(err)
 	}
 }
+
+func (s *State) IsKilled() bool {
+	s.Lock()
+	defer s.Unlock()
+	return s.DiscoveryDisabled
+}

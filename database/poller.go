@@ -37,18 +37,12 @@ func NewPoller(airtable *client.Airtable, discord *client.Discord, syncer *synce
 	}
 }
 
-func (p *Poller) isEnabled() bool {
-	p.state.Lock()
-	defer p.state.Unlock()
-	return !p.state.HuntbotDisabled
-}
-
 func (p *Poller) Poll(ctx context.Context) {
 	// Airtable doesn't support webhooks, so we have to poll the database for
 	// updates.
 	failures := 0
 	for {
-		if p.isEnabled() {
+		if !p.state.IsKilled() {
 			invalid, needsSync, err := p.airtable.ListPuzzlesToAction()
 			if err != nil {
 				// Log errors always, but ping after 3 consecutive failures,
