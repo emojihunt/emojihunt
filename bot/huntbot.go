@@ -57,11 +57,6 @@ func (bot *huntbotBot) makeSlashCommand() *client.DiscordCommand {
 					Type:        discordgo.ApplicationCommandOptionSubCommand,
 				},
 				{
-					Name:        "nodiscovery",
-					Description: "Stop Huntbot from discovering new puzzles 🔎",
-					Type:        discordgo.ApplicationCommandOptionSubCommand,
-				},
-				{
 					Name:        "yikes",
 					Description: "Force re-sync all puzzles 🔨",
 					Type:        discordgo.ApplicationCommandOptionSubCommand,
@@ -91,7 +86,6 @@ func (bot *huntbotBot) makeSlashCommand() *client.DiscordCommand {
 			var reply string
 			switch i.Subcommand.Name {
 			case "kill":
-				bot.state.DiscoveryDisabled = true
 				if !bot.state.HuntbotDisabled {
 					bot.state.HuntbotDisabled = true
 					reply = "Ok, I've disabled the bot for now.  Enable it with `/huntbot start`."
@@ -101,23 +95,13 @@ func (bot *huntbotBot) makeSlashCommand() *client.DiscordCommand {
 				bot.discord.UpdateStatus(bot.state) // best-effort, ignore errors
 				return reply, nil
 			case "start":
-				bot.state.DiscoveryDisabled = false
 				if bot.state.HuntbotDisabled {
-					bot.state.HuntbotDisabled = false
 					reply = "Ok, I've enabled the bot for now. Disable it with `/huntbot kill`."
 				} else {
 					reply = "The bot was already enabled. Disable it with `/huntbot kill`."
 				}
 				bot.discord.UpdateStatus(bot.state) // best-effort, ignore errors
 				return reply, nil
-			case "nodiscovery":
-				if bot.discovery == nil {
-					return "Huntbot is running without puzzle auto-discovery configured.", nil
-				}
-				bot.state.DiscoveryDisabled = true
-				bot.discord.UpdateStatus(bot.state) // best-effort, ignore errors
-				return "Ok, I've paused puzzle auto-discovery for now. Re-enable it with `/huntbot start`. " +
-					"(This will also reenable the entire bot if the bot has been killed.)", nil
 			case "yikes":
 				if confirmOpt, err := bot.discord.OptionByName(i.Subcommand.Options, "confirm"); err != nil {
 					return "", err

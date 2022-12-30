@@ -172,12 +172,9 @@ reconnect:
 		}
 
 		for {
-			if !d.isEnabled() {
-				time.Sleep(2 * time.Second)
-				continue
+			if !d.state.IsKilled() {
+				d.poll(ctx)
 			}
-
-			d.poll(ctx)
 
 			select {
 			case <-ctx.Done():
@@ -220,12 +217,6 @@ func (d *Poller) poll(ctx context.Context) {
 	if err := d.SyncPuzzles(ctx, puzzles); err != nil {
 		d.logAndMaybeWarn("syncing error", err)
 	}
-}
-
-func (d *Poller) isEnabled() bool {
-	d.state.Lock()
-	defer d.state.Unlock()
-	return !d.state.DiscoveryDisabled
 }
 
 func (d *Poller) logAndMaybeWarn(memo string, err error) {

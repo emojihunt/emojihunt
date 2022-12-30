@@ -11,7 +11,6 @@ import (
 
 type State struct {
 	AirtableLastWarn   map[string]time.Time `json:"airtable_last_warn"`
-	DiscoveryDisabled  bool                 `json:"discovery_disabled"`
 	DiscoveryLastWarn  time.Time            `json:"discovery_last_warn"`
 	DiscoveryNewRounds map[string]NewRound  `json:"discovery_new_rounds"`
 	HuntbotDisabled    bool                 `json:"huntbot_disabled"`
@@ -75,5 +74,5 @@ func (s *State) CommitAndUnlock() {
 func (s *State) IsKilled() bool {
 	s.Lock()
 	defer s.Unlock()
-	return s.DiscoveryDisabled
+	return s.HuntbotDisabled
 }

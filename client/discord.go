@@ -163,8 +163,6 @@ func (c *Discord) UpdateStatus(state *state.State) error {
 func discordComputeBotStatus(state *state.State) string {
 	if state.HuntbotDisabled {
 		return "dnd"
-	} else if state.DiscoveryDisabled {
-		return "idle"
 	} else {
 		return "online"
 	}
