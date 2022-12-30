@@ -9,7 +9,7 @@ import (
 // records as a list of schema.Puzzle objects. It acquires the lock for each
 // created puzzle; if the error is nil, the caller must call Unlock() on each
 // puzzle.
-func (air *Airtable) AddPuzzles(puzzles []schema.NewPuzzle) ([]schema.Puzzle, error) {
+func (air *Airtable) AddPuzzles(puzzles []schema.NewPuzzle, newRound bool) ([]schema.Puzzle, error) {
 	var created []schema.Puzzle
 	for i := 0; i < len(puzzles); i += 10 {
 		records := airtable.Records{}
@@ -18,17 +18,18 @@ func (air *Airtable) AddPuzzles(puzzles []schema.NewPuzzle) ([]schema.Puzzle, er
 			limit = len(puzzles)
 		}
 		for _, puzzle := range puzzles[i:limit] {
-			fields := map[string]interface{}{
-				"Name":         puzzle.Name,
-				"Round":        puzzle.Round.Serialize(),
-				"Puzzle URL":   puzzle.PuzzleURL,
-				"Original URL": puzzle.PuzzleURL,
-			}
-			records.Records = append(records.Records,
-				&airtable.Record{
-					Fields: fields,
+			record := airtable.Record{
+				Fields: map[string]interface{}{
+					"Name":         puzzle.Name,
+					"Round":        puzzle.Round.Serialize(),
+					"Puzzle URL":   puzzle.PuzzleURL,
+					"Original URL": puzzle.PuzzleURL,
 				},
-			)
+			}
+			records.Records = append(records.Records, &record)
+		}
+		if newRound {
+			records.Typecast = true
 		}
 		response, err := air.table.AddRecords(&records)
 		if err != nil {
