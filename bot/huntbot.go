@@ -52,7 +52,7 @@ func (bot *huntbotBot) makeSlashCommand() *client.DiscordCommand {
 					Type:        discordgo.ApplicationCommandOptionSubCommand,
 				},
 				{
-					Name:        "start",
+					Name:        "enable",
 					Description: "Re-enable Huntbot 📡",
 					Type:        discordgo.ApplicationCommandOptionSubCommand,
 				},
@@ -88,18 +88,24 @@ func (bot *huntbotBot) makeSlashCommand() *client.DiscordCommand {
 			case "kill":
 				if !bot.state.HuntbotDisabled {
 					bot.state.HuntbotDisabled = true
-					reply = "Ok, I've disabled the bot for now.  Enable it with `/huntbot start`."
+					reply = "Ok, I've disabled the bot for now.  Enable it with `/huntbot enable`."
 				} else {
-					reply = "The bot was already disabled. Enable it with `/huntbot start`."
+					reply = "The bot was already disabled. Enable it with `/huntbot enable`."
 				}
+				bot.discovery.CancelAllRoundCreation()
 				bot.discord.UpdateStatus(bot.state) // best-effort, ignore errors
 				return reply, nil
-			case "start":
+			case "enable":
 				if bot.state.HuntbotDisabled {
+					bot.state.HuntbotDisabled = false
 					reply = "Ok, I've enabled the bot for now. Disable it with `/huntbot kill`."
 				} else {
 					reply = "The bot was already enabled. Disable it with `/huntbot kill`."
 				}
+				go func() {
+					// Will block until we release the state lock
+					bot.discovery.InitializeRoundCreation()
+				}()
 				bot.discord.UpdateStatus(bot.state) // best-effort, ignore errors
 				return reply, nil
 			case "yikes":

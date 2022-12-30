@@ -162,7 +162,7 @@ func New(airtable *client.Airtable, discord *client.Discord, syncer *syncer.Sync
 }
 
 func (d *Poller) Poll(ctx context.Context) {
-	d.pollerInitRoundCreation()
+	d.InitializeRoundCreation()
 
 reconnect:
 	for {
@@ -186,21 +186,6 @@ reconnect:
 				}
 			case <-time.After(pollInterval):
 			}
-		}
-	}
-}
-
-func (d *Poller) pollerInitRoundCreation() {
-	d.state.Lock()
-	defer d.state.CommitAndUnlock()
-
-	for name, round := range d.state.DiscoveryNewRounds {
-		err := d.startOrCancelRoundCreation(name, round.MessageID)
-		if err != nil {
-			// new-round notification has probably been deleted
-			log.Printf("error kicking off round creation for %q, resetting round (%s)",
-				name, spew.Sdump(err))
-			delete(d.state.DiscoveryNewRounds, name)
 		}
 	}
 }
