@@ -8,10 +8,11 @@ import (
 	"net/url"
 	"strings"
 
+	"github.com/emojihunt/emojihunt/state"
 	"golang.org/x/net/html"
 )
 
-func (d *Poller) Scrape(ctx context.Context) ([]*DiscoveredPuzzle, error) {
+func (d *Poller) Scrape(ctx context.Context) ([]*state.DiscoveredPuzzle, error) {
 	// Download
 	req, err := http.NewRequestWithContext(ctx, "GET", d.puzzlesURL.String(), nil)
 	if err != nil {
@@ -92,7 +93,7 @@ func (d *Poller) Scrape(ctx context.Context) ([]*DiscoveredPuzzle, error) {
 	}
 
 	// Parse out individual puzzles
-	var puzzles []*DiscoveredPuzzle
+	var puzzles []*state.DiscoveredPuzzle
 	for _, pair := range discovered {
 		nameNode, puzzleListNode := pair[0], pair[1]
 		var roundBuf bytes.Buffer
@@ -120,7 +121,7 @@ func (d *Poller) Scrape(ctx context.Context) ([]*DiscoveredPuzzle, error) {
 				return nil, fmt.Errorf("could not find puzzle url for puzzle: %#v", item)
 			}
 
-			puzzles = append(puzzles, &DiscoveredPuzzle{
+			puzzles = append(puzzles, &state.DiscoveredPuzzle{
 				Name:  strings.TrimSpace(puzzleBuf.String()),
 				URL:   d.puzzlesURL.ResolveReference(u),
 				Round: roundName,

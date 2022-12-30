@@ -101,12 +101,6 @@ type Poller struct {
 	roundCreation map[string]*context.CancelFunc
 }
 
-type DiscoveredPuzzle struct {
-	Name  string
-	URL   *url.URL
-	Round string
-}
-
 const (
 	pollInterval        = 20 * time.Second
 	pollTimeout         = 90 * time.Second
@@ -203,8 +197,8 @@ func (d *Poller) pollerInitRoundCreation() {
 	d.state.Lock()
 	defer d.state.CommitAndUnlock()
 
-	for name, messageID := range d.state.DiscoveryNewRounds {
-		err := d.startOrCancelRoundCreation(name, messageID)
+	for name, round := range d.state.DiscoveryNewRounds {
+		err := d.startOrCancelRoundCreation(name, round.MessageID)
 		if err != nil {
 			// new-round notification has probably been deleted
 			log.Printf("error kicking off round creation for %q, resetting round (%s)",

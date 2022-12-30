@@ -9,10 +9,11 @@ import (
 
 	"github.com/davecgh/go-spew/spew"
 	"github.com/emojihunt/emojihunt/schema"
+	"github.com/emojihunt/emojihunt/state"
 )
 
-func (d *Poller) SyncPuzzles(ctx context.Context, puzzles []*DiscoveredPuzzle) error {
-	puzzleMap := make(map[string]*DiscoveredPuzzle)
+func (d *Poller) SyncPuzzles(ctx context.Context, puzzles []*state.DiscoveredPuzzle) error {
+	puzzleMap := make(map[string]*state.DiscoveredPuzzle)
 	for _, puzzle := range puzzles {
 		puzzleMap[puzzle.URL.String()] = puzzle
 	}
@@ -24,7 +25,7 @@ func (d *Poller) SyncPuzzles(ctx context.Context, puzzles []*DiscoveredPuzzle) e
 	}
 
 	var newPuzzles []schema.NewPuzzle
-	newRounds := make(map[string][]*DiscoveredPuzzle)
+	newRounds := make(map[string][]*state.DiscoveredPuzzle)
 	for _, puzzle := range puzzleMap {
 		if fragments[strings.ToUpper(puzzle.URL.String())] ||
 			fragments[strings.ToUpper(puzzle.Name)] {
@@ -90,33 +91,10 @@ func (d *Poller) handleNewPuzzles(ctx context.Context, newPuzzles []schema.NewPu
 		return nil
 	}
 
-	// Warning! Puzzle locks are acquired here and must be released before this
-	// function returns.
-	created, err := d.airtable.AddPuzzles(newPuzzles)
-	if err != nil {
-		return err
-	}
-
-	time.Sleep(puzzleCreationPause)
-
-	var errs []error
-	for _, puzzle := range created {
-		if d.state.IsKilled() {
-			errs = append(errs, fmt.Errorf("huntbot is disabled"))
-		} else {
-			if _, err := d.syncer.ForceUpdate(ctx, &puzzle); err != nil {
-				errs = append(errs, err)
-			}
-		}
-		puzzle.Unlock()
-	}
-	if len(errs) > 0 {
-		return fmt.Errorf("errors sending new puzzle notifications: %#v", spew.Sdump(errs))
-	}
-	return nil
+	return d.createPuzzles(ctx, newPuzzles, false)
 }
 
-func (d *Poller) handleNewRounds(ctx context.Context, newRounds map[string][]*DiscoveredPuzzle) error {
+func (d *Poller) handleNewRounds(ctx context.Context, newRounds map[string][]*state.DiscoveredPuzzle) error {
 	if len(newRounds) > newRoundLimit {
 		msg := fmt.Sprintf(
 			"```💥 Too many new rounds! Round creation paused, please contact #%s.\n```\n",
@@ -150,11 +128,77 @@ func (d *Poller) handleNewRounds(ctx context.Context, newRounds map[string][]*Di
 		if err != nil {
 			errs = append(errs, err)
 		} else {
-			d.state.DiscoveryNewRounds[name] = id
+			d.state.DiscoveryNewRounds[name] = state.NewRound{
+				MessageID: id,
+				Puzzles:   puzzles,
+			}
 		}
 	}
 	if len(errs) > 0 {
 		return fmt.Errorf("errors sending new round notifications: %#v", spew.Sdump(errs))
 	}
 	return nil
+}
+
+func (d *Poller) createPuzzles(ctx context.Context, newPuzzles []schema.NewPuzzle,
+	newRound bool) error {
+
+	// Warning! Puzzle locks are acquired here and must be released before this
+	// function returns.
+	created, err := d.airtable.AddPuzzles(newPuzzles, newRound)
+	if err != nil {
+		return err
+	}
+
+	if !newRound {
+		time.Sleep(puzzleCreationPause)
+	}
+
+	var errs []error
+	for _, puzzle := range created {
+		if d.state.IsKilled() {
+			errs = append(errs, fmt.Errorf("huntbot is disabled"))
+		} else {
+			if _, err := d.syncer.ForceUpdate(ctx, &puzzle); err != nil {
+				errs = append(errs, err)
+			}
+		}
+		puzzle.Unlock()
+	}
+	if len(errs) > 0 {
+		return fmt.Errorf("errors sending new puzzle notifications: %#v", spew.Sdump(errs))
+	}
+	return nil
+}
+
+func (d *Poller) createRound(ctx context.Context, name string) error {
+	d.state.Lock()
+	roundInfo, ok := d.state.DiscoveryNewRounds[name]
+	d.state.Unlock()
+
+	if !ok {
+		return fmt.Errorf("round not found in state")
+	}
+
+	emoji, err := d.getTopReaction(roundInfo.MessageID)
+	if err != nil {
+		return err
+	} else if emoji == "" {
+		return fmt.Errorf("no reaction for message")
+	}
+
+	round := schema.Round{
+		Name:  name,
+		Emoji: emoji,
+	}
+
+	var newPuzzles []schema.NewPuzzle
+	for _, puzzle := range roundInfo.Puzzles {
+		newPuzzles = append(newPuzzles, schema.NewPuzzle{
+			Name:      puzzle.Name,
+			Round:     round,
+			PuzzleURL: puzzle.URL.String(),
+		})
+	}
+	return d.createPuzzles(ctx, newPuzzles, true)
 }

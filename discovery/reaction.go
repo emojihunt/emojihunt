@@ -31,8 +31,8 @@ func (d *Poller) isRoundNotification(messageID string) string {
 	d.state.Lock()
 	defer d.state.Unlock()
 
-	for name, roundMesageID := range d.state.DiscoveryNewRounds {
-		if roundMesageID == messageID {
+	for name, round := range d.state.DiscoveryNewRounds {
+		if round.MessageID == messageID {
 			return name
 		}
 	}
@@ -43,17 +43,17 @@ func (d *Poller) startOrCancelRoundCreation(name, messageID string) error {
 	d.mutex.Lock()
 	defer d.mutex.Unlock()
 
-	msg, err := d.discord.GetMessage(d.discord.QMChannel, messageID)
+	emoji, err := d.getTopReaction(messageID)
 	if err != nil {
 		return err
 	}
 
 	if cancel, ok := d.roundCreation[messageID]; ok {
-		if len(msg.Reactions) == 0 {
+		if emoji == "" {
 			(*cancel)()
 		}
 	} else {
-		if len(msg.Reactions) > 0 {
+		if emoji != "" {
 			ctx, cancel := context.WithCancel(context.Background())
 			go func(ctx context.Context) {
 				log.Printf("emoji added! kicking off round creation for %q (with delay)", name)
@@ -66,17 +66,23 @@ func (d *Poller) startOrCancelRoundCreation(name, messageID string) error {
 				}
 
 				log.Printf("creating round %q", name)
-				defer cancel()
 
-				err := d.createRound(name, messageID)
+				// remove round from poller (can no longer be cancelled)
+				d.mutex.Lock()
+				delete(d.roundCreation, messageID)
+				cancel() // must call to avoid goroutine leak
+				d.mutex.Unlock()
+
+				err := d.createRound(context.Background(), name)
 				if err != nil {
 					log.Printf("error creating round %q: %s", name, spew.Sdump(err))
 					return
 				}
 
+				// remove round from persistent state (all done)
 				d.state.Lock()
-				defer d.state.CommitAndUnlock()
 				delete(d.state.DiscoveryNewRounds, name)
+				d.state.CommitAndUnlock()
 			}(ctx)
 			d.roundCreation[messageID] = &cancel
 		}
@@ -84,11 +90,18 @@ func (d *Poller) startOrCancelRoundCreation(name, messageID string) error {
 	return nil
 }
 
-func (d *Poller) createRound(name, messageID string) error {
-	d.mutex.Lock()
-	defer d.mutex.Unlock()
-	delete(d.roundCreation, messageID)
+func (d *Poller) getTopReaction(messageID string) (string, error) {
+	msg, err := d.discord.GetMessage(d.discord.QMChannel, messageID)
+	if err != nil {
+		return "", err
+	}
 
-	// TODO
-	return nil
+	emoji, count := "", 0
+	for _, reaction := range msg.Reactions {
+		if reaction.Count > count && reaction.Emoji.Name != "" {
+			emoji = reaction.Emoji.Name
+			count = reaction.Count
+		}
+	}
+	return emoji, nil
 }
