@@ -211,10 +211,11 @@ func (c *Discord) GetMessage(ch *discordgo.Channel, messageID string) (*discordg
 	return c.s.ChannelMessage(ch.ID, messageID)
 }
 
-func (c *Discord) CreateChannel(name string) (*discordgo.Channel, error) {
+func (c *Discord) CreateChannel(name string, category *discordgo.Channel) (*discordgo.Channel, error) {
 	return c.s.GuildChannelCreateComplex(c.Guild.ID, discordgo.GuildChannelCreateData{
-		Name: name,
-		Type: discordgo.ChannelTypeGuildText,
+		Name:     name,
+		Type:     discordgo.ChannelTypeGuildText,
+		ParentID: category.ID,
 	})
 }
 

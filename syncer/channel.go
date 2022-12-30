@@ -96,33 +96,15 @@ func (s *Syncer) DiscordCreateUpdatePin(puzzle *schema.Puzzle) error {
 // solved puzzles), and the puzzle name includes a check mark when the puzzle is
 // solved. It needs to be called when the puzzle status changes.
 func (s *Syncer) discordUpdateChannel(puzzle *schema.Puzzle) error {
-	s.DiscordCategoryMutex.Lock()
-	defer s.DiscordCategoryMutex.Unlock()
 	log.Printf("syncer: updating discord channel for %q", puzzle.Name)
 
-	// Find which category the puzzle should belong to
-	var targetName string
-	categories, err := s.discord.GetChannelCategories()
+	// Move puzzle channel to the correct category
+	category, err := s.discordGetOrCreateCategory(puzzle)
 	if err != nil {
 		return err
 	}
-	if puzzle.ShouldArchive() {
-		targetName = solvedCategoryPrefix + puzzle.ArchiveCategory()
-	} else {
-		targetName = roundCategoryPrefix + puzzle.Rounds[0].Name
-	}
-	var category *discordgo.Channel
-	if item, ok := categories[targetName]; !ok {
-		// We need to create the category
-		log.Printf("syncer: creating discord category %q", targetName)
-		if category, err = s.discord.CreateCategory(targetName); err != nil {
-			return err
-		}
-	} else {
-		category = item
-	}
-	// Move puzzle channel to the selected category
-	if err = s.discord.SetChannelCategory(puzzle.DiscordChannel, category); err != nil {
+	err = s.discord.SetChannelCategory(puzzle.DiscordChannel, category)
+	if err != nil {
 		return err
 	}
 
@@ -151,5 +133,31 @@ func (s *Syncer) discordUpdateChannel(puzzle *schema.Puzzle) error {
 		msg := fmt.Sprintf(":snail: Hit Discord's rate limit on channel renaming. Channel will be "+
 			"renamed to %q in %s.", title, time.Until(*rateLimit).Round(time.Second))
 		return s.discord.ChannelSendRawID(puzzle.DiscordChannel, msg)
+	}
+}
+
+func (s *Syncer) discordGetOrCreateCategory(puzzle *schema.Puzzle) (*discordgo.Channel, error) {
+	s.DiscordCategoryMutex.Lock()
+	defer s.DiscordCategoryMutex.Unlock()
+
+	categories, err := s.discord.GetChannelCategories()
+	if err != nil {
+		return nil, err
+	}
+
+	var targetName string
+	if puzzle.ShouldArchive() {
+		targetName = solvedCategoryPrefix + puzzle.ArchiveCategory()
+	} else {
+		targetName = roundCategoryPrefix + puzzle.Rounds[0].Name
+	}
+
+	if item, ok := categories[targetName]; !ok {
+		// We need to create the category
+		log.Printf("syncer: creating discord category %q", targetName)
+		return s.discord.CreateCategory(targetName)
+	} else {
+		// Cateory already exists
+		return item, nil
 	}
 }

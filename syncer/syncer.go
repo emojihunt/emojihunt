@@ -58,7 +58,12 @@ func (s *Syncer) IdempotentCreateUpdate(ctx context.Context, puzzle *schema.Puzz
 	// 2. Create the Discord channel, if required
 	if puzzle.DiscordChannel == "" {
 		log.Printf("Adding channel for new puzzle %q", puzzle.Name)
-		channel, err := s.discord.CreateChannel(puzzle.Name)
+		category, err := s.discordGetOrCreateCategory(puzzle)
+		if err != nil {
+			return nil, fmt.Errorf("error configuring discord category for %q: %v", puzzle.Name, err)
+		}
+
+		channel, err := s.discord.CreateChannel(puzzle.Name, category)
 		if err != nil {
 			return nil, fmt.Errorf("error creating discord channel for %q: %v", puzzle.Name, err)
 		}
