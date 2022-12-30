@@ -15,6 +15,7 @@ const (
 	solvedCategoryPrefix = "Solved "
 	pinnedStatusHeader   = "Puzzle Information"
 	voiceRoomDefaultMsg  = "Use `/voice start` to assign a voice room"
+	embedColor           = 0x7C39ED
 )
 
 // DiscordCreateUpdatePin creates or updates the pinned message at the top of
@@ -34,6 +35,7 @@ func (s *Syncer) DiscordCreateUpdatePin(puzzle *schema.Puzzle) error {
 		Author: &discordgo.MessageEmbedAuthor{Name: pinnedStatusHeader},
 		Title:  puzzle.Name,
 		URL:    puzzle.PuzzleURL,
+		Color:  embedColor,
 		Fields: []*discordgo.MessageEmbedField{
 			{
 				Name:   roundHeader,
