@@ -2,10 +2,11 @@ package state
 
 import (
 	"encoding/json"
-	"net/url"
 	"os"
 	"sync"
 	"time"
+
+	"github.com/emojihunt/emojihunt/schema"
 )
 
 type State struct {
@@ -23,13 +24,7 @@ type State struct {
 
 type NewRound struct {
 	MessageID string
-	Puzzles   []*DiscoveredPuzzle
-}
-
-type DiscoveredPuzzle struct {
-	Name  string
-	URL   *url.URL
-	Round string
+	Puzzles   []schema.NewPuzzle
 }
 
 func Load(filename string) (*State, error) {

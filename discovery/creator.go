@@ -12,10 +12,10 @@ import (
 	"github.com/emojihunt/emojihunt/state"
 )
 
-func (d *Poller) SyncPuzzles(ctx context.Context, puzzles []*state.DiscoveredPuzzle) error {
-	puzzleMap := make(map[string]*state.DiscoveredPuzzle)
+func (d *Poller) SyncPuzzles(ctx context.Context, puzzles []schema.NewPuzzle) error {
+	puzzleMap := make(map[string]schema.NewPuzzle)
 	for _, puzzle := range puzzles {
-		puzzleMap[puzzle.URL.String()] = puzzle
+		puzzleMap[puzzle.PuzzleURL] = puzzle
 	}
 
 	// Filter out known puzzles; add remaining puzzles
@@ -25,24 +25,22 @@ func (d *Poller) SyncPuzzles(ctx context.Context, puzzles []*state.DiscoveredPuz
 	}
 
 	var newPuzzles []schema.NewPuzzle
-	newRounds := make(map[string][]*state.DiscoveredPuzzle)
+	newRounds := make(map[string][]schema.NewPuzzle)
 	for _, puzzle := range puzzleMap {
-		if fragments[strings.ToUpper(puzzle.URL.String())] ||
+		if fragments[strings.ToUpper(puzzle.PuzzleURL)] ||
 			fragments[strings.ToUpper(puzzle.Name)] {
 			// skip if name or URL matches an existing puzzle
 			continue
 		}
-		round, ok := rounds[puzzle.Round]
-		if !ok {
-			newRounds[puzzle.Round] = append(newRounds[puzzle.Round], puzzle)
-			continue
+		if round, ok := rounds[puzzle.Round.Name]; ok {
+			log.Printf("discovery: preparing to add puzzle %q (%s) in round %q",
+				puzzle.Name, puzzle.PuzzleURL, puzzle.Round.Name)
+			puzzle.Round.Emoji = round.Emoji
+			newPuzzles = append(newPuzzles, puzzle)
+		} else {
+			// puzzle belongs to a new round
+			newRounds[puzzle.Round.Name] = append(newRounds[puzzle.Round.Name], puzzle)
 		}
-		log.Printf("discovery: preparing to add puzzle %q (%s) in round %q", puzzle.Name, puzzle.URL.String(), puzzle.Round)
-		newPuzzles = append(newPuzzles, schema.NewPuzzle{
-			Name:      puzzle.Name,
-			Round:     round,
-			PuzzleURL: puzzle.URL.String(),
-		})
 	}
 
 	if len(newPuzzles) > 0 {
@@ -94,7 +92,7 @@ func (d *Poller) handleNewPuzzles(ctx context.Context, newPuzzles []schema.NewPu
 	return d.createPuzzles(ctx, newPuzzles, false)
 }
 
-func (d *Poller) handleNewRounds(ctx context.Context, newRounds map[string][]*state.DiscoveredPuzzle) error {
+func (d *Poller) handleNewRounds(ctx context.Context, newRounds map[string][]schema.NewPuzzle) error {
 	if len(newRounds) > newRoundLimit {
 		msg := fmt.Sprintf(
 			"```💥 Too many new rounds! Round creation paused, please contact #%s.\n```\n",
@@ -119,7 +117,7 @@ func (d *Poller) handleNewRounds(ctx context.Context, newRounds map[string][]*st
 				msg += fmt.Sprintf("(...and more, %d in total...)\n\n", len(puzzles))
 				break
 			}
-			msg += fmt.Sprintf("%s\n%s\n\n", puzzle.Name, puzzle.URL)
+			msg += fmt.Sprintf("%s\n%s\n\n", puzzle.Name, puzzle.PuzzleURL)
 		}
 		msg += "Reminder: use `/huntbot kill` to stop the bot.\n\n"
 		msg += ">> REACT TO PROPOSE AN EMOJI FOR THIS ROUND <<\n```\n"
@@ -171,15 +169,7 @@ func (d *Poller) createPuzzles(ctx context.Context, newPuzzles []schema.NewPuzzl
 	return nil
 }
 
-func (d *Poller) createRound(ctx context.Context, name string) error {
-	d.state.Lock()
-	roundInfo, ok := d.state.DiscoveryNewRounds[name]
-	d.state.Unlock()
-
-	if !ok {
-		return fmt.Errorf("round not found in state")
-	}
-
+func (d *Poller) createRound(ctx context.Context, name string, roundInfo state.NewRound) error {
 	emoji, err := d.getTopReaction(roundInfo.MessageID)
 	if err != nil {
 		return err
@@ -187,18 +177,10 @@ func (d *Poller) createRound(ctx context.Context, name string) error {
 		return fmt.Errorf("no reaction for message")
 	}
 
-	round := schema.Round{
-		Name:  name,
-		Emoji: emoji,
+	puzzles := roundInfo.Puzzles
+	for i := range puzzles {
+		puzzles[i].Round.Emoji = emoji
 	}
 
-	var newPuzzles []schema.NewPuzzle
-	for _, puzzle := range roundInfo.Puzzles {
-		newPuzzles = append(newPuzzles, schema.NewPuzzle{
-			Name:      puzzle.Name,
-			Round:     round,
-			PuzzleURL: puzzle.URL.String(),
-		})
-	}
-	return d.createPuzzles(ctx, newPuzzles, true)
+	return d.createPuzzles(ctx, puzzles, true)
 }

@@ -1,6 +1,7 @@
 package discovery
 
 import (
+	"fmt"
 	"log"
 	"time"
 
@@ -73,16 +74,22 @@ func (d *Poller) startOrCancelRoundCreation(name, messageID string) error {
 				cancel() // must call to avoid goroutine leak
 				d.mutex.Unlock()
 
-				err := d.createRound(context.Background(), name)
+				// remove round from persistent state (all done)
+				d.state.Lock()
+				roundInfo, ok := d.state.DiscoveryNewRounds[name]
+				delete(d.state.DiscoveryNewRounds, name)
+				d.state.CommitAndUnlock()
+
+				var err error
+				if !ok {
+					err = fmt.Errorf("round not found in state")
+				} else {
+					err = d.createRound(context.Background(), name, roundInfo)
+				}
 				if err != nil {
 					log.Printf("error creating round %q: %s", name, spew.Sdump(err))
 					return
 				}
-
-				// remove round from persistent state (all done)
-				d.state.Lock()
-				delete(d.state.DiscoveryNewRounds, name)
-				d.state.CommitAndUnlock()
 			}(ctx)
 			d.roundCreation[messageID] = &cancel
 		}

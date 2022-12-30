@@ -8,11 +8,11 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/emojihunt/emojihunt/state"
+	"github.com/emojihunt/emojihunt/schema"
 	"golang.org/x/net/html"
 )
 
-func (d *Poller) Scrape(ctx context.Context) ([]*state.DiscoveredPuzzle, error) {
+func (d *Poller) Scrape(ctx context.Context) ([]schema.NewPuzzle, error) {
 	// Download
 	req, err := http.NewRequestWithContext(ctx, "GET", d.puzzlesURL.String(), nil)
 	if err != nil {
@@ -93,7 +93,7 @@ func (d *Poller) Scrape(ctx context.Context) ([]*state.DiscoveredPuzzle, error) 
 	}
 
 	// Parse out individual puzzles
-	var puzzles []*state.DiscoveredPuzzle
+	var puzzles []schema.NewPuzzle
 	for _, pair := range discovered {
 		nameNode, puzzleListNode := pair[0], pair[1]
 		var roundBuf bytes.Buffer
@@ -121,10 +121,10 @@ func (d *Poller) Scrape(ctx context.Context) ([]*state.DiscoveredPuzzle, error) 
 				return nil, fmt.Errorf("could not find puzzle url for puzzle: %#v", item)
 			}
 
-			puzzles = append(puzzles, &state.DiscoveredPuzzle{
-				Name:  strings.TrimSpace(puzzleBuf.String()),
-				URL:   d.puzzlesURL.ResolveReference(u),
-				Round: roundName,
+			puzzles = append(puzzles, schema.NewPuzzle{
+				Name:      strings.TrimSpace(puzzleBuf.String()),
+				Round:     schema.Round{Name: roundName},
+				PuzzleURL: d.puzzlesURL.ResolveReference(u).String(),
 			})
 		}
 	}
