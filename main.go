@@ -107,9 +107,11 @@ func main() {
 
 	bot.RegisterHuntbotCommand(ctx, airtable, discord, dbpoller, dscvpoller, syncer, state)
 
-	if err := discord.RegisterCommands(); err != nil {
-		log.Fatalf("failed to register discord commands: %v", err)
-	}
+	go func() {
+		if err := discord.RegisterCommands(); err != nil {
+			log.Fatalf("failed to register discord commands: %v", err)
+		}
+	}()
 
 	// Run!
 	log.Print("press ctrl+C to exit")

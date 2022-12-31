@@ -3,6 +3,7 @@ package client
 import (
 	"fmt"
 	"log"
+	"strings"
 	"sync"
 	"time"
 
@@ -135,6 +136,14 @@ func NewDiscord(config *DiscordConfig, state *state.State) (*Discord, error) {
 	s.AddHandler(discord.reactionRemoveHandler)
 	s.AddHandler(discord.reactionRemoveAllHandler)
 	s.AddHandler(func(s *discordgo.Session, r *discordgo.RateLimit) {
+		if strings.HasSuffix(r.URL, "/commands") {
+			// If we restart the bot too many times in a row, we'll get
+			// rate-limited on the Register Application Commands endpoint. Just
+			// ignore.
+			log.Printf("rate-limited when re-registering application commands")
+			return
+		}
+
 		expiry := time.Now().Add(r.TooManyRequests.RetryAfter)
 		wait := time.Until(expiry).Round(time.Second)
 		log.Printf("discord: hit rate limit at %q (wait %s): %#v", r.URL, wait, r.TooManyRequests)
