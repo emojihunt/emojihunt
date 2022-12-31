@@ -2,17 +2,22 @@ package syncer
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"sort"
 	"strings"
 	"time"
 
 	"github.com/bwmarrin/discordgo"
+	"github.com/davecgh/go-spew/spew"
 	"github.com/emojihunt/emojihunt/schema"
 )
 
 const (
 	VoiceRoomEventDescription = "🤖 Event managed by Huntbot. Use `/voice` to modify!"
+	VoiceRoomPlaceholderTitle = "🫥 Placeholder Event"
+
+	eventDelay = 7 * 24 * time.Hour
 )
 
 // SyncVoiceRooms synchronizes all Discord scheduled events with Airtable,
@@ -30,6 +35,7 @@ func (s *Syncer) SyncVoiceRooms(ctx context.Context) error {
 		return err
 	}
 
+	var placeholderEvents []*discordgo.GuildScheduledEvent
 	var puzzlesByChannel = make(map[string][]schema.VoicePuzzle)
 	var eventsByChannel = make(map[string]*discordgo.GuildScheduledEvent)
 	for _, puzzle := range puzzles {
@@ -41,6 +47,10 @@ func (s *Syncer) SyncVoiceRooms(ctx context.Context) error {
 	for _, event := range events {
 		if event.Description != VoiceRoomEventDescription {
 			// Skip events not created by the bot
+			continue
+		} else if event.Name == VoiceRoomPlaceholderTitle {
+			// Collect placeholder events
+			placeholderEvents = append(placeholderEvents, event)
 			continue
 		} else if event.Status != discordgo.GuildScheduledEventStatusActive {
 			// Skip completed and canceled events
@@ -63,25 +73,42 @@ func (s *Syncer) SyncVoiceRooms(ctx context.Context) error {
 		eventTitle := strings.Join(sort.StringSlice(puzzleNames), " & ")
 
 		if event, ok := eventsByChannel[channelID]; !ok {
-			// If there's no existing event for this voice room, create one
-			log.Printf("creating scheduled event in %q", channelID)
-			start := time.Now().Add(5 * time.Minute)
-			event, err = s.discord.CreateScheduledEvent(&discordgo.GuildScheduledEventParams{
-				ChannelID:          channelID,
-				Name:               eventTitle,
-				PrivacyLevel:       discordgo.GuildScheduledEventPrivacyLevelGuildOnly,
-				ScheduledStartTime: &start,
-				Description:        VoiceRoomEventDescription,
-				EntityType:         discordgo.GuildScheduledEventEntityTypeVoice,
-			})
-			if err != nil {
-				return err
+			if len(placeholderEvents) > 0 {
+				// ...take a placeholder event if available
+				log.Printf("activating placeholder event in %q", channelID)
+				event, placeholderEvents = placeholderEvents[0], placeholderEvents[1:]
+
+				if event.ChannelID != channelID {
+					// (changing the event's voice channel can't be done in the
+					// same call as starting the event, apparently)
+					event, err = s.discord.UpdateScheduledEvent(event, map[string]interface{}{
+						"channel_id": channelID,
+					})
+					if err != nil {
+						return err
+					}
+				}
+			} else {
+				// ...otherwise create a new event
+				log.Printf("creating scheduled event in %q", channelID)
+				start := time.Now().Add(eventDelay)
+				event, err = s.discord.CreateScheduledEvent(&discordgo.GuildScheduledEventParams{
+					ChannelID:          channelID,
+					Name:               eventTitle,
+					PrivacyLevel:       discordgo.GuildScheduledEventPrivacyLevelGuildOnly,
+					ScheduledStartTime: &start,
+					Description:        VoiceRoomEventDescription,
+					EntityType:         discordgo.GuildScheduledEventEntityTypeVoice,
+				})
+				if err != nil {
+					return err
+				}
 			}
+
+			// Then start the event
 			event, err = s.discord.UpdateScheduledEvent(event, map[string]interface{}{
-				// These fields are duplicative, but Discord occasionally
-				// appears to create the event with some fields missing
-				// (maybe a Discord bug?) so let's try and set them again to
-				// be sure.
+				// FYI, we pass these fields again because Discord has (had?) a
+				// bug where events are sometimes created with fields missing.
 				"channel_id":  channelID,
 				"name":        eventTitle,
 				"description": VoiceRoomEventDescription,
@@ -89,11 +116,10 @@ func (s *Syncer) SyncVoiceRooms(ctx context.Context) error {
 				// Start the event!
 				"status": discordgo.GuildScheduledEventStatusActive,
 			})
-			if event.Status != discordgo.GuildScheduledEventStatusActive {
-				log.Printf("Warning! UpdateScheduledEvent failed to start event: %v", event)
-			}
 			if err != nil {
 				return err
+			} else if event.Status != discordgo.GuildScheduledEventStatusActive {
+				return fmt.Errorf("UpdateScheduledEvent failed to start event: %v", event)
 			}
 		} else if eventTitle != event.Name {
 			// Update event name
@@ -106,5 +132,50 @@ func (s *Syncer) SyncVoiceRooms(ctx context.Context) error {
 			}
 		}
 	}
+
+	go func() {
+		// Will block until the caller releases VoiceRoomMutex
+		err := s.RestorePlaceholderEvent()
+		if err != nil {
+			log.Printf("error restoring placeholder event: %s", spew.Sdump(err))
+		}
+	}()
+
 	return nil
+}
+
+func (s *Syncer) RestorePlaceholderEvent() error {
+	s.VoiceRoomMutex.Lock()
+	defer s.VoiceRoomMutex.Unlock()
+
+	events, err := s.discord.ListScheduledEvents()
+	if err != nil {
+		return err
+	}
+
+	var placeholderEvents []*discordgo.GuildScheduledEvent
+	for _, event := range events {
+		if event.Description != VoiceRoomEventDescription {
+			// Skip events not created by the bot
+			continue
+		} else if event.Name == VoiceRoomPlaceholderTitle {
+			// Collect placeholder events
+			placeholderEvents = append(placeholderEvents, event)
+			continue
+		}
+	}
+	if len(placeholderEvents) > 0 {
+		return nil
+	}
+
+	start := time.Now().Add(eventDelay)
+	_, err = s.discord.CreateScheduledEvent(&discordgo.GuildScheduledEventParams{
+		ChannelID:          s.discord.DefaultVoiceChannel.ID,
+		Name:               VoiceRoomPlaceholderTitle,
+		PrivacyLevel:       discordgo.GuildScheduledEventPrivacyLevelGuildOnly,
+		ScheduledStartTime: &start,
+		Description:        VoiceRoomEventDescription,
+		EntityType:         discordgo.GuildScheduledEventEntityTypeVoice,
+	})
+	return err
 }

@@ -29,6 +29,8 @@ type Discord struct {
 	QMChannel         *discordgo.Channel // for puzzle maintenance
 	TechChannel       *discordgo.Channel // for error messages
 
+	DefaultVoiceChannel *discordgo.Channel // for placeholder events
+
 	QMRole *discordgo.Role // so QMs show up in the sidebar
 
 	appCommandHandlers map[string]*DiscordCommand
@@ -85,6 +87,21 @@ func NewDiscord(config *DiscordConfig, state *state.State) (*Discord, error) {
 			config.TechChannelID, err)
 	}
 
+	var defaultVoiceChannel *discordgo.Channel
+	channels, err := s.GuildChannels(config.GuildID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load voice channels: %v", err)
+	}
+	for _, channel := range channels {
+		if channel.Type == discordgo.ChannelTypeGuildVoice {
+			defaultVoiceChannel = channel
+			break
+		}
+	}
+	if defaultVoiceChannel == nil {
+		return nil, fmt.Errorf("no voice channels found")
+	}
+
 	allRoles, err := s.GuildRoles(guild.ID)
 	if err != nil {
 		return nil, err
@@ -107,6 +124,7 @@ func NewDiscord(config *DiscordConfig, state *state.State) (*Discord, error) {
 		MoreEyesChannel:           moreEyesChannel,
 		QMChannel:                 qmChannel,
 		TechChannel:               techChannel,
+		DefaultVoiceChannel:       defaultVoiceChannel,
 		QMRole:                    qmRole,
 		appCommandHandlers:        make(map[string]*DiscordCommand),
 		scheduledEventsLastUpdate: time.Now().Add(-24 * time.Hour),

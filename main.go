@@ -113,6 +113,7 @@ func main() {
 
 	// Run!
 	log.Print("press ctrl+C to exit")
+	go syncer.RestorePlaceholderEvent()
 	go dbpoller.Poll(ctx)
 	if dscvpoller != nil {
 		go dscvpoller.Poll(ctx)
