@@ -31,23 +31,32 @@ func Start(airtable *client.Airtable, syncer *syncer.Syncer, config *ServerConfi
 		return fmt.Errorf("secret token cannot be empty")
 	}
 	server := &Server{airtable, syncer, config.SecretToken, config.Origin}
-	go func() {
-		mux := http.NewServeMux()
-		mux.HandleFunc("/resync", server.resync)
-		err := http.ListenAndServeTLS(":443", config.CertificateFile, config.KeyFile, mux)
-		panic(err)
-	}()
-	go func() {
-		mux := http.NewServeMux()
-		mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-			target := *r.URL
-			target.Host = r.Host
-			target.Scheme = "https"
-			http.Redirect(w, r, target.String(), http.StatusTemporaryRedirect)
-		})
-		err := http.ListenAndServe(":80", mux)
-		panic(err)
-	}()
+	if strings.HasPrefix(config.Origin, "http://localhost:") {
+		go func() {
+			mux := http.NewServeMux()
+			mux.HandleFunc("/resync", server.resync)
+			err := http.ListenAndServe(config.Origin[7:], mux)
+			panic(err)
+		}()
+	} else {
+		go func() {
+			mux := http.NewServeMux()
+			mux.HandleFunc("/resync", server.resync)
+			err := http.ListenAndServeTLS(":443", config.CertificateFile, config.KeyFile, mux)
+			panic(err)
+		}()
+		go func() {
+			mux := http.NewServeMux()
+			mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+				target := *r.URL
+				target.Host = r.Host
+				target.Scheme = "https"
+				http.Redirect(w, r, target.String(), http.StatusTemporaryRedirect)
+			})
+			err := http.ListenAndServe(":80", mux)
+			panic(err)
+		}()
+	}
 	return nil
 }
 

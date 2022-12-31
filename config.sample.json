@@ -30,10 +30,8 @@
         }
     },
     "server": {
-        "secret_token": "*** INSERT RANDOM TOKEN HERE ***",
-        "certificate_file": "/etc/letsencrypt/live/www.example.org/fullchain.pem",
-        "key_file": "/etc/letsencrypt/live/www.example.org/privkey.pem",
-        "origin": "https://www.example.org"
+        "secret_token": "",
+        "origin": "http://localhost:8000"
     },
     "autodiscovery": {
         "puzzles_url": "https://2021.teammatehunt.com/puzzles",
