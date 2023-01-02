@@ -107,8 +107,8 @@ const (
 	warnErrorFrequency  = 10 * time.Minute
 	puzzleCreationPause = 10 * time.Second
 	roundCreationPause  = 30 * time.Second
-	newPuzzleLimit      = 15
-	newRoundLimit       = 3
+	newPuzzleLimit      = 30
+	newRoundLimit       = 5
 	websocketBurst      = 3
 )
 
