@@ -16,7 +16,7 @@ type Puzzle struct {
 	Rounds       Rounds
 	Status       Status
 	Description  string
-	Notes        string
+	Location     string
 	NameOverride string
 
 	AirtableRecord *airtable.Record

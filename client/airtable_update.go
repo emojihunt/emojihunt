@@ -57,9 +57,9 @@ func (air *Airtable) SetDescription(puzzle *schema.Puzzle, description string) (
 	return air.parseRecord(record, puzzle.Unlock)
 }
 
-func (air *Airtable) SetNotes(puzzle *schema.Puzzle, notes string) (*schema.Puzzle, error) {
+func (air *Airtable) SetLocation(puzzle *schema.Puzzle, location string) (*schema.Puzzle, error) {
 	var fields = map[string]interface{}{
-		"Notes": notes,
+		"Location": location,
 	}
 	record, err := puzzle.AirtableRecord.UpdateRecordPartial(fields)
 	if err != nil {

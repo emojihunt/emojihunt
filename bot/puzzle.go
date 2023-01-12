@@ -85,13 +85,13 @@ func (bot *puzzleBot) makeSlashCommand() *client.DiscordCommand {
 					},
 				},
 				{
-					Name:        "note",
-					Description: "Use in a puzzle channel to add or update the note 💷",
+					Name:        "location",
+					Description: "Use in a puzzle channel to add or update the location 📍",
 					Type:        discordgo.ApplicationCommandOptionSubCommand,
 					Options: []*discordgo.ApplicationCommandOption{
 						{
 							Name:        "is",
-							Description: "What should the note be set to?",
+							Description: "What should the location be set to?",
 							Required:    false,
 							Type:        discordgo.ApplicationCommandOptionString,
 						},
@@ -184,19 +184,19 @@ func (bot *puzzleBot) makeSlashCommand() *client.DiscordCommand {
 				if err = bot.syncer.DiscordCreateUpdatePin(puzzle); err != nil {
 					return "", err
 				}
-			case "note":
-				var newNotes string
-				if notesOpt, err := bot.discord.OptionByName(i.Subcommand.Options, "is"); err == nil {
-					newNotes = notesOpt.StringValue()
-					reply = ":writing_hand: Updated puzzle note!"
+			case "location":
+				var newLocation string
+				if locationOpt, err := bot.discord.OptionByName(i.Subcommand.Options, "is"); err == nil {
+					newLocation = locationOpt.StringValue()
+					reply = ":writing_hand: Updated puzzle location!"
 				} else {
-					reply = ":cl: Cleared puzzle note."
+					reply = ":cl: Cleared puzzle location."
 				}
-				if puzzle.Notes != "" {
-					reply += fmt.Sprintf(" Previous note was: ```\n%s\n```", puzzle.Notes)
+				if puzzle.Location != "" {
+					reply += fmt.Sprintf(" Previous location was: ```\n%s\n```", puzzle.Location)
 				}
 
-				if puzzle, err = bot.airtable.SetNotes(puzzle, newNotes); err != nil {
+				if puzzle, err = bot.airtable.SetLocation(puzzle, newLocation); err != nil {
 					return "", err
 				}
 				if err = bot.syncer.DiscordCreateUpdatePin(puzzle); err != nil {

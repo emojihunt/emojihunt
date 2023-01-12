@@ -109,7 +109,7 @@ func (air *Airtable) parseRecord(record *airtable.Record, unlock func()) (*schem
 		Rounds:       rounds,
 		Status:       status,
 		Description:  air.stringField(record, "Description"),
-		Notes:        air.stringField(record, "Notes"),
+		Location:     air.stringField(record, "Location"),
 		NameOverride: air.stringField(record, "Puzzle Name Override"),
 
 		AirtableRecord: record,

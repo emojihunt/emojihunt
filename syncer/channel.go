@@ -68,10 +68,10 @@ func (s *Syncer) DiscordCreateUpdatePin(puzzle *schema.Puzzle) error {
 		})
 	}
 
-	if puzzle.Notes != "" {
+	if puzzle.Location != "" {
 		embed.Fields = append(embed.Fields, &discordgo.MessageEmbedField{
-			Name:   "Notes",
-			Value:  puzzle.Notes,
+			Name:   "Location",
+			Value:  puzzle.Location,
 			Inline: false,
 		})
 	}
