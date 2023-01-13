@@ -53,7 +53,7 @@ func main() {
 			if currentRound != "" {
 				fmt.Println()
 			}
-			fmt.Printf("Round: \"%s\"\n", puzzle.Round)
+			fmt.Printf("Round: \"%s\"\n", puzzle.Round.Name)
 			currentRound = puzzle.Round.Name
 		}
 		if len(puzzle.Name) <= 32 {
