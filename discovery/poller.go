@@ -223,21 +223,32 @@ func (d *Poller) openWebsocket() (chan bool, error) {
 
 	log.Printf("discovery: (re-)connecting to websocket...")
 	ch := make(chan bool)
-	ws, err := websocket.Dial(d.wsURL.String(), "", "https://"+d.wsURL.Host)
+	config, err := websocket.NewConfig(d.wsURL.String(), "https://"+d.wsURL.Host)
+	if err != nil {
+		return nil, err
+	}
+	if d.cookie.Name != "" {
+		// If a cookie is set, send it when opening the Websocket
+		config.Header.Add("Cookie", fmt.Sprintf("%s=%s", d.cookie.Name, d.cookie.Value))
+	}
+	ws, err := websocket.DialConfig(config)
 	if err != nil {
 		return nil, err
 	}
 	log.Printf("discovery: opened websocket connection to %q", d.wsURL.String())
-	data, err := json.Marshal(map[string]interface{}{
-		"type": "AUTH",
-		"data": d.wsToken,
-	})
-	if err != nil {
-		return nil, err
-	}
-	log.Printf("discovery: wrote AUTH message to websocket")
-	if _, err := ws.Write(data); err != nil {
-		return nil, err
+	if d.wsToken != "" {
+		// Custom (??) authentication protocol from 2021
+		data, err := json.Marshal(map[string]interface{}{
+			"type": "AUTH",
+			"data": d.wsToken,
+		})
+		if err != nil {
+			return nil, err
+		}
+		if _, err := ws.Write(data); err != nil {
+			return nil, err
+		}
+		log.Printf("discovery: wrote AUTH message to websocket")
 	}
 	go func(ws *websocket.Conn, ch chan bool) {
 		defer close(ch)
