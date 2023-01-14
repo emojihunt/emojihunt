@@ -14,7 +14,7 @@ const (
 	roundCategoryPrefix  = "Round: "
 	solvedCategoryPrefix = "Solved "
 	pinnedStatusHeader   = "Puzzle Information"
-	voiceRoomDefaultMsg  = "Use `/voice start` to assign a voice room"
+	locationDefaultMsg   = "Use `/voice start` to assign a voice room"
 	embedColor           = 0x7C39ED
 )
 
@@ -68,22 +68,16 @@ func (s *Syncer) DiscordCreateUpdatePin(puzzle *schema.Puzzle) error {
 		})
 	}
 
-	if puzzle.Location != "" {
-		embed.Fields = append(embed.Fields, &discordgo.MessageEmbedField{
-			Name:   "Location",
-			Value:  puzzle.Location,
-			Inline: false,
-		})
-	}
-
 	if !puzzle.Status.IsSolved() {
-		voiceRoomMsg := voiceRoomDefaultMsg
+		locationMsg := locationDefaultMsg
 		if puzzle.VoiceRoom != "" {
-			voiceRoomMsg = fmt.Sprintf("Join us in <#%s>!", puzzle.VoiceRoom)
+			locationMsg = fmt.Sprintf("Join us in <#%s>!", puzzle.VoiceRoom)
+		} else if puzzle.Location != "" {
+			locationMsg = fmt.Sprintf("In-person in %s", puzzle.Location)
 		}
 		embed.Fields = append(embed.Fields, &discordgo.MessageEmbedField{
-			Name:   "Voice Room",
-			Value:  voiceRoomMsg,
+			Name:   "Location",
+			Value:  locationMsg,
 			Inline: false,
 		})
 	}

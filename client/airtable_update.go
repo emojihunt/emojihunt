@@ -88,12 +88,14 @@ func (air *Airtable) SetBotFields(puzzle *schema.Puzzle, lastBotStatus schema.St
 }
 
 func (air *Airtable) SetVoiceRoom(puzzle *schema.Puzzle, channel *discordgo.Channel) (*schema.Puzzle, error) {
-	var channelID string
+	var channelID, channelName string
 	if channel != nil {
 		channelID = channel.ID
+		channelName = channel.Name
 	}
 	record, err := puzzle.AirtableRecord.UpdateRecordPartial(map[string]interface{}{
 		"Voice Room": channelID,
+		"Location":   channelName,
 	})
 	if err != nil {
 		return nil, err
