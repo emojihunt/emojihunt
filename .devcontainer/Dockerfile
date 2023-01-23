@@ -5,7 +5,7 @@ RUN apt-get update && export DEBIAN_FRONTEND=noninteractive \
     && apt-get upgrade -y
 
 # Install Go
-RUN (curl -sL https://golang.org/dl/go1.19.4.linux-amd64.tar.gz | tar xzC /usr/local) && \
+RUN (curl -sL https://golang.org/dl/go1.19.5.linux-amd64.tar.gz | tar xzC /usr/local) && \
     (echo 'PATH=$PATH:/usr/local/go/bin' >> /home/vscode/.profile)
 
 # Install Google Cloud SDK
