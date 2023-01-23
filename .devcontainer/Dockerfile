@@ -8,6 +8,6 @@ RUN apt-get update && export DEBIAN_FRONTEND=noninteractive \
 RUN (curl -sL https://golang.org/dl/go1.19.5.linux-amd64.tar.gz | tar xzC /usr/local) && \
     (echo 'PATH=$PATH:/usr/local/go/bin' >> /home/vscode/.profile)
 
-# Install Google Cloud SDK
-RUN (curl -sL https://dl.google.com/dl/cloudsdk/channels/rapid/downloads/google-cloud-sdk-412.0.0-linux-x86_64.tar.gz | tar xzC /usr/local) && \
-    (ln -s /usr/local/google-cloud-sdk/bin/gcloud /usr/local/bin)
+# Install flyctl
+ENV FLYCTL_INSTALL=/usr/local
+RUN (curl https://fly.io/install.sh | sh) && rm /tmp/flyctl.*

@@ -1,3 +1,4 @@
 config.json
+config.prod.json
 secrets.json
 state.json

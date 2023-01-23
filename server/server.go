@@ -30,33 +30,19 @@ func Start(airtable *client.Airtable, syncer *syncer.Syncer, config *ServerConfi
 	if config.SecretToken == "" {
 		return fmt.Errorf("secret token cannot be empty")
 	}
-	server := &Server{airtable, syncer, config.SecretToken, config.Origin}
-	if strings.HasPrefix(config.Origin, "http://localhost:") {
-		go func() {
-			mux := http.NewServeMux()
-			mux.HandleFunc("/resync", server.resync)
-			err := http.ListenAndServe(config.Origin[7:], mux)
-			panic(err)
-		}()
-	} else {
-		go func() {
-			mux := http.NewServeMux()
-			mux.HandleFunc("/resync", server.resync)
-			err := http.ListenAndServeTLS(":443", config.CertificateFile, config.KeyFile, mux)
-			panic(err)
-		}()
-		go func() {
-			mux := http.NewServeMux()
-			mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-				target := *r.URL
-				target.Host = r.Host
-				target.Scheme = "https"
-				http.Redirect(w, r, target.String(), http.StatusTemporaryRedirect)
-			})
-			err := http.ListenAndServe(":80", mux)
-			panic(err)
-		}()
+	origin := config.Origin
+	if origin == "" {
+		origin = "http://localhost:8000"
 	}
+	server := &Server{airtable, syncer, config.SecretToken, origin}
+	go func() {
+		mux := http.NewServeMux()
+		mux.HandleFunc("/robots.txt", server.robots)
+		mux.HandleFunc("/resync", server.resync)
+		err := http.ListenAndServe(":8000", mux)
+		panic(err)
+	}()
+
 	return nil
 }
 
@@ -65,6 +51,10 @@ func (s *Server) ResyncURL(puzzle *schema.Puzzle) string {
 		"%s/resync?token=%s&record=%s",
 		s.origin, s.secret, puzzle.AirtableRecord.ID,
 	)
+}
+
+func (s *Server) robots(w http.ResponseWriter, r *http.Request) {
+	w.Write([]byte("User-agent: *\nDisallow: /\n"))
 }
 
 func (s *Server) resync(w http.ResponseWriter, r *http.Request) {

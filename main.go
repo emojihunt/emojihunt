@@ -35,9 +35,18 @@ var (
 
 func main() {
 	// Load configuration
-	bs, err := os.ReadFile(*config_file)
-	if err != nil {
-		log.Fatalf("error reading config file at %q: %v", os.Args[1], err)
+	var bs []byte
+	if raw, ok := os.LookupEnv("HUNTBOT_CONFIG"); ok {
+		// In production, configuration is stored in a secret (environment
+		// variable).
+		bs = []byte(raw)
+	} else {
+		// In development, configuration is stored in a local file.
+		var err error
+		bs, err = os.ReadFile(*config_file)
+		if err != nil {
+			log.Fatalf("error reading config file at %q: %v", os.Args[1], err)
+		}
 	}
 	config := Config{}
 	if err := json.Unmarshal(bs, &config); err != nil {

@@ -31,7 +31,7 @@
     },
     "server": {
         "secret_token": "",
-        "origin": "http://localhost:8000"
+        "origin": ""
     },
     "autodiscovery": {
         "puzzles_url": "https://2021.teammatehunt.com/puzzles",
