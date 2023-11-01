@@ -1,14 +1,14 @@
 {
 	"name": "Ubuntu",
 	"build": {
-		"dockerfile": "Dockerfile",
-		"args": {
-			"VARIANT": "jammy"
+		"dockerfile": "Dockerfile"
+	},
+	"customizations": {
+		"vscode": {
+			"extensions": [
+				"golang.go"
+			]
 		}
 	},
-	"settings": {},
-	"extensions": [
-		"golang.go"
-	],
 	"remoteUser": "vscode"
 }
