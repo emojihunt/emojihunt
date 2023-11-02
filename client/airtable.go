@@ -15,12 +15,6 @@ type Airtable struct {
 	// held while reading or writing the puzzle, and should be acquired before
 	// the voice room mutex (if needed).
 	mutexes *sync.Map
-
-	// Mutex mutex protects channelToRecord. It should be held briefly when
-	// updating the map. We should never perform an operation that could block,
-	// like acquiring another lock or making an API call, while holding mutex.
-	mutex           *sync.Mutex
-	channelToRecord map[string]string
 }
 
 // FYI the Airtable library has a built-in rate limiter that will block if we
@@ -30,10 +24,8 @@ type Airtable struct {
 
 func NewAirtable(database *db.Queries) *Airtable {
 	return &Airtable{
-		database:        database,
-		mutexes:         &sync.Map{},
-		mutex:           &sync.Mutex{},
-		channelToRecord: make(map[string]string),
+		database: database,
+		mutexes:  &sync.Map{},
 	}
 }
 

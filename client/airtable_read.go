@@ -121,12 +121,6 @@ func (air *Airtable) LockByID(id string) (*schema.Puzzle, error) {
 		return nil, err
 	}
 	puzzle := air.parseDatabaseResult(&record, unlock)
-	if puzzle.DiscordChannel != "" {
-		// Keep Discord Channel -> Airtable ID cache up-to-date
-		air.mutex.Lock()
-		air.channelToRecord[puzzle.DiscordChannel] = fmt.Sprintf("%d", puzzle.AirtableRecord.ID)
-		air.mutex.Unlock()
-	}
 	return puzzle, nil
 }
 
@@ -135,40 +129,31 @@ func (air *Airtable) LockByID(id string) (*schema.Puzzle, error) {
 // the lock. If no error is returned, the caller is responsible for calling
 // Unlock() on the puzzle.
 func (air *Airtable) LockByDiscordChannel(channel string) (*schema.Puzzle, error) {
-	air.mutex.Lock()
-	expectedRecordID := air.channelToRecord[channel]
-	air.mutex.Unlock()
+	for i := 0; i < 5; i++ {
+		response, err := air.database.GetPuzzlesByDiscordChannel(context.TODO(), channel)
+		if err != nil {
+			return nil, err
+		} else if len(response) < 1 {
+			return nil, nil
+		} else if len(response) > 1 {
+			return nil, fmt.Errorf("expected 0 or 1 record, got %d", len(response))
+		}
 
-	unlock := air.lockPuzzle(expectedRecordID)
-
-	response, err := air.database.GetPuzzlesByDiscordChannel(context.TODO(), channel)
-	if err != nil {
+		// Reload object under lock
+		unlock := air.lockPuzzle(fmt.Sprintf("%d", response[0].ID))
+		record, err := air.database.GetPuzzle(context.TODO(), response[0].ID)
+		if err != nil {
+			unlock()
+			return nil, err
+		}
+		puzzle := air.parseDatabaseResult(&record, unlock)
+		if puzzle.DiscordChannel == channel {
+			return puzzle, nil
+		}
+		// Discord channel changed since lock was taken out, retry
 		unlock()
-		return nil, err
 	}
-	if len(response) < 1 {
-		unlock()
-		return nil, nil
-	} else if len(response) > 1 {
-		unlock()
-		return nil, fmt.Errorf("expected 0 or 1 record, got %d", len(response))
-	}
-	puzzle := air.parseDatabaseResult(&response[0], unlock)
-	if puzzle.DiscordChannel != channel {
-		// Airtable returned an incorrect response to our query?!
-		unlock()
-		return nil, fmt.Errorf("expected puzzle %q to have discord channel %q, got %q",
-			puzzle.AirtableRecord.ID, channel, puzzle.DiscordChannel,
-		)
-	} else if fmt.Sprintf("%d", puzzle.AirtableRecord.ID) != expectedRecordID {
-		// Our cache is out of date, oops...update it and retry.
-		unlock()
-		air.mutex.Lock()
-		air.channelToRecord[puzzle.DiscordChannel] = fmt.Sprintf("%d", puzzle.AirtableRecord.ID)
-		air.mutex.Unlock()
-		return air.LockByDiscordChannel(channel)
-	}
-	return puzzle, nil
+	return nil, fmt.Errorf("discord channel %q is unstable", channel)
 }
 
 func (air *Airtable) lockPuzzle(id string) func() {
