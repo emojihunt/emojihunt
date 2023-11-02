@@ -26,7 +26,6 @@ import (
 )
 
 type Config struct {
-	Airtable      *client.AirtableConfig     `json:"airtable"`
 	Discord       *client.DiscordConfig      `json:"discord"`
 	GoogleDrive   *client.DriveConfig        `json:"google_drive"`
 	Server        *server.ServerConfig       `json:"server"`
@@ -115,7 +114,7 @@ func main() {
 	}
 	defer discord.Close()
 
-	airtable := client.NewAirtable(config.Airtable, database)
+	airtable := client.NewAirtable(database)
 
 	drive, err := client.NewDrive(ctx, config.GoogleDrive)
 	if err != nil {

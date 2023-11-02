@@ -1,69 +1,27 @@
 package client
 
 import (
+	"context"
 	"fmt"
-	"sort"
+	"strconv"
 	"strings"
 	"sync"
-	"time"
 
+	"github.com/emojihunt/emojihunt/db"
 	"github.com/emojihunt/emojihunt/schema"
 )
 
 // ListPuzzles returns a list of all known record IDs.
 func (air *Airtable) ListPuzzles() ([]string, error) {
 	var ids []string
-	puzzles, err := air.listRecordsWithFilter("")
+	puzzles, err := air.database.ListPuzzleIDs(context.TODO())
 	if err != nil {
 		return nil, err
 	}
 	for _, puzzle := range puzzles {
-		ids = append(ids, puzzle.AirtableRecord.ID)
+		ids = append(ids, fmt.Sprintf("%d", puzzle))
 	}
 	return ids, nil
-}
-
-// ListPuzzlesToAction loads all puzzles from the Airtable API and returns two
-// lists: a list of schema.InvalidPuzzle objects representing puzzles that
-// failed basic validation (we can't even create the Discord channel and
-// spreadsheet because they're missing basic information), and a list of record
-// IDs for puzzles that need to be actioned by the syncer. No lock is held, so
-// the caller needs to re-load each puzzle in the latter list with LockByID and
-// make sure it still needs actioning.
-func (air *Airtable) ListPuzzlesToAction() ([]schema.InvalidPuzzle, []string, error) {
-	timestamp := time.Now()
-
-	puzzles, err := air.listRecordsWithFilter("")
-	if err != nil {
-		return nil, nil, err
-	}
-
-	var invalid []schema.InvalidPuzzle // invalid, notify the QM
-	var needsAction []string           // needs some kind of re-sync
-	for _, puzzle := range puzzles {
-		if puzzle.LastModified == nil || timestamp.Sub(*puzzle.LastModified) < air.ModifyGracePeriod {
-			// Skip puzzles that are being actively edited by a human
-			continue
-		} else if puzzle.DiscordChannel == "-" {
-			// Skip puzzles that a QM has set to ignore
-			continue
-		} else if len(puzzle.Problems()) > 0 {
-			invalid = append(invalid, schema.InvalidPuzzle{
-				RecordID: puzzle.AirtableRecord.ID,
-				Name:     puzzle.Name,
-				Problems: puzzle.Problems(),
-				EditURL:  air.EditURL(&puzzle),
-			})
-		} else if puzzle.SpreadsheetID == "" || puzzle.DiscordChannel == "" {
-			needsAction = append(needsAction, puzzle.AirtableRecord.ID)
-		} else if puzzle.Status != puzzle.LastBotStatus || puzzle.ShouldArchive() != puzzle.Archived {
-			needsAction = append(needsAction, puzzle.AirtableRecord.ID)
-		} else if puzzle.LastModifiedBy != air.BotUserID && puzzle.LastModifiedBy != "" {
-			needsAction = append(needsAction, puzzle.AirtableRecord.ID)
-		}
-		// else no-op
-	}
-	return invalid, needsAction, nil
 }
 
 // ListPuzzleFragmentsAndRounds returns a collection of all puzzle names and
@@ -73,23 +31,27 @@ func (air *Airtable) ListPuzzlesToAction() ([]schema.InvalidPuzzle, []string, er
 // so it's safe.
 //
 // Note that puzzle names and URLs are *uppercased* in the result map.
-func (air *Airtable) ListPuzzleFragmentsAndRounds() (map[string]bool, map[string]schema.Round, error) {
-	puzzles, err := air.listRecordsWithFilter("")
+func (air *Airtable) ListPuzzleFragmentsAndRounds() (map[string]bool, map[string]db.Round, error) {
+	var fragments = make(map[string]bool)
+	puzzles, err := air.database.ListPuzzleDiscoveryFragments(context.TODO())
 	if err != nil {
 		return nil, nil, err
 	}
-
-	var fragments = make(map[string]bool)
-	var rounds = make(map[string]schema.Round)
 	for _, puzzle := range puzzles {
 		fragments[strings.ToUpper(puzzle.Name)] = true
-		fragments[strings.ToUpper(puzzle.PuzzleURL)] = true
-		fragments[strings.ToUpper(puzzle.OriginalURL)] = true
-
-		for _, round := range puzzle.Rounds {
-			rounds[round.Name] = round
-		}
+		fragments[strings.ToUpper(puzzle.PuzzleUrl)] = true
+		fragments[strings.ToUpper(puzzle.OriginalUrl)] = true
 	}
+
+	var rounds = make(map[string]db.Round)
+	result, err := air.database.ListRounds(context.TODO())
+	if err != nil {
+		return nil, nil, err
+	}
+	for _, round := range result {
+		rounds[round.Name] = round
+	}
+
 	return fragments, rounds, nil
 }
 
@@ -101,7 +63,7 @@ func (air *Airtable) ListPuzzleFragmentsAndRounds() (map[string]bool, map[string
 //
 // The caller *must* acquire VoiceRoomMutex before calling this function.
 func (air *Airtable) ListWithVoiceRoom() ([]schema.VoicePuzzle, error) {
-	puzzles, err := air.listRecordsWithFilter("{Voice Room}!=''")
+	puzzles, err := air.database.ListPuzzlesWithVoiceRoom(context.TODO())
 	if err != nil {
 		return nil, err
 	}
@@ -109,7 +71,7 @@ func (air *Airtable) ListWithVoiceRoom() ([]schema.VoicePuzzle, error) {
 	var voicePuzzles []schema.VoicePuzzle
 	for _, puzzle := range puzzles {
 		voicePuzzles = append(voicePuzzles, schema.VoicePuzzle{
-			RecordID:  puzzle.AirtableRecord.ID,
+			RecordID:  fmt.Sprintf("%d", puzzle.ID),
 			Name:      puzzle.Name,
 			VoiceRoom: puzzle.VoiceRoom,
 		})
@@ -126,75 +88,21 @@ func (air *Airtable) ListWithVoiceRoom() ([]schema.VoicePuzzle, error) {
 //
 // Results are returned in sorted order.
 func (air *Airtable) ListWithReminder() ([]schema.ReminderPuzzle, error) {
-	puzzles, err := air.listRecordsWithFilter("{Reminder}!=''")
+	puzzles, err := air.database.ListPuzzlesWithReminder(context.TODO())
 	if err != nil {
 		return nil, err
 	}
 
 	var reminderPuzzles schema.ReminderPuzzles
 	for _, puzzle := range puzzles {
-		if puzzle.Reminder == nil {
-			return nil, fmt.Errorf("Airtable returned puzzle with nil reminder: %#v", puzzle)
-		}
 		reminderPuzzles = append(reminderPuzzles, schema.ReminderPuzzle{
-			RecordID:       puzzle.AirtableRecord.ID,
+			RecordID:       fmt.Sprintf("%d", puzzle.ID),
 			Name:           puzzle.Name,
 			DiscordChannel: puzzle.DiscordChannel,
-			Reminder:       *puzzle.Reminder,
+			Reminder:       puzzle.Reminder.Time,
 		})
 	}
-	sort.Sort(reminderPuzzles)
 	return reminderPuzzles, nil
-}
-
-// listRecordsWithFilter queries Airtable for all records matching the given
-// filter. To list all records, pass the empty string as the filter.
-//
-// This function is for internal use only: no locks are acquired and callers are
-// responsible for avoiding race conditions.
-func (air *Airtable) listRecordsWithFilter(filter string) ([]schema.Puzzle, error) {
-	var puzzles []schema.Puzzle
-	var offset = ""
-	for {
-		request := air.table.GetRecords().
-			PageSize(pageSize).
-			WithOffset(offset)
-		if filter != "" {
-			request = request.WithFilterFormula(filter)
-		}
-		response, err := request.Do()
-		if err != nil {
-			return nil, err
-		}
-
-		air.mutex.Lock()
-		for _, record := range response.Records {
-			if record.Deleted {
-				// Skip deleted records? I think this field is only used in
-				// response to DELETE requests, but let's check it just in case.
-				continue
-			}
-			puzzle, err := air.parseRecord(record, nil)
-			if err != nil {
-				air.mutex.Unlock()
-				return nil, err
-			} else if puzzle.DiscordChannel != "" {
-				// Keep Discord Channel -> Airtable ID cache up-to-date; this is
-				// why we need to be holding air.mu
-				air.channelToRecord[puzzle.DiscordChannel] = puzzle.AirtableRecord.ID
-			}
-			puzzles = append(puzzles, *puzzle)
-		}
-		air.mutex.Unlock()
-
-		if response.Offset != "" {
-			// More records exist, continue to next request
-			offset = response.Offset
-		} else {
-			// All done, return all records
-			return puzzles, nil
-		}
-	}
 }
 
 // LockByID locks the given Airtable record ID and loads the corresponding
@@ -203,19 +111,20 @@ func (air *Airtable) listRecordsWithFilter(filter string) ([]schema.Puzzle, erro
 func (air *Airtable) LockByID(id string) (*schema.Puzzle, error) {
 	unlock := air.lockPuzzle(id)
 
-	record, err := air.table.GetRecord(id)
+	i, err := strconv.Atoi(id)
+	if err != nil {
+		return nil, err
+	}
+	record, err := air.database.GetPuzzle(context.TODO(), int64(i))
 	if err != nil {
 		unlock()
 		return nil, err
 	}
-	puzzle, err := air.parseRecord(record, unlock)
-	if err != nil {
-		unlock()
-		return nil, err
-	} else if puzzle.DiscordChannel != "" {
+	puzzle := air.parseDatabaseResult(&record, unlock)
+	if puzzle.DiscordChannel != "" {
 		// Keep Discord Channel -> Airtable ID cache up-to-date
 		air.mutex.Lock()
-		air.channelToRecord[puzzle.DiscordChannel] = puzzle.AirtableRecord.ID
+		air.channelToRecord[puzzle.DiscordChannel] = fmt.Sprintf("%d", puzzle.AirtableRecord.ID)
 		air.mutex.Unlock()
 	}
 	return puzzle, nil
@@ -232,35 +141,30 @@ func (air *Airtable) LockByDiscordChannel(channel string) (*schema.Puzzle, error
 
 	unlock := air.lockPuzzle(expectedRecordID)
 
-	response, err := air.table.GetRecords().
-		WithFilterFormula(fmt.Sprintf("{Discord Channel}='%s'", channel)).
-		Do()
+	response, err := air.database.GetPuzzlesByDiscordChannel(context.TODO(), channel)
 	if err != nil {
 		unlock()
 		return nil, err
 	}
-	if len(response.Records) < 1 {
+	if len(response) < 1 {
 		unlock()
 		return nil, nil
-	} else if len(response.Records) > 1 {
+	} else if len(response) > 1 {
 		unlock()
-		return nil, fmt.Errorf("expected 0 or 1 record, got %d", len(response.Records))
+		return nil, fmt.Errorf("expected 0 or 1 record, got %d", len(response))
 	}
-	puzzle, err := air.parseRecord(response.Records[0], unlock)
-	if err != nil {
-		unlock()
-		return nil, err
-	} else if puzzle.DiscordChannel != channel {
+	puzzle := air.parseDatabaseResult(&response[0], unlock)
+	if puzzle.DiscordChannel != channel {
 		// Airtable returned an incorrect response to our query?!
 		unlock()
 		return nil, fmt.Errorf("expected puzzle %q to have discord channel %q, got %q",
 			puzzle.AirtableRecord.ID, channel, puzzle.DiscordChannel,
 		)
-	} else if puzzle.AirtableRecord.ID != expectedRecordID {
+	} else if fmt.Sprintf("%d", puzzle.AirtableRecord.ID) != expectedRecordID {
 		// Our cache is out of date, oops...update it and retry.
 		unlock()
 		air.mutex.Lock()
-		air.channelToRecord[puzzle.DiscordChannel] = puzzle.AirtableRecord.ID
+		air.channelToRecord[puzzle.DiscordChannel] = fmt.Sprintf("%d", puzzle.AirtableRecord.ID)
 		air.mutex.Unlock()
 		return air.LockByDiscordChannel(channel)
 	}
@@ -273,4 +177,27 @@ func (air *Airtable) lockPuzzle(id string) func() {
 	mu := value.(*sync.Mutex)
 	mu.Lock()
 	return func() { mu.Unlock() }
+}
+
+func (air *Airtable) parseDatabaseResult(record *db.Puzzle, unlock func()) *schema.Puzzle {
+	return &schema.Puzzle{
+		Name:         record.Name,
+		Answer:       record.Answer,
+		Rounds:       schema.Rounds{},   // TODO
+		Status:       schema.NotStarted, // TODO
+		Description:  record.Description,
+		Location:     record.Location,
+		NameOverride: record.NameOverride,
+
+		AirtableRecord: record,
+		PuzzleURL:      record.PuzzleUrl,
+		SpreadsheetID:  record.SpreadsheetID,
+		DiscordChannel: record.DiscordChannel,
+
+		Archived:    record.Archived,
+		OriginalURL: record.OriginalUrl,
+		VoiceRoom:   record.VoiceRoom,
+
+		Unlock: unlock,
+	}
 }

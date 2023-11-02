@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/mehanizm/airtable"
+	"github.com/emojihunt/emojihunt/db"
 )
 
 type Puzzle struct {
@@ -19,7 +19,7 @@ type Puzzle struct {
 	Location     string
 	NameOverride string
 
-	AirtableRecord *airtable.Record
+	AirtableRecord *db.Puzzle
 	PuzzleURL      string
 	SpreadsheetID  string
 	DiscordChannel string

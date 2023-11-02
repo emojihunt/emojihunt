@@ -1,10 +1,4 @@
 {
-    "airtable": {
-        "api_key": "pat***.********",
-        "base_id": "appy4MPYyL3XDvbj1",
-        "table_id": "tbl9q67rERpnZFpjL",
-        "bot_user_id": "usrVXpRghqUkWY7R2"
-    },
     "discord": {
         "auth_token": "Bot ********",
         "guild_id": "1058090773582721214",

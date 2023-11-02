@@ -1,8 +1,12 @@
 package client
 
 import (
+	"context"
+	"database/sql"
+	"fmt"
+
+	"github.com/emojihunt/emojihunt/db"
 	"github.com/emojihunt/emojihunt/schema"
-	"github.com/mehanizm/airtable"
 )
 
 // AddPuzzles creates the given puzzles in Airtable and returns the created
@@ -10,39 +14,24 @@ import (
 // created puzzle; if the error is nil, the caller must call Unlock() on each
 // puzzle.
 func (air *Airtable) AddPuzzles(puzzles []schema.NewPuzzle, newRound bool) ([]schema.Puzzle, error) {
+	if newRound {
+		return nil, fmt.Errorf("TODO: insert-round logic")
+	}
+
 	var created []schema.Puzzle
-	for i := 0; i < len(puzzles); i += 10 {
-		records := airtable.Records{}
-		limit := i + 10
-		if limit > len(puzzles) {
-			limit = len(puzzles)
-		}
-		for _, puzzle := range puzzles[i:limit] {
-			record := airtable.Record{
-				Fields: map[string]interface{}{
-					"Name":         puzzle.Name,
-					"Round":        puzzle.Round.Serialize(),
-					"Puzzle URL":   puzzle.PuzzleURL,
-					"Original URL": puzzle.PuzzleURL,
-				},
-			}
-			records.Records = append(records.Records, &record)
-		}
-		if newRound {
-			records.Typecast = true
-		}
-		response, err := air.table.AddRecords(&records)
+	for _, puzzle := range puzzles {
+		record, err := air.database.CreatePuzzle(context.TODO(), db.CreatePuzzleParams{
+			Name:        puzzle.Name,
+			Round:       sql.NullInt64{}, // TODO
+			PuzzleUrl:   puzzle.PuzzleURL,
+			OriginalUrl: puzzle.PuzzleURL,
+		})
 		if err != nil {
-			return nil, err
+			return created, err
 		}
-		for _, record := range response.Records {
-			unlock := air.lockPuzzle(record.ID)
-			parsed, err := air.parseRecord(record, unlock)
-			if err != nil {
-				return nil, err
-			}
-			created = append(created, *parsed)
-		}
+		unlock := air.lockPuzzle(fmt.Sprintf("%d", record.ID))
+		parsed := air.parseDatabaseResult(&record, unlock)
+		created = append(created, *parsed)
 	}
 	return created, nil
 }

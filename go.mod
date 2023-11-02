@@ -7,7 +7,6 @@ require (
 	github.com/bwmarrin/discordgo v0.27.1
 	github.com/davecgh/go-spew v1.1.1
 	github.com/mattn/go-sqlite3 v1.14.17
-	github.com/mehanizm/airtable v0.3.1
 	golang.org/x/net v0.17.0
 	golang.org/x/time v0.3.0
 	google.golang.org/api v0.149.0

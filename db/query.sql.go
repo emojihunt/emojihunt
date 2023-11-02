@@ -7,7 +7,48 @@ package db
 
 import (
 	"context"
+	"database/sql"
 )
+
+const createPuzzle = `-- name: CreatePuzzle :one
+INSERT INTO puzzles (name, round, puzzle_url, original_url) VALUES (?, ?, ?, ?)
+RETURNING id, name, answer, round, status, description, location, puzzle_url, spreadsheet_id, discord_channel, original_url, name_override, archived, voice_room, reminder
+`
+
+type CreatePuzzleParams struct {
+	Name        string
+	Round       sql.NullInt64
+	PuzzleUrl   string
+	OriginalUrl string
+}
+
+func (q *Queries) CreatePuzzle(ctx context.Context, arg CreatePuzzleParams) (Puzzle, error) {
+	row := q.db.QueryRowContext(ctx, createPuzzle,
+		arg.Name,
+		arg.Round,
+		arg.PuzzleUrl,
+		arg.OriginalUrl,
+	)
+	var i Puzzle
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.Answer,
+		&i.Round,
+		&i.Status,
+		&i.Description,
+		&i.Location,
+		&i.PuzzleUrl,
+		&i.SpreadsheetID,
+		&i.DiscordChannel,
+		&i.OriginalUrl,
+		&i.NameOverride,
+		&i.Archived,
+		&i.VoiceRoom,
+		&i.Reminder,
+	)
+	return i, err
+}
 
 const getPuzzle = `-- name: GetPuzzle :one
 SELECT id, name, answer, round, status, description, location, puzzle_url, spreadsheet_id, discord_channel, original_url, name_override, archived, voice_room, reminder FROM puzzles
@@ -37,13 +78,13 @@ func (q *Queries) GetPuzzle(ctx context.Context, id int64) (Puzzle, error) {
 	return i, err
 }
 
-const listPuzzles = `-- name: ListPuzzles :many
-SELECT id, name, answer, round, status, description, location, puzzle_url, spreadsheet_id, discord_channel, original_url, name_override, archived, voice_room, reminder FROM puzzles
-ORDER BY id
+const getPuzzlesByDiscordChannel = `-- name: GetPuzzlesByDiscordChannel :many
+SELECT id, name, answer, round, status, description, location, puzzle_url, spreadsheet_id, discord_channel, original_url, name_override, archived, voice_room, reminder from puzzles
+WHERE discord_channel = ?
 `
 
-func (q *Queries) ListPuzzles(ctx context.Context) ([]Puzzle, error) {
-	rows, err := q.db.QueryContext(ctx, listPuzzles)
+func (q *Queries) GetPuzzlesByDiscordChannel(ctx context.Context, discordChannel string) ([]Puzzle, error) {
+	rows, err := q.db.QueryContext(ctx, getPuzzlesByDiscordChannel, discordChannel)
 	if err != nil {
 		return nil, err
 	}
@@ -79,4 +120,289 @@ func (q *Queries) ListPuzzles(ctx context.Context) ([]Puzzle, error) {
 		return nil, err
 	}
 	return items, nil
+}
+
+const listPuzzleDiscoveryFragments = `-- name: ListPuzzleDiscoveryFragments :many
+SELECT id, name, puzzle_url, original_url FROM puzzles
+ORDER BY id
+`
+
+type ListPuzzleDiscoveryFragmentsRow struct {
+	ID          int64
+	Name        string
+	PuzzleUrl   string
+	OriginalUrl string
+}
+
+func (q *Queries) ListPuzzleDiscoveryFragments(ctx context.Context) ([]ListPuzzleDiscoveryFragmentsRow, error) {
+	rows, err := q.db.QueryContext(ctx, listPuzzleDiscoveryFragments)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListPuzzleDiscoveryFragmentsRow
+	for rows.Next() {
+		var i ListPuzzleDiscoveryFragmentsRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Name,
+			&i.PuzzleUrl,
+			&i.OriginalUrl,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listPuzzleIDs = `-- name: ListPuzzleIDs :many
+SELECT id FROM puzzles
+ORDER BY id
+`
+
+func (q *Queries) ListPuzzleIDs(ctx context.Context) ([]int64, error) {
+	rows, err := q.db.QueryContext(ctx, listPuzzleIDs)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []int64
+	for rows.Next() {
+		var id int64
+		if err := rows.Scan(&id); err != nil {
+			return nil, err
+		}
+		items = append(items, id)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listPuzzlesWithReminder = `-- name: ListPuzzlesWithReminder :many
+SELECT id, name, discord_channel, reminder FROM puzzles
+WHERE reminder IS NOT NULL
+ORDER BY reminder
+`
+
+type ListPuzzlesWithReminderRow struct {
+	ID             int64
+	Name           string
+	DiscordChannel string
+	Reminder       sql.NullTime
+}
+
+func (q *Queries) ListPuzzlesWithReminder(ctx context.Context) ([]ListPuzzlesWithReminderRow, error) {
+	rows, err := q.db.QueryContext(ctx, listPuzzlesWithReminder)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListPuzzlesWithReminderRow
+	for rows.Next() {
+		var i ListPuzzlesWithReminderRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Name,
+			&i.DiscordChannel,
+			&i.Reminder,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listPuzzlesWithVoiceRoom = `-- name: ListPuzzlesWithVoiceRoom :many
+SELECT id, name, voice_room FROM puzzles
+WHERE voice_room != ""
+ORDER BY id
+`
+
+type ListPuzzlesWithVoiceRoomRow struct {
+	ID        int64
+	Name      string
+	VoiceRoom string
+}
+
+func (q *Queries) ListPuzzlesWithVoiceRoom(ctx context.Context) ([]ListPuzzlesWithVoiceRoomRow, error) {
+	rows, err := q.db.QueryContext(ctx, listPuzzlesWithVoiceRoom)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListPuzzlesWithVoiceRoomRow
+	for rows.Next() {
+		var i ListPuzzlesWithVoiceRoomRow
+		if err := rows.Scan(&i.ID, &i.Name, &i.VoiceRoom); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listRounds = `-- name: ListRounds :many
+SELECT id, name, emoji FROM rounds
+ORDER BY id
+`
+
+func (q *Queries) ListRounds(ctx context.Context) ([]Round, error) {
+	rows, err := q.db.QueryContext(ctx, listRounds)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Round
+	for rows.Next() {
+		var i Round
+		if err := rows.Scan(&i.ID, &i.Name, &i.Emoji); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const updateArchived = `-- name: UpdateArchived :exec
+UPDATE puzzles SET archived = ?2
+WHERE id = ?1
+`
+
+type UpdateArchivedParams struct {
+	ID       int64
+	Archived bool
+}
+
+func (q *Queries) UpdateArchived(ctx context.Context, arg UpdateArchivedParams) error {
+	_, err := q.db.ExecContext(ctx, updateArchived, arg.ID, arg.Archived)
+	return err
+}
+
+const updateDescription = `-- name: UpdateDescription :exec
+UPDATE puzzles SET description = ?2
+WHERE id = ?1
+`
+
+type UpdateDescriptionParams struct {
+	ID          int64
+	Description string
+}
+
+func (q *Queries) UpdateDescription(ctx context.Context, arg UpdateDescriptionParams) error {
+	_, err := q.db.ExecContext(ctx, updateDescription, arg.ID, arg.Description)
+	return err
+}
+
+const updateDiscordChannel = `-- name: UpdateDiscordChannel :exec
+UPDATE puzzles SET discord_channel = ?2
+WHERE id = ?1
+`
+
+type UpdateDiscordChannelParams struct {
+	ID             int64
+	DiscordChannel string
+}
+
+func (q *Queries) UpdateDiscordChannel(ctx context.Context, arg UpdateDiscordChannelParams) error {
+	_, err := q.db.ExecContext(ctx, updateDiscordChannel, arg.ID, arg.DiscordChannel)
+	return err
+}
+
+const updateLocation = `-- name: UpdateLocation :exec
+UPDATE puzzles SET location = ?2
+WHERE id = ?1
+`
+
+type UpdateLocationParams struct {
+	ID       int64
+	Location string
+}
+
+func (q *Queries) UpdateLocation(ctx context.Context, arg UpdateLocationParams) error {
+	_, err := q.db.ExecContext(ctx, updateLocation, arg.ID, arg.Location)
+	return err
+}
+
+const updateSpreadsheetID = `-- name: UpdateSpreadsheetID :exec
+UPDATE puzzles SET spreadsheet_id = ?2
+WHERE id = ?1
+`
+
+type UpdateSpreadsheetIDParams struct {
+	ID            int64
+	SpreadsheetID string
+}
+
+func (q *Queries) UpdateSpreadsheetID(ctx context.Context, arg UpdateSpreadsheetIDParams) error {
+	_, err := q.db.ExecContext(ctx, updateSpreadsheetID, arg.ID, arg.SpreadsheetID)
+	return err
+}
+
+const updateStatusAndAnswer = `-- name: UpdateStatusAndAnswer :exec
+UPDATE puzzles SET status = ?2, answer = ?3, archived = ?4
+WHERE id = ?1
+`
+
+type UpdateStatusAndAnswerParams struct {
+	ID       int64
+	Status   string
+	Answer   string
+	Archived bool
+}
+
+func (q *Queries) UpdateStatusAndAnswer(ctx context.Context, arg UpdateStatusAndAnswerParams) error {
+	_, err := q.db.ExecContext(ctx, updateStatusAndAnswer,
+		arg.ID,
+		arg.Status,
+		arg.Answer,
+		arg.Archived,
+	)
+	return err
+}
+
+const updateVoiceRoom = `-- name: UpdateVoiceRoom :exec
+UPDATE puzzles SET voice_room = ?2, location = ?3
+WHERE id = ?1
+`
+
+type UpdateVoiceRoomParams struct {
+	ID        int64
+	VoiceRoom string
+	Location  string
+}
+
+func (q *Queries) UpdateVoiceRoom(ctx context.Context, arg UpdateVoiceRoomParams) error {
+	_, err := q.db.ExecContext(ctx, updateVoiceRoom, arg.ID, arg.VoiceRoom, arg.Location)
+	return err
 }

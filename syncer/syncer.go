@@ -22,9 +22,6 @@ type Syncer struct {
 }
 
 func New(airtable *client.Airtable, discord *client.Discord, drive *client.Drive) *Syncer {
-	if airtable.BotUserID == "" {
-		panic("BotUserID must be set!")
-	}
 	return &Syncer{
 		airtable: airtable,
 		discord:  discord,
@@ -95,17 +92,6 @@ func (s *Syncer) IdempotentCreateUpdate(ctx context.Context, puzzle *schema.Puzz
 		puzzle, err = s.HandleStatusChange(ctx, puzzle, false)
 		if err != nil {
 			return nil, err
-		}
-	} else if puzzle.LastModifiedBy != s.airtable.BotUserID && puzzle.LastModifiedBy != "" {
-		var err error
-		if err = s.DiscordCreateUpdatePin(puzzle); err != nil {
-			return nil, fmt.Errorf("unable to set puzzle status message for %q: %w", puzzle.Name, err)
-		}
-		puzzle, err = s.airtable.SetBotFields(puzzle, puzzle.Status, puzzle.ShouldArchive())
-		if err != nil {
-			return nil, fmt.Errorf("failed to update bot fields for puzzle %q: %v", puzzle.Name, err)
-		} else if puzzle.LastModifiedBy != s.airtable.BotUserID {
-			log.Printf("WARNING! updated puzzle but user ID does not match bot's, watch out for infinite loop!")
 		}
 	}
 
