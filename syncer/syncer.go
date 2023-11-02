@@ -8,21 +8,22 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/emojihunt/emojihunt/client"
 	"github.com/emojihunt/emojihunt/db"
+	"github.com/emojihunt/emojihunt/discord"
+	"github.com/emojihunt/emojihunt/drive"
 	"github.com/emojihunt/emojihunt/schema"
 )
 
 type Syncer struct {
 	database *db.Client
-	discord  *client.Discord
-	drive    *client.Drive
+	discord  *discord.Client
+	drive    *drive.Client
 
 	VoiceRoomMutex       sync.Mutex
 	DiscordCategoryMutex sync.Mutex
 }
 
-func New(database *db.Client, discord *client.Discord, drive *client.Drive) *Syncer {
+func New(database *db.Client, discord *discord.Client, drive *drive.Client) *Syncer {
 	return &Syncer{
 		database: database,
 		discord:  discord,

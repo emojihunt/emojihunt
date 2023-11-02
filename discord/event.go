@@ -1,4 +1,4 @@
-package client
+package discord
 
 import (
 	"encoding/json"
@@ -7,11 +7,11 @@ import (
 	"github.com/bwmarrin/discordgo"
 )
 
-func (c *Discord) GetScheduledEvent(id string) (*discordgo.GuildScheduledEvent, error) {
+func (c *Client) GetScheduledEvent(id string) (*discordgo.GuildScheduledEvent, error) {
 	return c.s.GuildScheduledEvent(c.Guild.ID, id, false)
 }
 
-func (c *Discord) ListScheduledEvents() (map[string]*discordgo.GuildScheduledEvent, error) {
+func (c *Client) ListScheduledEvents() (map[string]*discordgo.GuildScheduledEvent, error) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
@@ -37,7 +37,7 @@ func (c *Discord) ListScheduledEvents() (map[string]*discordgo.GuildScheduledEve
 	return events, nil
 }
 
-func (c *Discord) CreateScheduledEvent(params *discordgo.GuildScheduledEventParams) (*discordgo.GuildScheduledEvent, error) {
+func (c *Client) CreateScheduledEvent(params *discordgo.GuildScheduledEventParams) (*discordgo.GuildScheduledEvent, error) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
@@ -51,7 +51,7 @@ func (c *Discord) CreateScheduledEvent(params *discordgo.GuildScheduledEventPara
 	return event, nil
 }
 
-func (c *Discord) UpdateScheduledEvent(event *discordgo.GuildScheduledEvent, fields map[string]interface{}) (*discordgo.GuildScheduledEvent, error) {
+func (c *Client) UpdateScheduledEvent(event *discordgo.GuildScheduledEvent, fields map[string]interface{}) (*discordgo.GuildScheduledEvent, error) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
@@ -71,7 +71,7 @@ func (c *Discord) UpdateScheduledEvent(event *discordgo.GuildScheduledEvent, fie
 	return event, nil
 }
 
-func (c *Discord) DeleteScheduledEvent(event *discordgo.GuildScheduledEvent) error {
+func (c *Client) DeleteScheduledEvent(event *discordgo.GuildScheduledEvent) error {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 

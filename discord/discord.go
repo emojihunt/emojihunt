@@ -1,4 +1,4 @@
-package client
+package discord
 
 import (
 	"fmt"
@@ -11,7 +11,7 @@ import (
 	"github.com/emojihunt/emojihunt/state"
 )
 
-type DiscordConfig struct {
+type Config struct {
 	AuthToken           string `json:"auth_token"`
 	GuildID             string `json:"guild_id"`
 	QMChannelID         string `json:"qm_channel_id"`
@@ -21,7 +21,7 @@ type DiscordConfig struct {
 	QMRoleID            string `json:"qm_role_id"`
 }
 
-type Discord struct {
+type Client struct {
 	s     *discordgo.Session
 	Guild *discordgo.Guild
 
@@ -34,8 +34,8 @@ type Discord struct {
 
 	QMRole *discordgo.Role // so QMs show up in the sidebar
 
-	appCommandHandlers map[string]*DiscordCommand
-	reactionHandlers   []*DiscordReactionHandler
+	appCommandHandlers map[string]*Command
+	reactionHandlers   []*ReactionHandler
 
 	mu                        sync.Mutex // hold while accessing everything below
 	commandsRegistered        bool
@@ -44,7 +44,7 @@ type Discord struct {
 	rateLimits                map[string]*time.Time // url -> retryAfter time
 }
 
-func NewDiscord(config *DiscordConfig, state *state.State) (*Discord, error) {
+func NewClient(config *Config, state *state.State) (*Client, error) {
 	// Initialize discordgo client
 	s, err := discordgo.New(config.AuthToken)
 	if err != nil {
@@ -118,7 +118,7 @@ func NewDiscord(config *DiscordConfig, state *state.State) (*Discord, error) {
 	}
 
 	// Set up slash commands; return
-	discord := &Discord{
+	discord := &Client{
 		s:                         s,
 		Guild:                     guild,
 		HangingOutChannel:         hangingOutChannel,
@@ -127,7 +127,7 @@ func NewDiscord(config *DiscordConfig, state *state.State) (*Discord, error) {
 		TechChannel:               techChannel,
 		DefaultVoiceChannel:       defaultVoiceChannel,
 		QMRole:                    qmRole,
-		appCommandHandlers:        make(map[string]*DiscordCommand),
+		appCommandHandlers:        make(map[string]*Command),
 		scheduledEventsLastUpdate: time.Now().Add(-24 * time.Hour),
 		rateLimits:                make(map[string]*time.Time),
 	}
@@ -160,7 +160,7 @@ func NewDiscord(config *DiscordConfig, state *state.State) (*Discord, error) {
 	return discord, nil
 }
 
-func (c *Discord) CheckRateLimit(url string) *time.Time {
+func (c *Client) CheckRateLimit(url string) *time.Time {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	limit := c.rateLimits[url]
@@ -170,17 +170,17 @@ func (c *Discord) CheckRateLimit(url string) *time.Time {
 	return limit
 }
 
-func (c *Discord) AddHandler(handler interface{}) {
+func (c *Client) AddHandler(handler interface{}) {
 	// Remember to add your intent type to the Intents assignment above!
 	c.s.AddHandler(handler)
 }
 
-func (c *Discord) Close() error {
+func (c *Client) Close() error {
 	return c.s.Close()
 }
 
 // Update the bot's status (idle/active). The caller must hold the state lock.
-func (c *Discord) UpdateStatus(state *state.State) error {
+func (c *Client) UpdateStatus(state *state.State) error {
 	return c.s.UpdateStatusComplex(discordgo.UpdateStatusData{
 		Status: discordComputeBotStatus(state),
 	})
@@ -195,7 +195,7 @@ func discordComputeBotStatus(state *state.State) string {
 	}
 }
 
-func (c *Discord) ChannelSend(ch *discordgo.Channel, msg string) (string, error) {
+func (c *Client) ChannelSend(ch *discordgo.Channel, msg string) (string, error) {
 	if len(msg) > 1950 {
 		msg = msg[:1950] + "... [truncated]"
 	}
@@ -206,7 +206,7 @@ func (c *Discord) ChannelSend(ch *discordgo.Channel, msg string) (string, error)
 	return sent.ID, err
 }
 
-func (c *Discord) ChannelSendComponents(ch *discordgo.Channel, msg string,
+func (c *Client) ChannelSendComponents(ch *discordgo.Channel, msg string,
 	components []discordgo.MessageComponent) (string, error) {
 
 	var actionsRow []discordgo.MessageComponent
@@ -227,16 +227,16 @@ func (c *Discord) ChannelSendComponents(ch *discordgo.Channel, msg string,
 	return sent.ID, nil
 }
 
-func (c *Discord) ChannelSendRawID(chID, msg string) error {
+func (c *Client) ChannelSendRawID(chID, msg string) error {
 	_, err := c.s.ChannelMessageSend(chID, msg)
 	return err
 }
 
-func (c *Discord) GetMessage(ch *discordgo.Channel, messageID string) (*discordgo.Message, error) {
+func (c *Client) GetMessage(ch *discordgo.Channel, messageID string) (*discordgo.Message, error) {
 	return c.s.ChannelMessage(ch.ID, messageID)
 }
 
-func (c *Discord) CreateChannel(name string, category *discordgo.Channel) (*discordgo.Channel, error) {
+func (c *Client) CreateChannel(name string, category *discordgo.Channel) (*discordgo.Channel, error) {
 	return c.s.GuildChannelCreateComplex(c.Guild.ID, discordgo.GuildChannelCreateData{
 		Name:     name,
 		Type:     discordgo.ChannelTypeGuildText,
@@ -244,14 +244,14 @@ func (c *Discord) CreateChannel(name string, category *discordgo.Channel) (*disc
 	})
 }
 
-func (c *Discord) SetChannelName(chID, name string) error {
+func (c *Client) SetChannelName(chID, name string) error {
 	_, err := c.s.ChannelEdit(chID, &discordgo.ChannelEdit{
 		Name: name,
 	})
 	return err
 }
 
-func (c *Discord) GetChannelCategories() (map[string]*discordgo.Channel, error) {
+func (c *Client) GetChannelCategories() (map[string]*discordgo.Channel, error) {
 	channels, err := c.s.GuildChannels(c.Guild.ID)
 	if err != nil {
 		return nil, err
@@ -266,11 +266,11 @@ func (c *Discord) GetChannelCategories() (map[string]*discordgo.Channel, error) 
 	return categories, nil
 }
 
-func (c *Discord) CreateCategory(name string) (*discordgo.Channel, error) {
+func (c *Client) CreateCategory(name string) (*discordgo.Channel, error) {
 	return c.s.GuildChannelCreate(c.Guild.ID, name, discordgo.ChannelTypeGuildCategory)
 }
 
-func (c *Discord) SetChannelCategory(chID string, category *discordgo.Channel) error {
+func (c *Client) SetChannelCategory(chID string, category *discordgo.Channel) error {
 	ch, err := c.s.Channel(chID)
 	if err != nil {
 		return fmt.Errorf("channel id %s not found", chID)
@@ -292,7 +292,7 @@ func (c *Discord) SetChannelCategory(chID string, category *discordgo.Channel) e
 
 // Set the pinned status message, by posting one or editing the existing one.
 // No-op if the status was already set.
-func (c *Discord) CreateUpdatePin(chanID, header string, embed *discordgo.MessageEmbed) error {
+func (c *Client) CreateUpdatePin(chanID, header string, embed *discordgo.MessageEmbed) error {
 	existing, err := c.s.ChannelMessagesPinned(chanID)
 	if err != nil {
 		return err

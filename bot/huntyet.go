@@ -5,16 +5,16 @@ import (
 	"time"
 
 	"github.com/bwmarrin/discordgo"
-	"github.com/emojihunt/emojihunt/client"
+	"github.com/emojihunt/emojihunt/discord"
 )
 
-func RegisterHuntYetBot(discord *client.Discord) {
+func RegisterHuntYetBot(discord *discord.Client) {
 	var bot = huntYetBot{discord}
 	discord.AddCommand(bot.makeSlashCommand())
 }
 
 type huntYetBot struct {
-	discord *client.Discord
+	discord *discord.Client
 }
 
 type hunt struct {
@@ -27,13 +27,13 @@ var hunts = []hunt{
 	{time.Date(2023, 1, 13, 17, 0, 0, 0, time.UTC), time.Date(2023, 1, 15, 23, 0, 0, 0, time.UTC)},
 }
 
-func (bot *huntYetBot) makeSlashCommand() *client.DiscordCommand {
-	return &client.DiscordCommand{
+func (bot *huntYetBot) makeSlashCommand() *discord.Command {
+	return &discord.Command{
 		ApplicationCommand: &discordgo.ApplicationCommand{
 			Name:        "huntyet",
 			Description: "IS IT HUNT YET??? ⏳",
 		},
-		Handler: func(s *discordgo.Session, i *client.DiscordCommandInput) (string, error) {
+		Handler: func(s *discordgo.Session, i *discord.CommandInput) (string, error) {
 			var now = time.Now()
 			for _, h := range hunts {
 				if h.start.After(now) {

@@ -7,12 +7,12 @@ import (
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/davecgh/go-spew/spew"
-	"github.com/emojihunt/emojihunt/client"
+	"github.com/emojihunt/emojihunt/discord"
 	"golang.org/x/net/context"
 )
 
-func (d *Poller) RegisterReactionHandler(discord *client.Discord) {
-	var handler client.DiscordReactionHandler = func(
+func (d *Poller) RegisterReactionHandler(dis *discord.Client) {
+	var handler discord.ReactionHandler = func(
 		s *discordgo.Session, r *discordgo.MessageReaction, kind string) error {
 
 		if d.state.IsKilled() {
@@ -29,7 +29,7 @@ func (d *Poller) RegisterReactionHandler(discord *client.Discord) {
 
 		return d.startOrCancelRoundCreation(roundName, r.MessageID)
 	}
-	discord.AddReactionHandler(&handler)
+	dis.AddReactionHandler(&handler)
 }
 
 func (d *Poller) isRoundNotification(messageID string) string {

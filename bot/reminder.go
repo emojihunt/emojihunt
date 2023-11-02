@@ -7,8 +7,8 @@ import (
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/davecgh/go-spew/spew"
-	"github.com/emojihunt/emojihunt/client"
 	"github.com/emojihunt/emojihunt/db"
+	"github.com/emojihunt/emojihunt/discord"
 	"github.com/emojihunt/emojihunt/state"
 )
 
@@ -21,7 +21,7 @@ var notifications = []time.Duration{
 
 const warnErrorFrequency = 10 * time.Minute
 
-func RegisterReminderBot(database *db.Client, discord *client.Discord, state *state.State) {
+func RegisterReminderBot(database *db.Client, discord *discord.Client, state *state.State) {
 	var bot = reminderBot{database, discord, state}
 	discord.AddCommand(bot.makeSlashCommand())
 	go bot.notificationLoop()
@@ -29,17 +29,17 @@ func RegisterReminderBot(database *db.Client, discord *client.Discord, state *st
 
 type reminderBot struct {
 	database *db.Client
-	discord  *client.Discord
+	discord  *discord.Client
 	state    *state.State
 }
 
-func (bot *reminderBot) makeSlashCommand() *client.DiscordCommand {
-	return &client.DiscordCommand{
+func (bot *reminderBot) makeSlashCommand() *discord.Command {
+	return &discord.Command{
 		ApplicationCommand: &discordgo.ApplicationCommand{
 			Name:        "reminders",
 			Description: "List all puzzle reminders ⏱️",
 		},
-		Handler: func(s *discordgo.Session, i *client.DiscordCommandInput) (string, error) {
+		Handler: func(s *discordgo.Session, i *discord.CommandInput) (string, error) {
 			puzzles, err := bot.database.ListWithReminder()
 			if err != nil {
 				return "", err

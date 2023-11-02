@@ -4,20 +4,20 @@ import (
 	"fmt"
 
 	"github.com/bwmarrin/discordgo"
-	"github.com/emojihunt/emojihunt/client"
+	"github.com/emojihunt/emojihunt/discord"
 )
 
-func RegisterQMBot(discord *client.Discord) {
+func RegisterQMBot(discord *discord.Client) {
 	var bot = qmBot{discord}
 	discord.AddCommand(bot.makeSlashCommand())
 }
 
 type qmBot struct {
-	discord *client.Discord
+	discord *discord.Client
 }
 
-func (bot *qmBot) makeSlashCommand() *client.DiscordCommand {
-	return &client.DiscordCommand{
+func (bot *qmBot) makeSlashCommand() *discord.Command {
+	return &discord.Command{
 		ApplicationCommand: &discordgo.ApplicationCommand{
 			Name:        "qm",
 			Description: "Tools for the Quartermaster 👷",
@@ -34,7 +34,7 @@ func (bot *qmBot) makeSlashCommand() *client.DiscordCommand {
 				},
 			},
 		},
-		Handler: func(s *discordgo.Session, i *client.DiscordCommandInput) (string, error) {
+		Handler: func(s *discordgo.Session, i *discord.CommandInput) (string, error) {
 			if i.IC.ChannelID != bot.discord.QMChannel.ID {
 				return fmt.Sprintf(":tv: Please use `/qm` commands in the %s channel...",
 					bot.discord.QMChannel.Mention()), nil

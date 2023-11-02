@@ -8,15 +8,15 @@ import (
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/davecgh/go-spew/spew"
-	"github.com/emojihunt/emojihunt/client"
 	"github.com/emojihunt/emojihunt/db"
+	"github.com/emojihunt/emojihunt/discord"
 	"github.com/emojihunt/emojihunt/discovery"
 	"github.com/emojihunt/emojihunt/schema"
 	"github.com/emojihunt/emojihunt/state"
 	"github.com/emojihunt/emojihunt/syncer"
 )
 
-func RegisterHuntbotCommand(ctx context.Context, database *db.Client, discord *client.Discord,
+func RegisterHuntbotCommand(ctx context.Context, database *db.Client, discord *discord.Client,
 	discovery *discovery.Poller, syncer *syncer.Syncer, state *state.State) {
 	var bot = huntbotBot{
 		ctx:       ctx,
@@ -32,14 +32,14 @@ func RegisterHuntbotCommand(ctx context.Context, database *db.Client, discord *c
 type huntbotBot struct {
 	ctx       context.Context
 	database  *db.Client
-	discord   *client.Discord
+	discord   *discord.Client
 	discovery *discovery.Poller
 	syncer    *syncer.Syncer
 	state     *state.State
 }
 
-func (bot *huntbotBot) makeSlashCommand() *client.DiscordCommand {
-	return &client.DiscordCommand{
+func (bot *huntbotBot) makeSlashCommand() *discord.Command {
+	return &discord.Command{
 		ApplicationCommand: &discordgo.ApplicationCommand{
 			Name:        "huntbot",
 			Description: "Robot control panel 🤖",
@@ -69,7 +69,7 @@ func (bot *huntbotBot) makeSlashCommand() *client.DiscordCommand {
 				},
 			},
 		},
-		Handler: func(s *discordgo.Session, i *client.DiscordCommandInput) (string, error) {
+		Handler: func(s *discordgo.Session, i *discord.CommandInput) (string, error) {
 			if i.IC.ChannelID != bot.discord.QMChannel.ID && i.IC.ChannelID != bot.discord.TechChannel.ID {
 				return fmt.Sprintf(
 					":tv: Please use `/huntbot` commands in the %s or %s channel.",
@@ -122,7 +122,7 @@ func (bot *huntbotBot) makeSlashCommand() *client.DiscordCommand {
 	}
 }
 
-func (bot *huntbotBot) fullResync(s *discordgo.Session, i *client.DiscordCommandInput) {
+func (bot *huntbotBot) fullResync(s *discordgo.Session, i *discord.CommandInput) {
 	var errs = make(map[string]error)
 
 	puzzles, err := bot.database.ListPuzzles()

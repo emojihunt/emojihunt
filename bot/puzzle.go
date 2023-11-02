@@ -6,13 +6,13 @@ import (
 	"strings"
 
 	"github.com/bwmarrin/discordgo"
-	"github.com/emojihunt/emojihunt/client"
 	"github.com/emojihunt/emojihunt/db"
+	"github.com/emojihunt/emojihunt/discord"
 	"github.com/emojihunt/emojihunt/schema"
 	"github.com/emojihunt/emojihunt/syncer"
 )
 
-func RegisterPuzzleBot(ctx context.Context, database *db.Client, discord *client.Discord, syncer *syncer.Syncer) {
+func RegisterPuzzleBot(ctx context.Context, database *db.Client, discord *discord.Client, syncer *syncer.Syncer) {
 	var bot = puzzleBot{ctx, database, discord, syncer}
 	discord.AddCommand(bot.makeSlashCommand())
 }
@@ -20,12 +20,12 @@ func RegisterPuzzleBot(ctx context.Context, database *db.Client, discord *client
 type puzzleBot struct {
 	ctx      context.Context
 	database *db.Client
-	discord  *client.Discord
+	discord  *discord.Client
 	syncer   *syncer.Syncer
 }
 
-func (bot *puzzleBot) makeSlashCommand() *client.DiscordCommand {
-	return &client.DiscordCommand{
+func (bot *puzzleBot) makeSlashCommand() *discord.Command {
+	return &discord.Command{
 		ApplicationCommand: &discordgo.ApplicationCommand{
 			Name:        "puzzle",
 			Description: "Use in a puzzle channel to update puzzle information 🧩",
@@ -101,7 +101,7 @@ func (bot *puzzleBot) makeSlashCommand() *client.DiscordCommand {
 			},
 		},
 		Async: true,
-		Handler: func(s *discordgo.Session, i *client.DiscordCommandInput) (string, error) {
+		Handler: func(s *discordgo.Session, i *discord.CommandInput) (string, error) {
 			puzzle, err := bot.database.LockByDiscordChannel(i.IC.ChannelID)
 			if err != nil {
 				return "", err

@@ -1,4 +1,4 @@
-package client
+package discord
 
 import (
 	"fmt"
@@ -8,13 +8,13 @@ import (
 	"github.com/davecgh/go-spew/spew"
 )
 
-type DiscordCommand struct {
-	Handler            DiscordCommandHandler
+type Command struct {
+	Handler            CommandHandler
 	ApplicationCommand *discordgo.ApplicationCommand
 	Async              bool
 }
 
-type DiscordCommandInput struct {
+type CommandInput struct {
 	IC         *discordgo.InteractionCreate
 	User       *discordgo.User
 	Slug       string // command and subcommand, for logging
@@ -22,9 +22,9 @@ type DiscordCommandInput struct {
 	Subcommand *discordgo.ApplicationCommandInteractionDataOption
 }
 
-type DiscordCommandHandler func(*discordgo.Session, *DiscordCommandInput) (string, error)
+type CommandHandler func(*discordgo.Session, *CommandInput) (string, error)
 
-func (c *Discord) AddCommand(command *DiscordCommand) {
+func (c *Client) AddCommand(command *Command) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
@@ -34,7 +34,7 @@ func (c *Discord) AddCommand(command *DiscordCommand) {
 	c.appCommandHandlers[command.ApplicationCommand.Name] = command
 }
 
-func (c *Discord) RegisterCommands() error {
+func (c *Client) RegisterCommands() error {
 	var appCommands []*discordgo.ApplicationCommand
 	for _, command := range c.appCommandHandlers {
 		appCommands = append(appCommands, command.ApplicationCommand)
@@ -51,13 +51,13 @@ func (c *Discord) RegisterCommands() error {
 	return nil
 }
 
-func (c *Discord) commandHandler(s *discordgo.Session, i *discordgo.InteractionCreate) {
+func (c *Client) commandHandler(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	if i.Type != discordgo.InteractionApplicationCommand {
 		log.Printf("discord: ignoring interaction of unknown type: %v", i.Type)
 		return
 	}
 
-	input := &DiscordCommandInput{
+	input := &CommandInput{
 		IC:      i,
 		User:    i.User,
 		Command: i.ApplicationCommandData().Name,
@@ -120,7 +120,7 @@ func (c *Discord) commandHandler(s *discordgo.Session, i *discordgo.InteractionC
 	}
 }
 
-func (c *Discord) OptionByName(options []*discordgo.ApplicationCommandInteractionDataOption, name string) (*discordgo.ApplicationCommandInteractionDataOption, error) {
+func (c *Client) OptionByName(options []*discordgo.ApplicationCommandInteractionDataOption, name string) (*discordgo.ApplicationCommandInteractionDataOption, error) {
 	var result *discordgo.ApplicationCommandInteractionDataOption
 	for _, opt := range options {
 		if opt.Name == name {

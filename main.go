@@ -12,17 +12,18 @@ import (
 	_ "net/http/pprof"
 
 	"github.com/emojihunt/emojihunt/bot"
-	"github.com/emojihunt/emojihunt/client"
 	"github.com/emojihunt/emojihunt/db"
+	"github.com/emojihunt/emojihunt/discord"
 	"github.com/emojihunt/emojihunt/discovery"
+	"github.com/emojihunt/emojihunt/drive"
 	"github.com/emojihunt/emojihunt/server"
 	"github.com/emojihunt/emojihunt/state"
 	"github.com/emojihunt/emojihunt/syncer"
 )
 
 type Config struct {
-	Discord       *client.DiscordConfig      `json:"discord"`
-	GoogleDrive   *client.DriveConfig        `json:"google_drive"`
+	Discord       *discord.Config            `json:"discord"`
+	GoogleDrive   *drive.Config              `json:"google_drive"`
 	Server        *server.ServerConfig       `json:"server"`
 	Autodiscovery *discovery.DiscoveryConfig `json:"autodiscovery"`
 }
@@ -85,13 +86,13 @@ func main() {
 	db := db.OpenDatabase(ctx, *database)
 
 	// Set up clients
-	discord, err := client.NewDiscord(config.Discord, state)
+	discord, err := discord.NewClient(config.Discord, state)
 	if err != nil {
 		log.Fatalf("error creating discord client: %v", err)
 	}
 	defer discord.Close()
 
-	drive, err := client.NewDrive(ctx, config.GoogleDrive)
+	drive, err := drive.NewClient(ctx, config.GoogleDrive)
 	if err != nil {
 		log.Fatalf("error creating drive integration: %v", err)
 	}
