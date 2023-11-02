@@ -10,3 +10,8 @@ sql:
         rename:
           puzzle_url: "PuzzleURL"
           original_url: "OriginalURL"
+        overrides:
+          - column: "puzzles.rounds"
+            go_type: "github.com/emojihunt/emojihunt/schema.Rounds"
+          - column: "puzzles.status"
+            go_type: "github.com/emojihunt/emojihunt/schema.Status"

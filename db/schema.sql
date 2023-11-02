@@ -2,7 +2,7 @@ CREATE TABLE puzzles (
     id              INTEGER PRIMARY KEY,
     name            TEXT    NOT NULL,
     answer          TEXT    NOT NULL,
-    round           INTEGER,
+    rounds          TEXT    NOT NULL,
     status          TEXT    NOT NULL,
 
     description     TEXT    NOT NULL,
@@ -17,9 +17,7 @@ CREATE TABLE puzzles (
     archived        BOOLEAN NOT NULL,
 
     voice_room      TEXT    NOT NULL,
-    reminder        DATETIME,
-
-    FOREIGN KEY(round) REFERENCES rounds(id)
+    reminder        DATETIME
 );
 
 CREATE TABLE rounds (

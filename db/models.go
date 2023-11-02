@@ -6,14 +6,16 @@ package db
 
 import (
 	"database/sql"
+
+	"github.com/emojihunt/emojihunt/schema"
 )
 
 type Puzzle struct {
 	ID             int64
 	Name           string
 	Answer         string
-	Round          sql.NullInt64
-	Status         string
+	Rounds         schema.Rounds
+	Status         schema.Status
 	Description    string
 	Location       string
 	PuzzleURL      string

@@ -29,7 +29,7 @@ SELECT * FROM rounds
 ORDER BY id;
 
 -- name: CreatePuzzle :one
-INSERT INTO puzzles (name, round, puzzle_url, original_url) VALUES (?, ?, ?, ?)
+INSERT INTO puzzles (name, rounds, puzzle_url, original_url) VALUES (?, ?, ?, ?)
 RETURNING *;
 
 -- name: UpdateDiscordChannel :one

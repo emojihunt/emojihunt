@@ -2,7 +2,6 @@ package client
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 
 	"github.com/emojihunt/emojihunt/db"
@@ -22,7 +21,7 @@ func (air *Airtable) AddPuzzles(puzzles []schema.NewPuzzle, newRound bool) ([]sc
 	for _, puzzle := range puzzles {
 		record, err := air.database.CreatePuzzle(context.TODO(), db.CreatePuzzleParams{
 			Name:        puzzle.Name,
-			Round:       sql.NullInt64{}, // TODO
+			Rounds:      schema.Rounds{puzzle.Round},
 			PuzzleURL:   puzzle.PuzzleURL,
 			OriginalURL: puzzle.PuzzleURL,
 		})

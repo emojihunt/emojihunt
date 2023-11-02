@@ -8,16 +8,18 @@ package db
 import (
 	"context"
 	"database/sql"
+
+	"github.com/emojihunt/emojihunt/schema"
 )
 
 const createPuzzle = `-- name: CreatePuzzle :one
-INSERT INTO puzzles (name, round, puzzle_url, original_url) VALUES (?, ?, ?, ?)
-RETURNING id, name, answer, round, status, description, location, puzzle_url, spreadsheet_id, discord_channel, original_url, name_override, archived, voice_room, reminder
+INSERT INTO puzzles (name, rounds, puzzle_url, original_url) VALUES (?, ?, ?, ?)
+RETURNING id, name, answer, rounds, status, description, location, puzzle_url, spreadsheet_id, discord_channel, original_url, name_override, archived, voice_room, reminder
 `
 
 type CreatePuzzleParams struct {
 	Name        string
-	Round       sql.NullInt64
+	Rounds      schema.Rounds
 	PuzzleURL   string
 	OriginalURL string
 }
@@ -25,7 +27,7 @@ type CreatePuzzleParams struct {
 func (q *Queries) CreatePuzzle(ctx context.Context, arg CreatePuzzleParams) (Puzzle, error) {
 	row := q.db.QueryRowContext(ctx, createPuzzle,
 		arg.Name,
-		arg.Round,
+		arg.Rounds,
 		arg.PuzzleURL,
 		arg.OriginalURL,
 	)
@@ -34,7 +36,7 @@ func (q *Queries) CreatePuzzle(ctx context.Context, arg CreatePuzzleParams) (Puz
 		&i.ID,
 		&i.Name,
 		&i.Answer,
-		&i.Round,
+		&i.Rounds,
 		&i.Status,
 		&i.Description,
 		&i.Location,
@@ -51,7 +53,7 @@ func (q *Queries) CreatePuzzle(ctx context.Context, arg CreatePuzzleParams) (Puz
 }
 
 const getPuzzle = `-- name: GetPuzzle :one
-SELECT id, name, answer, round, status, description, location, puzzle_url, spreadsheet_id, discord_channel, original_url, name_override, archived, voice_room, reminder FROM puzzles
+SELECT id, name, answer, rounds, status, description, location, puzzle_url, spreadsheet_id, discord_channel, original_url, name_override, archived, voice_room, reminder FROM puzzles
 WHERE id = ? LIMIT 1
 `
 
@@ -62,7 +64,7 @@ func (q *Queries) GetPuzzle(ctx context.Context, id int64) (Puzzle, error) {
 		&i.ID,
 		&i.Name,
 		&i.Answer,
-		&i.Round,
+		&i.Rounds,
 		&i.Status,
 		&i.Description,
 		&i.Location,
@@ -79,7 +81,7 @@ func (q *Queries) GetPuzzle(ctx context.Context, id int64) (Puzzle, error) {
 }
 
 const getPuzzlesByDiscordChannel = `-- name: GetPuzzlesByDiscordChannel :many
-SELECT id, name, answer, round, status, description, location, puzzle_url, spreadsheet_id, discord_channel, original_url, name_override, archived, voice_room, reminder from puzzles
+SELECT id, name, answer, rounds, status, description, location, puzzle_url, spreadsheet_id, discord_channel, original_url, name_override, archived, voice_room, reminder from puzzles
 WHERE discord_channel = ?
 `
 
@@ -96,7 +98,7 @@ func (q *Queries) GetPuzzlesByDiscordChannel(ctx context.Context, discordChannel
 			&i.ID,
 			&i.Name,
 			&i.Answer,
-			&i.Round,
+			&i.Rounds,
 			&i.Status,
 			&i.Description,
 			&i.Location,
@@ -472,7 +474,7 @@ RETURNING id, name, answer, round, status, description, location, puzzle_url, sp
 
 type UpdateStatusAndAnswerParams struct {
 	ID       int64
-	Status   string
+	Status   schema.Status
 	Answer   string
 	Archived bool
 }

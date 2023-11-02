@@ -34,7 +34,7 @@ func (air *Airtable) SetSpreadsheetID(puzzle *schema.Puzzle, spreadsheet string)
 
 func (air *Airtable) SetStatusAndAnswer(puzzle *schema.Puzzle, status schema.Status, answer string) (*schema.Puzzle, error) {
 	result, err := air.database.UpdateStatusAndAnswer(context.TODO(), db.UpdateStatusAndAnswerParams{
-		ID: puzzle.ID, Status: string(status), Answer: answer, Archived: status.IsSolved(),
+		ID: puzzle.ID, Status: status, Answer: answer, Archived: status.IsSolved(),
 	})
 	if err != nil {
 		return nil, err

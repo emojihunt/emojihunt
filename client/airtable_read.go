@@ -156,8 +156,8 @@ func (air *Airtable) parseDatabaseResult(record *db.Puzzle, unlock func()) *sche
 		ID:           record.ID,
 		Name:         record.Name,
 		Answer:       record.Answer,
-		Rounds:       schema.Rounds{},   // TODO
-		Status:       schema.NotStarted, // TODO
+		Rounds:       record.Rounds,
+		Status:       record.Status,
 		Description:  record.Description,
 		Location:     record.Location,
 		NameOverride: record.NameOverride,
