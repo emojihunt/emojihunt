@@ -50,7 +50,7 @@ func Start(airtable *client.Airtable, syncer *syncer.Syncer, config *ServerConfi
 func (s *Server) ResyncURL(puzzle *schema.Puzzle) string {
 	return fmt.Sprintf(
 		"%s/resync?token=%s&record=%d",
-		s.origin, s.secret, puzzle.AirtableRecord.ID,
+		s.origin, s.secret, puzzle.ID,
 	)
 }
 

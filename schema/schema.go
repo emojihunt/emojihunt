@@ -6,11 +6,11 @@ import (
 	"fmt"
 	"strings"
 	"time"
-
-	"github.com/emojihunt/emojihunt/db"
 )
 
 type Puzzle struct {
+	ID int64
+
 	Name         string
 	Answer       string
 	Rounds       Rounds
@@ -19,7 +19,6 @@ type Puzzle struct {
 	Location     string
 	NameOverride string
 
-	AirtableRecord *db.Puzzle
 	PuzzleURL      string
 	SpreadsheetID  string
 	DiscordChannel string

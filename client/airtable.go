@@ -31,6 +31,6 @@ func NewAirtable(database *db.Queries) *Airtable {
 
 func (air *Airtable) EditURL(puzzle *schema.Puzzle) string {
 	return fmt.Sprintf(
-		"https://airtable.com/TODO/TODO/%d", puzzle.AirtableRecord.ID,
+		"https://airtable.com/TODO/TODO/%d", puzzle.ID,
 	)
 }

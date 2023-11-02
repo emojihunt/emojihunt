@@ -153,6 +153,7 @@ func (air *Airtable) lockPuzzle(id int64) func() {
 
 func (air *Airtable) parseDatabaseResult(record *db.Puzzle, unlock func()) *schema.Puzzle {
 	return &schema.Puzzle{
+		ID:           record.ID,
 		Name:         record.Name,
 		Answer:       record.Answer,
 		Rounds:       schema.Rounds{},   // TODO
@@ -161,7 +162,6 @@ func (air *Airtable) parseDatabaseResult(record *db.Puzzle, unlock func()) *sche
 		Location:     record.Location,
 		NameOverride: record.NameOverride,
 
-		AirtableRecord: record,
 		PuzzleURL:      record.PuzzleURL,
 		SpreadsheetID:  record.SpreadsheetID,
 		DiscordChannel: record.DiscordChannel,
