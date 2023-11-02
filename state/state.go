@@ -10,12 +10,11 @@ import (
 )
 
 type State struct {
-	AirtableLastWarn   map[string]time.Time `json:"airtable_last_warn"`
-	DiscoveryLastWarn  time.Time            `json:"discovery_last_warn"`
-	DiscoveryNewRounds map[string]NewRound  `json:"discovery_new_rounds"`
-	HuntbotDisabled    bool                 `json:"huntbot_disabled"`
-	ReminderTimestamp  time.Time            `json:"reminder_timestamp"`
-	ReminderWarnError  time.Time            `json:"reminder_warn_error"`
+	DiscoveryLastWarn  time.Time           `json:"discovery_last_warn"`
+	DiscoveryNewRounds map[string]NewRound `json:"discovery_new_rounds"`
+	HuntbotDisabled    bool                `json:"huntbot_disabled"`
+	ReminderTimestamp  time.Time           `json:"reminder_timestamp"`
+	ReminderWarnError  time.Time           `json:"reminder_warn_error"`
 
 	mutex    sync.Mutex `json:"-"`
 	filename string     `json:"-"`
@@ -40,9 +39,6 @@ func Load(filename string) (*State, error) {
 	}
 	var state State
 	err = json.Unmarshal(data, &state)
-	if state.AirtableLastWarn == nil {
-		state.AirtableLastWarn = make(map[string]time.Time)
-	}
 	if state.DiscoveryNewRounds == nil {
 		state.DiscoveryNewRounds = make(map[string]NewRound)
 	}

@@ -9,11 +9,12 @@ import (
 	"sync"
 
 	"github.com/emojihunt/emojihunt/client"
+	"github.com/emojihunt/emojihunt/db"
 	"github.com/emojihunt/emojihunt/schema"
 )
 
 type Syncer struct {
-	airtable *client.Airtable
+	database *db.Client
 	discord  *client.Discord
 	drive    *client.Drive
 
@@ -21,18 +22,18 @@ type Syncer struct {
 	DiscordCategoryMutex sync.Mutex
 }
 
-func New(airtable *client.Airtable, discord *client.Discord, drive *client.Drive) *Syncer {
+func New(database *db.Client, discord *client.Discord, drive *client.Drive) *Syncer {
 	return &Syncer{
-		airtable: airtable,
+		database: database,
 		discord:  discord,
 		drive:    drive,
 	}
 }
 
 // IdempotentCreateUpdate synchronizes Discord and Google Drive with the puzzle
-// information in Airtable. When a puzzle is newly added, it creates the
-// spreadsheet and Discord channel and links them in Airtable. When a puzzle's
-// status is updated, it handles that also.
+// information in the database. When a puzzle is newly added, it creates the
+// spreadsheet and Discord channel and stores their IDs in the database. When a
+// puzzle's status is updated, it handles that also.
 func (s *Syncer) IdempotentCreateUpdate(ctx context.Context, puzzle *schema.Puzzle) (*schema.Puzzle, error) {
 	// 1. Create the spreadsheet, if required
 	if puzzle.SpreadsheetID == "" {
@@ -41,7 +42,7 @@ func (s *Syncer) IdempotentCreateUpdate(ctx context.Context, puzzle *schema.Puzz
 			return nil, fmt.Errorf("error creating spreadsheet for %q: %v", puzzle.Name, err)
 		}
 
-		puzzle, err = s.airtable.SetSpreadsheetID(puzzle, spreadsheet)
+		puzzle, err = s.database.SetSpreadsheetID(puzzle, spreadsheet)
 		if err != nil {
 			return nil, fmt.Errorf("error setting spreadsheet id for puzzle %q: %v", puzzle.Name, err)
 		}
@@ -65,7 +66,7 @@ func (s *Syncer) IdempotentCreateUpdate(ctx context.Context, puzzle *schema.Puzz
 			return nil, fmt.Errorf("error creating discord channel for %q: %v", puzzle.Name, err)
 		}
 
-		puzzle, err = s.airtable.SetDiscordChannel(puzzle, channel.ID)
+		puzzle, err = s.database.SetDiscordChannel(puzzle, channel.ID)
 		if err != nil {
 			return nil, fmt.Errorf("error setting discord channel for puzzle %q: %v", puzzle.Name, err)
 		}
@@ -121,7 +122,7 @@ func (s *Syncer) HandleStatusChange(ctx context.Context, puzzle *schema.Puzzle, 
 	// Update bot status in Airtable, unless we're in a bot handler and this has
 	// already been done.
 	if !botRequest {
-		puzzle, err = s.airtable.SetBotFields(puzzle)
+		puzzle, err = s.database.SetBotFields(puzzle)
 		if err != nil {
 			return nil, fmt.Errorf("failed to update bot fields for puzzle %q: %v", puzzle.Name, err)
 		}
@@ -147,7 +148,7 @@ func (s *Syncer) HandleStatusChange(ctx context.Context, puzzle *schema.Puzzle, 
 		if puzzle.VoiceRoom != "" {
 			s.VoiceRoomMutex.Lock()
 			defer s.VoiceRoomMutex.Unlock()
-			puzzle, err = s.airtable.SetVoiceRoom(puzzle, nil)
+			puzzle, err = s.database.SetVoiceRoom(puzzle, nil)
 			if err != nil {
 				return nil, fmt.Errorf("error unsetting voice room: %v", err)
 			}
@@ -188,7 +189,7 @@ func (s *Syncer) ForceUpdate(ctx context.Context, puzzle *schema.Puzzle) (*schem
 	}
 
 	// Update bot status in Airtable
-	puzzle, err = s.airtable.SetBotFields(puzzle)
+	puzzle, err = s.database.SetBotFields(puzzle)
 	if err != nil {
 		return nil, err
 	}

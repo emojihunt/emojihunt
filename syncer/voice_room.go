@@ -20,8 +20,8 @@ const (
 	eventDelay = 7 * 24 * time.Hour
 )
 
-// SyncVoiceRooms synchronizes all Discord scheduled events with Airtable,
-// creating and deleting events so that Discord matches the state in Airtable.
+// SyncVoiceRooms synchronizes all Discord scheduled events, creating and
+// deleting events so that Discord matches the database state.
 //
 // The caller *must* acquire VoiceRoomMutex before calling this function.
 func (s *Syncer) SyncVoiceRooms(ctx context.Context) error {
@@ -30,7 +30,7 @@ func (s *Syncer) SyncVoiceRooms(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	puzzles, err := s.airtable.ListWithVoiceRoom()
+	puzzles, err := s.database.ListWithVoiceRoom()
 	if err != nil {
 		return err
 	}

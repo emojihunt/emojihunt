@@ -64,7 +64,7 @@ func (s *Syncer) notifyPuzzleSolvedMissingAnswer(puzzle *schema.Puzzle) error {
 			Label: "Edit in Airtable",
 			Style: discordgo.LinkButton,
 			Emoji: discordgo.ComponentEmoji{Name: "📝"},
-			URL:   s.airtable.EditURL(puzzle),
+			URL:   fmt.Sprintf("https://TODO/edit/%d", puzzle.ID),
 		},
 	}
 	_, err := s.discord.ChannelSendComponents(s.discord.QMChannel, msg, components)

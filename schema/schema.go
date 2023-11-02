@@ -238,20 +238,6 @@ func (s Status) Human() string {
 	}
 }
 
-func (s Status) PrettyForAirtable() interface{} {
-	if s == NotStarted {
-		return nil
-	}
-	return s.Human()
-}
-
-func (s Status) TextForAirtable() interface{} {
-	if s == NotStarted {
-		return nil
-	}
-	return string(s)
-}
-
 func (s Status) IsSolved() bool {
 	return s == Solved || s == Backsolved
 }

@@ -8,6 +8,7 @@ import (
 	"github.com/bwmarrin/discordgo"
 	"github.com/davecgh/go-spew/spew"
 	"github.com/emojihunt/emojihunt/client"
+	"github.com/emojihunt/emojihunt/db"
 	"github.com/emojihunt/emojihunt/state"
 )
 
@@ -20,14 +21,14 @@ var notifications = []time.Duration{
 
 const warnErrorFrequency = 10 * time.Minute
 
-func RegisterReminderBot(airtable *client.Airtable, discord *client.Discord, state *state.State) {
-	var bot = reminderBot{airtable, discord, state}
+func RegisterReminderBot(database *db.Client, discord *client.Discord, state *state.State) {
+	var bot = reminderBot{database, discord, state}
 	discord.AddCommand(bot.makeSlashCommand())
 	go bot.notificationLoop()
 }
 
 type reminderBot struct {
-	airtable *client.Airtable
+	database *db.Client
 	discord  *client.Discord
 	state    *state.State
 }
@@ -39,7 +40,7 @@ func (bot *reminderBot) makeSlashCommand() *client.DiscordCommand {
 			Description: "List all puzzle reminders ⏱️",
 		},
 		Handler: func(s *discordgo.Session, i *client.DiscordCommandInput) (string, error) {
-			puzzles, err := bot.airtable.ListWithReminder()
+			puzzles, err := bot.database.ListWithReminder()
 			if err != nil {
 				return "", err
 			}
@@ -108,7 +109,7 @@ func (bot *reminderBot) notificationLoop() {
 func (bot *reminderBot) processNotifications(since time.Time) (*time.Time, error) {
 	now := time.Now()
 
-	puzzles, err := bot.airtable.ListWithReminder()
+	puzzles, err := bot.database.ListWithReminder()
 	if err != nil {
 		return nil, err
 	}

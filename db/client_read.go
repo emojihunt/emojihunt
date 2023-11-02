@@ -1,4 +1,4 @@
-package client
+package db
 
 import (
 	"context"
@@ -6,13 +6,12 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/emojihunt/emojihunt/db"
 	"github.com/emojihunt/emojihunt/schema"
 )
 
 // ListPuzzles returns a list of all known record IDs.
-func (air *Airtable) ListPuzzles() ([]int64, error) {
-	return air.database.ListPuzzleIDs(context.TODO())
+func (c *Client) ListPuzzles() ([]int64, error) {
+	return c.queries.ListPuzzleIDs(context.TODO())
 }
 
 // ListPuzzleFragmentsAndRounds returns a collection of all puzzle names and
@@ -22,9 +21,9 @@ func (air *Airtable) ListPuzzles() ([]int64, error) {
 // so it's safe.
 //
 // Note that puzzle names and URLs are *uppercased* in the result map.
-func (air *Airtable) ListPuzzleFragmentsAndRounds() (map[string]bool, map[string]db.Round, error) {
+func (c *Client) ListPuzzleFragmentsAndRounds() (map[string]bool, map[string]schema.Round, error) {
 	var fragments = make(map[string]bool)
-	puzzles, err := air.database.ListPuzzleDiscoveryFragments(context.TODO())
+	puzzles, err := c.queries.ListPuzzleDiscoveryFragments(context.TODO())
 	if err != nil {
 		return nil, nil, err
 	}
@@ -34,27 +33,30 @@ func (air *Airtable) ListPuzzleFragmentsAndRounds() (map[string]bool, map[string
 		fragments[strings.ToUpper(puzzle.OriginalURL)] = true
 	}
 
-	var rounds = make(map[string]db.Round)
-	result, err := air.database.ListRounds(context.TODO())
+	var rounds = make(map[string]schema.Round)
+	result, err := c.queries.ListRounds(context.TODO())
 	if err != nil {
 		return nil, nil, err
 	}
 	for _, round := range result {
-		rounds[round.Name] = round
+		rounds[round.Name] = schema.Round{
+			Name:  round.Name,
+			Emoji: round.Emoji,
+		}
 	}
 
 	return fragments, rounds, nil
 }
 
-// ListWithVoiceRoom returns all records in Airtable with a voice room set.
-// Instead of locking all of the matching puzzles, we return a miniature struct
-// containing just the puzzle name and voice room ID. The puzzle name is safe to
-// access because it's ~immutable, and the voice room ID is safe to access
-// because it's only written when holding VoiceRoomMutex.
+// ListWithVoiceRoom returns all records with a voice room set. Instead of
+// locking all of the matching puzzles, we return a miniature struct containing
+// just the puzzle name and voice room ID. The puzzle name is safe to access
+// because it's ~immutable, and the voice room ID is safe to access because it's
+// only written when holding VoiceRoomMutex.
 //
 // The caller *must* acquire VoiceRoomMutex before calling this function.
-func (air *Airtable) ListWithVoiceRoom() ([]schema.VoicePuzzle, error) {
-	puzzles, err := air.database.ListPuzzlesWithVoiceRoom(context.TODO())
+func (c *Client) ListWithVoiceRoom() ([]schema.VoicePuzzle, error) {
+	puzzles, err := c.queries.ListPuzzlesWithVoiceRoom(context.TODO())
 	if err != nil {
 		return nil, err
 	}
@@ -70,16 +72,16 @@ func (air *Airtable) ListWithVoiceRoom() ([]schema.VoicePuzzle, error) {
 	return voicePuzzles, nil
 }
 
-// ListWithReminder returns all records in Airtable with a reminder set. Instead
-// of locking all of the matching puzzles, we return a miniature struct
-// containing just the puzzle name, channel ID, and reminder time. The puzzle
-// name and channel ID are safe to access because they're ~immutable; the
-// reminder time is loaded at the current timestamp without coordination, which
-// is less ideal but close enough.
+// ListWithReminder returns all records with a reminder set. Instead of locking
+// all of the matching puzzles, we return a miniature struct containing just the
+// puzzle name, channel ID, and reminder time. The puzzle name and channel ID
+// are safe to access because they're ~immutable; the reminder time is loaded at
+// the current timestamp without coordination, which is less ideal but close
+// enough.
 //
 // Results are returned in sorted order.
-func (air *Airtable) ListWithReminder() ([]schema.ReminderPuzzle, error) {
-	puzzles, err := air.database.ListPuzzlesWithReminder(context.TODO())
+func (c *Client) ListWithReminder() ([]schema.ReminderPuzzle, error) {
+	puzzles, err := c.queries.ListPuzzlesWithReminder(context.TODO())
 	if err != nil {
 		return nil, err
 	}
@@ -96,28 +98,27 @@ func (air *Airtable) ListWithReminder() ([]schema.ReminderPuzzle, error) {
 	return reminderPuzzles, nil
 }
 
-// LockByID locks the given Airtable record ID and loads the corresponding
-// puzzle under the lock. If no error is returned, the caller is responsible for
-// calling Unlock() on the puzzle.
-func (air *Airtable) LockByID(id int64) (*schema.Puzzle, error) {
-	unlock := air.lockPuzzle(id)
+// LockByID locks the given record ID and loads the corresponding puzzle under
+// the lock. If no error is returned, the caller is responsible for calling
+// Unlock() on the puzzle.
+func (c *Client) LockByID(id int64) (*schema.Puzzle, error) {
+	unlock := c.lockPuzzle(id)
 
-	record, err := air.database.GetPuzzle(context.TODO(), id)
+	record, err := c.queries.GetPuzzle(context.TODO(), id)
 	if err != nil {
 		unlock()
 		return nil, err
 	}
-	puzzle := air.parseDatabaseResult(&record, unlock)
+	puzzle := c.parseDatabaseResult(&record, unlock)
 	return puzzle, nil
 }
 
-// LockByDiscordChannel maps the given Discord channel ID using our cache, then
-// locks the given Airtable record ID and loads the corresponding puzzle under
-// the lock. If no error is returned, the caller is responsible for calling
-// Unlock() on the puzzle.
-func (air *Airtable) LockByDiscordChannel(channel string) (*schema.Puzzle, error) {
+// LockByDiscordChannel finds, locks and returns the matching record. If no
+// error is returned, the caller is responsible for calling Unlock() on the
+// puzzle.
+func (c *Client) LockByDiscordChannel(channel string) (*schema.Puzzle, error) {
 	for i := 0; i < 5; i++ {
-		response, err := air.database.GetPuzzlesByDiscordChannel(context.TODO(), channel)
+		response, err := c.queries.GetPuzzlesByDiscordChannel(context.TODO(), channel)
 		if err != nil {
 			return nil, err
 		} else if len(response) < 1 {
@@ -127,13 +128,13 @@ func (air *Airtable) LockByDiscordChannel(channel string) (*schema.Puzzle, error
 		}
 
 		// Reload object under lock
-		unlock := air.lockPuzzle(response[0].ID)
-		record, err := air.database.GetPuzzle(context.TODO(), response[0].ID)
+		unlock := c.lockPuzzle(response[0].ID)
+		record, err := c.queries.GetPuzzle(context.TODO(), response[0].ID)
 		if err != nil {
 			unlock()
 			return nil, err
 		}
-		puzzle := air.parseDatabaseResult(&record, unlock)
+		puzzle := c.parseDatabaseResult(&record, unlock)
 		if puzzle.DiscordChannel == channel {
 			return puzzle, nil
 		}
@@ -143,15 +144,15 @@ func (air *Airtable) LockByDiscordChannel(channel string) (*schema.Puzzle, error
 	return nil, fmt.Errorf("discord channel %q is unstable", channel)
 }
 
-func (air *Airtable) lockPuzzle(id int64) func() {
+func (c *Client) lockPuzzle(id int64) func() {
 	// https://stackoverflow.com/a/64612611
-	value, _ := air.mutexes.LoadOrStore(id, &sync.Mutex{})
+	value, _ := c.mutexes.LoadOrStore(id, &sync.Mutex{})
 	mu := value.(*sync.Mutex)
 	mu.Lock()
 	return func() { mu.Unlock() }
 }
 
-func (air *Airtable) parseDatabaseResult(record *db.Puzzle, unlock func()) *schema.Puzzle {
+func (c *Client) parseDatabaseResult(record *Puzzle, unlock func()) *schema.Puzzle {
 	return &schema.Puzzle{
 		ID:           record.ID,
 		Name:         record.Name,

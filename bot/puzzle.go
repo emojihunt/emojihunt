@@ -7,18 +7,19 @@ import (
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/emojihunt/emojihunt/client"
+	"github.com/emojihunt/emojihunt/db"
 	"github.com/emojihunt/emojihunt/schema"
 	"github.com/emojihunt/emojihunt/syncer"
 )
 
-func RegisterPuzzleBot(ctx context.Context, airtable *client.Airtable, discord *client.Discord, syncer *syncer.Syncer) {
-	var bot = puzzleBot{ctx, airtable, discord, syncer}
+func RegisterPuzzleBot(ctx context.Context, database *db.Client, discord *client.Discord, syncer *syncer.Syncer) {
+	var bot = puzzleBot{ctx, database, discord, syncer}
 	discord.AddCommand(bot.makeSlashCommand())
 }
 
 type puzzleBot struct {
 	ctx      context.Context
-	airtable *client.Airtable
+	database *db.Client
 	discord  *client.Discord
 	syncer   *syncer.Syncer
 }
@@ -101,7 +102,7 @@ func (bot *puzzleBot) makeSlashCommand() *client.DiscordCommand {
 		},
 		Async: true,
 		Handler: func(s *discordgo.Session, i *client.DiscordCommandInput) (string, error) {
-			puzzle, err := bot.airtable.LockByDiscordChannel(i.IC.ChannelID)
+			puzzle, err := bot.database.LockByDiscordChannel(i.IC.ChannelID)
 			if err != nil {
 				return "", err
 			} else if puzzle == nil {
@@ -136,7 +137,7 @@ func (bot *puzzleBot) makeSlashCommand() *client.DiscordCommand {
 						"Was that right?", newStatus.Human(), puzzle.Answer)
 				}
 
-				if puzzle, err = bot.airtable.SetStatusAndAnswer(puzzle, newStatus, newAnswer); err != nil {
+				if puzzle, err = bot.database.SetStatusAndAnswer(puzzle, newStatus, newAnswer); err != nil {
 					return "", err
 				}
 				if puzzle, err = bot.syncer.HandleStatusChange(bot.ctx, puzzle, true); err != nil {
@@ -160,7 +161,7 @@ func (bot *puzzleBot) makeSlashCommand() *client.DiscordCommand {
 					newStatus.SolvedNoun(), newAnswer,
 				)
 
-				if puzzle, err = bot.airtable.SetStatusAndAnswer(puzzle, newStatus, newAnswer); err != nil {
+				if puzzle, err = bot.database.SetStatusAndAnswer(puzzle, newStatus, newAnswer); err != nil {
 					return "", err
 				}
 				if puzzle, err = bot.syncer.HandleStatusChange(bot.ctx, puzzle, true); err != nil {
@@ -178,7 +179,7 @@ func (bot *puzzleBot) makeSlashCommand() *client.DiscordCommand {
 					reply += fmt.Sprintf(" Previous description was: ```\n%s\n```", puzzle.Description)
 				}
 
-				if puzzle, err = bot.airtable.SetDescription(puzzle, newDescription); err != nil {
+				if puzzle, err = bot.database.SetDescription(puzzle, newDescription); err != nil {
 					return "", err
 				}
 				if err = bot.syncer.DiscordCreateUpdatePin(puzzle); err != nil {
@@ -196,7 +197,7 @@ func (bot *puzzleBot) makeSlashCommand() *client.DiscordCommand {
 					reply += fmt.Sprintf(" Previous location was: ```\n%s\n```", puzzle.Location)
 				}
 
-				if puzzle, err = bot.airtable.SetLocation(puzzle, newLocation); err != nil {
+				if puzzle, err = bot.database.SetLocation(puzzle, newLocation); err != nil {
 					return "", err
 				}
 				if err = bot.syncer.DiscordCreateUpdatePin(puzzle); err != nil {

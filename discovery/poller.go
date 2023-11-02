@@ -15,6 +15,7 @@ import (
 	"github.com/andybalholm/cascadia"
 	"github.com/davecgh/go-spew/spew"
 	"github.com/emojihunt/emojihunt/client"
+	"github.com/emojihunt/emojihunt/db"
 	"github.com/emojihunt/emojihunt/state"
 	"github.com/emojihunt/emojihunt/syncer"
 	"golang.org/x/net/websocket"
@@ -89,7 +90,7 @@ type Poller struct {
 	wsURL   *url.URL
 	wsToken string
 
-	airtable  *client.Airtable
+	database  *db.Client
 	discord   *client.Discord
 	syncer    *syncer.Syncer
 	state     *state.State
@@ -114,7 +115,7 @@ const (
 
 var websocketRate = rate.Every(1 * time.Minute)
 
-func New(airtable *client.Airtable, discord *client.Discord, syncer *syncer.Syncer, config *DiscoveryConfig, state *state.State) *Poller {
+func New(database *db.Client, discord *client.Discord, syncer *syncer.Syncer, config *DiscoveryConfig, state *state.State) *Poller {
 	puzzlesURL, err := url.Parse(config.PuzzlesURL)
 	if err != nil {
 		panic(err)
@@ -150,7 +151,7 @@ func New(airtable *client.Airtable, discord *client.Discord, syncer *syncer.Sync
 		wsURL:   wsURL,
 		wsToken: config.WebsocketToken,
 
-		airtable:  airtable,
+		database:  database,
 		discord:   discord,
 		syncer:    syncer,
 		state:     state,

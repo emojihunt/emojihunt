@@ -2,19 +2,14 @@ package main
 
 import (
 	"context"
-	"database/sql"
 	"encoding/json"
-	"errors"
 	"flag"
 	"log"
 	"net/http"
 	"os"
 	"os/signal"
 
-	_ "embed"
 	_ "net/http/pprof"
-
-	_ "github.com/mattn/go-sqlite3"
 
 	"github.com/emojihunt/emojihunt/bot"
 	"github.com/emojihunt/emojihunt/client"
@@ -37,9 +32,6 @@ var (
 	state_file  = flag.String("state", "state.json", "path to the state file")
 	database    = flag.String("db", "db.sqlite", "path to the database file")
 )
-
-//go:embed db/schema.sql
-var ddl string
 
 func main() {
 	// Load configuration
@@ -90,22 +82,7 @@ func main() {
 	}()
 
 	// Open database connection
-	var fresh bool
-	if _, err := os.Stat(*database); errors.Is(err, os.ErrNotExist) {
-		fresh = true
-	}
-	dbx, err := sql.Open("sqlite3", *database)
-	if err != nil {
-		log.Fatalf("error opening database at %q: %v", *database, err)
-	}
-	if fresh {
-		if ddl == "" {
-			log.Fatalf("error reading embeded ddl")
-		} else if _, err := dbx.ExecContext(ctx, ddl); err != nil {
-			log.Fatalf("error initializing database at %q: %v", *database, err)
-		}
-	}
-	database := db.New(dbx)
+	db := db.OpenDatabase(ctx, *database)
 
 	// Set up clients
 	discord, err := client.NewDiscord(config.Discord, state)
@@ -114,32 +91,30 @@ func main() {
 	}
 	defer discord.Close()
 
-	airtable := client.NewAirtable(database)
-
 	drive, err := client.NewDrive(ctx, config.GoogleDrive)
 	if err != nil {
 		log.Fatalf("error creating drive integration: %v", err)
 	}
 
 	// Start internal engines
-	syncer := syncer.New(airtable, discord, drive)
+	syncer := syncer.New(db, discord, drive)
 
 	bot.RegisterEmojiNameBot(discord)
 	bot.RegisterHuntYetBot(discord)
-	bot.RegisterPuzzleBot(ctx, airtable, discord, syncer)
+	bot.RegisterPuzzleBot(ctx, db, discord, syncer)
 	bot.RegisterQMBot(discord)
-	bot.RegisterReminderBot(airtable, discord, state)
-	bot.RegisterVoiceRoomBot(ctx, airtable, discord, syncer)
+	bot.RegisterReminderBot(db, discord, state)
+	bot.RegisterVoiceRoomBot(ctx, db, discord, syncer)
 
 	var dscvpoller *discovery.Poller
 	if config.Autodiscovery != nil {
-		dscvpoller = discovery.New(airtable, discord, syncer, config.Autodiscovery, state)
+		dscvpoller = discovery.New(db, discord, syncer, config.Autodiscovery, state)
 		dscvpoller.RegisterReactionHandler(discord)
 	} else {
 		log.Printf("puzzle auto-discovery is disabled (no config found)")
 	}
 
-	bot.RegisterHuntbotCommand(ctx, airtable, discord, dscvpoller, syncer, state)
+	bot.RegisterHuntbotCommand(ctx, db, discord, dscvpoller, syncer, state)
 
 	go func() {
 		if err := discord.RegisterCommands(); err != nil {
@@ -155,7 +130,7 @@ func main() {
 	}
 
 	if config.Server != nil {
-		server.Start(airtable, syncer, config.Server)
+		server.Start(db, syncer, config.Server)
 	} else {
 		log.Printf("no server config found, skipping (for development only!)")
 	}

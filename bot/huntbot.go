@@ -9,17 +9,18 @@ import (
 	"github.com/bwmarrin/discordgo"
 	"github.com/davecgh/go-spew/spew"
 	"github.com/emojihunt/emojihunt/client"
+	"github.com/emojihunt/emojihunt/db"
 	"github.com/emojihunt/emojihunt/discovery"
 	"github.com/emojihunt/emojihunt/schema"
 	"github.com/emojihunt/emojihunt/state"
 	"github.com/emojihunt/emojihunt/syncer"
 )
 
-func RegisterHuntbotCommand(ctx context.Context, airtable *client.Airtable, discord *client.Discord,
+func RegisterHuntbotCommand(ctx context.Context, database *db.Client, discord *client.Discord,
 	discovery *discovery.Poller, syncer *syncer.Syncer, state *state.State) {
 	var bot = huntbotBot{
 		ctx:       ctx,
-		airtable:  airtable,
+		database:  database,
 		discord:   discord,
 		discovery: discovery,
 		syncer:    syncer,
@@ -30,7 +31,7 @@ func RegisterHuntbotCommand(ctx context.Context, airtable *client.Airtable, disc
 
 type huntbotBot struct {
 	ctx       context.Context
-	airtable  *client.Airtable
+	database  *db.Client
 	discord   *client.Discord
 	discovery *discovery.Poller
 	syncer    *syncer.Syncer
@@ -124,7 +125,7 @@ func (bot *huntbotBot) makeSlashCommand() *client.DiscordCommand {
 func (bot *huntbotBot) fullResync(s *discordgo.Session, i *client.DiscordCommandInput) {
 	var errs = make(map[string]error)
 
-	puzzles, err := bot.airtable.ListPuzzles()
+	puzzles, err := bot.database.ListPuzzles()
 	if err == nil {
 		for j, id := range puzzles {
 			if bot.state.IsKilled() {
@@ -133,7 +134,7 @@ func (bot *huntbotBot) fullResync(s *discordgo.Session, i *client.DiscordCommand
 			}
 
 			var puzzle *schema.Puzzle
-			puzzle, err = bot.airtable.LockByID(id)
+			puzzle, err = bot.database.LockByID(id)
 			if err != nil {
 				err = fmt.Errorf("failed to load %q: %s", id, spew.Sdump(err))
 				break

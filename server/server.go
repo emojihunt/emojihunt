@@ -9,7 +9,7 @@ import (
 	"strings"
 
 	"github.com/davecgh/go-spew/spew"
-	"github.com/emojihunt/emojihunt/client"
+	"github.com/emojihunt/emojihunt/db"
 	"github.com/emojihunt/emojihunt/schema"
 	"github.com/emojihunt/emojihunt/syncer"
 )
@@ -22,12 +22,12 @@ type ServerConfig struct {
 }
 
 type Server struct {
-	airtable       *client.Airtable
+	database       *db.Client
 	syncer         *syncer.Syncer
 	secret, origin string
 }
 
-func Start(airtable *client.Airtable, syncer *syncer.Syncer, config *ServerConfig) error {
+func Start(database *db.Client, syncer *syncer.Syncer, config *ServerConfig) error {
 	if config.SecretToken == "" {
 		return fmt.Errorf("secret token cannot be empty")
 	}
@@ -35,7 +35,7 @@ func Start(airtable *client.Airtable, syncer *syncer.Syncer, config *ServerConfi
 	if origin == "" {
 		origin = "http://localhost:8000"
 	}
-	server := &Server{airtable, syncer, config.SecretToken, origin}
+	server := &Server{database, syncer, config.SecretToken, origin}
 	go func() {
 		mux := http.NewServeMux()
 		mux.HandleFunc("/robots.txt", server.robots)
@@ -83,7 +83,7 @@ func (s *Server) resync(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	puzzle, err := s.airtable.LockByID(id)
+	puzzle, err := s.database.LockByID(id)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		fmt.Fprintf(w, "error: %#v\n", err)
