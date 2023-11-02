@@ -299,7 +299,7 @@ func (q *Queries) ListRounds(ctx context.Context) ([]Round, error) {
 const updateArchived = `-- name: UpdateArchived :one
 UPDATE puzzles SET archived = ?2
 WHERE id = ?1
-RETURNING id, name, answer, round, status, description, location, puzzle_url, spreadsheet_id, discord_channel, original_url, name_override, archived, voice_room, reminder
+RETURNING id, name, answer, rounds, status, description, location, puzzle_url, spreadsheet_id, discord_channel, original_url, name_override, archived, voice_room, reminder
 `
 
 type UpdateArchivedParams struct {
@@ -314,14 +314,14 @@ func (q *Queries) UpdateArchived(ctx context.Context, arg UpdateArchivedParams) 
 		&i.ID,
 		&i.Name,
 		&i.Answer,
-		&i.Round,
+		&i.Rounds,
 		&i.Status,
 		&i.Description,
 		&i.Location,
-		&i.PuzzleUrl,
+		&i.PuzzleURL,
 		&i.SpreadsheetID,
 		&i.DiscordChannel,
-		&i.OriginalUrl,
+		&i.OriginalURL,
 		&i.NameOverride,
 		&i.Archived,
 		&i.VoiceRoom,
@@ -333,7 +333,7 @@ func (q *Queries) UpdateArchived(ctx context.Context, arg UpdateArchivedParams) 
 const updateDescription = `-- name: UpdateDescription :one
 UPDATE puzzles SET description = ?2
 WHERE id = ?1
-RETURNING id, name, answer, round, status, description, location, puzzle_url, spreadsheet_id, discord_channel, original_url, name_override, archived, voice_room, reminder
+RETURNING id, name, answer, rounds, status, description, location, puzzle_url, spreadsheet_id, discord_channel, original_url, name_override, archived, voice_room, reminder
 `
 
 type UpdateDescriptionParams struct {
@@ -348,14 +348,14 @@ func (q *Queries) UpdateDescription(ctx context.Context, arg UpdateDescriptionPa
 		&i.ID,
 		&i.Name,
 		&i.Answer,
-		&i.Round,
+		&i.Rounds,
 		&i.Status,
 		&i.Description,
 		&i.Location,
-		&i.PuzzleUrl,
+		&i.PuzzleURL,
 		&i.SpreadsheetID,
 		&i.DiscordChannel,
-		&i.OriginalUrl,
+		&i.OriginalURL,
 		&i.NameOverride,
 		&i.Archived,
 		&i.VoiceRoom,
@@ -367,7 +367,7 @@ func (q *Queries) UpdateDescription(ctx context.Context, arg UpdateDescriptionPa
 const updateDiscordChannel = `-- name: UpdateDiscordChannel :one
 UPDATE puzzles SET discord_channel = ?2
 WHERE id = ?1
-RETURNING id, name, answer, round, status, description, location, puzzle_url, spreadsheet_id, discord_channel, original_url, name_override, archived, voice_room, reminder
+RETURNING id, name, answer, rounds, status, description, location, puzzle_url, spreadsheet_id, discord_channel, original_url, name_override, archived, voice_room, reminder
 `
 
 type UpdateDiscordChannelParams struct {
@@ -382,14 +382,14 @@ func (q *Queries) UpdateDiscordChannel(ctx context.Context, arg UpdateDiscordCha
 		&i.ID,
 		&i.Name,
 		&i.Answer,
-		&i.Round,
+		&i.Rounds,
 		&i.Status,
 		&i.Description,
 		&i.Location,
-		&i.PuzzleUrl,
+		&i.PuzzleURL,
 		&i.SpreadsheetID,
 		&i.DiscordChannel,
-		&i.OriginalUrl,
+		&i.OriginalURL,
 		&i.NameOverride,
 		&i.Archived,
 		&i.VoiceRoom,
@@ -401,7 +401,7 @@ func (q *Queries) UpdateDiscordChannel(ctx context.Context, arg UpdateDiscordCha
 const updateLocation = `-- name: UpdateLocation :one
 UPDATE puzzles SET location = ?2
 WHERE id = ?1
-RETURNING id, name, answer, round, status, description, location, puzzle_url, spreadsheet_id, discord_channel, original_url, name_override, archived, voice_room, reminder
+RETURNING id, name, answer, rounds, status, description, location, puzzle_url, spreadsheet_id, discord_channel, original_url, name_override, archived, voice_room, reminder
 `
 
 type UpdateLocationParams struct {
@@ -416,14 +416,14 @@ func (q *Queries) UpdateLocation(ctx context.Context, arg UpdateLocationParams) 
 		&i.ID,
 		&i.Name,
 		&i.Answer,
-		&i.Round,
+		&i.Rounds,
 		&i.Status,
 		&i.Description,
 		&i.Location,
-		&i.PuzzleUrl,
+		&i.PuzzleURL,
 		&i.SpreadsheetID,
 		&i.DiscordChannel,
-		&i.OriginalUrl,
+		&i.OriginalURL,
 		&i.NameOverride,
 		&i.Archived,
 		&i.VoiceRoom,
@@ -435,7 +435,7 @@ func (q *Queries) UpdateLocation(ctx context.Context, arg UpdateLocationParams) 
 const updateSpreadsheetID = `-- name: UpdateSpreadsheetID :one
 UPDATE puzzles SET spreadsheet_id = ?2
 WHERE id = ?1
-RETURNING id, name, answer, round, status, description, location, puzzle_url, spreadsheet_id, discord_channel, original_url, name_override, archived, voice_room, reminder
+RETURNING id, name, answer, rounds, status, description, location, puzzle_url, spreadsheet_id, discord_channel, original_url, name_override, archived, voice_room, reminder
 `
 
 type UpdateSpreadsheetIDParams struct {
@@ -450,14 +450,14 @@ func (q *Queries) UpdateSpreadsheetID(ctx context.Context, arg UpdateSpreadsheet
 		&i.ID,
 		&i.Name,
 		&i.Answer,
-		&i.Round,
+		&i.Rounds,
 		&i.Status,
 		&i.Description,
 		&i.Location,
-		&i.PuzzleUrl,
+		&i.PuzzleURL,
 		&i.SpreadsheetID,
 		&i.DiscordChannel,
-		&i.OriginalUrl,
+		&i.OriginalURL,
 		&i.NameOverride,
 		&i.Archived,
 		&i.VoiceRoom,
@@ -469,7 +469,7 @@ func (q *Queries) UpdateSpreadsheetID(ctx context.Context, arg UpdateSpreadsheet
 const updateStatusAndAnswer = `-- name: UpdateStatusAndAnswer :one
 UPDATE puzzles SET status = ?2, answer = ?3, archived = ?4
 WHERE id = ?1
-RETURNING id, name, answer, round, status, description, location, puzzle_url, spreadsheet_id, discord_channel, original_url, name_override, archived, voice_room, reminder
+RETURNING id, name, answer, rounds, status, description, location, puzzle_url, spreadsheet_id, discord_channel, original_url, name_override, archived, voice_room, reminder
 `
 
 type UpdateStatusAndAnswerParams struct {
@@ -491,14 +491,14 @@ func (q *Queries) UpdateStatusAndAnswer(ctx context.Context, arg UpdateStatusAnd
 		&i.ID,
 		&i.Name,
 		&i.Answer,
-		&i.Round,
+		&i.Rounds,
 		&i.Status,
 		&i.Description,
 		&i.Location,
-		&i.PuzzleUrl,
+		&i.PuzzleURL,
 		&i.SpreadsheetID,
 		&i.DiscordChannel,
-		&i.OriginalUrl,
+		&i.OriginalURL,
 		&i.NameOverride,
 		&i.Archived,
 		&i.VoiceRoom,
@@ -510,7 +510,7 @@ func (q *Queries) UpdateStatusAndAnswer(ctx context.Context, arg UpdateStatusAnd
 const updateVoiceRoom = `-- name: UpdateVoiceRoom :one
 UPDATE puzzles SET voice_room = ?2, location = ?3
 WHERE id = ?1
-RETURNING id, name, answer, round, status, description, location, puzzle_url, spreadsheet_id, discord_channel, original_url, name_override, archived, voice_room, reminder
+RETURNING id, name, answer, rounds, status, description, location, puzzle_url, spreadsheet_id, discord_channel, original_url, name_override, archived, voice_room, reminder
 `
 
 type UpdateVoiceRoomParams struct {
@@ -526,14 +526,14 @@ func (q *Queries) UpdateVoiceRoom(ctx context.Context, arg UpdateVoiceRoomParams
 		&i.ID,
 		&i.Name,
 		&i.Answer,
-		&i.Round,
+		&i.Rounds,
 		&i.Status,
 		&i.Description,
 		&i.Location,
-		&i.PuzzleUrl,
+		&i.PuzzleURL,
 		&i.SpreadsheetID,
 		&i.DiscordChannel,
-		&i.OriginalUrl,
+		&i.OriginalURL,
 		&i.NameOverride,
 		&i.Archived,
 		&i.VoiceRoom,
