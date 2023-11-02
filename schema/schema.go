@@ -23,16 +23,11 @@ type Puzzle struct {
 	SpreadsheetID  string
 	DiscordChannel string
 
-	LastBotStatus Status
-	Archived      bool
-	LastBotSync   *time.Time
+	Archived bool
 
 	OriginalURL string
 	VoiceRoom   string
 	Reminder    *time.Time
-
-	LastModified   *time.Time
-	LastModifiedBy string // user id
 
 	Unlock func()
 }
