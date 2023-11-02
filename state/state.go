@@ -1,11 +1,13 @@
 package state
 
 import (
+	"context"
 	"encoding/json"
-	"os"
+	"fmt"
 	"sync"
 	"time"
 
+	"github.com/emojihunt/emojihunt/db"
 	"github.com/emojihunt/emojihunt/schema"
 )
 
@@ -16,8 +18,8 @@ type State struct {
 	ReminderTimestamp  time.Time           `json:"reminder_timestamp"`
 	ReminderWarnError  time.Time           `json:"reminder_warn_error"`
 
-	mutex    sync.Mutex `json:"-"`
-	filename string     `json:"-"`
+	mutex sync.Mutex `json:"-"`
+	db    *db.Client `json:"-"`
 }
 
 type NewRound struct {
@@ -25,16 +27,10 @@ type NewRound struct {
 	Puzzles   []schema.NewPuzzle
 }
 
-func Load(filename string) (*State, error) {
-	data, err := os.ReadFile(filename)
-	if os.IsNotExist(err) {
-		err = os.WriteFile(filename, []byte("{}\n"), 0640)
-		if err != nil {
-			return nil, err
-		}
-		data, err = os.ReadFile(filename)
-	}
+func Load(ctx context.Context, db *db.Client) (*State, error) {
+	data, err := db.LoadState(ctx)
 	if err != nil {
+		fmt.Printf("%#v", err)
 		return nil, err
 	}
 	var state State
@@ -42,7 +38,7 @@ func Load(filename string) (*State, error) {
 	if state.DiscoveryNewRounds == nil {
 		state.DiscoveryNewRounds = make(map[string]NewRound)
 	}
-	state.filename = filename
+	state.db = db
 	return &state, err
 }
 
@@ -61,7 +57,7 @@ func (s *State) CommitAndUnlock() {
 	if err != nil {
 		panic(err)
 	}
-	err = os.WriteFile(s.filename, data, 0644)
+	err = s.db.WriteState(context.Background(), data)
 	if err != nil {
 		panic(err)
 	}

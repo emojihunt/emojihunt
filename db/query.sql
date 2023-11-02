@@ -24,12 +24,9 @@ SELECT id, name, discord_channel, reminder FROM puzzles
 WHERE reminder IS NOT NULL
 ORDER BY reminder;
 
--- name: ListRounds :many
-SELECT * FROM rounds
-ORDER BY id;
-
 -- name: CreatePuzzle :one
-INSERT INTO puzzles (name, rounds, puzzle_url, original_url) VALUES (?, ?, ?, ?)
+INSERT INTO puzzles (name, rounds, puzzle_url, original_url)
+VALUES (?, ?, ?, ?)
 RETURNING *;
 
 -- name: UpdateDiscordChannel :one
@@ -66,3 +63,17 @@ RETURNING *;
 UPDATE puzzles SET voice_room = ?2, location = ?3
 WHERE id = ?1
 RETURNING *;
+
+
+-- name: ListRounds :many
+SELECT * FROM rounds
+ORDER BY id;
+
+
+-- name: GetState :many
+SELECT * from state
+ORDER BY id;
+
+-- name: UpdateState :exec
+INSERT OR REPLACE INTO state (id, data)
+VALUES (1, ?);

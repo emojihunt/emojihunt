@@ -33,3 +33,8 @@ type Round struct {
 	Name  string
 	Emoji string
 }
+
+type State struct {
+	ID   int64
+	Data []byte
+}

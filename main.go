@@ -45,18 +45,12 @@ func main() {
 		var err error
 		bs, err = os.ReadFile(*configPath)
 		if err != nil {
-			log.Fatalf("error reading config file at %q: %v", os.Args[1], err)
+			log.Fatalf("error reading config file at %q: %v", *configPath, err)
 		}
 	}
 	config := Config{}
 	if err := json.Unmarshal(bs, &config); err != nil {
-		log.Fatalf("error unmarshaling config from %q: %v", os.Args[1], err)
-	}
-
-	// Load state
-	state, err := state.Load("TODO")
-	if err != nil {
-		log.Fatalf("error reading state file at %q: %v", os.Args[2], err)
+		log.Fatalf("error unmarshaling config from %q: %v", *configPath, err)
 	}
 
 	// Set up our context, which is cancelled on Ctrl-C
@@ -83,6 +77,12 @@ func main() {
 
 	// Open database connection
 	db := db.OpenDatabase(ctx, *dbPath)
+
+	// Load state
+	state, err := state.Load(ctx, db)
+	if err != nil {
+		log.Fatalf("error loading state: %v", err)
+	}
 
 	// Set up clients
 	discord, err := discord.NewClient(config.Discord, state)

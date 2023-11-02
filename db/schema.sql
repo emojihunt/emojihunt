@@ -24,4 +24,9 @@ CREATE TABLE rounds (
     id              INTEGER PRIMARY KEY,
     name            TEXT    NOT NULL,
     emoji           TEXT    NOT NULL
-)
+);
+
+CREATE TABLE state (
+    id                      INTEGER PRIMARY KEY,
+    data                    BLOB
+);

@@ -13,7 +13,8 @@ import (
 )
 
 const createPuzzle = `-- name: CreatePuzzle :one
-INSERT INTO puzzles (name, rounds, puzzle_url, original_url) VALUES (?, ?, ?, ?)
+INSERT INTO puzzles (name, rounds, puzzle_url, original_url)
+VALUES (?, ?, ?, ?)
 RETURNING id, name, answer, rounds, status, description, location, puzzle_url, spreadsheet_id, discord_channel, original_url, name_override, archived, voice_room, reminder
 `
 
@@ -111,6 +112,34 @@ func (q *Queries) GetPuzzlesByDiscordChannel(ctx context.Context, discordChannel
 			&i.VoiceRoom,
 			&i.Reminder,
 		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getState = `-- name: GetState :many
+SELECT id, data from state
+ORDER BY id
+`
+
+func (q *Queries) GetState(ctx context.Context) ([]State, error) {
+	rows, err := q.db.QueryContext(ctx, getState)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []State
+	for rows.Next() {
+		var i State
+		if err := rows.Scan(&i.ID, &i.Data); err != nil {
 			return nil, err
 		}
 		items = append(items, i)
@@ -464,6 +493,16 @@ func (q *Queries) UpdateSpreadsheetID(ctx context.Context, arg UpdateSpreadsheet
 		&i.Reminder,
 	)
 	return i, err
+}
+
+const updateState = `-- name: UpdateState :exec
+INSERT OR REPLACE INTO state (id, data)
+VALUES (1, ?)
+`
+
+func (q *Queries) UpdateState(ctx context.Context, data []byte) error {
+	_, err := q.db.ExecContext(ctx, updateState, data)
+	return err
 }
 
 const updateStatusAndAnswer = `-- name: UpdateStatusAndAnswer :one
