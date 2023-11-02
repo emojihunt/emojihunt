@@ -2,17 +2,23 @@ package main
 
 import (
 	"context"
+	"database/sql"
 	"encoding/json"
+	"errors"
 	"flag"
 	"log"
 	"net/http"
 	"os"
 	"os/signal"
 
+	_ "embed"
 	_ "net/http/pprof"
+
+	_ "github.com/mattn/go-sqlite3"
 
 	"github.com/emojihunt/emojihunt/bot"
 	"github.com/emojihunt/emojihunt/client"
+	"github.com/emojihunt/emojihunt/db"
 	"github.com/emojihunt/emojihunt/discovery"
 	"github.com/emojihunt/emojihunt/server"
 	"github.com/emojihunt/emojihunt/state"
@@ -30,7 +36,11 @@ type Config struct {
 var (
 	config_file = flag.String("config", "config.json", "path to the configuration file")
 	state_file  = flag.String("state", "state.json", "path to the state file")
+	database    = flag.String("db", "db.sqlite", "path to the database file")
 )
+
+//go:embed db/schema.sql
+var ddl string
 
 func main() {
 	// Load configuration
@@ -80,6 +90,24 @@ func main() {
 		http.ListenAndServe("localhost:6060", nil)
 	}()
 
+	// Open database connection
+	var fresh bool
+	if _, err := os.Stat(*database); errors.Is(err, os.ErrNotExist) {
+		fresh = true
+	}
+	dbx, err := sql.Open("sqlite3", *database)
+	if err != nil {
+		log.Fatalf("error opening database at %q: %v", *database, err)
+	}
+	if fresh {
+		if ddl == "" {
+			log.Fatalf("error reading embeded ddl")
+		} else if _, err := dbx.ExecContext(ctx, ddl); err != nil {
+			log.Fatalf("error initializing database at %q: %v", *database, err)
+		}
+	}
+	database := db.New(dbx)
+
 	// Set up clients
 	discord, err := client.NewDiscord(config.Discord, state)
 	if err != nil {
@@ -87,7 +115,7 @@ func main() {
 	}
 	defer discord.Close()
 
-	airtable := client.NewAirtable(config.Airtable)
+	airtable := client.NewAirtable(config.Airtable, database)
 
 	drive, err := client.NewDrive(ctx, config.GoogleDrive)
 	if err != nil {

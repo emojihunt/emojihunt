@@ -1,6 +1,7 @@
 # flyctl launch added from .gitignore
 **/config.json
 **/config.prod.json
+**/db.sqlite
 **/secrets.json
 **/state.json
 fly.toml

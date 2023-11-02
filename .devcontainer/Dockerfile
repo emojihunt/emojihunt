@@ -1,6 +1,8 @@
+# syntax = btidor/syntax
+
 FROM mcr.microsoft.com/vscode/devcontainers/base:0-jammy
 
-RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get upgrade -y
+ADD --apt sqlite3
 
 # Install Go
 RUN (curl -sL https://golang.org/dl/go1.21.3.linux-amd64.tar.gz | tar xzC /usr/local) && \

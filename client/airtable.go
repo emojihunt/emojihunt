@@ -6,6 +6,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/emojihunt/emojihunt/db"
 	"github.com/emojihunt/emojihunt/schema"
 	"github.com/mehanizm/airtable"
 )
@@ -20,6 +21,8 @@ type AirtableConfig struct {
 type Airtable struct {
 	BotUserID         string
 	ModifyGracePeriod time.Duration
+
+	database *db.Queries
 
 	baseID  string
 	tableID string
@@ -47,13 +50,14 @@ const (
 // requests-per-second limit, which is important because if we break that limit
 // we get suspended for 30 seconds.
 
-func NewAirtable(config *AirtableConfig) *Airtable {
+func NewAirtable(config *AirtableConfig, database *db.Queries) *Airtable {
 	return &Airtable{
 		BotUserID:         config.BotUserID,
 		ModifyGracePeriod: defaultGracePeriod,
 
-		baseID:  config.BaseID,
-		tableID: config.TableID,
+		database: database,
+		baseID:   config.BaseID,
+		tableID:  config.TableID,
 		table: airtable.
 			NewClient(config.APIKey).
 			GetTable(config.BaseID, config.TableID),
