@@ -13,39 +13,63 @@ import (
 // to the updated puzzle object unchanged.
 
 func (air *Airtable) SetDiscordChannel(puzzle *schema.Puzzle, channel string) (*schema.Puzzle, error) {
-	return nil, air.database.UpdateDiscordChannel(context.TODO(), db.UpdateDiscordChannelParams{
+	result, err := air.database.UpdateDiscordChannel(context.TODO(), db.UpdateDiscordChannelParams{
 		ID: puzzle.AirtableRecord.ID, DiscordChannel: channel,
-	}) // TODO: nil puzzle
+	})
+	if err != nil {
+		return nil, err
+	}
+	return air.parseDatabaseResult(&result, puzzle.Unlock), nil
 }
 
 func (air *Airtable) SetSpreadsheetID(puzzle *schema.Puzzle, spreadsheet string) (*schema.Puzzle, error) {
-	return nil, air.database.UpdateSpreadsheetID(context.TODO(), db.UpdateSpreadsheetIDParams{
+	result, err := air.database.UpdateSpreadsheetID(context.TODO(), db.UpdateSpreadsheetIDParams{
 		ID: puzzle.AirtableRecord.ID, SpreadsheetID: spreadsheet,
-	}) // TODO: nil puzzle
+	})
+	if err != nil {
+		return nil, err
+	}
+	return air.parseDatabaseResult(&result, puzzle.Unlock), nil
 }
 
 func (air *Airtable) SetStatusAndAnswer(puzzle *schema.Puzzle, status schema.Status, answer string) (*schema.Puzzle, error) {
-	return nil, air.database.UpdateStatusAndAnswer(context.TODO(), db.UpdateStatusAndAnswerParams{
+	result, err := air.database.UpdateStatusAndAnswer(context.TODO(), db.UpdateStatusAndAnswerParams{
 		ID: puzzle.AirtableRecord.ID, Status: string(status), Answer: answer, Archived: status.IsSolved(),
-	}) // TODO: nil puzzle
+	})
+	if err != nil {
+		return nil, err
+	}
+	return air.parseDatabaseResult(&result, puzzle.Unlock), nil
 }
 
 func (air *Airtable) SetDescription(puzzle *schema.Puzzle, description string) (*schema.Puzzle, error) {
-	return nil, air.database.UpdateDescription(context.TODO(), db.UpdateDescriptionParams{
+	result, err := air.database.UpdateDescription(context.TODO(), db.UpdateDescriptionParams{
 		ID: puzzle.AirtableRecord.ID, Description: description,
-	}) // TODO: nil puzzle
+	})
+	if err != nil {
+		return nil, err
+	}
+	return air.parseDatabaseResult(&result, puzzle.Unlock), nil
 }
 
 func (air *Airtable) SetLocation(puzzle *schema.Puzzle, location string) (*schema.Puzzle, error) {
-	return nil, air.database.UpdateLocation(context.TODO(), db.UpdateLocationParams{
+	result, err := air.database.UpdateLocation(context.TODO(), db.UpdateLocationParams{
 		ID: puzzle.AirtableRecord.ID, Location: location,
-	}) // TODO: nil puzzle
+	})
+	if err != nil {
+		return nil, err
+	}
+	return air.parseDatabaseResult(&result, puzzle.Unlock), nil
 }
 
-func (air *Airtable) SetBotFields(puzzle *schema.Puzzle, lastBotStatus schema.Status, archived bool) (*schema.Puzzle, error) {
-	return nil, air.database.UpdateArchived(context.TODO(), db.UpdateArchivedParams{
-		ID: puzzle.AirtableRecord.ID, Archived: archived,
-	}) // TODO: nil puzzle
+func (air *Airtable) SetBotFields(puzzle *schema.Puzzle) (*schema.Puzzle, error) {
+	result, err := air.database.UpdateArchived(context.TODO(), db.UpdateArchivedParams{
+		ID: puzzle.AirtableRecord.ID, Archived: puzzle.ShouldArchive(),
+	})
+	if err != nil {
+		return nil, err
+	}
+	return air.parseDatabaseResult(&result, puzzle.Unlock), nil
 }
 
 func (air *Airtable) SetVoiceRoom(puzzle *schema.Puzzle, channel *discordgo.Channel) (*schema.Puzzle, error) {
@@ -54,7 +78,11 @@ func (air *Airtable) SetVoiceRoom(puzzle *schema.Puzzle, channel *discordgo.Chan
 		channelID = channel.ID
 		channelName = channel.Name
 	}
-	return nil, air.database.UpdateVoiceRoom(context.TODO(), db.UpdateVoiceRoomParams{
+	result, err := air.database.UpdateVoiceRoom(context.TODO(), db.UpdateVoiceRoomParams{
 		ID: puzzle.AirtableRecord.ID, VoiceRoom: channelID, Location: channelName,
-	}) // TODO: nil puzzle
+	})
+	if err != nil {
+		return nil, err
+	}
+	return air.parseDatabaseResult(&result, puzzle.Unlock), nil
 }

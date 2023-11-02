@@ -1,1 +1,2 @@
-emojiname/emoji.json binary
+db/*.sql.go             linguist-generated
+emojiname/emoji.json    binary linguist-generated

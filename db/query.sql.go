@@ -294,9 +294,10 @@ func (q *Queries) ListRounds(ctx context.Context) ([]Round, error) {
 	return items, nil
 }
 
-const updateArchived = `-- name: UpdateArchived :exec
+const updateArchived = `-- name: UpdateArchived :one
 UPDATE puzzles SET archived = ?2
 WHERE id = ?1
+RETURNING id, name, answer, round, status, description, location, puzzle_url, spreadsheet_id, discord_channel, original_url, name_override, archived, voice_room, reminder
 `
 
 type UpdateArchivedParams struct {
@@ -304,14 +305,33 @@ type UpdateArchivedParams struct {
 	Archived bool
 }
 
-func (q *Queries) UpdateArchived(ctx context.Context, arg UpdateArchivedParams) error {
-	_, err := q.db.ExecContext(ctx, updateArchived, arg.ID, arg.Archived)
-	return err
+func (q *Queries) UpdateArchived(ctx context.Context, arg UpdateArchivedParams) (Puzzle, error) {
+	row := q.db.QueryRowContext(ctx, updateArchived, arg.ID, arg.Archived)
+	var i Puzzle
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.Answer,
+		&i.Round,
+		&i.Status,
+		&i.Description,
+		&i.Location,
+		&i.PuzzleUrl,
+		&i.SpreadsheetID,
+		&i.DiscordChannel,
+		&i.OriginalUrl,
+		&i.NameOverride,
+		&i.Archived,
+		&i.VoiceRoom,
+		&i.Reminder,
+	)
+	return i, err
 }
 
-const updateDescription = `-- name: UpdateDescription :exec
+const updateDescription = `-- name: UpdateDescription :one
 UPDATE puzzles SET description = ?2
 WHERE id = ?1
+RETURNING id, name, answer, round, status, description, location, puzzle_url, spreadsheet_id, discord_channel, original_url, name_override, archived, voice_room, reminder
 `
 
 type UpdateDescriptionParams struct {
@@ -319,14 +339,33 @@ type UpdateDescriptionParams struct {
 	Description string
 }
 
-func (q *Queries) UpdateDescription(ctx context.Context, arg UpdateDescriptionParams) error {
-	_, err := q.db.ExecContext(ctx, updateDescription, arg.ID, arg.Description)
-	return err
+func (q *Queries) UpdateDescription(ctx context.Context, arg UpdateDescriptionParams) (Puzzle, error) {
+	row := q.db.QueryRowContext(ctx, updateDescription, arg.ID, arg.Description)
+	var i Puzzle
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.Answer,
+		&i.Round,
+		&i.Status,
+		&i.Description,
+		&i.Location,
+		&i.PuzzleUrl,
+		&i.SpreadsheetID,
+		&i.DiscordChannel,
+		&i.OriginalUrl,
+		&i.NameOverride,
+		&i.Archived,
+		&i.VoiceRoom,
+		&i.Reminder,
+	)
+	return i, err
 }
 
-const updateDiscordChannel = `-- name: UpdateDiscordChannel :exec
+const updateDiscordChannel = `-- name: UpdateDiscordChannel :one
 UPDATE puzzles SET discord_channel = ?2
 WHERE id = ?1
+RETURNING id, name, answer, round, status, description, location, puzzle_url, spreadsheet_id, discord_channel, original_url, name_override, archived, voice_room, reminder
 `
 
 type UpdateDiscordChannelParams struct {
@@ -334,14 +373,33 @@ type UpdateDiscordChannelParams struct {
 	DiscordChannel string
 }
 
-func (q *Queries) UpdateDiscordChannel(ctx context.Context, arg UpdateDiscordChannelParams) error {
-	_, err := q.db.ExecContext(ctx, updateDiscordChannel, arg.ID, arg.DiscordChannel)
-	return err
+func (q *Queries) UpdateDiscordChannel(ctx context.Context, arg UpdateDiscordChannelParams) (Puzzle, error) {
+	row := q.db.QueryRowContext(ctx, updateDiscordChannel, arg.ID, arg.DiscordChannel)
+	var i Puzzle
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.Answer,
+		&i.Round,
+		&i.Status,
+		&i.Description,
+		&i.Location,
+		&i.PuzzleUrl,
+		&i.SpreadsheetID,
+		&i.DiscordChannel,
+		&i.OriginalUrl,
+		&i.NameOverride,
+		&i.Archived,
+		&i.VoiceRoom,
+		&i.Reminder,
+	)
+	return i, err
 }
 
-const updateLocation = `-- name: UpdateLocation :exec
+const updateLocation = `-- name: UpdateLocation :one
 UPDATE puzzles SET location = ?2
 WHERE id = ?1
+RETURNING id, name, answer, round, status, description, location, puzzle_url, spreadsheet_id, discord_channel, original_url, name_override, archived, voice_room, reminder
 `
 
 type UpdateLocationParams struct {
@@ -349,14 +407,33 @@ type UpdateLocationParams struct {
 	Location string
 }
 
-func (q *Queries) UpdateLocation(ctx context.Context, arg UpdateLocationParams) error {
-	_, err := q.db.ExecContext(ctx, updateLocation, arg.ID, arg.Location)
-	return err
+func (q *Queries) UpdateLocation(ctx context.Context, arg UpdateLocationParams) (Puzzle, error) {
+	row := q.db.QueryRowContext(ctx, updateLocation, arg.ID, arg.Location)
+	var i Puzzle
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.Answer,
+		&i.Round,
+		&i.Status,
+		&i.Description,
+		&i.Location,
+		&i.PuzzleUrl,
+		&i.SpreadsheetID,
+		&i.DiscordChannel,
+		&i.OriginalUrl,
+		&i.NameOverride,
+		&i.Archived,
+		&i.VoiceRoom,
+		&i.Reminder,
+	)
+	return i, err
 }
 
-const updateSpreadsheetID = `-- name: UpdateSpreadsheetID :exec
+const updateSpreadsheetID = `-- name: UpdateSpreadsheetID :one
 UPDATE puzzles SET spreadsheet_id = ?2
 WHERE id = ?1
+RETURNING id, name, answer, round, status, description, location, puzzle_url, spreadsheet_id, discord_channel, original_url, name_override, archived, voice_room, reminder
 `
 
 type UpdateSpreadsheetIDParams struct {
@@ -364,14 +441,33 @@ type UpdateSpreadsheetIDParams struct {
 	SpreadsheetID string
 }
 
-func (q *Queries) UpdateSpreadsheetID(ctx context.Context, arg UpdateSpreadsheetIDParams) error {
-	_, err := q.db.ExecContext(ctx, updateSpreadsheetID, arg.ID, arg.SpreadsheetID)
-	return err
+func (q *Queries) UpdateSpreadsheetID(ctx context.Context, arg UpdateSpreadsheetIDParams) (Puzzle, error) {
+	row := q.db.QueryRowContext(ctx, updateSpreadsheetID, arg.ID, arg.SpreadsheetID)
+	var i Puzzle
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.Answer,
+		&i.Round,
+		&i.Status,
+		&i.Description,
+		&i.Location,
+		&i.PuzzleUrl,
+		&i.SpreadsheetID,
+		&i.DiscordChannel,
+		&i.OriginalUrl,
+		&i.NameOverride,
+		&i.Archived,
+		&i.VoiceRoom,
+		&i.Reminder,
+	)
+	return i, err
 }
 
-const updateStatusAndAnswer = `-- name: UpdateStatusAndAnswer :exec
+const updateStatusAndAnswer = `-- name: UpdateStatusAndAnswer :one
 UPDATE puzzles SET status = ?2, answer = ?3, archived = ?4
 WHERE id = ?1
+RETURNING id, name, answer, round, status, description, location, puzzle_url, spreadsheet_id, discord_channel, original_url, name_override, archived, voice_room, reminder
 `
 
 type UpdateStatusAndAnswerParams struct {
@@ -381,19 +477,38 @@ type UpdateStatusAndAnswerParams struct {
 	Archived bool
 }
 
-func (q *Queries) UpdateStatusAndAnswer(ctx context.Context, arg UpdateStatusAndAnswerParams) error {
-	_, err := q.db.ExecContext(ctx, updateStatusAndAnswer,
+func (q *Queries) UpdateStatusAndAnswer(ctx context.Context, arg UpdateStatusAndAnswerParams) (Puzzle, error) {
+	row := q.db.QueryRowContext(ctx, updateStatusAndAnswer,
 		arg.ID,
 		arg.Status,
 		arg.Answer,
 		arg.Archived,
 	)
-	return err
+	var i Puzzle
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.Answer,
+		&i.Round,
+		&i.Status,
+		&i.Description,
+		&i.Location,
+		&i.PuzzleUrl,
+		&i.SpreadsheetID,
+		&i.DiscordChannel,
+		&i.OriginalUrl,
+		&i.NameOverride,
+		&i.Archived,
+		&i.VoiceRoom,
+		&i.Reminder,
+	)
+	return i, err
 }
 
-const updateVoiceRoom = `-- name: UpdateVoiceRoom :exec
+const updateVoiceRoom = `-- name: UpdateVoiceRoom :one
 UPDATE puzzles SET voice_room = ?2, location = ?3
 WHERE id = ?1
+RETURNING id, name, answer, round, status, description, location, puzzle_url, spreadsheet_id, discord_channel, original_url, name_override, archived, voice_room, reminder
 `
 
 type UpdateVoiceRoomParams struct {
@@ -402,7 +517,25 @@ type UpdateVoiceRoomParams struct {
 	Location  string
 }
 
-func (q *Queries) UpdateVoiceRoom(ctx context.Context, arg UpdateVoiceRoomParams) error {
-	_, err := q.db.ExecContext(ctx, updateVoiceRoom, arg.ID, arg.VoiceRoom, arg.Location)
-	return err
+func (q *Queries) UpdateVoiceRoom(ctx context.Context, arg UpdateVoiceRoomParams) (Puzzle, error) {
+	row := q.db.QueryRowContext(ctx, updateVoiceRoom, arg.ID, arg.VoiceRoom, arg.Location)
+	var i Puzzle
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.Answer,
+		&i.Round,
+		&i.Status,
+		&i.Description,
+		&i.Location,
+		&i.PuzzleUrl,
+		&i.SpreadsheetID,
+		&i.DiscordChannel,
+		&i.OriginalUrl,
+		&i.NameOverride,
+		&i.Archived,
+		&i.VoiceRoom,
+		&i.Reminder,
+	)
+	return i, err
 }

@@ -8,13 +8,6 @@ import (
 	"github.com/emojihunt/emojihunt/schema"
 )
 
-type AirtableConfig struct {
-	APIKey    string `json:"api_key"`
-	BaseID    string `json:"base_id"`
-	TableID   string `json:"table_id"`
-	BotUserID string `json:"bot_user_id"`
-}
-
 type Airtable struct {
 	database *db.Queries
 

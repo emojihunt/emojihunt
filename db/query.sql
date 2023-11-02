@@ -32,30 +32,37 @@ ORDER BY id;
 INSERT INTO puzzles (name, round, puzzle_url, original_url) VALUES (?, ?, ?, ?)
 RETURNING *;
 
--- name: UpdateDiscordChannel :exec
+-- name: UpdateDiscordChannel :one
 UPDATE puzzles SET discord_channel = ?2
-WHERE id = ?1;
+WHERE id = ?1
+RETURNING *;
 
--- name: UpdateSpreadsheetID :exec
+-- name: UpdateSpreadsheetID :one
 UPDATE puzzles SET spreadsheet_id = ?2
-WHERE id = ?1;
+WHERE id = ?1
+RETURNING *;
 
--- name: UpdateStatusAndAnswer :exec
+-- name: UpdateStatusAndAnswer :one
 UPDATE puzzles SET status = ?2, answer = ?3, archived = ?4
-WHERE id = ?1;
+WHERE id = ?1
+RETURNING *;
 
--- name: UpdateDescription :exec
+-- name: UpdateDescription :one
 UPDATE puzzles SET description = ?2
-WHERE id = ?1;
+WHERE id = ?1
+RETURNING *;
 
--- name: UpdateLocation :exec
+-- name: UpdateLocation :one
 UPDATE puzzles SET location = ?2
-WHERE id = ?1;
+WHERE id = ?1
+RETURNING *;
 
--- name: UpdateArchived :exec
+-- name: UpdateArchived :one
 UPDATE puzzles SET archived = ?2
-WHERE id = ?1;
+WHERE id = ?1
+RETURNING *;
 
--- name: UpdateVoiceRoom :exec
+-- name: UpdateVoiceRoom :one
 UPDATE puzzles SET voice_room = ?2, location = ?3
-WHERE id = ?1;
+WHERE id = ?1
+RETURNING *;
