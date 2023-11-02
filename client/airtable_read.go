@@ -3,7 +3,6 @@ package client
 import (
 	"context"
 	"fmt"
-	"strconv"
 	"strings"
 	"sync"
 
@@ -12,16 +11,8 @@ import (
 )
 
 // ListPuzzles returns a list of all known record IDs.
-func (air *Airtable) ListPuzzles() ([]string, error) {
-	var ids []string
-	puzzles, err := air.database.ListPuzzleIDs(context.TODO())
-	if err != nil {
-		return nil, err
-	}
-	for _, puzzle := range puzzles {
-		ids = append(ids, fmt.Sprintf("%d", puzzle))
-	}
-	return ids, nil
+func (air *Airtable) ListPuzzles() ([]int64, error) {
+	return air.database.ListPuzzleIDs(context.TODO())
 }
 
 // ListPuzzleFragmentsAndRounds returns a collection of all puzzle names and
@@ -71,7 +62,7 @@ func (air *Airtable) ListWithVoiceRoom() ([]schema.VoicePuzzle, error) {
 	var voicePuzzles []schema.VoicePuzzle
 	for _, puzzle := range puzzles {
 		voicePuzzles = append(voicePuzzles, schema.VoicePuzzle{
-			RecordID:  fmt.Sprintf("%d", puzzle.ID),
+			ID:        puzzle.ID,
 			Name:      puzzle.Name,
 			VoiceRoom: puzzle.VoiceRoom,
 		})
@@ -96,7 +87,7 @@ func (air *Airtable) ListWithReminder() ([]schema.ReminderPuzzle, error) {
 	var reminderPuzzles schema.ReminderPuzzles
 	for _, puzzle := range puzzles {
 		reminderPuzzles = append(reminderPuzzles, schema.ReminderPuzzle{
-			RecordID:       fmt.Sprintf("%d", puzzle.ID),
+			ID:             puzzle.ID,
 			Name:           puzzle.Name,
 			DiscordChannel: puzzle.DiscordChannel,
 			Reminder:       puzzle.Reminder.Time,
@@ -108,14 +99,10 @@ func (air *Airtable) ListWithReminder() ([]schema.ReminderPuzzle, error) {
 // LockByID locks the given Airtable record ID and loads the corresponding
 // puzzle under the lock. If no error is returned, the caller is responsible for
 // calling Unlock() on the puzzle.
-func (air *Airtable) LockByID(id string) (*schema.Puzzle, error) {
+func (air *Airtable) LockByID(id int64) (*schema.Puzzle, error) {
 	unlock := air.lockPuzzle(id)
 
-	i, err := strconv.Atoi(id)
-	if err != nil {
-		return nil, err
-	}
-	record, err := air.database.GetPuzzle(context.TODO(), int64(i))
+	record, err := air.database.GetPuzzle(context.TODO(), id)
 	if err != nil {
 		unlock()
 		return nil, err
@@ -140,7 +127,7 @@ func (air *Airtable) LockByDiscordChannel(channel string) (*schema.Puzzle, error
 		}
 
 		// Reload object under lock
-		unlock := air.lockPuzzle(fmt.Sprintf("%d", response[0].ID))
+		unlock := air.lockPuzzle(response[0].ID)
 		record, err := air.database.GetPuzzle(context.TODO(), response[0].ID)
 		if err != nil {
 			unlock()
@@ -156,7 +143,7 @@ func (air *Airtable) LockByDiscordChannel(channel string) (*schema.Puzzle, error
 	return nil, fmt.Errorf("discord channel %q is unstable", channel)
 }
 
-func (air *Airtable) lockPuzzle(id string) func() {
+func (air *Airtable) lockPuzzle(id int64) func() {
 	// https://stackoverflow.com/a/64612611
 	value, _ := air.mutexes.LoadOrStore(id, &sync.Mutex{})
 	mu := value.(*sync.Mutex)

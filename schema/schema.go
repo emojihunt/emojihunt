@@ -45,20 +45,20 @@ type NewPuzzle struct {
 }
 
 type InvalidPuzzle struct {
-	RecordID string
+	ID       int64
 	Name     string
 	Problems []string
 	EditURL  string
 }
 
 type VoicePuzzle struct {
-	RecordID  string
+	ID        int64
 	Name      string
 	VoiceRoom string
 }
 
 type ReminderPuzzle struct {
-	RecordID       string
+	ID             int64
 	Name           string
 	DiscordChannel string
 	Reminder       time.Time

@@ -29,7 +29,7 @@ func (air *Airtable) AddPuzzles(puzzles []schema.NewPuzzle, newRound bool) ([]sc
 		if err != nil {
 			return created, err
 		}
-		unlock := air.lockPuzzle(fmt.Sprintf("%d", record.ID))
+		unlock := air.lockPuzzle(record.ID)
 		parsed := air.parseDatabaseResult(&record, unlock)
 		created = append(created, *parsed)
 	}

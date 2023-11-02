@@ -139,7 +139,7 @@ func (bot *voiceRoomBot) scheduledEventUpdateHandler(s *discordgo.Session, i *di
 }
 
 func (bot *voiceRoomBot) clearVoiceRoom(info *schema.VoicePuzzle, expectedVoiceRoom string) error {
-	puzzle, err := bot.airtable.LockByID(info.RecordID)
+	puzzle, err := bot.airtable.LockByID(info.ID)
 	if err != nil {
 		return err
 	}

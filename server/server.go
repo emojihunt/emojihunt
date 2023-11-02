@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"strconv"
 	"strings"
 
 	"github.com/davecgh/go-spew/spew"
@@ -48,7 +49,7 @@ func Start(airtable *client.Airtable, syncer *syncer.Syncer, config *ServerConfi
 
 func (s *Server) ResyncURL(puzzle *schema.Puzzle) string {
 	return fmt.Sprintf(
-		"%s/resync?token=%s&record=%s",
+		"%s/resync?token=%s&record=%d",
 		s.origin, s.secret, puzzle.AirtableRecord.ID,
 	)
 }
@@ -75,10 +76,10 @@ func (s *Server) resync(w http.ResponseWriter, r *http.Request) {
 
 	log.Printf("processing re-sync request: %q", r.URL.Query().Get("record"))
 
-	id := r.URL.Query().Get("record")
-	if id == "" {
+	id, err := strconv.ParseInt(r.URL.Query().Get("record"), 10, 64)
+	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
-		fmt.Fprintf(w, "error: record is required\n")
+		fmt.Fprintf(w, "error: %#v\n", err)
 		return
 	}
 
