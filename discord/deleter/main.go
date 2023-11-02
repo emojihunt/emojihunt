@@ -10,13 +10,13 @@ import (
 )
 
 var (
-	config_file = flag.String("config_file", "config.json", "path to the file that contains config used by the application")
-	category    = flag.String("category", "", "name of category to delete from")
-	dryRun      = flag.Bool("dry_run", true, "whether to run in dry run mode or not")
+	configPath = flag.String("config", "config.json", "path to the configuration file")
+	category   = flag.String("category", "", "name of category to delete from")
+	dryRun     = flag.Bool("dry_run", true, "whether to run in dry run mode or not")
 )
 
 func main() {
-	bs, err := os.ReadFile(*config_file)
+	bs, err := os.ReadFile(*configPath)
 	if err != nil {
 		log.Fatalf("error opening config.json: %v", err)
 	}

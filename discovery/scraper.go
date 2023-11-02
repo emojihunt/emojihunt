@@ -12,13 +12,13 @@ import (
 	"golang.org/x/net/html"
 )
 
-func (d *Poller) Scrape(ctx context.Context) ([]schema.NewPuzzle, error) {
+func (p *Poller) Scrape(ctx context.Context) ([]schema.NewPuzzle, error) {
 	// Download
-	req, err := http.NewRequestWithContext(ctx, "GET", d.puzzlesURL.String(), nil)
+	req, err := http.NewRequestWithContext(ctx, "GET", p.puzzlesURL.String(), nil)
 	if err != nil {
 		return nil, err
 	}
-	req.AddCookie(d.cookie)
+	req.AddCookie(p.cookie)
 	res, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return nil, err
@@ -33,33 +33,33 @@ func (d *Poller) Scrape(ctx context.Context) ([]schema.NewPuzzle, error) {
 		return nil, err
 	}
 
-	if d.groupMode {
-		groups := d.groupSelector.MatchAll(root)
+	if p.groupMode {
+		groups := p.groupSelector.MatchAll(root)
 		if len(groups) == 0 {
 			return nil, fmt.Errorf("no groups found")
 		}
 
 		for _, group := range groups {
-			nameNode := d.roundNameSelector.MatchFirst(group)
+			nameNode := p.roundNameSelector.MatchFirst(group)
 			if nameNode == nil {
 				return nil, fmt.Errorf("round name node not found in group: %#v", group)
 			}
 
-			puzzleListNode := d.puzzleListSelector.MatchFirst(group)
+			puzzleListNode := p.puzzleListSelector.MatchFirst(group)
 			if puzzleListNode == nil {
 				return nil, fmt.Errorf("puzzle list node not found in group: %#v", group)
 			}
 			discovered = append(discovered, [2]*html.Node{nameNode, puzzleListNode})
 		}
 	} else {
-		container := d.groupSelector.MatchFirst(root)
+		container := p.groupSelector.MatchFirst(root)
 		if container == nil {
 			return nil, fmt.Errorf("container not found, did login succeed?")
 		}
 
 		node := container.FirstChild
 		for {
-			if d.roundNameSelector.Match(node) {
+			if p.roundNameSelector.Match(node) {
 				nameNode := node
 
 				node = node.NextSibling
@@ -67,10 +67,10 @@ func (d *Poller) Scrape(ctx context.Context) ([]schema.NewPuzzle, error) {
 					// Skip over text nodes.
 					node = node.NextSibling
 				}
-				if d.puzzleListSelector.Match(node) {
+				if p.puzzleListSelector.Match(node) {
 					// Puzzle list found!
 					discovered = append(discovered, [2]*html.Node{nameNode, node})
-				} else if d.roundNameSelector.Match(node) {
+				} else if p.roundNameSelector.Match(node) {
 					// Another round heading! This is probably a sub-round;
 					// start over treating the new heading as the round name.
 					continue
@@ -100,7 +100,7 @@ func (d *Poller) Scrape(ctx context.Context) ([]schema.NewPuzzle, error) {
 		collectText(nameNode, &roundBuf)
 		roundName := strings.TrimSpace(roundBuf.String())
 
-		puzzleItemNodes := d.puzzleItemSelector.MatchAll(puzzleListNode)
+		puzzleItemNodes := p.puzzleItemSelector.MatchAll(puzzleListNode)
 		if len(puzzleItemNodes) == 0 {
 			return nil, fmt.Errorf("no puzzle item nodes found in puzzle list: %#v", puzzleListNode)
 		}
@@ -124,7 +124,7 @@ func (d *Poller) Scrape(ctx context.Context) ([]schema.NewPuzzle, error) {
 			puzzles = append(puzzles, schema.NewPuzzle{
 				Name:      strings.TrimSpace(puzzleBuf.String()),
 				Round:     schema.Round{Name: roundName},
-				PuzzleURL: d.puzzlesURL.ResolveReference(u).String(),
+				PuzzleURL: p.puzzlesURL.ResolveReference(u).String(),
 			})
 		}
 	}

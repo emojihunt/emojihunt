@@ -19,7 +19,7 @@ func (d *Poller) SyncPuzzles(ctx context.Context, puzzles []schema.NewPuzzle) er
 	}
 
 	// Filter out known puzzles; add remaining puzzles
-	fragments, rounds, err := d.database.ListPuzzleFragmentsAndRounds()
+	fragments, rounds, err := d.db.ListPuzzleFragmentsAndRounds()
 	if err != nil {
 		return err
 	}
@@ -143,7 +143,7 @@ func (d *Poller) createPuzzles(ctx context.Context, newPuzzles []schema.NewPuzzl
 
 	// Warning! Puzzle locks are acquired here and must be released before this
 	// function returns.
-	created, err := d.database.AddPuzzles(newPuzzles, newRound)
+	created, err := d.db.AddPuzzles(newPuzzles, newRound)
 	if err != nil {
 		return err
 	}

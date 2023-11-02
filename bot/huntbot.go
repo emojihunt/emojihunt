@@ -16,11 +16,11 @@ import (
 	"github.com/emojihunt/emojihunt/syncer"
 )
 
-func RegisterHuntbotCommand(ctx context.Context, database *db.Client, discord *discord.Client,
+func RegisterHuntbotCommand(ctx context.Context, db *db.Client, discord *discord.Client,
 	discovery *discovery.Poller, syncer *syncer.Syncer, state *state.State) {
 	var bot = huntbotBot{
 		ctx:       ctx,
-		database:  database,
+		db:        db,
 		discord:   discord,
 		discovery: discovery,
 		syncer:    syncer,
@@ -31,7 +31,7 @@ func RegisterHuntbotCommand(ctx context.Context, database *db.Client, discord *d
 
 type huntbotBot struct {
 	ctx       context.Context
-	database  *db.Client
+	db        *db.Client
 	discord   *discord.Client
 	discovery *discovery.Poller
 	syncer    *syncer.Syncer
@@ -125,7 +125,7 @@ func (bot *huntbotBot) makeSlashCommand() *discord.Command {
 func (bot *huntbotBot) fullResync(s *discordgo.Session, i *discord.CommandInput) {
 	var errs = make(map[string]error)
 
-	puzzles, err := bot.database.ListPuzzles()
+	puzzles, err := bot.db.ListPuzzles()
 	if err == nil {
 		for j, id := range puzzles {
 			if bot.state.IsKilled() {
@@ -134,7 +134,7 @@ func (bot *huntbotBot) fullResync(s *discordgo.Session, i *discord.CommandInput)
 			}
 
 			var puzzle *schema.Puzzle
-			puzzle, err = bot.database.LockByID(id)
+			puzzle, err = bot.db.LockByID(id)
 			if err != nil {
 				err = fmt.Errorf("failed to load %q: %s", id, spew.Sdump(err))
 				break

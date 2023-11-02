@@ -55,7 +55,7 @@ func NewClient(config *Config, state *state.State) (*Client, error) {
 		discordgo.IntentsGuildScheduledEvents |
 		discordgo.IntentsGuildMessageReactions
 	state.Lock()
-	s.Identify.Presence.Status = discordComputeBotStatus(state)
+	s.Identify.Presence.Status = computeBotStatus(state)
 	state.Unlock()
 	if err := s.Open(); err != nil {
 		return nil, err
@@ -182,12 +182,12 @@ func (c *Client) Close() error {
 // Update the bot's status (idle/active). The caller must hold the state lock.
 func (c *Client) UpdateStatus(state *state.State) error {
 	return c.s.UpdateStatusComplex(discordgo.UpdateStatusData{
-		Status: discordComputeBotStatus(state),
+		Status: computeBotStatus(state),
 	})
 }
 
 // Caller must hold the state lock
-func discordComputeBotStatus(state *state.State) string {
+func computeBotStatus(state *state.State) string {
 	if state.HuntbotDisabled {
 		return "dnd"
 	} else {

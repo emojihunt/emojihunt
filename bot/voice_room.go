@@ -13,17 +13,17 @@ import (
 	"github.com/emojihunt/emojihunt/syncer"
 )
 
-func RegisterVoiceRoomBot(ctx context.Context, database *db.Client, discord *discord.Client, syncer *syncer.Syncer) {
-	var bot = voiceRoomBot{ctx, database, discord, syncer}
+func RegisterVoiceRoomBot(ctx context.Context, db *db.Client, discord *discord.Client, syncer *syncer.Syncer) {
+	var bot = voiceRoomBot{ctx, db, discord, syncer}
 	discord.AddCommand(bot.makeSlashCommand())
 	discord.AddHandler(bot.scheduledEventUpdateHandler)
 }
 
 type voiceRoomBot struct {
-	ctx      context.Context
-	database *db.Client
-	discord  *discord.Client
-	syncer   *syncer.Syncer
+	ctx     context.Context
+	db      *db.Client
+	discord *discord.Client
+	syncer  *syncer.Syncer
 }
 
 func (bot *voiceRoomBot) makeSlashCommand() *discord.Command {
@@ -57,7 +57,7 @@ func (bot *voiceRoomBot) makeSlashCommand() *discord.Command {
 		},
 		Async: true,
 		Handler: func(s *discordgo.Session, i *discord.CommandInput) (string, error) {
-			puzzle, err := bot.database.LockByDiscordChannel(i.IC.ChannelID)
+			puzzle, err := bot.db.LockByDiscordChannel(i.IC.ChannelID)
 			if err != nil {
 				return "", err
 			} else if puzzle == nil {
@@ -90,7 +90,7 @@ func (bot *voiceRoomBot) makeSlashCommand() *discord.Command {
 			}
 
 			// Sync the change!
-			if puzzle, err = bot.database.SetVoiceRoom(puzzle, channel); err != nil {
+			if puzzle, err = bot.db.SetVoiceRoom(puzzle, channel); err != nil {
 				return "", err
 			}
 			if err = bot.syncer.DiscordCreateUpdatePin(puzzle); err != nil {
@@ -120,7 +120,7 @@ func (bot *voiceRoomBot) scheduledEventUpdateHandler(s *discordgo.Session, i *di
 	log.Printf("discord: processing scheduled event completion for %q", i.Name)
 
 	bot.syncer.VoiceRoomMutex.Lock()
-	puzzles, err := bot.database.ListWithVoiceRoom()
+	puzzles, err := bot.db.ListWithVoiceRoom()
 	bot.syncer.VoiceRoomMutex.Unlock()
 
 	if err != nil {
@@ -140,7 +140,7 @@ func (bot *voiceRoomBot) scheduledEventUpdateHandler(s *discordgo.Session, i *di
 }
 
 func (bot *voiceRoomBot) clearVoiceRoom(info *schema.VoicePuzzle, expectedVoiceRoom string) error {
-	puzzle, err := bot.database.LockByID(info.ID)
+	puzzle, err := bot.db.LockByID(info.ID)
 	if err != nil {
 		return err
 	}
@@ -153,7 +153,7 @@ func (bot *voiceRoomBot) clearVoiceRoom(info *schema.VoicePuzzle, expectedVoiceR
 		return nil
 	}
 
-	puzzle, err = bot.database.SetVoiceRoom(puzzle, nil)
+	puzzle, err = bot.db.SetVoiceRoom(puzzle, nil)
 	if err != nil {
 		return err
 	}

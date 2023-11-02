@@ -10,9 +10,9 @@ import (
 	"github.com/emojihunt/emojihunt/emojiname"
 )
 
-func RegisterEmojiNameBot(dis *discord.Client) {
-	var bot = emojiNameBot{dis}
-	dis.AddCommand(bot.makeSlashCommand())
+func RegisterEmojiNameBot(discord *discord.Client) {
+	var bot = emojiNameBot{discord}
+	discord.AddCommand(bot.makeSlashCommand())
 }
 
 type emojiNameBot struct {

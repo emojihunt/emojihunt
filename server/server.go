@@ -22,12 +22,12 @@ type ServerConfig struct {
 }
 
 type Server struct {
-	database       *db.Client
+	db             *db.Client
 	syncer         *syncer.Syncer
 	secret, origin string
 }
 
-func Start(database *db.Client, syncer *syncer.Syncer, config *ServerConfig) error {
+func Start(db *db.Client, syncer *syncer.Syncer, config *ServerConfig) error {
 	if config.SecretToken == "" {
 		return fmt.Errorf("secret token cannot be empty")
 	}
@@ -35,7 +35,7 @@ func Start(database *db.Client, syncer *syncer.Syncer, config *ServerConfig) err
 	if origin == "" {
 		origin = "http://localhost:8000"
 	}
-	server := &Server{database, syncer, config.SecretToken, origin}
+	server := &Server{db, syncer, config.SecretToken, origin}
 	go func() {
 		mux := http.NewServeMux()
 		mux.HandleFunc("/robots.txt", server.robots)
@@ -83,7 +83,7 @@ func (s *Server) resync(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	puzzle, err := s.database.LockByID(id)
+	puzzle, err := s.db.LockByID(id)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		fmt.Fprintf(w, "error: %#v\n", err)

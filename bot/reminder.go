@@ -21,16 +21,16 @@ var notifications = []time.Duration{
 
 const warnErrorFrequency = 10 * time.Minute
 
-func RegisterReminderBot(database *db.Client, discord *discord.Client, state *state.State) {
-	var bot = reminderBot{database, discord, state}
+func RegisterReminderBot(db *db.Client, discord *discord.Client, state *state.State) {
+	var bot = reminderBot{db, discord, state}
 	discord.AddCommand(bot.makeSlashCommand())
 	go bot.notificationLoop()
 }
 
 type reminderBot struct {
-	database *db.Client
-	discord  *discord.Client
-	state    *state.State
+	db      *db.Client
+	discord *discord.Client
+	state   *state.State
 }
 
 func (bot *reminderBot) makeSlashCommand() *discord.Command {
@@ -40,7 +40,7 @@ func (bot *reminderBot) makeSlashCommand() *discord.Command {
 			Description: "List all puzzle reminders ⏱️",
 		},
 		Handler: func(s *discordgo.Session, i *discord.CommandInput) (string, error) {
-			puzzles, err := bot.database.ListWithReminder()
+			puzzles, err := bot.db.ListWithReminder()
 			if err != nil {
 				return "", err
 			}
@@ -109,7 +109,7 @@ func (bot *reminderBot) notificationLoop() {
 func (bot *reminderBot) processNotifications(since time.Time) (*time.Time, error) {
 	now := time.Now()
 
-	puzzles, err := bot.database.ListWithReminder()
+	puzzles, err := bot.db.ListWithReminder()
 	if err != nil {
 		return nil, err
 	}

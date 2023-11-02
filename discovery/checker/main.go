@@ -12,14 +12,14 @@ import (
 )
 
 var (
-	config_file = flag.String("config", "config.json", "path to the configuration file")
+	config_path = flag.String("config", "config.json", "path to the configuration file")
 )
 
 // This tool can help you out when you're adjusting the CSS selectors for a new
-// hunt. Run `go run ./discovery/cmd` in the root of the project to scrape the
-// given URL and print the puzzles that were found.
+// hunt. Run `go run ./discovery/checker` in the root of the project to scrape
+// the given URL and print the puzzles that were found.
 func main() {
-	bs, err := os.ReadFile(*config_file)
+	bs, err := os.ReadFile(*config_path)
 	if err != nil {
 		log.Fatalf("error opening config.json: %v", err)
 	}

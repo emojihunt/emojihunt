@@ -30,7 +30,7 @@ func (s *Syncer) SyncVoiceRooms(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	puzzles, err := s.database.ListWithVoiceRoom()
+	puzzles, err := s.db.ListWithVoiceRoom()
 	if err != nil {
 		return err
 	}

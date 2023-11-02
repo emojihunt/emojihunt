@@ -29,9 +29,8 @@ type Config struct {
 }
 
 var (
-	config_file = flag.String("config", "config.json", "path to the configuration file")
-	state_file  = flag.String("state", "state.json", "path to the state file")
-	database    = flag.String("db", "db.sqlite", "path to the database file")
+	configPath = flag.String("config", "config.json", "path to the configuration file")
+	dbPath     = flag.String("db", "db.sqlite", "path to the database file")
 )
 
 func main() {
@@ -44,7 +43,7 @@ func main() {
 	} else {
 		// In development, configuration is stored in a local file.
 		var err error
-		bs, err = os.ReadFile(*config_file)
+		bs, err = os.ReadFile(*configPath)
 		if err != nil {
 			log.Fatalf("error reading config file at %q: %v", os.Args[1], err)
 		}
@@ -55,7 +54,7 @@ func main() {
 	}
 
 	// Load state
-	state, err := state.Load(*state_file)
+	state, err := state.Load("TODO")
 	if err != nil {
 		log.Fatalf("error reading state file at %q: %v", os.Args[2], err)
 	}
@@ -83,7 +82,7 @@ func main() {
 	}()
 
 	// Open database connection
-	db := db.OpenDatabase(ctx, *database)
+	db := db.OpenDatabase(ctx, *dbPath)
 
 	// Set up clients
 	discord, err := discord.NewClient(config.Discord, state)

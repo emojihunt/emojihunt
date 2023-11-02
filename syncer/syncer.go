@@ -15,19 +15,19 @@ import (
 )
 
 type Syncer struct {
-	database *db.Client
-	discord  *discord.Client
-	drive    *drive.Client
+	db      *db.Client
+	discord *discord.Client
+	drive   *drive.Client
 
 	VoiceRoomMutex       sync.Mutex
 	DiscordCategoryMutex sync.Mutex
 }
 
-func New(database *db.Client, discord *discord.Client, drive *drive.Client) *Syncer {
+func New(db *db.Client, discord *discord.Client, drive *drive.Client) *Syncer {
 	return &Syncer{
-		database: database,
-		discord:  discord,
-		drive:    drive,
+		db:      db,
+		discord: discord,
+		drive:   drive,
 	}
 }
 
@@ -43,7 +43,7 @@ func (s *Syncer) IdempotentCreateUpdate(ctx context.Context, puzzle *schema.Puzz
 			return nil, fmt.Errorf("error creating spreadsheet for %q: %v", puzzle.Name, err)
 		}
 
-		puzzle, err = s.database.SetSpreadsheetID(puzzle, spreadsheet)
+		puzzle, err = s.db.SetSpreadsheetID(puzzle, spreadsheet)
 		if err != nil {
 			return nil, fmt.Errorf("error setting spreadsheet id for puzzle %q: %v", puzzle.Name, err)
 		}
@@ -67,7 +67,7 @@ func (s *Syncer) IdempotentCreateUpdate(ctx context.Context, puzzle *schema.Puzz
 			return nil, fmt.Errorf("error creating discord channel for %q: %v", puzzle.Name, err)
 		}
 
-		puzzle, err = s.database.SetDiscordChannel(puzzle, channel.ID)
+		puzzle, err = s.db.SetDiscordChannel(puzzle, channel.ID)
 		if err != nil {
 			return nil, fmt.Errorf("error setting discord channel for puzzle %q: %v", puzzle.Name, err)
 		}
@@ -123,7 +123,7 @@ func (s *Syncer) HandleStatusChange(ctx context.Context, puzzle *schema.Puzzle, 
 	// Update bot status in Airtable, unless we're in a bot handler and this has
 	// already been done.
 	if !botRequest {
-		puzzle, err = s.database.SetBotFields(puzzle)
+		puzzle, err = s.db.SetBotFields(puzzle)
 		if err != nil {
 			return nil, fmt.Errorf("failed to update bot fields for puzzle %q: %v", puzzle.Name, err)
 		}
@@ -149,7 +149,7 @@ func (s *Syncer) HandleStatusChange(ctx context.Context, puzzle *schema.Puzzle, 
 		if puzzle.VoiceRoom != "" {
 			s.VoiceRoomMutex.Lock()
 			defer s.VoiceRoomMutex.Unlock()
-			puzzle, err = s.database.SetVoiceRoom(puzzle, nil)
+			puzzle, err = s.db.SetVoiceRoom(puzzle, nil)
 			if err != nil {
 				return nil, fmt.Errorf("error unsetting voice room: %v", err)
 			}
@@ -190,7 +190,7 @@ func (s *Syncer) ForceUpdate(ctx context.Context, puzzle *schema.Puzzle) (*schem
 	}
 
 	// Update bot status in Airtable
-	puzzle, err = s.database.SetBotFields(puzzle)
+	puzzle, err = s.db.SetBotFields(puzzle)
 	if err != nil {
 		return nil, err
 	}

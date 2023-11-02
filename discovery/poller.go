@@ -90,7 +90,7 @@ type Poller struct {
 	wsURL   *url.URL
 	wsToken string
 
-	database  *db.Client
+	db        *db.Client
 	discord   *discord.Client
 	syncer    *syncer.Syncer
 	state     *state.State
@@ -151,7 +151,7 @@ func New(database *db.Client, discord *discord.Client, syncer *syncer.Syncer, co
 		wsURL:   wsURL,
 		wsToken: config.WebsocketToken,
 
-		database:  database,
+		db:        database,
 		discord:   discord,
 		syncer:    syncer,
 		state:     state,
@@ -162,19 +162,19 @@ func New(database *db.Client, discord *discord.Client, syncer *syncer.Syncer, co
 	}
 }
 
-func (d *Poller) Poll(ctx context.Context) {
-	d.InitializeRoundCreation()
+func (p *Poller) Poll(ctx context.Context) {
+	p.InitializeRoundCreation()
 
 reconnect:
 	for {
-		ch, err := d.openWebsocket()
+		ch, err := p.openWebsocket()
 		if err != nil {
 			log.Printf("discovery: failed to open websocket: %v", spew.Sprint(err))
 		}
 
 		for {
-			if !d.state.IsKilled() {
-				d.poll(ctx)
+			if !p.state.IsKilled() {
+				p.poll(ctx)
 			}
 
 			select {
@@ -191,57 +191,57 @@ reconnect:
 	}
 }
 
-func (d *Poller) poll(ctx context.Context) {
+func (p *Poller) poll(ctx context.Context) {
 	ctx, cancel := context.WithTimeout(ctx, pollTimeout)
 	defer cancel()
 
-	puzzles, err := d.Scrape(ctx)
+	puzzles, err := p.Scrape(ctx)
 	if err != nil {
-		d.logAndMaybeWarn("scraping error", err)
+		p.logAndMaybeWarn("scraping error", err)
 	}
 
-	if err := d.SyncPuzzles(ctx, puzzles); err != nil {
-		d.logAndMaybeWarn("syncing error", err)
+	if err := p.SyncPuzzles(ctx, puzzles); err != nil {
+		p.logAndMaybeWarn("syncing error", err)
 	}
 }
 
-func (d *Poller) logAndMaybeWarn(memo string, err error) {
-	d.state.Lock()
-	defer d.state.CommitAndUnlock()
+func (p *Poller) logAndMaybeWarn(memo string, err error) {
+	p.state.Lock()
+	defer p.state.CommitAndUnlock()
 
 	log.Printf("discovery: %s: %v", memo, err)
-	if time.Since(d.state.DiscoveryLastWarn) >= warnErrorFrequency {
+	if time.Since(p.state.DiscoveryLastWarn) >= warnErrorFrequency {
 		msg := fmt.Sprintf("```*** PUZZLE DISCOVERY %s ***\n\n%s```", strings.ToUpper(memo), spew.Sdump(err))
-		d.discord.ChannelSend(d.discord.TechChannel, msg)
-		d.state.DiscoveryLastWarn = time.Now()
+		p.discord.ChannelSend(p.discord.TechChannel, msg)
+		p.state.DiscoveryLastWarn = time.Now()
 	}
 }
 
-func (d *Poller) openWebsocket() (chan bool, error) {
-	if d.wsURL == nil {
+func (p *Poller) openWebsocket() (chan bool, error) {
+	if p.wsURL == nil {
 		return nil, nil
 	}
 
 	log.Printf("discovery: (re-)connecting to websocket...")
 	ch := make(chan bool)
-	config, err := websocket.NewConfig(d.wsURL.String(), "https://"+d.wsURL.Host)
+	config, err := websocket.NewConfig(p.wsURL.String(), "https://"+p.wsURL.Host)
 	if err != nil {
 		return nil, err
 	}
-	if d.cookie.Name != "" {
+	if p.cookie.Name != "" {
 		// If a cookie is set, send it when opening the Websocket
-		config.Header.Add("Cookie", fmt.Sprintf("%s=%s", d.cookie.Name, d.cookie.Value))
+		config.Header.Add("Cookie", fmt.Sprintf("%s=%s", p.cookie.Name, p.cookie.Value))
 	}
 	ws, err := websocket.DialConfig(config)
 	if err != nil {
 		return nil, err
 	}
-	log.Printf("discovery: opened websocket connection to %q", d.wsURL.String())
-	if d.wsToken != "" {
+	log.Printf("discovery: opened websocket connection to %q", p.wsURL.String())
+	if p.wsToken != "" {
 		// Custom (??) authentication protocol from 2021
 		data, err := json.Marshal(map[string]interface{}{
 			"type": "AUTH",
-			"data": d.wsToken,
+			"data": p.wsToken,
 		})
 		if err != nil {
 			return nil, err
@@ -255,7 +255,7 @@ func (d *Poller) openWebsocket() (chan bool, error) {
 		defer close(ch)
 		scanner := bufio.NewScanner(ws)
 		for scanner.Scan() {
-			if d.wsLimiter.Allow() {
+			if p.wsLimiter.Allow() {
 				log.Printf("discovery: ws: %q", scanner.Text())
 				ch <- true
 			} else {

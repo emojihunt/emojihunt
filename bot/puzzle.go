@@ -12,16 +12,16 @@ import (
 	"github.com/emojihunt/emojihunt/syncer"
 )
 
-func RegisterPuzzleBot(ctx context.Context, database *db.Client, discord *discord.Client, syncer *syncer.Syncer) {
-	var bot = puzzleBot{ctx, database, discord, syncer}
+func RegisterPuzzleBot(ctx context.Context, db *db.Client, discord *discord.Client, syncer *syncer.Syncer) {
+	var bot = puzzleBot{ctx, db, discord, syncer}
 	discord.AddCommand(bot.makeSlashCommand())
 }
 
 type puzzleBot struct {
-	ctx      context.Context
-	database *db.Client
-	discord  *discord.Client
-	syncer   *syncer.Syncer
+	ctx     context.Context
+	db      *db.Client
+	discord *discord.Client
+	syncer  *syncer.Syncer
 }
 
 func (bot *puzzleBot) makeSlashCommand() *discord.Command {
@@ -102,7 +102,7 @@ func (bot *puzzleBot) makeSlashCommand() *discord.Command {
 		},
 		Async: true,
 		Handler: func(s *discordgo.Session, i *discord.CommandInput) (string, error) {
-			puzzle, err := bot.database.LockByDiscordChannel(i.IC.ChannelID)
+			puzzle, err := bot.db.LockByDiscordChannel(i.IC.ChannelID)
 			if err != nil {
 				return "", err
 			} else if puzzle == nil {
@@ -137,7 +137,7 @@ func (bot *puzzleBot) makeSlashCommand() *discord.Command {
 						"Was that right?", newStatus.Human(), puzzle.Answer)
 				}
 
-				if puzzle, err = bot.database.SetStatusAndAnswer(puzzle, newStatus, newAnswer); err != nil {
+				if puzzle, err = bot.db.SetStatusAndAnswer(puzzle, newStatus, newAnswer); err != nil {
 					return "", err
 				}
 				if puzzle, err = bot.syncer.HandleStatusChange(bot.ctx, puzzle, true); err != nil {
@@ -161,7 +161,7 @@ func (bot *puzzleBot) makeSlashCommand() *discord.Command {
 					newStatus.SolvedNoun(), newAnswer,
 				)
 
-				if puzzle, err = bot.database.SetStatusAndAnswer(puzzle, newStatus, newAnswer); err != nil {
+				if puzzle, err = bot.db.SetStatusAndAnswer(puzzle, newStatus, newAnswer); err != nil {
 					return "", err
 				}
 				if puzzle, err = bot.syncer.HandleStatusChange(bot.ctx, puzzle, true); err != nil {
@@ -179,7 +179,7 @@ func (bot *puzzleBot) makeSlashCommand() *discord.Command {
 					reply += fmt.Sprintf(" Previous description was: ```\n%s\n```", puzzle.Description)
 				}
 
-				if puzzle, err = bot.database.SetDescription(puzzle, newDescription); err != nil {
+				if puzzle, err = bot.db.SetDescription(puzzle, newDescription); err != nil {
 					return "", err
 				}
 				if err = bot.syncer.DiscordCreateUpdatePin(puzzle); err != nil {
@@ -197,7 +197,7 @@ func (bot *puzzleBot) makeSlashCommand() *discord.Command {
 					reply += fmt.Sprintf(" Previous location was: ```\n%s\n```", puzzle.Location)
 				}
 
-				if puzzle, err = bot.database.SetLocation(puzzle, newLocation); err != nil {
+				if puzzle, err = bot.db.SetLocation(puzzle, newLocation); err != nil {
 					return "", err
 				}
 				if err = bot.syncer.DiscordCreateUpdatePin(puzzle); err != nil {
