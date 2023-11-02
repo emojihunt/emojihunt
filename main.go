@@ -13,7 +13,6 @@ import (
 
 	"github.com/emojihunt/emojihunt/bot"
 	"github.com/emojihunt/emojihunt/client"
-	"github.com/emojihunt/emojihunt/database"
 	"github.com/emojihunt/emojihunt/discovery"
 	"github.com/emojihunt/emojihunt/server"
 	"github.com/emojihunt/emojihunt/state"
@@ -97,7 +96,6 @@ func main() {
 
 	// Start internal engines
 	syncer := syncer.New(airtable, discord, drive)
-	dbpoller := database.NewPoller(airtable, discord, syncer, state)
 
 	bot.RegisterEmojiNameBot(discord)
 	bot.RegisterHuntYetBot(discord)
@@ -114,7 +112,7 @@ func main() {
 		log.Printf("puzzle auto-discovery is disabled (no config found)")
 	}
 
-	bot.RegisterHuntbotCommand(ctx, airtable, discord, dbpoller, dscvpoller, syncer, state)
+	bot.RegisterHuntbotCommand(ctx, airtable, discord, dscvpoller, syncer, state)
 
 	go func() {
 		if err := discord.RegisterCommands(); err != nil {
@@ -125,7 +123,6 @@ func main() {
 	// Run!
 	log.Print("press ctrl+C to exit")
 	go syncer.RestorePlaceholderEvent()
-	go dbpoller.Poll(ctx)
 	if dscvpoller != nil {
 		go dscvpoller.Poll(ctx)
 	}

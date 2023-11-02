@@ -9,7 +9,6 @@ import (
 	"github.com/bwmarrin/discordgo"
 	"github.com/davecgh/go-spew/spew"
 	"github.com/emojihunt/emojihunt/client"
-	"github.com/emojihunt/emojihunt/database"
 	"github.com/emojihunt/emojihunt/discovery"
 	"github.com/emojihunt/emojihunt/schema"
 	"github.com/emojihunt/emojihunt/state"
@@ -17,12 +16,11 @@ import (
 )
 
 func RegisterHuntbotCommand(ctx context.Context, airtable *client.Airtable, discord *client.Discord,
-	poller *database.Poller, discovery *discovery.Poller, syncer *syncer.Syncer, state *state.State) {
+	discovery *discovery.Poller, syncer *syncer.Syncer, state *state.State) {
 	var bot = huntbotBot{
 		ctx:       ctx,
 		airtable:  airtable,
 		discord:   discord,
-		poller:    poller,
 		discovery: discovery,
 		syncer:    syncer,
 		state:     state,
@@ -34,7 +32,6 @@ type huntbotBot struct {
 	ctx       context.Context
 	airtable  *client.Airtable
 	discord   *client.Discord
-	poller    *database.Poller
 	discovery *discovery.Poller
 	syncer    *syncer.Syncer
 	state     *state.State
