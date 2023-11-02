@@ -7,3 +7,6 @@ sql:
       go:
         package: "db"
         out: "db"
+        rename:
+          puzzle_url: "PuzzleURL"
+          original_url: "OriginalURL"

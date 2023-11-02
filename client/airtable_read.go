@@ -39,8 +39,8 @@ func (air *Airtable) ListPuzzleFragmentsAndRounds() (map[string]bool, map[string
 	}
 	for _, puzzle := range puzzles {
 		fragments[strings.ToUpper(puzzle.Name)] = true
-		fragments[strings.ToUpper(puzzle.PuzzleUrl)] = true
-		fragments[strings.ToUpper(puzzle.OriginalUrl)] = true
+		fragments[strings.ToUpper(puzzle.PuzzleURL)] = true
+		fragments[strings.ToUpper(puzzle.OriginalURL)] = true
 	}
 
 	var rounds = make(map[string]db.Round)
@@ -190,12 +190,12 @@ func (air *Airtable) parseDatabaseResult(record *db.Puzzle, unlock func()) *sche
 		NameOverride: record.NameOverride,
 
 		AirtableRecord: record,
-		PuzzleURL:      record.PuzzleUrl,
+		PuzzleURL:      record.PuzzleURL,
 		SpreadsheetID:  record.SpreadsheetID,
 		DiscordChannel: record.DiscordChannel,
 
 		Archived:    record.Archived,
-		OriginalURL: record.OriginalUrl,
+		OriginalURL: record.OriginalURL,
 		VoiceRoom:   record.VoiceRoom,
 
 		Unlock: unlock,

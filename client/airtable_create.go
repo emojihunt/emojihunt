@@ -23,8 +23,8 @@ func (air *Airtable) AddPuzzles(puzzles []schema.NewPuzzle, newRound bool) ([]sc
 		record, err := air.database.CreatePuzzle(context.TODO(), db.CreatePuzzleParams{
 			Name:        puzzle.Name,
 			Round:       sql.NullInt64{}, // TODO
-			PuzzleUrl:   puzzle.PuzzleURL,
-			OriginalUrl: puzzle.PuzzleURL,
+			PuzzleURL:   puzzle.PuzzleURL,
+			OriginalURL: puzzle.PuzzleURL,
 		})
 		if err != nil {
 			return created, err

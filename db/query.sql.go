@@ -18,16 +18,16 @@ RETURNING id, name, answer, round, status, description, location, puzzle_url, sp
 type CreatePuzzleParams struct {
 	Name        string
 	Round       sql.NullInt64
-	PuzzleUrl   string
-	OriginalUrl string
+	PuzzleURL   string
+	OriginalURL string
 }
 
 func (q *Queries) CreatePuzzle(ctx context.Context, arg CreatePuzzleParams) (Puzzle, error) {
 	row := q.db.QueryRowContext(ctx, createPuzzle,
 		arg.Name,
 		arg.Round,
-		arg.PuzzleUrl,
-		arg.OriginalUrl,
+		arg.PuzzleURL,
+		arg.OriginalURL,
 	)
 	var i Puzzle
 	err := row.Scan(
@@ -38,10 +38,10 @@ func (q *Queries) CreatePuzzle(ctx context.Context, arg CreatePuzzleParams) (Puz
 		&i.Status,
 		&i.Description,
 		&i.Location,
-		&i.PuzzleUrl,
+		&i.PuzzleURL,
 		&i.SpreadsheetID,
 		&i.DiscordChannel,
-		&i.OriginalUrl,
+		&i.OriginalURL,
 		&i.NameOverride,
 		&i.Archived,
 		&i.VoiceRoom,
@@ -66,10 +66,10 @@ func (q *Queries) GetPuzzle(ctx context.Context, id int64) (Puzzle, error) {
 		&i.Status,
 		&i.Description,
 		&i.Location,
-		&i.PuzzleUrl,
+		&i.PuzzleURL,
 		&i.SpreadsheetID,
 		&i.DiscordChannel,
-		&i.OriginalUrl,
+		&i.OriginalURL,
 		&i.NameOverride,
 		&i.Archived,
 		&i.VoiceRoom,
@@ -100,10 +100,10 @@ func (q *Queries) GetPuzzlesByDiscordChannel(ctx context.Context, discordChannel
 			&i.Status,
 			&i.Description,
 			&i.Location,
-			&i.PuzzleUrl,
+			&i.PuzzleURL,
 			&i.SpreadsheetID,
 			&i.DiscordChannel,
-			&i.OriginalUrl,
+			&i.OriginalURL,
 			&i.NameOverride,
 			&i.Archived,
 			&i.VoiceRoom,
@@ -130,8 +130,8 @@ ORDER BY id
 type ListPuzzleDiscoveryFragmentsRow struct {
 	ID          int64
 	Name        string
-	PuzzleUrl   string
-	OriginalUrl string
+	PuzzleURL   string
+	OriginalURL string
 }
 
 func (q *Queries) ListPuzzleDiscoveryFragments(ctx context.Context) ([]ListPuzzleDiscoveryFragmentsRow, error) {
@@ -146,8 +146,8 @@ func (q *Queries) ListPuzzleDiscoveryFragments(ctx context.Context) ([]ListPuzzl
 		if err := rows.Scan(
 			&i.ID,
 			&i.Name,
-			&i.PuzzleUrl,
-			&i.OriginalUrl,
+			&i.PuzzleURL,
+			&i.OriginalURL,
 		); err != nil {
 			return nil, err
 		}

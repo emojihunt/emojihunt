@@ -16,10 +16,10 @@ type Puzzle struct {
 	Status         string
 	Description    string
 	Location       string
-	PuzzleUrl      string
+	PuzzleURL      string
 	SpreadsheetID  string
 	DiscordChannel string
-	OriginalUrl    string
+	OriginalURL    string
 	NameOverride   string
 	Archived       bool
 	VoiceRoom      string
