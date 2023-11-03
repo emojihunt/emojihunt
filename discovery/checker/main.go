@@ -21,20 +21,20 @@ var (
 func main() {
 	bs, err := os.ReadFile(*config_path)
 	if err != nil {
-		log.Fatalf("error opening config.json: %v", err)
+		log.Panicf("error opening config.json: %v", err)
 	}
 
 	var raw map[string]interface{}
 	if err := json.Unmarshal(bs, &raw); err != nil {
-		log.Fatalf("error parsing config.json: %v", err)
+		log.Panicf("error parsing config.json: %v", err)
 	}
 	node, err := json.Marshal(raw["autodiscovery"])
 	if err != nil {
-		log.Fatalf("error navigating config.json: %v", err)
+		log.Panicf("error navigating config.json: %v", err)
 	}
 	config := discovery.DiscoveryConfig{}
 	if err := json.Unmarshal(node, &config); err != nil {
-		log.Fatalf("error parsing autodiscovery node: %v", err)
+		log.Panicf("error parsing autodiscovery node: %v", err)
 	}
 
 	disc := discovery.New(nil, nil, nil, &config, nil)

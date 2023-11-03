@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"time"
 
 	_ "net/http/pprof"
 
@@ -19,9 +20,11 @@ import (
 	"github.com/emojihunt/emojihunt/server"
 	"github.com/emojihunt/emojihunt/state"
 	"github.com/emojihunt/emojihunt/syncer"
+	"github.com/getsentry/sentry-go"
 )
 
 type Config struct {
+	Sentry        *sentry.ClientOptions      `json:"sentry"`
 	Discord       *discord.Config            `json:"discord"`
 	GoogleDrive   *drive.Config              `json:"google_drive"`
 	Server        *server.ServerConfig       `json:"server"`
@@ -47,13 +50,27 @@ func main() {
 		var err error
 		bs, err = os.ReadFile(*configPath)
 		if err != nil {
-			log.Fatalf("error reading config file at %q: %v", *configPath, err)
+			log.Panicf("error reading config file at %q: %v", *configPath, err)
 		}
 	}
 	config := Config{}
 	if err := json.Unmarshal(bs, &config); err != nil {
-		log.Fatalf("error unmarshaling config from %q: %v", *configPath, err)
+		log.Panicf("error unmarshaling config from %q: %v", *configPath, err)
 	}
+
+	// Initialize Sentry
+	config.Sentry.AttachStacktrace = true
+	// config.Sentry.Debug = true // TODO
+	if err := sentry.Init(*config.Sentry); err != nil {
+		log.Panicf("error initializing Sentry: %v", err)
+	}
+	defer func() {
+		if err := recover(); err != nil {
+			sentry.CurrentHub().Recover(err)
+			sentry.Flush(time.Second * 5)
+			panic(err)
+		}
+	}()
 
 	// Set up our context, which is cancelled on Ctrl-C
 	ctx, cancel := context.WithCancel(context.Background())
@@ -83,19 +100,19 @@ func main() {
 	// Load state
 	state, err := state.Load(ctx, db)
 	if err != nil {
-		log.Fatalf("error loading state: %v", err)
+		log.Panicf("error loading state: %v", err)
 	}
 
 	// Set up clients
 	discord, err := discord.NewClient(config.Discord, state)
 	if err != nil {
-		log.Fatalf("error creating discord client: %v", err)
+		log.Panicf("error creating discord client: %v", err)
 	}
 	defer discord.Close()
 
 	drive, err := drive.NewClient(ctx, config.GoogleDrive)
 	if err != nil {
-		log.Fatalf("error creating drive integration: %v", err)
+		log.Panicf("error creating drive integration: %v", err)
 	}
 
 	// Start internal engines

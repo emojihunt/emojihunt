@@ -18,30 +18,30 @@ var (
 func main() {
 	bs, err := os.ReadFile(*configPath)
 	if err != nil {
-		log.Fatalf("error opening config.json: %v", err)
+		log.Panicf("error opening config.json: %v", err)
 	}
 
 	var config map[string]interface{}
 	if err := json.Unmarshal(bs, &config); err != nil {
-		log.Fatalf("error parsing config.json: %v", err)
+		log.Panicf("error parsing config.json: %v", err)
 	}
 
 	discordConfig := config["discord"].(map[string]interface{})
 
 	dg, err := discordgo.New(discordConfig["auth_token"].(string))
 	if err != nil {
-		log.Fatalf("error creating discordgo client: %v", err)
+		log.Panicf("error creating discordgo client: %v", err)
 	}
 
 	err = dg.Open()
 	defer dg.Close()
 	if err != nil {
-		log.Fatalf("error opening discord connection: %v", err)
+		log.Panicf("error opening discord connection: %v", err)
 	}
 
 	chs, err := dg.GuildChannels(discordConfig["guild_id"].(string))
 	if err != nil {
-		log.Fatalf("error listing channels: %v", err)
+		log.Panicf("error listing channels: %v", err)
 	}
 
 	var categoryID = ""
@@ -57,7 +57,7 @@ func main() {
 		}
 	}
 	if categoryID == "" {
-		log.Fatalf("Could not find category %q", *category)
+		log.Panicf("Could not find category %q", *category)
 	}
 
 	var action = "real"

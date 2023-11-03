@@ -1,4 +1,8 @@
 {
+    "sentry": {
+        "dsn": "https://***",
+        "environment": "development"
+    },
     "discord": {
         "auth_token": "Bot ********",
         "guild_id": "1058090773582721214",

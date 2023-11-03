@@ -32,13 +32,13 @@ func OpenDatabase(ctx context.Context, path string) *Client {
 	}
 	dbx, err := sql.Open("sqlite3", path)
 	if err != nil {
-		log.Fatalf("error opening database at %q: %v", path, err)
+		log.Panicf("error opening database at %q: %v", path, err)
 	}
 	if fresh {
 		if ddl == "" {
-			log.Fatalf("error reading embeded ddl")
+			log.Panicf("error reading embeded ddl")
 		} else if _, err := dbx.ExecContext(ctx, ddl); err != nil {
-			log.Fatalf("error initializing database at %q: %v", path, err)
+			log.Panicf("error initializing database at %q: %v", path, err)
 		}
 	}
 	return &Client{
