@@ -8,10 +8,9 @@ import (
 	"github.com/davecgh/go-spew/spew"
 )
 
-type Command struct {
-	Handler            CommandHandler
-	ApplicationCommand *discordgo.ApplicationCommand
-	Async              bool
+type Bot interface {
+	Register() (ac *discordgo.ApplicationCommand, async bool)
+	Handle(*discordgo.Session, *CommandInput) (string, error)
 }
 
 type CommandInput struct {
@@ -22,33 +21,53 @@ type CommandInput struct {
 	Subcommand *discordgo.ApplicationCommandInteractionDataOption
 }
 
-type CommandHandler func(*discordgo.Session, *CommandInput) (string, error)
-
-func (c *Client) AddCommand(command *Command) {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-
-	if c.commandsRegistered {
-		panic("can't call AddCommand() after RegisterCommands()")
-	}
-	c.appCommandHandlers[command.ApplicationCommand.Name] = command
+type commandHandler struct {
+	ApplicationCommand *discordgo.ApplicationCommand
+	Async              bool
+	Handler            func(*discordgo.Session, *CommandInput) (string, error)
 }
 
-func (c *Client) RegisterCommands() error {
-	var appCommands []*discordgo.ApplicationCommand
-	for _, command := range c.appCommandHandlers {
-		appCommands = append(appCommands, command.ApplicationCommand)
-	}
-	_, err := c.s.ApplicationCommandBulkOverwrite(c.s.State.User.ID, c.Guild.ID, appCommands)
-	if err != nil {
-		return err
-	}
-
+func (c *Client) RegisterBots(bots ...Bot) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
+	if c.commandsRegistered {
+		panic("RegisterBots() was called twice")
+	}
 	c.commandsRegistered = true
 
-	return nil
+	// Call each bot's Register() method
+	var appCommands []*discordgo.ApplicationCommand
+	for _, bot := range bots {
+		ac, async := bot.Register()
+		if _, ok := c.appCommandHandlers[ac.Name]; ok {
+			panic("duplicate app command: " + ac.Name)
+		}
+		appCommands = append(appCommands, ac)
+		c.appCommandHandlers[ac.Name] = &commandHandler{
+			Handler:            bot.Handle,
+			ApplicationCommand: ac,
+			Async:              async,
+		}
+	}
+
+	// Send list of registrations to Discord
+	_, err := c.s.ApplicationCommandBulkOverwrite(c.s.State.User.ID, c.Guild.ID, appCommands)
+	if err != nil {
+		panic(err)
+	}
+}
+
+func (c *Client) OptionByName(options []*discordgo.ApplicationCommandInteractionDataOption, name string) (*discordgo.ApplicationCommandInteractionDataOption, error) {
+	var result *discordgo.ApplicationCommandInteractionDataOption
+	for _, opt := range options {
+		if opt.Name == name {
+			result = opt
+		}
+	}
+	if result == nil {
+		return nil, fmt.Errorf("could not find option %q in options list", name)
+	}
+	return result, nil
 }
 
 func (c *Client) commandHandler(s *discordgo.Session, i *discordgo.InteractionCreate) {
@@ -118,17 +137,4 @@ func (c *Client) commandHandler(s *discordgo.Session, i *discordgo.InteractionCr
 	if err != nil {
 		log.Printf("discord: error responding to command %q: %s", input.Slug, spew.Sdump(err))
 	}
-}
-
-func (c *Client) OptionByName(options []*discordgo.ApplicationCommandInteractionDataOption, name string) (*discordgo.ApplicationCommandInteractionDataOption, error) {
-	var result *discordgo.ApplicationCommandInteractionDataOption
-	for _, opt := range options {
-		if opt.Name == name {
-			result = opt
-		}
-	}
-	if result == nil {
-		return nil, fmt.Errorf("could not find option %q in options list", name)
-	}
-	return result, nil
 }

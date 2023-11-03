@@ -16,21 +16,7 @@ import (
 	"github.com/emojihunt/emojihunt/syncer"
 )
 
-func RegisterHuntbotCommand(ctx context.Context, db *db.Client, discord *discord.Client,
-	discovery *discovery.Poller, syncer *syncer.Syncer, state *state.State) {
-	var bot = huntbotBot{
-		ctx:       ctx,
-		db:        db,
-		discord:   discord,
-		discovery: discovery,
-		syncer:    syncer,
-		state:     state,
-	}
-	discord.AddCommand(bot.makeSlashCommand())
-}
-
-type huntbotBot struct {
-	ctx       context.Context
+type HuntBot struct {
 	db        *db.Client
 	discord   *discord.Client
 	discovery *discovery.Poller
@@ -38,109 +24,113 @@ type huntbotBot struct {
 	state     *state.State
 }
 
-func (bot *huntbotBot) makeSlashCommand() *discord.Command {
-	return &discord.Command{
-		ApplicationCommand: &discordgo.ApplicationCommand{
-			Name:        "huntbot",
-			Description: "Robot control panel 🤖",
-			Options: []*discordgo.ApplicationCommandOption{
-				{
-					Name:        "kill",
-					Description: "Temporarily disable Huntbot ✋",
-					Type:        discordgo.ApplicationCommandOptionSubCommand,
-				},
-				{
-					Name:        "enable",
-					Description: "Re-enable Huntbot 📡",
-					Type:        discordgo.ApplicationCommandOptionSubCommand,
-				},
-				{
-					Name:        "yikes",
-					Description: "Force re-sync all puzzles 🔨",
-					Type:        discordgo.ApplicationCommandOptionSubCommand,
-					Options: []*discordgo.ApplicationCommandOption{
-						{
-							Name:        "confirm",
-							Description: "Please enter ⚠️ to confirm this operation",
-							Type:        discordgo.ApplicationCommandOptionString,
-							Required:    true,
-						},
+func NewHuntBot(db *db.Client, discord *discord.Client, discovery *discovery.Poller,
+	syncer *syncer.Syncer, state *state.State) discord.Bot {
+	return &HuntBot{db, discord, discovery, syncer, state}
+}
+
+func (b *HuntBot) Register() (*discordgo.ApplicationCommand, bool) {
+	return &discordgo.ApplicationCommand{
+		Name:        "huntbot",
+		Description: "Robot control panel 🤖",
+		Options: []*discordgo.ApplicationCommandOption{
+			{
+				Name:        "kill",
+				Description: "Temporarily disable Huntbot ✋",
+				Type:        discordgo.ApplicationCommandOptionSubCommand,
+			},
+			{
+				Name:        "enable",
+				Description: "Re-enable Huntbot 📡",
+				Type:        discordgo.ApplicationCommandOptionSubCommand,
+			},
+			{
+				Name:        "yikes",
+				Description: "Force re-sync all puzzles 🔨",
+				Type:        discordgo.ApplicationCommandOptionSubCommand,
+				Options: []*discordgo.ApplicationCommandOption{
+					{
+						Name:        "confirm",
+						Description: "Please enter ⚠️ to confirm this operation",
+						Type:        discordgo.ApplicationCommandOptionString,
+						Required:    true,
 					},
 				},
 			},
 		},
-		Handler: func(s *discordgo.Session, i *discord.CommandInput) (string, error) {
-			if i.IC.ChannelID != bot.discord.QMChannel.ID && i.IC.ChannelID != bot.discord.TechChannel.ID {
-				return fmt.Sprintf(
-					":tv: Please use `/huntbot` commands in the %s or %s channel.",
-					bot.discord.QMChannel.Mention(),
-					bot.discord.TechChannel.Mention(),
-				), nil
-			}
+	}, false
+}
 
-			bot.state.Lock()
-			defer bot.state.CommitAndUnlock()
+func (b *HuntBot) Handle(s *discordgo.Session, i *discord.CommandInput) (string, error) {
+	if i.IC.ChannelID != b.discord.QMChannel.ID && i.IC.ChannelID != b.discord.TechChannel.ID {
+		return fmt.Sprintf(
+			":tv: Please use `/huntbot` commands in the %s or %s channel.",
+			b.discord.QMChannel.Mention(),
+			b.discord.TechChannel.Mention(),
+		), nil
+	}
 
-			var reply string
-			switch i.Subcommand.Name {
-			case "kill":
-				if !bot.state.HuntbotDisabled {
-					bot.state.HuntbotDisabled = true
-					reply = "Ok, I've disabled the bot for now.  Enable it with `/huntbot enable`."
-				} else {
-					reply = "The bot was already disabled. Enable it with `/huntbot enable`."
-				}
-				bot.discovery.CancelAllRoundCreation()
-				bot.discord.UpdateStatus(bot.state) // best-effort, ignore errors
-				return reply, nil
-			case "enable":
-				if bot.state.HuntbotDisabled {
-					bot.state.HuntbotDisabled = false
-					reply = "Ok, I've enabled the bot for now. Disable it with `/huntbot kill`."
-				} else {
-					reply = "The bot was already enabled. Disable it with `/huntbot kill`."
-				}
-				go func() {
-					// Will block until we release the state lock
-					bot.discovery.InitializeRoundCreation()
-				}()
-				bot.discord.UpdateStatus(bot.state) // best-effort, ignore errors
-				return reply, nil
-			case "yikes":
-				if confirmOpt, err := bot.discord.OptionByName(i.Subcommand.Options, "confirm"); err != nil {
-					return "", err
-				} else if value := confirmOpt.StringValue(); value != "⚠️" {
-					return fmt.Sprintf(":no_smoking: Incorrect confirmation value %q, operation aborted.",
-						value), nil
-				}
-				go bot.fullResync(s, i)
-				return ":warning: Initiated full re-sync!", nil
-			default:
-				return "", fmt.Errorf("unexpected /huntbot subcommand: %q", i.Subcommand.Name)
-			}
-		},
+	b.state.Lock()
+	defer b.state.CommitAndUnlock()
+
+	var reply string
+	switch i.Subcommand.Name {
+	case "kill":
+		if !b.state.HuntbotDisabled {
+			b.state.HuntbotDisabled = true
+			reply = "Ok, I've disabled the bot for now.  Enable it with `/huntbot enable`."
+		} else {
+			reply = "The bot was already disabled. Enable it with `/huntbot enable`."
+		}
+		b.discovery.CancelAllRoundCreation()
+		b.discord.UpdateStatus(b.state) // best-effort, ignore errors
+		return reply, nil
+	case "enable":
+		if b.state.HuntbotDisabled {
+			b.state.HuntbotDisabled = false
+			reply = "Ok, I've enabled the bot for now. Disable it with `/huntbot kill`."
+		} else {
+			reply = "The bot was already enabled. Disable it with `/huntbot kill`."
+		}
+		go func() {
+			// Will block until we release the state lock
+			b.discovery.InitializeRoundCreation()
+		}()
+		b.discord.UpdateStatus(b.state) // best-effort, ignore errors
+		return reply, nil
+	case "yikes":
+		if confirmOpt, err := b.discord.OptionByName(i.Subcommand.Options, "confirm"); err != nil {
+			return "", err
+		} else if value := confirmOpt.StringValue(); value != "⚠️" {
+			return fmt.Sprintf(":no_smoking: Incorrect confirmation value %q, operation aborted.",
+				value), nil
+		}
+		go b.fullResync(s, i)
+		return ":warning: Initiated full re-sync!", nil
+	default:
+		return "", fmt.Errorf("unexpected /huntbot subcommand: %q", i.Subcommand.Name)
 	}
 }
 
-func (bot *huntbotBot) fullResync(s *discordgo.Session, i *discord.CommandInput) {
+func (b *HuntBot) fullResync(s *discordgo.Session, i *discord.CommandInput) {
 	var errs = make(map[string]error)
 
-	puzzles, err := bot.db.ListPuzzles()
+	puzzles, err := b.db.ListPuzzles()
 	if err == nil {
 		for j, id := range puzzles {
-			if bot.state.IsKilled() {
+			if b.state.IsKilled() {
 				err = fmt.Errorf("huntbot is disabled")
 				break
 			}
 
 			var puzzle *schema.Puzzle
-			puzzle, err = bot.db.LockByID(id)
+			puzzle, err = b.db.LockByID(id)
 			if err != nil {
 				err = fmt.Errorf("failed to load %q: %s", id, spew.Sdump(err))
 				break
 			}
 
-			_, err = bot.syncer.ForceUpdate(bot.ctx, puzzle)
+			_, err = b.syncer.ForceUpdate(context.TODO(), puzzle)
 			if err != nil {
 				log.Printf("huntbot yikes: re-sync err in %q: %v", puzzle.Name, spew.Sdump(err))
 				errs[puzzle.Name] = err

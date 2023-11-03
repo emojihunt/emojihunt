@@ -9,93 +9,95 @@ import (
 	"github.com/davecgh/go-spew/spew"
 	"github.com/emojihunt/emojihunt/db"
 	"github.com/emojihunt/emojihunt/discord"
+	"github.com/emojihunt/emojihunt/schema"
 	"github.com/emojihunt/emojihunt/state"
 )
 
-var eastern, _ = time.LoadLocation("America/New_York")
-var notifications = []time.Duration{
-	-2 * time.Hour,
-	-1 * time.Hour,
-	-30 * time.Minute,
-}
-
-const warnErrorFrequency = 10 * time.Minute
-
-func RegisterReminderBot(db *db.Client, discord *discord.Client, state *state.State) {
-	var bot = reminderBot{db, discord, state}
-	discord.AddCommand(bot.makeSlashCommand())
-	go bot.notificationLoop()
-}
-
-type reminderBot struct {
+type ReminderBot struct {
 	db      *db.Client
 	discord *discord.Client
 	state   *state.State
+
+	intervals          []time.Duration
+	warnErrorFrequency time.Duration
 }
 
-func (bot *reminderBot) makeSlashCommand() *discord.Command {
-	return &discord.Command{
-		ApplicationCommand: &discordgo.ApplicationCommand{
-			Name:        "reminders",
-			Description: "List all puzzle reminders ⏱️",
+func NewReminderBot(db *db.Client, discord *discord.Client, state *state.State) discord.Bot {
+	b := &ReminderBot{
+		db: db, discord: discord, state: state,
+		intervals: []time.Duration{
+			-2 * time.Hour,
+			-1 * time.Hour,
+			-30 * time.Minute,
 		},
-		Handler: func(s *discordgo.Session, i *discord.CommandInput) (string, error) {
-			puzzles, err := bot.db.ListWithReminder()
-			if err != nil {
-				return "", err
-			}
-
-			if len(puzzles) < 1 {
-				return ":zero: There are no puzzle reminders. Use the `Reminder` field in Airtable " +
-					"to set a reminder.", nil
-			}
-
-			msg := ":calendar_spiral: Reminders:\n"
-			for _, puzzle := range puzzles {
-				suffix := ""
-				if time.Now().After(puzzle.Reminder) {
-					suffix = " (passed)"
-				} else if time.Until(puzzle.Reminder) > 72*time.Hour {
-					suffix = " (warning: in more than 3 days?!)"
-				}
-				msg += fmt.Sprintf(
-					" • %s @ %s ET%s\n",
-					puzzle.Name,
-					puzzle.Reminder.In(eastern).Format("Mon 3:04 PM"),
-					suffix,
-				)
-			}
-			return msg, nil
-		},
+		warnErrorFrequency: 10 * time.Minute,
 	}
+	go b.notificationLoop()
+	return b
 }
 
-func (bot *reminderBot) notificationLoop() {
-	for {
-		bot.state.Lock()
-		since := bot.state.ReminderTimestamp
-		bot.state.Unlock()
+func (b *ReminderBot) Register() (*discordgo.ApplicationCommand, bool) {
+	return &discordgo.ApplicationCommand{
+		Name:        "reminders",
+		Description: "List all puzzle reminders ⏱️",
+	}, false
+}
 
-		next, err := bot.processNotifications(since)
-		bot.state.Lock()
+func (b *ReminderBot) Handle(s *discordgo.Session, i *discord.CommandInput) (string, error) {
+	puzzles, err := b.db.ListWithReminder()
+	if err != nil {
+		return "", err
+	}
+
+	if len(puzzles) < 1 {
+		return ":zero: There are no puzzle reminders. Use the `Reminder` field in Airtable " +
+			"to set a reminder.", nil
+	}
+
+	msg := ":calendar_spiral: Reminders:\n"
+	for _, puzzle := range puzzles {
+		suffix := ""
+		if time.Now().After(puzzle.Reminder) {
+			suffix = " (passed)"
+		} else if time.Until(puzzle.Reminder) > 72*time.Hour {
+			suffix = " (warning: in more than 3 days?!)"
+		}
+		msg += fmt.Sprintf(
+			" • %s @ %s ET%s\n",
+			puzzle.Name,
+			puzzle.Reminder.In(schema.BostonTime).Format("Mon 3:04 PM"),
+			suffix,
+		)
+	}
+	return msg, nil
+}
+
+func (b *ReminderBot) notificationLoop() {
+	for {
+		b.state.Lock()
+		since := b.state.ReminderTimestamp
+		b.state.Unlock()
+
+		next, err := b.processNotifications(since)
+		b.state.Lock()
 		if err != nil {
 			log.Printf("reminder: error: %s", spew.Sprint(err))
-			if time.Since(bot.state.ReminderWarnError).Truncate(time.Minute) >= warnErrorFrequency {
+			if time.Since(b.state.ReminderWarnError).Truncate(time.Minute) >= b.warnErrorFrequency {
 				msg := fmt.Sprintf("```*** ERROR PROCESSING REMINDERS ***\n\n%s\n```", spew.Sprint(err))
-				_, err = bot.discord.ChannelSend(bot.discord.TechChannel, msg)
+				_, err = b.discord.ChannelSend(b.discord.TechChannel, msg)
 				if err != nil {
 					log.Printf(
 						"reminder: error notifying #%s of error: %s",
-						bot.discord.TechChannel.Name,
+						b.discord.TechChannel.Name,
 						spew.Sprint(err),
 					)
 				}
-				bot.state.ReminderWarnError = time.Now()
+				b.state.ReminderWarnError = time.Now()
 			}
 		} else {
-			bot.state.ReminderTimestamp = *next
+			b.state.ReminderTimestamp = *next
 		}
-		bot.state.CommitAndUnlock()
+		b.state.CommitAndUnlock()
 
 		// Wake up on next 1-minute boundary
 		wait := time.Until(time.Now().Add(time.Minute).Truncate(time.Minute))
@@ -106,17 +108,17 @@ func (bot *reminderBot) notificationLoop() {
 	}
 }
 
-func (bot *reminderBot) processNotifications(since time.Time) (*time.Time, error) {
+func (b *ReminderBot) processNotifications(since time.Time) (*time.Time, error) {
 	now := time.Now()
 
-	puzzles, err := bot.db.ListWithReminder()
+	puzzles, err := b.db.ListWithReminder()
 	if err != nil {
 		return nil, err
 	}
 
 	for _, puzzle := range puzzles {
 		var msg string
-		for _, delay := range notifications {
+		for _, delay := range b.intervals {
 			target := puzzle.Reminder.Add(delay)
 			if target.Before(now) && target.After(since) {
 				msg = fmt.Sprintf(":hourglass_flowing_sand: Reminder: %q in %s",
@@ -126,17 +128,17 @@ func (bot *reminderBot) processNotifications(since time.Time) (*time.Time, error
 		if puzzle.Reminder.Before(now) && puzzle.Reminder.After(since) {
 			msg = fmt.Sprintf(":alarm_clock: It's time! Puzzle %q has a reminder set for "+
 				"now (%s ET)",
-				puzzle.Name, puzzle.Reminder.In(eastern).Format("Mon 3:04 PM"))
+				puzzle.Name, puzzle.Reminder.In(schema.BostonTime).Format("Mon 3:04 PM"))
 		}
 
 		if msg != "" {
 			if len(puzzle.DiscordChannel) > 1 {
-				err = bot.discord.ChannelSendRawID(puzzle.DiscordChannel, msg)
+				err = b.discord.ChannelSendRawID(puzzle.DiscordChannel, msg)
 				if err != nil {
 					return nil, err
 				}
 			}
-			_, err = bot.discord.ChannelSend(bot.discord.QMChannel, msg)
+			_, err = b.discord.ChannelSend(b.discord.QMChannel, msg)
 			if err != nil {
 				return nil, err
 			}

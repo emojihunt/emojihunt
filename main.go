@@ -33,6 +33,8 @@ var (
 	dbPath     = flag.String("db", "db.sqlite", "path to the database file")
 )
 
+func init() { flag.Parse() }
+
 func main() {
 	// Load configuration
 	var bs []byte
@@ -98,50 +100,37 @@ func main() {
 
 	// Start internal engines
 	syncer := syncer.New(db, discord, drive)
-
-	bot.RegisterEmojiNameBot(discord)
-	bot.RegisterHuntYetBot(discord)
-	bot.RegisterPuzzleBot(ctx, db, discord, syncer)
-	bot.RegisterQMBot(discord)
-	bot.RegisterReminderBot(db, discord, state)
-	bot.RegisterVoiceRoomBot(ctx, db, discord, syncer)
+	go syncer.RestorePlaceholderEvent()
+	log.Printf("started syncer")
 
 	var dscvpoller *discovery.Poller
 	if config.Autodiscovery != nil {
 		dscvpoller = discovery.New(db, discord, syncer, config.Autodiscovery, state)
 		dscvpoller.RegisterReactionHandler(discord)
+		go dscvpoller.Poll(ctx)
+		log.Printf("started puzzle auto-discovery poller")
 	} else {
 		log.Printf("puzzle auto-discovery is disabled (no config found)")
 	}
 
-	bot.RegisterHuntbotCommand(ctx, db, discord, dscvpoller, syncer, state)
-
-	go func() {
-		if err := discord.RegisterCommands(); err != nil {
-			log.Fatalf("failed to register discord commands: %v", err)
-		}
-	}()
-
-	// Run!
-	log.Print("press ctrl+C to exit")
-	go syncer.RestorePlaceholderEvent()
-	if dscvpoller != nil {
-		go dscvpoller.Poll(ctx)
-	}
+	discord.RegisterBots(
+		bot.NewEmojiNameBot(),
+		bot.NewHuntYetBot(),
+		bot.NewHuntBot(db, discord, dscvpoller, syncer, state),
+		bot.NewPuzzleBot(db, discord, syncer),
+		bot.NewQMBot(discord),
+		bot.NewReminderBot(db, discord, state),
+		bot.NewVoiceRoomBot(db, discord, syncer),
+	)
+	log.Printf("started discord bots")
 
 	if config.Server != nil {
 		server.Start(db, syncer, config.Server)
+		log.Printf("started web server")
 	} else {
 		log.Printf("no server config found, skipping (for development only!)")
 	}
 
+	log.Print("press ctrl+C to exit")
 	<-ctx.Done()
-}
-
-func init() {
-	flag.Parse()
-}
-
-func init() {
-	flag.Parse()
 }

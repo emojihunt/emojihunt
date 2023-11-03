@@ -13,99 +13,96 @@ import (
 	"github.com/emojihunt/emojihunt/syncer"
 )
 
-func RegisterVoiceRoomBot(ctx context.Context, db *db.Client, discord *discord.Client, syncer *syncer.Syncer) {
-	var bot = voiceRoomBot{ctx, db, discord, syncer}
-	discord.AddCommand(bot.makeSlashCommand())
-	discord.AddHandler(bot.scheduledEventUpdateHandler)
-}
-
-type voiceRoomBot struct {
-	ctx     context.Context
+type VoiceRoomBot struct {
 	db      *db.Client
 	discord *discord.Client
 	syncer  *syncer.Syncer
 }
 
-func (bot *voiceRoomBot) makeSlashCommand() *discord.Command {
-	return &discord.Command{
-		ApplicationCommand: &discordgo.ApplicationCommand{
-			Name:        "voice",
-			Description: "Assign puzzles to voice rooms",
-			Options: []*discordgo.ApplicationCommandOption{
-				{
-					Name:        "start",
-					Description: "Assign this puzzle to a voice room 🔔",
-					Type:        discordgo.ApplicationCommandOptionSubCommand,
-					Options: []*discordgo.ApplicationCommandOption{
-						{
-							Name:        "in",
-							Description: "Where are we going? 🗺️",
-							Required:    true,
-							Type:        discordgo.ApplicationCommandOptionChannel,
-							ChannelTypes: []discordgo.ChannelType{
-								discordgo.ChannelTypeGuildVoice,
-							},
+func NewVoiceRoomBot(db *db.Client, discord *discord.Client, syncer *syncer.Syncer) discord.Bot {
+	b := &VoiceRoomBot{db, discord, syncer}
+	discord.AddHandler(b.scheduledEventUpdateHandler)
+	return b
+}
+
+func (b *VoiceRoomBot) Register() (*discordgo.ApplicationCommand, bool) {
+	return &discordgo.ApplicationCommand{
+		Name:        "voice",
+		Description: "Assign puzzles to voice rooms",
+		Options: []*discordgo.ApplicationCommandOption{
+			{
+				Name:        "start",
+				Description: "Assign this puzzle to a voice room 🔔",
+				Type:        discordgo.ApplicationCommandOptionSubCommand,
+				Options: []*discordgo.ApplicationCommandOption{
+					{
+						Name:        "in",
+						Description: "Where are we going? 🗺️",
+						Required:    true,
+						Type:        discordgo.ApplicationCommandOptionChannel,
+						ChannelTypes: []discordgo.ChannelType{
+							discordgo.ChannelTypeGuildVoice,
 						},
 					},
 				},
-				{
-					Name:        "stop",
-					Description: "Remove this puzzle from its voice room 🔕",
-					Type:        discordgo.ApplicationCommandOptionSubCommand,
-				},
+			},
+			{
+				Name:        "stop",
+				Description: "Remove this puzzle from its voice room 🔕",
+				Type:        discordgo.ApplicationCommandOptionSubCommand,
 			},
 		},
-		Async: true,
-		Handler: func(s *discordgo.Session, i *discord.CommandInput) (string, error) {
-			puzzle, err := bot.db.LockByDiscordChannel(i.IC.ChannelID)
-			if err != nil {
-				return "", err
-			} else if puzzle == nil {
-				return ":butterfly: I can't find a puzzle associated with this channel. Is this a puzzle channel?", nil
-			}
-			defer puzzle.Unlock()
-
-			if problems := puzzle.Problems(); len(problems) > 0 {
-				return fmt.Sprintf(":cold_sweat: I can't update this puzzle because it has errors in "+
-					"Airtable. Please check %s for more information...", bot.discord.QMChannel.Mention()), nil
-			}
-
-			bot.syncer.VoiceRoomMutex.Lock()
-			defer bot.syncer.VoiceRoomMutex.Unlock()
-
-			var reply string
-			var channel *discordgo.Channel
-			switch i.Subcommand.Name {
-			case "start":
-				channelOpt, err := bot.discord.OptionByName(i.Subcommand.Options, "in")
-				if err != nil {
-					return "", err
-				}
-				channel = channelOpt.ChannelValue(s)
-				reply = fmt.Sprintf("Set the room for puzzle %q to %s", puzzle.Name, channel.Mention())
-			case "stop":
-				reply = fmt.Sprintf("Removed the room for puzzle %q", puzzle.Name)
-			default:
-				return "", fmt.Errorf("unexpected /voice subcommand: %q", i.Subcommand.Name)
-			}
-
-			// Sync the change!
-			if puzzle, err = bot.db.SetVoiceRoom(puzzle, channel); err != nil {
-				return "", err
-			}
-			if err = bot.syncer.DiscordCreateUpdatePin(puzzle); err != nil {
-				return "", err
-			}
-			if err = bot.syncer.SyncVoiceRooms(bot.ctx); err != nil {
-				return "", err
-			}
-
-			return reply, nil
-		},
-	}
+	}, true
 }
 
-func (bot *voiceRoomBot) scheduledEventUpdateHandler(s *discordgo.Session, i *discordgo.GuildScheduledEventUpdate) {
+func (b *VoiceRoomBot) Handle(s *discordgo.Session, i *discord.CommandInput) (string, error) {
+	puzzle, err := b.db.LockByDiscordChannel(i.IC.ChannelID)
+	if err != nil {
+		return "", err
+	} else if puzzle == nil {
+		return ":butterfly: I can't find a puzzle associated with this channel. Is this a puzzle channel?", nil
+	}
+	defer puzzle.Unlock()
+
+	if problems := puzzle.Problems(); len(problems) > 0 {
+		return fmt.Sprintf(":cold_sweat: I can't update this puzzle because it has errors in "+
+			"Airtable. Please check %s for more information...", b.discord.QMChannel.Mention()), nil
+	}
+
+	b.syncer.VoiceRoomMutex.Lock()
+	defer b.syncer.VoiceRoomMutex.Unlock()
+
+	var reply string
+	var channel *discordgo.Channel
+	switch i.Subcommand.Name {
+	case "start":
+		channelOpt, err := b.discord.OptionByName(i.Subcommand.Options, "in")
+		if err != nil {
+			return "", err
+		}
+		channel = channelOpt.ChannelValue(s)
+		reply = fmt.Sprintf("Set the room for puzzle %q to %s", puzzle.Name, channel.Mention())
+	case "stop":
+		reply = fmt.Sprintf("Removed the room for puzzle %q", puzzle.Name)
+	default:
+		return "", fmt.Errorf("unexpected /voice subcommand: %q", i.Subcommand.Name)
+	}
+
+	// Sync the change!
+	if puzzle, err = b.db.SetVoiceRoom(puzzle, channel); err != nil {
+		return "", err
+	}
+	if err = b.syncer.DiscordCreateUpdatePin(puzzle); err != nil {
+		return "", err
+	}
+	if err = b.syncer.SyncVoiceRooms(context.TODO()); err != nil {
+		return "", err
+	}
+
+	return reply, nil
+}
+
+func (b *VoiceRoomBot) scheduledEventUpdateHandler(s *discordgo.Session, i *discordgo.GuildScheduledEventUpdate) {
 	if i.Description != syncer.VoiceRoomEventDescription || i.Status != discordgo.GuildScheduledEventStatusCompleted {
 		return
 	}
@@ -119,9 +116,9 @@ func (bot *voiceRoomBot) scheduledEventUpdateHandler(s *discordgo.Session, i *di
 	// those events are filtered out by the condition above.)
 	log.Printf("discord: processing scheduled event completion for %q", i.Name)
 
-	bot.syncer.VoiceRoomMutex.Lock()
-	puzzles, err := bot.db.ListWithVoiceRoom()
-	bot.syncer.VoiceRoomMutex.Unlock()
+	b.syncer.VoiceRoomMutex.Lock()
+	puzzles, err := b.db.ListWithVoiceRoom()
+	b.syncer.VoiceRoomMutex.Unlock()
 
 	if err != nil {
 		log.Printf("discord: error processing scheduled event completion: %v", spew.Sdump(err))
@@ -130,7 +127,7 @@ func (bot *voiceRoomBot) scheduledEventUpdateHandler(s *discordgo.Session, i *di
 
 	var errs []error
 	for _, info := range puzzles {
-		if err = bot.clearVoiceRoom(&info, i.ChannelID); err != nil {
+		if err = b.clearVoiceRoom(&info, i.ChannelID); err != nil {
 			errs = append(errs, err)
 		}
 	}
@@ -139,8 +136,8 @@ func (bot *voiceRoomBot) scheduledEventUpdateHandler(s *discordgo.Session, i *di
 	}
 }
 
-func (bot *voiceRoomBot) clearVoiceRoom(info *schema.VoicePuzzle, expectedVoiceRoom string) error {
-	puzzle, err := bot.db.LockByID(info.ID)
+func (b *VoiceRoomBot) clearVoiceRoom(info *schema.VoicePuzzle, expectedVoiceRoom string) error {
+	puzzle, err := b.db.LockByID(info.ID)
 	if err != nil {
 		return err
 	}
@@ -153,9 +150,9 @@ func (bot *voiceRoomBot) clearVoiceRoom(info *schema.VoicePuzzle, expectedVoiceR
 		return nil
 	}
 
-	puzzle, err = bot.db.SetVoiceRoom(puzzle, nil)
+	puzzle, err = b.db.SetVoiceRoom(puzzle, nil)
 	if err != nil {
 		return err
 	}
-	return bot.syncer.DiscordCreateUpdatePin(puzzle)
+	return b.syncer.DiscordCreateUpdatePin(puzzle)
 }

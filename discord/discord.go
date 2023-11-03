@@ -34,7 +34,7 @@ type Client struct {
 
 	QMRole *discordgo.Role // so QMs show up in the sidebar
 
-	appCommandHandlers map[string]*Command
+	appCommandHandlers map[string]*commandHandler
 	reactionHandlers   []*ReactionHandler
 
 	mu                        sync.Mutex // hold while accessing everything below
@@ -127,7 +127,7 @@ func NewClient(config *Config, state *state.State) (*Client, error) {
 		TechChannel:               techChannel,
 		DefaultVoiceChannel:       defaultVoiceChannel,
 		QMRole:                    qmRole,
-		appCommandHandlers:        make(map[string]*Command),
+		appCommandHandlers:        make(map[string]*commandHandler),
 		scheduledEventsLastUpdate: time.Now().Add(-24 * time.Hour),
 		rateLimits:                make(map[string]*time.Time),
 	}
