@@ -3,7 +3,6 @@ package state
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"sync"
 	"time"
 
@@ -30,7 +29,6 @@ type NewRound struct {
 func Load(ctx context.Context, db *db.Client) (*State, error) {
 	data, err := db.LoadState(ctx)
 	if err != nil {
-		fmt.Printf("%#v", err)
 		return nil, err
 	}
 	var state State

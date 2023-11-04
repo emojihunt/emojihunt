@@ -10,11 +10,11 @@ import (
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/emojihunt/emojihunt/state"
-	"golang.org/x/xerrors"
 )
 
 type Config struct {
 	AuthToken           string `json:"auth_token"`
+	IssueURL            string `json:"issue_url"`
 	GuildID             string `json:"guild_id"`
 	QMChannelID         string `json:"qm_channel_id"`
 	HangingOutChannelID string `json:"hanging_out_channel_id"`
@@ -24,7 +24,8 @@ type Config struct {
 }
 
 type Client struct {
-	main context.Context
+	main     context.Context
+	issueURL string
 
 	s     *discordgo.Session
 	Guild *discordgo.Guild
@@ -68,34 +69,34 @@ func NewClient(ctx context.Context, config *Config, state *state.State) (*Client
 	// Validate config
 	guild, err := s.Guild(config.GuildID)
 	if err != nil {
-		return nil, xerrors.Errorf("failed to load guild %s: %w", config.GuildID, err)
+		return nil, fmt.Errorf("failed to load guild %s: %w", config.GuildID, err)
 	}
 
 	hangingOutChannel, err := s.Channel(config.HangingOutChannelID)
 	if err != nil {
-		return nil, xerrors.Errorf("failed to load hanging-out channel %q: %w",
+		return nil, fmt.Errorf("failed to load hanging-out channel %q: %w",
 			config.HangingOutChannelID, err)
 	}
 	moreEyesChannel, err := s.Channel(config.MoreEyesChannelID)
 	if err != nil {
-		return nil, xerrors.Errorf("failed to load more-eyes channel %q: %w",
+		return nil, fmt.Errorf("failed to load more-eyes channel %q: %w",
 			config.MoreEyesChannelID, err)
 	}
 	qmChannel, err := s.Channel(config.QMChannelID)
 	if err != nil {
-		return nil, xerrors.Errorf("failed to load qm channel %q: %w",
+		return nil, fmt.Errorf("failed to load qm channel %q: %w",
 			config.QMChannelID, err)
 	}
 	techChannel, err := s.Channel(config.TechChannelID)
 	if err != nil {
-		return nil, xerrors.Errorf("failed to load tech channel %q: %w",
+		return nil, fmt.Errorf("failed to load tech channel %q: %w",
 			config.TechChannelID, err)
 	}
 
 	var defaultVoiceChannel *discordgo.Channel
 	channels, err := s.GuildChannels(config.GuildID)
 	if err != nil {
-		return nil, xerrors.Errorf("failed to load voice channels: %w", err)
+		return nil, fmt.Errorf("failed to load voice channels: %w", err)
 	}
 	for _, channel := range channels {
 		if channel.Type == discordgo.ChannelTypeGuildVoice {
@@ -104,7 +105,7 @@ func NewClient(ctx context.Context, config *Config, state *state.State) (*Client
 		}
 	}
 	if defaultVoiceChannel == nil {
-		return nil, xerrors.Errorf("no voice channels found")
+		return nil, fmt.Errorf("no voice channels found")
 	}
 
 	allRoles, err := s.GuildRoles(guild.ID)
@@ -118,12 +119,13 @@ func NewClient(ctx context.Context, config *Config, state *state.State) (*Client
 		}
 	}
 	if qmRole == nil {
-		return nil, xerrors.Errorf("role %q not found in guild %q", config.QMRoleID, guild.ID)
+		return nil, fmt.Errorf("role %q not found in guild %q", config.QMRoleID, guild.ID)
 	}
 
 	// Set up slash commands; return
 	discord := &Client{
 		main:                      ctx,
+		issueURL:                  config.IssueURL,
 		s:                         s,
 		Guild:                     guild,
 		HangingOutChannel:         hangingOutChannel,
@@ -136,7 +138,7 @@ func NewClient(ctx context.Context, config *Config, state *state.State) (*Client
 		scheduledEventsLastUpdate: time.Now().Add(-24 * time.Hour),
 		rateLimits:                make(map[string]*time.Time),
 	}
-	s.AddHandler(discord.commandHandler)
+	s.AddHandler(WrapHandler(ctx, "bot.unknown", discord.HandleApplicationCommand))
 	s.AddHandler(discord.reactionAddHandler)
 	s.AddHandler(discord.reactionRemoveHandler)
 	s.AddHandler(discord.reactionRemoveAllHandler)
@@ -282,7 +284,7 @@ func (c *Client) CreateCategory(name string) (*discordgo.Channel, error) {
 func (c *Client) SetChannelCategory(chID string, category *discordgo.Channel) error {
 	ch, err := c.s.Channel(chID)
 	if err != nil {
-		return xerrors.Errorf("channel id %s not found", chID)
+		return fmt.Errorf("channel id %s not found", chID)
 	}
 
 	if ch.ParentID == category.ID {
@@ -294,7 +296,7 @@ func (c *Client) SetChannelCategory(chID string, category *discordgo.Channel) er
 		PermissionOverwrites: category.PermissionOverwrites,
 	})
 	if err != nil {
-		return xerrors.Errorf("error moving channel to category %q: %w", category.Name, err)
+		return fmt.Errorf("error moving channel to category %q: %w", category.Name, err)
 	}
 	return nil
 }
