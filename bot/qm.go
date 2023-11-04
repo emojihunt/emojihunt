@@ -44,12 +44,12 @@ func (b *QMBot) Handle(ctx context.Context, input *discord.CommandInput) (string
 	switch input.Subcommand.Name {
 	case "start":
 		if err := b.discord.MakeQM(input.User); err != nil {
-			return "", fmt.Errorf("unable to make %s a QM: %v", input.User.Mention(), err)
+			return "", fmt.Errorf("unable to make %s a QM: %w", input.User.Mention(), err)
 		}
 		return fmt.Sprintf("%s is now a QM", input.User.Mention()), nil
 	case "stop":
 		if err := b.discord.UnMakeQM(input.User); err != nil {
-			return "", fmt.Errorf("unable to remove %s from QM role: %v", input.User.Mention(), err)
+			return "", fmt.Errorf("unable to remove %s from QM role: %w", input.User.Mention(), err)
 		}
 		return fmt.Sprintf("%s is no longer a QM", input.User.Mention()), nil
 	default:

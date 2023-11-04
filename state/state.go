@@ -57,7 +57,7 @@ func (s *State) CommitAndUnlock() {
 	if err != nil {
 		panic(err)
 	}
-	err = s.db.WriteState(context.Background(), data)
+	err = s.db.WriteState(context.TODO(), data)
 	if err != nil {
 		panic(err)
 	}

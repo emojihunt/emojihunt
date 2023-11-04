@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"flag"
+	"fmt"
 	"log"
 	"os"
 
@@ -16,34 +17,33 @@ var (
 )
 
 func main() {
+	// Load config file
 	bs, err := os.ReadFile(*configPath)
 	if err != nil {
-		log.Panicf("error opening config.json: %v", err)
+		panic(err)
 	}
-
-	var config map[string]interface{}
-	if err := json.Unmarshal(bs, &config); err != nil {
-		log.Panicf("error parsing config.json: %v", err)
+	var raw map[string]interface{}
+	if err := json.Unmarshal(bs, &raw); err != nil {
+		panic(err)
 	}
+	config := raw["discord"].(map[string]interface{})
 
-	discordConfig := config["discord"].(map[string]interface{})
-
-	dg, err := discordgo.New(discordConfig["auth_token"].(string))
+	// Create Discord client and get channel list
+	dg, err := discordgo.New(config["auth_token"].(string))
 	if err != nil {
-		log.Panicf("error creating discordgo client: %v", err)
+		panic(err)
 	}
-
 	err = dg.Open()
 	defer dg.Close()
 	if err != nil {
-		log.Panicf("error opening discord connection: %v", err)
+		panic(err)
 	}
-
-	chs, err := dg.GuildChannels(discordConfig["guild_id"].(string))
+	chs, err := dg.GuildChannels(config["guild_id"].(string))
 	if err != nil {
-		log.Panicf("error listing channels: %v", err)
+		panic(err)
 	}
 
+	// Print results
 	var categoryID = ""
 	log.Printf("Listing Categories")
 	for _, ch := range chs {
@@ -57,7 +57,7 @@ func main() {
 		}
 	}
 	if categoryID == "" {
-		log.Panicf("Could not find category %q", *category)
+		panic(fmt.Errorf("could not find category %q", *category))
 	}
 
 	var action = "real"

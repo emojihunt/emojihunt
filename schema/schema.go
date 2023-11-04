@@ -102,6 +102,7 @@ func (p Puzzle) Title() string {
 }
 
 func (p Puzzle) Problems() []string {
+	// TODO: make these mandatory validations
 	var problems []string
 	if p.Name == "" {
 		problems = append(problems, "missing puzzle name")
@@ -191,19 +192,6 @@ const (
 	Backsolved Status = "Backsolved"
 )
 
-func ParsePrettyStatus(raw string) (Status, error) {
-	if raw == "" {
-		return NotStarted, nil
-	}
-
-	parts := strings.SplitN(raw, " ", 2)
-	if len(parts) != 2 {
-		err := fmt.Errorf("couldn't extract emoji and status from %#v", raw)
-		return NotStarted, err
-	}
-	return ParseTextStatus(parts[1])
-}
-
 func ParseTextStatus(textPart string) (Status, error) {
 	switch textPart {
 	case "":
@@ -236,7 +224,7 @@ func (s Status) Human() string {
 	case "Backsolved":
 		return "🤦‍♀️ Backsolved"
 	default:
-		panic(fmt.Errorf("called Human() on unknown status %v", s))
+		panic(fmt.Errorf("called Human() on unknown status %q", s))
 	}
 }
 

@@ -145,13 +145,13 @@ func (b *HuntBot) fullResync(input *discord.CommandInput) {
 			var puzzle *schema.Puzzle
 			puzzle, err = b.db.LockByID(ctx, id)
 			if err != nil {
-				err = fmt.Errorf("failed to load %q: %s", id, spew.Sdump(err))
+				err = fmt.Errorf("failed to load %q: %w", id, err)
 				break
 			}
 
 			_, err = b.syncer.ForceUpdate(ctx, puzzle)
 			if err != nil {
-				log.Printf("huntbot yikes: re-sync err in %q: %v", puzzle.Name, spew.Sdump(err))
+				log.Printf("huntbot yikes: re-sync err in %q: %v", puzzle.Name, err)
 				errs[puzzle.Name] = err
 			}
 			puzzle.Unlock()
@@ -161,7 +161,7 @@ func (b *HuntBot) fullResync(input *discord.CommandInput) {
 					fmt.Sprintf(":warning: Initiated full re-sync! (%d / %d)", j, len(puzzles)),
 				)
 				if err != nil {
-					err = fmt.Errorf("failed to update with progress: %v", err)
+					err = fmt.Errorf("failed to update with progress: %w", err)
 					break
 				}
 			}

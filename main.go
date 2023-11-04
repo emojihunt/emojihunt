@@ -48,20 +48,19 @@ func main() {
 	} else {
 		// In development, configuration is stored in a local file.
 		var err error
-		bs, err = os.ReadFile(*configPath)
-		if err != nil {
-			log.Panicf("error reading config file at %q: %v", *configPath, err)
+		if bs, err = os.ReadFile(*configPath); err != nil {
+			panic(err)
 		}
 	}
 	config := Config{}
 	if err := json.Unmarshal(bs, &config); err != nil {
-		log.Panicf("error unmarshaling config from %q: %v", *configPath, err)
+		panic(err)
 	}
 
 	// Initialize Sentry
 	config.Sentry.AttachStacktrace = true
 	if err := sentry.Init(*config.Sentry); err != nil {
-		log.Panicf("error initializing Sentry: %v", err)
+		panic(err)
 	}
 	defer func() {
 		if err := recover(); err != nil {
@@ -89,19 +88,19 @@ func main() {
 	// Load state
 	state, err := state.Load(ctx, db)
 	if err != nil {
-		log.Panicf("error loading state: %v", err)
+		panic(err)
 	}
 
 	// Set up clients
 	discord, err := discord.NewClient(ctx, config.Discord, state)
 	if err != nil {
-		log.Panicf("error creating discord client: %v", err)
+		panic(err)
 	}
 	defer discord.Close()
 
 	drive, err := drive.NewClient(ctx, config.GoogleDrive)
 	if err != nil {
-		log.Panicf("error creating drive integration: %v", err)
+		panic(err)
 	}
 
 	// Start internal engines

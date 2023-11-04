@@ -26,7 +26,6 @@ type Client struct {
 	main context.Context
 
 	s     *discordgo.Session
-	STODO *discordgo.Session
 	Guild *discordgo.Guild
 
 	HangingOutChannel *discordgo.Channel // for solves, to celebrate
@@ -68,34 +67,34 @@ func NewClient(ctx context.Context, config *Config, state *state.State) (*Client
 	// Validate config
 	guild, err := s.Guild(config.GuildID)
 	if err != nil {
-		return nil, fmt.Errorf("failed to load guild %s: %v", config.GuildID, err)
+		return nil, fmt.Errorf("failed to load guild %s: %w", config.GuildID, err)
 	}
 
 	hangingOutChannel, err := s.Channel(config.HangingOutChannelID)
 	if err != nil {
-		return nil, fmt.Errorf("failed to load hanging-out channel %q: %v",
+		return nil, fmt.Errorf("failed to load hanging-out channel %q: %w",
 			config.HangingOutChannelID, err)
 	}
 	moreEyesChannel, err := s.Channel(config.MoreEyesChannelID)
 	if err != nil {
-		return nil, fmt.Errorf("failed to load more-eyes channel %q: %v",
+		return nil, fmt.Errorf("failed to load more-eyes channel %q: %w",
 			config.MoreEyesChannelID, err)
 	}
 	qmChannel, err := s.Channel(config.QMChannelID)
 	if err != nil {
-		return nil, fmt.Errorf("failed to load qm channel %q: %v",
+		return nil, fmt.Errorf("failed to load qm channel %q: %w",
 			config.QMChannelID, err)
 	}
 	techChannel, err := s.Channel(config.TechChannelID)
 	if err != nil {
-		return nil, fmt.Errorf("failed to load tech channel %q: %v",
+		return nil, fmt.Errorf("failed to load tech channel %q: %w",
 			config.TechChannelID, err)
 	}
 
 	var defaultVoiceChannel *discordgo.Channel
 	channels, err := s.GuildChannels(config.GuildID)
 	if err != nil {
-		return nil, fmt.Errorf("failed to load voice channels: %v", err)
+		return nil, fmt.Errorf("failed to load voice channels: %w", err)
 	}
 	for _, channel := range channels {
 		if channel.Type == discordgo.ChannelTypeGuildVoice {
@@ -125,7 +124,6 @@ func NewClient(ctx context.Context, config *Config, state *state.State) (*Client
 	discord := &Client{
 		main:                      ctx,
 		s:                         s,
-		STODO:                     s,
 		Guild:                     guild,
 		HangingOutChannel:         hangingOutChannel,
 		MoreEyesChannel:           moreEyesChannel,
@@ -295,7 +293,7 @@ func (c *Client) SetChannelCategory(chID string, category *discordgo.Channel) er
 		PermissionOverwrites: category.PermissionOverwrites,
 	})
 	if err != nil {
-		return fmt.Errorf("error moving channel to category %q: %v", category.Name, err)
+		return fmt.Errorf("error moving channel to category %q: %w", category.Name, err)
 	}
 	return nil
 }

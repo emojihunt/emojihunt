@@ -4,7 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"errors"
-	"log"
 	"os"
 	"sync"
 
@@ -26,23 +25,17 @@ type Client struct {
 }
 
 func OpenDatabase(ctx context.Context, path string) *Client {
-	var fresh bool
-	if _, err := os.Stat(path); errors.Is(err, os.ErrNotExist) {
-		fresh = true
-	}
+	_, err := os.Stat(path)
+	shouldInitialize := errors.Is(err, os.ErrNotExist)
+
 	dbx, err := sql.Open("sqlite3", path)
 	if err != nil {
-		log.Panicf("error opening database at %q: %v", path, err)
+		panic(err)
 	}
-	if fresh {
-		if ddl == "" {
-			log.Panicf("error reading embeded ddl")
-		} else if _, err := dbx.ExecContext(ctx, ddl); err != nil {
-			log.Panicf("error initializing database at %q: %v", path, err)
+	if shouldInitialize {
+		if _, err := dbx.ExecContext(ctx, ddl); err != nil {
+			panic(err)
 		}
 	}
-	return &Client{
-		queries: New(dbx),
-		mutexes: &sync.Map{},
-	}
+	return &Client{New(dbx), &sync.Map{}}
 }

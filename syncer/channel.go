@@ -11,12 +11,11 @@ import (
 )
 
 const (
-	roundCategoryPrefix   = "Round: "
-	solvedCategoryPrefix  = "Solved "
-	pinnedStatusHeader    = "Puzzle Information"
-	locationDefaultMsg    = "Use `/voice start` to assign a voice room"
-	embedColor            = 0x7C39ED
-	backgroundTaskTimeout = 120 * time.Second
+	roundCategoryPrefix  = "Round: "
+	solvedCategoryPrefix = "Solved "
+	pinnedStatusHeader   = "Puzzle Information"
+	locationDefaultMsg   = "Use `/voice start` to assign a voice room"
+	embedColor           = 0x7C39ED
 )
 
 // DiscordCreateUpdatePin creates or updates the pinned message at the top of
