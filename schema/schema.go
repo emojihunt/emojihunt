@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"strings"
 	"time"
+
+	"golang.org/x/xerrors"
 )
 
 var BostonTime = MustLoadLocation("America/New_York")
@@ -207,7 +209,7 @@ func ParseTextStatus(textPart string) (Status, error) {
 	case "Backsolved":
 		return Backsolved, nil
 	default:
-		return NotStarted, fmt.Errorf("unknown status %q", textPart)
+		return NotStarted, xerrors.Errorf("unknown status %q", textPart)
 	}
 }
 
@@ -224,7 +226,7 @@ func (s Status) Human() string {
 	case "Backsolved":
 		return "🤦‍♀️ Backsolved"
 	default:
-		panic(fmt.Errorf("called Human() on unknown status %q", s))
+		panic(xerrors.Errorf("called Human() on unknown status %q", s))
 	}
 }
 

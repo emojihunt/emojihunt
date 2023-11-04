@@ -8,6 +8,7 @@ import (
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/davecgh/go-spew/spew"
+	"golang.org/x/xerrors"
 )
 
 type Bot interface {
@@ -79,7 +80,7 @@ func (c *Client) OptionByName(options []*discordgo.ApplicationCommandInteraction
 		}
 	}
 	if result == nil {
-		return nil, fmt.Errorf("could not find option %q in options list", name)
+		return nil, xerrors.Errorf("could not find option %q in options list", name)
 	}
 	return result, nil
 }

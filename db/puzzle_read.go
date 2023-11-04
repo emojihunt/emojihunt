@@ -2,11 +2,11 @@ package db
 
 import (
 	"context"
-	"fmt"
 	"strings"
 	"sync"
 
 	"github.com/emojihunt/emojihunt/schema"
+	"golang.org/x/xerrors"
 )
 
 // ListPuzzles returns a list of all known record IDs.
@@ -126,7 +126,7 @@ func (c *Client) LockByDiscordChannel(ctx context.Context, channel string) (*sch
 		} else if len(response) < 1 {
 			return nil, nil
 		} else if len(response) > 1 {
-			return nil, fmt.Errorf("expected 0 or 1 record, got %d", len(response))
+			return nil, xerrors.Errorf("expected 0 or 1 record, got %d", len(response))
 		}
 
 		// Reload object under lock
@@ -143,7 +143,7 @@ func (c *Client) LockByDiscordChannel(ctx context.Context, channel string) (*sch
 		// Discord channel changed since lock was taken out, retry
 		unlock()
 	}
-	return nil, fmt.Errorf("discord channel %q is unstable", channel)
+	return nil, xerrors.Errorf("discord channel %q is unstable", channel)
 }
 
 func (c *Client) lockPuzzle(id int64) func() {

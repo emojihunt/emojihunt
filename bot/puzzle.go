@@ -10,6 +10,7 @@ import (
 	"github.com/emojihunt/emojihunt/discord"
 	"github.com/emojihunt/emojihunt/schema"
 	"github.com/emojihunt/emojihunt/syncer"
+	"golang.org/x/xerrors"
 )
 
 type PuzzleBot struct {
@@ -202,7 +203,7 @@ func (b *PuzzleBot) Handle(ctx context.Context, input *discord.CommandInput) (st
 			return "", err
 		}
 	default:
-		return "", fmt.Errorf("unexpected /puzzle subcommand: %q", input.Subcommand.Name)
+		return "", xerrors.Errorf("unexpected /puzzle subcommand: %q", input.Subcommand.Name)
 	}
 
 	return reply, nil

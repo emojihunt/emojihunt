@@ -15,6 +15,7 @@ import (
 	"github.com/emojihunt/emojihunt/schema"
 	"github.com/emojihunt/emojihunt/state"
 	"github.com/emojihunt/emojihunt/syncer"
+	"golang.org/x/xerrors"
 )
 
 type HuntBot struct {
@@ -119,7 +120,7 @@ func (b *HuntBot) Handle(ctx context.Context, input *discord.CommandInput) (stri
 		go b.fullResync(input)
 		return ":warning: Initiated full re-sync!", nil
 	default:
-		return "", fmt.Errorf("unexpected /huntbot subcommand: %q", input.Subcommand.Name)
+		return "", xerrors.Errorf("unexpected /huntbot subcommand: %q", input.Subcommand.Name)
 	}
 }
 
@@ -138,14 +139,14 @@ func (b *HuntBot) fullResync(input *discord.CommandInput) {
 	if err == nil {
 		for j, id := range puzzles {
 			if b.state.IsKilled() {
-				err = fmt.Errorf("huntbot is disabled")
+				err = xerrors.Errorf("huntbot is disabled")
 				break
 			}
 
 			var puzzle *schema.Puzzle
 			puzzle, err = b.db.LockByID(ctx, id)
 			if err != nil {
-				err = fmt.Errorf("failed to load %q: %w", id, err)
+				err = xerrors.Errorf("failed to load %q: %w", id, err)
 				break
 			}
 
@@ -161,7 +162,7 @@ func (b *HuntBot) fullResync(input *discord.CommandInput) {
 					fmt.Sprintf(":warning: Initiated full re-sync! (%d / %d)", j, len(puzzles)),
 				)
 				if err != nil {
-					err = fmt.Errorf("failed to update with progress: %w", err)
+					err = xerrors.Errorf("failed to update with progress: %w", err)
 					break
 				}
 			}

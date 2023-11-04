@@ -3,11 +3,12 @@ package emojiname
 import (
 	_ "embed"
 	"encoding/json"
-	"fmt"
 	"log"
 	"math/rand"
 	"strings"
 	"time"
+
+	"golang.org/x/xerrors"
 )
 
 var rng = rand.New(rand.NewSource(time.Now().UnixNano()))
@@ -97,7 +98,7 @@ func Load() ([]*Emoji, error) {
 
 	err := json.Unmarshal(rawEmoji, &allEmoji)
 	if err != nil {
-		return nil, fmt.Errorf("error reading emoji data: %w", err)
+		return nil, xerrors.Errorf("error reading emoji data: %w", err)
 	}
 
 	return allEmoji, nil

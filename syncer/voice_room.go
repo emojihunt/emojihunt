@@ -2,7 +2,6 @@ package syncer
 
 import (
 	"context"
-	"fmt"
 	"log"
 	"sort"
 	"strings"
@@ -10,6 +9,7 @@ import (
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/emojihunt/emojihunt/schema"
+	"golang.org/x/xerrors"
 )
 
 const (
@@ -118,7 +118,7 @@ func (s *Syncer) SyncVoiceRooms(ctx context.Context) error {
 			if err != nil {
 				return err
 			} else if event.Status != discordgo.GuildScheduledEventStatusActive {
-				return fmt.Errorf("UpdateScheduledEvent failed to start event: %v", event)
+				return xerrors.Errorf("UpdateScheduledEvent failed to start event: %v", event)
 			}
 		} else if eventTitle != event.Name {
 			// Update event name

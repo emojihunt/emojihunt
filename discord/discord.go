@@ -10,6 +10,7 @@ import (
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/emojihunt/emojihunt/state"
+	"golang.org/x/xerrors"
 )
 
 type Config struct {
@@ -67,34 +68,34 @@ func NewClient(ctx context.Context, config *Config, state *state.State) (*Client
 	// Validate config
 	guild, err := s.Guild(config.GuildID)
 	if err != nil {
-		return nil, fmt.Errorf("failed to load guild %s: %w", config.GuildID, err)
+		return nil, xerrors.Errorf("failed to load guild %s: %w", config.GuildID, err)
 	}
 
 	hangingOutChannel, err := s.Channel(config.HangingOutChannelID)
 	if err != nil {
-		return nil, fmt.Errorf("failed to load hanging-out channel %q: %w",
+		return nil, xerrors.Errorf("failed to load hanging-out channel %q: %w",
 			config.HangingOutChannelID, err)
 	}
 	moreEyesChannel, err := s.Channel(config.MoreEyesChannelID)
 	if err != nil {
-		return nil, fmt.Errorf("failed to load more-eyes channel %q: %w",
+		return nil, xerrors.Errorf("failed to load more-eyes channel %q: %w",
 			config.MoreEyesChannelID, err)
 	}
 	qmChannel, err := s.Channel(config.QMChannelID)
 	if err != nil {
-		return nil, fmt.Errorf("failed to load qm channel %q: %w",
+		return nil, xerrors.Errorf("failed to load qm channel %q: %w",
 			config.QMChannelID, err)
 	}
 	techChannel, err := s.Channel(config.TechChannelID)
 	if err != nil {
-		return nil, fmt.Errorf("failed to load tech channel %q: %w",
+		return nil, xerrors.Errorf("failed to load tech channel %q: %w",
 			config.TechChannelID, err)
 	}
 
 	var defaultVoiceChannel *discordgo.Channel
 	channels, err := s.GuildChannels(config.GuildID)
 	if err != nil {
-		return nil, fmt.Errorf("failed to load voice channels: %w", err)
+		return nil, xerrors.Errorf("failed to load voice channels: %w", err)
 	}
 	for _, channel := range channels {
 		if channel.Type == discordgo.ChannelTypeGuildVoice {
@@ -103,7 +104,7 @@ func NewClient(ctx context.Context, config *Config, state *state.State) (*Client
 		}
 	}
 	if defaultVoiceChannel == nil {
-		return nil, fmt.Errorf("no voice channels found")
+		return nil, xerrors.Errorf("no voice channels found")
 	}
 
 	allRoles, err := s.GuildRoles(guild.ID)
@@ -117,7 +118,7 @@ func NewClient(ctx context.Context, config *Config, state *state.State) (*Client
 		}
 	}
 	if qmRole == nil {
-		return nil, fmt.Errorf("role %q not found in guild %q", config.QMRoleID, guild.ID)
+		return nil, xerrors.Errorf("role %q not found in guild %q", config.QMRoleID, guild.ID)
 	}
 
 	// Set up slash commands; return
@@ -281,7 +282,7 @@ func (c *Client) CreateCategory(name string) (*discordgo.Channel, error) {
 func (c *Client) SetChannelCategory(chID string, category *discordgo.Channel) error {
 	ch, err := c.s.Channel(chID)
 	if err != nil {
-		return fmt.Errorf("channel id %s not found", chID)
+		return xerrors.Errorf("channel id %s not found", chID)
 	}
 
 	if ch.ParentID == category.ID {
@@ -293,7 +294,7 @@ func (c *Client) SetChannelCategory(chID string, category *discordgo.Channel) er
 		PermissionOverwrites: category.PermissionOverwrites,
 	})
 	if err != nil {
-		return fmt.Errorf("error moving channel to category %q: %w", category.Name, err)
+		return xerrors.Errorf("error moving channel to category %q: %w", category.Name, err)
 	}
 	return nil
 }

@@ -10,6 +10,7 @@ import (
 	"github.com/davecgh/go-spew/spew"
 	"github.com/emojihunt/emojihunt/schema"
 	"github.com/emojihunt/emojihunt/state"
+	"golang.org/x/xerrors"
 )
 
 func (d *Poller) SyncPuzzles(ctx context.Context, puzzles []schema.NewPuzzle) error {
@@ -133,7 +134,7 @@ func (d *Poller) handleNewRounds(ctx context.Context, newRounds map[string][]sch
 		}
 	}
 	if len(errs) > 0 {
-		return fmt.Errorf("errors sending new round notifications: %#v", spew.Sdump(errs))
+		return xerrors.Errorf("errors sending new round notifications: %#v", spew.Sdump(errs))
 	}
 	return nil
 }
@@ -155,7 +156,7 @@ func (d *Poller) createPuzzles(ctx context.Context, newPuzzles []schema.NewPuzzl
 	var errs []error
 	for _, puzzle := range created {
 		if d.state.IsKilled() {
-			errs = append(errs, fmt.Errorf("huntbot is disabled"))
+			errs = append(errs, xerrors.Errorf("huntbot is disabled"))
 		} else {
 			if _, err := d.syncer.ForceUpdate(ctx, &puzzle); err != nil {
 				errs = append(errs, err)
@@ -164,7 +165,7 @@ func (d *Poller) createPuzzles(ctx context.Context, newPuzzles []schema.NewPuzzl
 		puzzle.Unlock()
 	}
 	if len(errs) > 0 {
-		return fmt.Errorf("errors sending new puzzle notifications: %#v", spew.Sdump(errs))
+		return xerrors.Errorf("errors sending new puzzle notifications: %#v", spew.Sdump(errs))
 	}
 	return nil
 }
@@ -174,7 +175,7 @@ func (d *Poller) createRound(ctx context.Context, name string, roundInfo state.N
 	if err != nil {
 		return err
 	} else if emoji == "" {
-		return fmt.Errorf("no reaction for message")
+		return xerrors.Errorf("no reaction for message")
 	}
 
 	puzzles := roundInfo.Puzzles

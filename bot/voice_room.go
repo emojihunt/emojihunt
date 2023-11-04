@@ -10,6 +10,7 @@ import (
 	"github.com/emojihunt/emojihunt/discord"
 	"github.com/emojihunt/emojihunt/schema"
 	"github.com/emojihunt/emojihunt/syncer"
+	"golang.org/x/xerrors"
 )
 
 type VoiceRoomBot struct {
@@ -85,7 +86,7 @@ func (b *VoiceRoomBot) Handle(ctx context.Context, input *discord.CommandInput) 
 	case "stop":
 		reply = fmt.Sprintf("Removed the room for puzzle %q", puzzle.Name)
 	default:
-		return "", fmt.Errorf("unexpected /voice subcommand: %q", input.Subcommand.Name)
+		return "", xerrors.Errorf("unexpected /voice subcommand: %q", input.Subcommand.Name)
 	}
 
 	// Sync the change!

@@ -2,7 +2,8 @@ package db
 
 import (
 	"context"
-	"fmt"
+
+	"golang.org/x/xerrors"
 )
 
 func (c *Client) LoadState(ctx context.Context) ([]byte, error) {
@@ -16,7 +17,7 @@ func (c *Client) LoadState(ctx context.Context) ([]byte, error) {
 		}
 		return c.LoadState(ctx)
 	} else if len(result) > 1 {
-		return nil, fmt.Errorf("found multiple state rows")
+		return nil, xerrors.Errorf("found multiple state rows")
 	}
 	return result[0].Data, nil
 }

@@ -7,6 +7,7 @@ import (
 	"log"
 	"sync"
 
+	"golang.org/x/xerrors"
 	"google.golang.org/api/drive/v3"
 	"google.golang.org/api/option"
 	"google.golang.org/api/sheets/v4"
@@ -57,7 +58,7 @@ func (c *Client) CreateSheet(ctx context.Context, name, roundName string) (id st
 	log.Printf("Creating sheet for %v", name)
 	sheet, err := c.sheets.Spreadsheets.Create(&sheets.Spreadsheet{}).Context(ctx).Do()
 	if err != nil {
-		return "", fmt.Errorf("unable to create sheet for %q: %w", name, err)
+		return "", xerrors.Errorf("unable to create sheet for %q: %w", name, err)
 	}
 	return sheet.SpreadsheetId, nil
 }
@@ -106,7 +107,7 @@ func (c *Client) roundFolder(ctx context.Context, name string) (id string, err e
 	query := fmt.Sprintf("mimeType='%s' and '%s' in parents and name = '%s'", folderMimeType, c.rootFolderID, name)
 	list, err := c.drive.Files.List().Q(query).Context(ctx).Do()
 	if err != nil {
-		return "", fmt.Errorf("couldn't query for existing folder for round %q: %w", name, err)
+		return "", xerrors.Errorf("couldn't query for existing folder for round %q: %w", name, err)
 	}
 
 	var file *drive.File
@@ -119,12 +120,12 @@ func (c *Client) roundFolder(ctx context.Context, name string) (id string, err e
 		}
 		file, err = c.drive.Files.Create(file).Context(ctx).Do()
 		if err != nil {
-			return "", fmt.Errorf("couldn't create folder for round %q: %w", name, err)
+			return "", xerrors.Errorf("couldn't create folder for round %q: %w", name, err)
 		}
 	case 1:
 		file = list.Files[0]
 	default:
-		return "", fmt.Errorf("found multiple folders for round %q", name)
+		return "", xerrors.Errorf("found multiple folders for round %q", name)
 	}
 
 	c.roundFolderIDs[name] = file.Id

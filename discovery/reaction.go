@@ -1,7 +1,6 @@
 package discovery
 
 import (
-	"fmt"
 	"log"
 	"time"
 
@@ -9,6 +8,7 @@ import (
 	"github.com/davecgh/go-spew/spew"
 	"github.com/emojihunt/emojihunt/discord"
 	"golang.org/x/net/context"
+	"golang.org/x/xerrors"
 )
 
 func (p *Poller) RegisterReactionHandler(dis *discord.Client) {
@@ -88,7 +88,7 @@ func (p *Poller) startOrCancelRoundCreation(name, messageID string) error {
 
 				var err error
 				if !ok {
-					err = fmt.Errorf("round not found in state")
+					err = xerrors.Errorf("round not found in state")
 				} else {
 					err = p.createRound(context.TODO(), name, roundInfo)
 				}

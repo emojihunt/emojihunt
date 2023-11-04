@@ -3,11 +3,11 @@ package main
 import (
 	"encoding/json"
 	"flag"
-	"fmt"
 	"log"
 	"os"
 
 	"github.com/bwmarrin/discordgo"
+	"golang.org/x/xerrors"
 )
 
 var (
@@ -57,7 +57,7 @@ func main() {
 		}
 	}
 	if categoryID == "" {
-		panic(fmt.Errorf("could not find category %q", *category))
+		panic(xerrors.Errorf("could not find category %q", *category))
 	}
 
 	var action = "real"

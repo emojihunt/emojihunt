@@ -13,6 +13,7 @@ import (
 	"github.com/emojihunt/emojihunt/db"
 	"github.com/emojihunt/emojihunt/schema"
 	"github.com/emojihunt/emojihunt/syncer"
+	"golang.org/x/xerrors"
 )
 
 type ServerConfig struct {
@@ -30,7 +31,7 @@ type Server struct {
 
 func Start(db *db.Client, syncer *syncer.Syncer, config *ServerConfig) error {
 	if config.SecretToken == "" {
-		return fmt.Errorf("secret token cannot be empty")
+		return xerrors.Errorf("secret token cannot be empty")
 	}
 	origin := config.Origin
 	if origin == "" {

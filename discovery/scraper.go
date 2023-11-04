@@ -3,13 +3,13 @@ package discovery
 import (
 	"bytes"
 	"context"
-	"fmt"
 	"net/http"
 	"net/url"
 	"strings"
 
 	"github.com/emojihunt/emojihunt/schema"
 	"golang.org/x/net/html"
+	"golang.org/x/xerrors"
 )
 
 func (p *Poller) Scrape(ctx context.Context) ([]schema.NewPuzzle, error) {
@@ -23,7 +23,7 @@ func (p *Poller) Scrape(ctx context.Context) ([]schema.NewPuzzle, error) {
 	if err != nil {
 		return nil, err
 	} else if res.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("failed to fetch puzzle list: status code %v", res.Status)
+		return nil, xerrors.Errorf("failed to fetch puzzle list: status code %v", res.Status)
 	}
 
 	// Parse round structure
@@ -36,25 +36,25 @@ func (p *Poller) Scrape(ctx context.Context) ([]schema.NewPuzzle, error) {
 	if p.groupMode {
 		groups := p.groupSelector.MatchAll(root)
 		if len(groups) == 0 {
-			return nil, fmt.Errorf("no groups found")
+			return nil, xerrors.Errorf("no groups found")
 		}
 
 		for _, group := range groups {
 			nameNode := p.roundNameSelector.MatchFirst(group)
 			if nameNode == nil {
-				return nil, fmt.Errorf("round name node not found in group: %#v", group)
+				return nil, xerrors.Errorf("round name node not found in group: %#v", group)
 			}
 
 			puzzleListNode := p.puzzleListSelector.MatchFirst(group)
 			if puzzleListNode == nil {
-				return nil, fmt.Errorf("puzzle list node not found in group: %#v", group)
+				return nil, xerrors.Errorf("puzzle list node not found in group: %#v", group)
 			}
 			discovered = append(discovered, [2]*html.Node{nameNode, puzzleListNode})
 		}
 	} else {
 		container := p.groupSelector.MatchFirst(root)
 		if container == nil {
-			return nil, fmt.Errorf("container not found, did login succeed?")
+			return nil, xerrors.Errorf("container not found, did login succeed?")
 		}
 
 		node := container.FirstChild
@@ -76,7 +76,7 @@ func (p *Poller) Scrape(ctx context.Context) ([]schema.NewPuzzle, error) {
 					continue
 				} else {
 					// Unknown structure, abort.
-					return nil, fmt.Errorf("puzzle table not found, got: %#v", node)
+					return nil, xerrors.Errorf("puzzle table not found, got: %#v", node)
 				}
 			}
 
@@ -88,7 +88,7 @@ func (p *Poller) Scrape(ctx context.Context) ([]schema.NewPuzzle, error) {
 		}
 
 		if len(discovered) == 0 {
-			return nil, fmt.Errorf("no rounds found in container: %#v", container)
+			return nil, xerrors.Errorf("no rounds found in container: %#v", container)
 		}
 	}
 
@@ -102,7 +102,7 @@ func (p *Poller) Scrape(ctx context.Context) ([]schema.NewPuzzle, error) {
 
 		puzzleItemNodes := p.puzzleItemSelector.MatchAll(puzzleListNode)
 		if len(puzzleItemNodes) == 0 {
-			return nil, fmt.Errorf("no puzzle item nodes found in puzzle list: %#v", puzzleListNode)
+			return nil, xerrors.Errorf("no puzzle item nodes found in puzzle list: %#v", puzzleListNode)
 		}
 		for _, item := range puzzleItemNodes {
 			var puzzleBuf bytes.Buffer
@@ -113,12 +113,12 @@ func (p *Poller) Scrape(ctx context.Context) ([]schema.NewPuzzle, error) {
 				if attr.Key == "href" {
 					u, err = url.Parse(attr.Val)
 					if err != nil {
-						return nil, fmt.Errorf("invalid puzzle url: %#v", u)
+						return nil, xerrors.Errorf("invalid puzzle url: %#v", u)
 					}
 				}
 			}
 			if u == nil {
-				return nil, fmt.Errorf("could not find puzzle url for puzzle: %#v", item)
+				return nil, xerrors.Errorf("could not find puzzle url for puzzle: %#v", item)
 			}
 
 			puzzles = append(puzzles, schema.NewPuzzle{

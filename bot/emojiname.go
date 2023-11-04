@@ -9,6 +9,7 @@ import (
 	"github.com/bwmarrin/discordgo"
 	"github.com/emojihunt/emojihunt/discord"
 	"github.com/emojihunt/emojihunt/emojiname"
+	"golang.org/x/xerrors"
 )
 
 type EmojiNameBot struct{}
@@ -35,7 +36,7 @@ func (b *EmojiNameBot) Handle(ctx context.Context, input *discord.CommandInput) 
 		for _, hex := range strings.Split(e.Unified, "-") {
 			n, err := strconv.ParseInt(hex, 16, 32)
 			if err != nil {
-				return "", fmt.Errorf("could not parse %x: %w", e.Unified, err)
+				return "", xerrors.Errorf("could not parse %x: %w", e.Unified, err)
 			}
 			chars = append(chars, string(rune(n)))
 		}

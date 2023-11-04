@@ -6,6 +6,7 @@ import (
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/emojihunt/emojihunt/discord"
+	"golang.org/x/xerrors"
 )
 
 type QMBot struct {
@@ -44,15 +45,15 @@ func (b *QMBot) Handle(ctx context.Context, input *discord.CommandInput) (string
 	switch input.Subcommand.Name {
 	case "start":
 		if err := b.discord.MakeQM(input.User); err != nil {
-			return "", fmt.Errorf("unable to make %s a QM: %w", input.User.Mention(), err)
+			return "", xerrors.Errorf("unable to make %s a QM: %w", input.User.Mention(), err)
 		}
 		return fmt.Sprintf("%s is now a QM", input.User.Mention()), nil
 	case "stop":
 		if err := b.discord.UnMakeQM(input.User); err != nil {
-			return "", fmt.Errorf("unable to remove %s from QM role: %w", input.User.Mention(), err)
+			return "", xerrors.Errorf("unable to remove %s from QM role: %w", input.User.Mention(), err)
 		}
 		return fmt.Sprintf("%s is no longer a QM", input.User.Mention()), nil
 	default:
-		return "", fmt.Errorf("unexpected /qm subcommand: %q", input.Subcommand.Name)
+		return "", xerrors.Errorf("unexpected /qm subcommand: %q", input.Subcommand.Name)
 	}
 }

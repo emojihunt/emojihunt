@@ -2,9 +2,9 @@ package db
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/emojihunt/emojihunt/schema"
+	"golang.org/x/xerrors"
 )
 
 // AddPuzzles creates the given puzzles and returns the created records as a
@@ -12,7 +12,7 @@ import (
 // if the error is nil, the caller must call Unlock() on each puzzle.
 func (c *Client) AddPuzzles(ctx context.Context, puzzles []schema.NewPuzzle, newRound bool) ([]schema.Puzzle, error) {
 	if newRound {
-		return nil, fmt.Errorf("TODO: insert-round logic")
+		return nil, xerrors.Errorf("TODO: insert-round logic")
 	}
 
 	var created []schema.Puzzle
