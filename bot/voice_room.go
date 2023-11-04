@@ -55,8 +55,8 @@ func (b *VoiceRoomBot) Register() (*discordgo.ApplicationCommand, bool) {
 	}, true
 }
 
-func (b *VoiceRoomBot) Handle(ctx context.Context, s *discordgo.Session, i *discord.CommandInput) (string, error) {
-	puzzle, err := b.db.LockByDiscordChannel(ctx, i.IC.ChannelID)
+func (b *VoiceRoomBot) Handle(ctx context.Context, input *discord.CommandInput) (string, error) {
+	puzzle, err := b.db.LockByDiscordChannel(ctx, input.IC.ChannelID)
 	if err != nil {
 		return "", err
 	} else if puzzle == nil {
@@ -74,18 +74,18 @@ func (b *VoiceRoomBot) Handle(ctx context.Context, s *discordgo.Session, i *disc
 
 	var reply string
 	var channel *discordgo.Channel
-	switch i.Subcommand.Name {
+	switch input.Subcommand.Name {
 	case "start":
-		channelOpt, err := b.discord.OptionByName(i.Subcommand.Options, "in")
+		channelOpt, err := b.discord.OptionByName(input.Subcommand.Options, "in")
 		if err != nil {
 			return "", err
 		}
-		channel = channelOpt.ChannelValue(s)
+		channel = b.discord.ChannelValue(channelOpt)
 		reply = fmt.Sprintf("Set the room for puzzle %q to %s", puzzle.Name, channel.Mention())
 	case "stop":
 		reply = fmt.Sprintf("Removed the room for puzzle %q", puzzle.Name)
 	default:
-		return "", fmt.Errorf("unexpected /voice subcommand: %q", i.Subcommand.Name)
+		return "", fmt.Errorf("unexpected /voice subcommand: %q", input.Subcommand.Name)
 	}
 
 	// Sync the change!

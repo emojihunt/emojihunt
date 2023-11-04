@@ -44,9 +44,7 @@ func (b *ReminderBot) Register() (*discordgo.ApplicationCommand, bool) {
 	}, false
 }
 
-func (b *ReminderBot) Handle(ctx context.Context, s *discordgo.Session,
-	i *discord.CommandInput) (string, error) {
-
+func (b *ReminderBot) Handle(ctx context.Context, input *discord.CommandInput) (string, error) {
 	puzzles, err := b.db.ListWithReminder(ctx)
 	if err != nil {
 		return "", err

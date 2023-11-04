@@ -10,14 +10,14 @@ import (
 	"github.com/davecgh/go-spew/spew"
 )
 
-const DefaultHandlerTimeout = 120 * time.Second
-
 type Bot interface {
-	Register() (ac *discordgo.ApplicationCommand, async bool)
-	Handle(context.Context, *discordgo.Session, *CommandInput) (string, error)
+	Register() (cmd *discordgo.ApplicationCommand, async bool)
+	Handle(context.Context, *CommandInput) (string, error)
 }
 
 type CommandInput struct {
+	client *Client
+
 	IC         *discordgo.InteractionCreate
 	User       *discordgo.User
 	Slug       string // command and subcommand, for logging
@@ -25,10 +25,20 @@ type CommandInput struct {
 	Subcommand *discordgo.ApplicationCommandInteractionDataOption
 }
 
+func (i CommandInput) EditMessage(msg string) error {
+	_, err := i.client.s.InteractionResponseEdit(
+		i.IC.Interaction,
+		&discordgo.WebhookEdit{Content: &msg},
+	)
+	return err
+}
+
+const DefaultHandlerTimeout = 120 * time.Second
+
 type commandHandler struct {
 	ApplicationCommand *discordgo.ApplicationCommand
 	Async              bool
-	Handler            func(context.Context, *discordgo.Session, *CommandInput) (string, error)
+	Handler            func(context.Context, *CommandInput) (string, error)
 }
 
 func (c *Client) RegisterBots(bots ...Bot) {
@@ -74,7 +84,7 @@ func (c *Client) OptionByName(options []*discordgo.ApplicationCommandInteraction
 	return result, nil
 }
 
-func (c *Client) commandHandler(s *discordgo.Session, i *discordgo.InteractionCreate) {
+func (c *Client) commandHandler(_ *discordgo.Session, i *discordgo.InteractionCreate) {
 	ctx, cancel := context.WithTimeout(c.main, DefaultHandlerTimeout)
 	defer func() {
 		if err := recover(); err != nil {
@@ -118,7 +128,7 @@ func (c *Client) commandHandler(s *discordgo.Session, i *discordgo.InteractionCr
 	// we can take more than 3 seconds in Handler(). (If we don't do this,
 	// Discord will report an error to the user.)
 	if command.Async {
-		err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+		err := c.s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 			Type: discordgo.InteractionResponseDeferredChannelMessageWithSource,
 		})
 		if err != nil {
@@ -128,20 +138,16 @@ func (c *Client) commandHandler(s *discordgo.Session, i *discordgo.InteractionCr
 	}
 
 	// Call the handler!
-	reply, err := command.Handler(ctx, s, input)
+	reply, err := command.Handler(ctx, input)
 	if err != nil {
 		log.Printf("discord: error handling command %q: %s", input.Slug, spew.Sdump(err))
 		reply = fmt.Sprintf("```*** 🚨 BOT ERROR ***\n\n%s\nPlease ping in #%s for help.\n```", spew.Sdump(err), c.TechChannel.Name)
 	}
 
 	if command.Async {
-		_, err = s.InteractionResponseEdit(
-			input.IC.Interaction, &discordgo.WebhookEdit{
-				Content: &reply,
-			},
-		)
+		err = input.EditMessage(reply)
 	} else {
-		err = s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+		err = c.s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 			Type: discordgo.InteractionResponseChannelMessageWithSource,
 			Data: &discordgo.InteractionResponseData{Content: reply},
 		})

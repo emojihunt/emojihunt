@@ -24,9 +24,7 @@ func (b *EmojiNameBot) Register() (*discordgo.ApplicationCommand, bool) {
 	}, false
 }
 
-func (b *EmojiNameBot) Handle(ctx context.Context, s *discordgo.Session,
-	i *discord.CommandInput) (string, error) {
-
+func (b *EmojiNameBot) Handle(ctx context.Context, input *discord.CommandInput) (string, error) {
 	var chars, names []string
 	emoji, err := emojiname.RandomEmoji(3)
 	if err != nil {

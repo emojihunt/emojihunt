@@ -35,28 +35,24 @@ func (b *QMBot) Register() (*discordgo.ApplicationCommand, bool) {
 	}, false
 }
 
-func (b *QMBot) Handle(ctx context.Context, s *discordgo.Session,
-	i *discord.CommandInput) (string, error) {
-
-	if i.IC.ChannelID != b.discord.QMChannel.ID {
+func (b *QMBot) Handle(ctx context.Context, input *discord.CommandInput) (string, error) {
+	if input.IC.ChannelID != b.discord.QMChannel.ID {
 		return fmt.Sprintf(":tv: Please use `/qm` commands in the %s channel...",
 			b.discord.QMChannel.Mention()), nil
 	}
 
-	switch i.Subcommand.Name {
+	switch input.Subcommand.Name {
 	case "start":
-		err := s.GuildMemberRoleAdd(b.discord.Guild.ID, i.User.ID, b.discord.QMRole.ID)
-		if err != nil {
-			return "", fmt.Errorf("unable to make %s a QM: %v", i.User.Mention(), err)
+		if err := b.discord.MakeQM(input.User); err != nil {
+			return "", fmt.Errorf("unable to make %s a QM: %v", input.User.Mention(), err)
 		}
-		return fmt.Sprintf("%s is now a QM", i.User.Mention()), nil
+		return fmt.Sprintf("%s is now a QM", input.User.Mention()), nil
 	case "stop":
-		err := s.GuildMemberRoleRemove(b.discord.Guild.ID, i.User.ID, b.discord.QMRole.ID)
-		if err != nil {
-			return "", fmt.Errorf("unable to remove %s from QM role: %v", i.User.Mention(), err)
+		if err := b.discord.UnMakeQM(input.User); err != nil {
+			return "", fmt.Errorf("unable to remove %s from QM role: %v", input.User.Mention(), err)
 		}
-		return fmt.Sprintf("%s is no longer a QM", i.User.Mention()), nil
+		return fmt.Sprintf("%s is no longer a QM", input.User.Mention()), nil
 	default:
-		return "", fmt.Errorf("unexpected /qm subcommand: %q", i.Subcommand.Name)
+		return "", fmt.Errorf("unexpected /qm subcommand: %q", input.Subcommand.Name)
 	}
 }

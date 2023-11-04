@@ -26,6 +26,7 @@ type Client struct {
 	main context.Context
 
 	s     *discordgo.Session
+	STODO *discordgo.Session
 	Guild *discordgo.Guild
 
 	HangingOutChannel *discordgo.Channel // for solves, to celebrate
@@ -124,6 +125,7 @@ func NewClient(ctx context.Context, config *Config, state *state.State) (*Client
 	discord := &Client{
 		main:                      ctx,
 		s:                         s,
+		STODO:                     s,
 		Guild:                     guild,
 		HangingOutChannel:         hangingOutChannel,
 		MoreEyesChannel:           moreEyesChannel,
@@ -255,6 +257,10 @@ func (c *Client) SetChannelName(chID, name string) error {
 	return err
 }
 
+func (c *Client) ChannelValue(chOpt *discordgo.ApplicationCommandInteractionDataOption) *discordgo.Channel {
+	return chOpt.ChannelValue(c.s)
+}
+
 func (c *Client) GetChannelCategories() (map[string]*discordgo.Channel, error) {
 	channels, err := c.s.GuildChannels(c.Guild.ID)
 	if err != nil {
@@ -326,4 +332,12 @@ func (c *Client) CreateUpdatePin(chanID, header string, embed *discordgo.Message
 		_, err = c.s.ChannelMessageEditEmbed(chanID, statusMessage.ID, embed)
 		return err
 	}
+}
+
+func (c *Client) MakeQM(user *discordgo.User) error {
+	return c.s.GuildMemberRoleAdd(c.Guild.ID, user.ID, c.QMRole.ID)
+}
+
+func (c *Client) UnMakeQM(user *discordgo.User) error {
+	return c.s.GuildMemberRoleRemove(c.Guild.ID, user.ID, c.QMRole.ID)
 }

@@ -65,11 +65,9 @@ func (b *HuntBot) Register() (*discordgo.ApplicationCommand, bool) {
 	}, false
 }
 
-func (b *HuntBot) Handle(ctx context.Context, s *discordgo.Session,
-	i *discord.CommandInput) (string, error) {
-
-	if i.IC.ChannelID != b.discord.QMChannel.ID &&
-		i.IC.ChannelID != b.discord.TechChannel.ID {
+func (b *HuntBot) Handle(ctx context.Context, input *discord.CommandInput) (string, error) {
+	if input.IC.ChannelID != b.discord.QMChannel.ID &&
+		input.IC.ChannelID != b.discord.TechChannel.ID {
 		return fmt.Sprintf(
 			":tv: Please use `/huntbot` commands in the %s or %s channel.",
 			b.discord.QMChannel.Mention(),
@@ -81,7 +79,7 @@ func (b *HuntBot) Handle(ctx context.Context, s *discordgo.Session,
 	defer b.state.CommitAndUnlock()
 
 	var reply string
-	switch i.Subcommand.Name {
+	switch input.Subcommand.Name {
 	case "kill":
 		if !b.state.HuntbotDisabled {
 			b.state.HuntbotDisabled = true
@@ -112,20 +110,20 @@ func (b *HuntBot) Handle(ctx context.Context, s *discordgo.Session,
 		b.discord.UpdateStatus(b.state) // best-effort, ignore errors
 		return reply, nil
 	case "yikes":
-		if confirmOpt, err := b.discord.OptionByName(i.Subcommand.Options, "confirm"); err != nil {
+		if confirmOpt, err := b.discord.OptionByName(input.Subcommand.Options, "confirm"); err != nil {
 			return "", err
 		} else if value := confirmOpt.StringValue(); value != "⚠️" {
 			return fmt.Sprintf(":no_smoking: Incorrect confirmation value %q, operation aborted.",
 				value), nil
 		}
-		go b.fullResync(s, i)
+		go b.fullResync(input)
 		return ":warning: Initiated full re-sync!", nil
 	default:
-		return "", fmt.Errorf("unexpected /huntbot subcommand: %q", i.Subcommand.Name)
+		return "", fmt.Errorf("unexpected /huntbot subcommand: %q", input.Subcommand.Name)
 	}
 }
 
-func (b *HuntBot) fullResync(s *discordgo.Session, i *discord.CommandInput) {
+func (b *HuntBot) fullResync(input *discord.CommandInput) {
 	ctx, cancel := context.WithTimeout(b.main, fullResyncTimeout)
 	defer func() {
 		if err := recover(); err != nil {
@@ -159,13 +157,8 @@ func (b *HuntBot) fullResync(s *discordgo.Session, i *discord.CommandInput) {
 			puzzle.Unlock()
 
 			if j%10 == 0 {
-				msg := fmt.Sprintf(
-					":warning: Initiated full re-sync! (%d / %d)", j, len(puzzles),
-				)
-				_, err = s.InteractionResponseEdit(
-					i.IC.Interaction, &discordgo.WebhookEdit{
-						Content: &msg,
-					},
+				input.EditMessage(
+					fmt.Sprintf(":warning: Initiated full re-sync! (%d / %d)", j, len(puzzles)),
 				)
 				if err != nil {
 					err = fmt.Errorf("failed to update with progress: %v", err)
@@ -188,11 +181,7 @@ func (b *HuntBot) fullResync(s *discordgo.Session, i *discord.CommandInput) {
 		log.Printf("huntbot yikes: completed successfully")
 		msg = ":recycle: Full re-sync completed successfully!"
 	}
-	_, err = s.InteractionResponseEdit(
-		i.IC.Interaction, &discordgo.WebhookEdit{
-			Content: &msg,
-		},
-	)
+	err = input.EditMessage(msg)
 	if err != nil {
 		log.Printf("huntbot yikes: failed to update with status %q: %v", msg, err)
 	}
