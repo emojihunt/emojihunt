@@ -58,14 +58,22 @@ func main() {
 	}
 
 	// Initialize Sentry
-	config.Sentry.AttachStacktrace = true
+	config.Sentry.BeforeSend = func(event *sentry.Event, hint *sentry.EventHint) *sentry.Event {
+		log.Printf("error: %s", hint.OriginalException)
+		for _, exception := range event.Exception {
+			for _, frame := range exception.Stacktrace.Frames {
+				log.Printf("\t%s:%d", frame.AbsPath, frame.Lineno)
+			}
+		}
+		return event
+	}
 	if err := sentry.Init(*config.Sentry); err != nil {
 		panic(err)
 	}
+	defer sentry.Flush(time.Second * 5)
 	defer func() {
 		if err := recover(); err != nil {
 			sentry.CurrentHub().Recover(err)
-			sentry.Flush(time.Second * 5)
 			panic(err)
 		}
 	}()
