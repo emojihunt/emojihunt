@@ -15,6 +15,7 @@ import (
 )
 
 type Syncer struct {
+	main    context.Context
 	db      *db.Client
 	discord *discord.Client
 	drive   *drive.Client
@@ -23,8 +24,9 @@ type Syncer struct {
 	DiscordCategoryMutex sync.Mutex
 }
 
-func New(db *db.Client, discord *discord.Client, drive *drive.Client) *Syncer {
+func New(main context.Context, db *db.Client, discord *discord.Client, drive *drive.Client) *Syncer {
 	return &Syncer{
+		main:    main,
 		db:      db,
 		discord: discord,
 		drive:   drive,

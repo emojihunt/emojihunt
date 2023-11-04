@@ -1,6 +1,7 @@
 package syncer
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"strings"
@@ -11,11 +12,12 @@ import (
 )
 
 const (
-	roundCategoryPrefix  = "Round: "
-	solvedCategoryPrefix = "Solved "
-	pinnedStatusHeader   = "Puzzle Information"
-	locationDefaultMsg   = "Use `/voice start` to assign a voice room"
-	embedColor           = 0x7C39ED
+	roundCategoryPrefix   = "Round: "
+	solvedCategoryPrefix  = "Solved "
+	pinnedStatusHeader    = "Puzzle Information"
+	locationDefaultMsg    = "Use `/voice start` to assign a voice room"
+	embedColor            = 0x7C39ED
+	backgroundTaskTimeout = 120 * time.Second
 )
 
 // DiscordCreateUpdatePin creates or updates the pinned message at the top of
@@ -111,6 +113,9 @@ func (s *Syncer) discordUpdateChannel(puzzle *schema.Puzzle) error {
 	}
 	ch := make(chan error)
 	go func() {
+		_, cancel := context.WithTimeout(s.main, backgroundTaskTimeout)
+		defer cancel()
+
 		ch <- s.discord.SetChannelName(puzzle.DiscordChannel, title)
 	}()
 	select {

@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/bwmarrin/discordgo"
-	"github.com/davecgh/go-spew/spew"
 	"github.com/emojihunt/emojihunt/schema"
 )
 
@@ -18,6 +17,8 @@ const (
 	VoiceRoomPlaceholderTitle = "🫥 Placeholder Event"
 
 	eventDelay = 7 * 24 * time.Hour
+
+	restorePlaceholderTimeout = 120 * time.Minute
 )
 
 // SyncVoiceRooms synchronizes all Discord scheduled events, creating and
@@ -133,24 +134,26 @@ func (s *Syncer) SyncVoiceRooms(ctx context.Context) error {
 		}
 	}
 
-	go func() {
-		// Will block until the caller releases VoiceRoomMutex
-		err := s.RestorePlaceholderEvent()
-		if err != nil {
-			log.Printf("error restoring placeholder event: %s", spew.Sdump(err))
-		}
-	}()
-
+	// Will block until the caller releases VoiceRoomMutex
+	go s.RestorePlaceholderEvent()
 	return nil
 }
 
-func (s *Syncer) RestorePlaceholderEvent() error {
+func (s *Syncer) RestorePlaceholderEvent() {
+	_, cancel := context.WithTimeout(s.main, restorePlaceholderTimeout)
+	defer func() {
+		if err := recover(); err != nil {
+			log.Printf("RestorePlaceholderEvent: %v", err)
+		}
+		cancel()
+	}()
+
 	s.VoiceRoomMutex.Lock()
 	defer s.VoiceRoomMutex.Unlock()
 
 	events, err := s.discord.ListScheduledEvents()
 	if err != nil {
-		return err
+		panic(err)
 	}
 
 	var placeholderEvents []*discordgo.GuildScheduledEvent
@@ -165,7 +168,7 @@ func (s *Syncer) RestorePlaceholderEvent() error {
 		}
 	}
 	if len(placeholderEvents) > 0 {
-		return nil
+		return
 	}
 
 	start := time.Now().Add(eventDelay)
@@ -177,5 +180,7 @@ func (s *Syncer) RestorePlaceholderEvent() error {
 		Description:        VoiceRoomEventDescription,
 		EntityType:         discordgo.GuildScheduledEventEntityTypeVoice,
 	})
-	return err
+	if err != nil {
+		panic(err)
+	}
 }

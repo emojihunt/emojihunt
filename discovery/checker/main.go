@@ -37,7 +37,7 @@ func main() {
 		log.Panicf("error parsing autodiscovery node: %v", err)
 	}
 
-	disc := discovery.New(nil, nil, nil, &config, nil)
+	disc := discovery.New(context.Background(), nil, nil, nil, &config, nil)
 	puzzles, err := disc.Scrape(context.Background())
 	if err != nil {
 		fmt.Printf("fatal error: %#v\n", err)

@@ -60,7 +60,8 @@ func (p *Poller) startOrCancelRoundCreation(name, messageID string) error {
 		}
 	} else {
 		if emoji != "" {
-			ctx, cancel := context.WithCancel(context.Background())
+			ctx, cancel := context.WithCancel(p.main)
+			// panics bubble up to the poller or discord handler
 			go func(ctx context.Context) {
 				log.Printf("kicking off round creation for %q (with delay)", name)
 				select {

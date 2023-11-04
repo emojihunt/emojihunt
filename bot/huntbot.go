@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"strings"
+	"time"
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/davecgh/go-spew/spew"
@@ -17,6 +18,7 @@ import (
 )
 
 type HuntBot struct {
+	main      context.Context
 	db        *db.Client
 	discord   *discord.Client
 	discovery *discovery.Poller
@@ -24,9 +26,11 @@ type HuntBot struct {
 	state     *state.State
 }
 
-func NewHuntBot(db *db.Client, discord *discord.Client, discovery *discovery.Poller,
+const fullResyncTimeout = 60 * time.Minute
+
+func NewHuntBot(main context.Context, db *db.Client, discord *discord.Client, discovery *discovery.Poller,
 	syncer *syncer.Syncer, state *state.State) discord.Bot {
-	return &HuntBot{db, discord, discovery, syncer, state}
+	return &HuntBot{main, db, discord, discovery, syncer, state}
 }
 
 func (b *HuntBot) Register() (*discordgo.ApplicationCommand, bool) {
@@ -93,8 +97,16 @@ func (b *HuntBot) Handle(s *discordgo.Session, i *discord.CommandInput) (string,
 			reply = "The bot was already enabled. Disable it with `/huntbot kill`."
 		}
 		go func() {
+			_, cancel := context.WithCancel(b.main)
+			defer func() {
+				if err := recover(); err != nil {
+					log.Printf("InitializeRoundCreation: %v", err)
+				}
+				cancel()
+			}()
+
 			// Will block until we release the state lock
-			b.discovery.InitializeRoundCreation()
+			b.discovery.InitializeRoundCreation() // TODO: factor out
 		}()
 		b.discord.UpdateStatus(b.state) // best-effort, ignore errors
 		return reply, nil
@@ -113,6 +125,14 @@ func (b *HuntBot) Handle(s *discordgo.Session, i *discord.CommandInput) (string,
 }
 
 func (b *HuntBot) fullResync(s *discordgo.Session, i *discord.CommandInput) {
+	_, cancel := context.WithTimeout(b.main, fullResyncTimeout)
+	defer func() {
+		if err := recover(); err != nil {
+			log.Printf("RestorePlaceholderEvent: %v", err)
+		}
+		cancel()
+	}()
+
 	var errs = make(map[string]error)
 
 	puzzles, err := b.db.ListPuzzles()

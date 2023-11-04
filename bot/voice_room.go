@@ -6,7 +6,6 @@ import (
 	"log"
 
 	"github.com/bwmarrin/discordgo"
-	"github.com/davecgh/go-spew/spew"
 	"github.com/emojihunt/emojihunt/db"
 	"github.com/emojihunt/emojihunt/discord"
 	"github.com/emojihunt/emojihunt/schema"
@@ -14,13 +13,14 @@ import (
 )
 
 type VoiceRoomBot struct {
+	main    context.Context
 	db      *db.Client
 	discord *discord.Client
 	syncer  *syncer.Syncer
 }
 
-func NewVoiceRoomBot(db *db.Client, discord *discord.Client, syncer *syncer.Syncer) discord.Bot {
-	b := &VoiceRoomBot{db, discord, syncer}
+func NewVoiceRoomBot(main context.Context, db *db.Client, discord *discord.Client, syncer *syncer.Syncer) discord.Bot {
+	b := &VoiceRoomBot{main, db, discord, syncer}
 	discord.AddHandler(b.scheduledEventUpdateHandler)
 	return b
 }
@@ -102,9 +102,20 @@ func (b *VoiceRoomBot) Handle(s *discordgo.Session, i *discord.CommandInput) (st
 	return reply, nil
 }
 
-func (b *VoiceRoomBot) scheduledEventUpdateHandler(s *discordgo.Session, i *discordgo.GuildScheduledEventUpdate) {
-	if i.Description != syncer.VoiceRoomEventDescription || i.Status != discordgo.GuildScheduledEventStatusCompleted {
-		return
+func (b *VoiceRoomBot) scheduledEventUpdateHandler(s *discordgo.Session,
+	i *discordgo.GuildScheduledEventUpdate) {
+
+	_, cancel := context.WithTimeout(b.main, discord.DefaultHandlerTimeout)
+	defer func() {
+		if err := recover(); err != nil {
+			log.Printf("scheduledEventUpdateHandler: %v", err)
+		}
+		cancel()
+	}()
+
+	if i.Description != syncer.VoiceRoomEventDescription ||
+		i.Status != discordgo.GuildScheduledEventStatusCompleted {
+		return // ignore event
 	}
 
 	// We don't have to worry about double-processing puzzles because, even
@@ -121,18 +132,17 @@ func (b *VoiceRoomBot) scheduledEventUpdateHandler(s *discordgo.Session, i *disc
 	b.syncer.VoiceRoomMutex.Unlock()
 
 	if err != nil {
-		log.Printf("discord: error processing scheduled event completion: %v", spew.Sdump(err))
-		return
+		panic(err)
 	}
 
-	var errs []error
+	var final error
 	for _, info := range puzzles {
 		if err = b.clearVoiceRoom(&info, i.ChannelID); err != nil {
-			errs = append(errs, err)
+			final = err
 		}
 	}
-	if len(errs) > 0 {
-		log.Printf("discord: errors processing scheduled event completion: %v", spew.Sdump(errs))
+	if final != nil {
+		panic(final)
 	}
 }
 

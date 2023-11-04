@@ -1,6 +1,7 @@
 package bot
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"time"
@@ -22,7 +23,7 @@ type ReminderBot struct {
 	warnErrorFrequency time.Duration
 }
 
-func NewReminderBot(db *db.Client, discord *discord.Client, state *state.State) discord.Bot {
+func NewReminderBot(main context.Context, db *db.Client, discord *discord.Client, state *state.State) discord.Bot {
 	b := &ReminderBot{
 		db: db, discord: discord, state: state,
 		intervals: []time.Duration{
@@ -32,7 +33,7 @@ func NewReminderBot(db *db.Client, discord *discord.Client, state *state.State) 
 		},
 		warnErrorFrequency: 10 * time.Minute,
 	}
-	go b.notificationLoop()
+	go b.notificationLoop(main)
 	return b
 }
 
@@ -72,7 +73,10 @@ func (b *ReminderBot) Handle(s *discordgo.Session, i *discord.CommandInput) (str
 	return msg, nil
 }
 
-func (b *ReminderBot) notificationLoop() {
+func (b *ReminderBot) notificationLoop(main context.Context) {
+	_, cancel := context.WithCancel(main)
+	defer cancel() // *do* allow panics to bubble up to main()
+
 	for {
 		b.state.Lock()
 		since := b.state.ReminderTimestamp

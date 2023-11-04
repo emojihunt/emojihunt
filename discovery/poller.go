@@ -90,6 +90,7 @@ type Poller struct {
 	wsURL   *url.URL
 	wsToken string
 
+	main      context.Context
 	db        *db.Client
 	discord   *discord.Client
 	syncer    *syncer.Syncer
@@ -115,7 +116,9 @@ const (
 
 var websocketRate = rate.Every(1 * time.Minute)
 
-func New(database *db.Client, discord *discord.Client, syncer *syncer.Syncer, config *DiscoveryConfig, state *state.State) *Poller {
+func New(main context.Context, db *db.Client, discord *discord.Client,
+	syncer *syncer.Syncer, config *DiscoveryConfig, state *state.State) *Poller {
+
 	puzzlesURL, err := url.Parse(config.PuzzlesURL)
 	if err != nil {
 		panic(err)
@@ -151,7 +154,8 @@ func New(database *db.Client, discord *discord.Client, syncer *syncer.Syncer, co
 		wsURL:   wsURL,
 		wsToken: config.WebsocketToken,
 
-		db:        database,
+		main:      main,
+		db:        db,
 		discord:   discord,
 		syncer:    syncer,
 		state:     state,
@@ -163,11 +167,14 @@ func New(database *db.Client, discord *discord.Client, syncer *syncer.Syncer, co
 }
 
 func (p *Poller) Poll(ctx context.Context) {
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel() // *do* allow panics to bubble up to main()
+
 	p.InitializeRoundCreation()
 
 reconnect:
 	for {
-		ch, err := p.openWebsocket()
+		ch, err := p.openWebsocket(p.main)
 		if err != nil {
 			log.Printf("discovery: failed to open websocket: %v", spew.Sprint(err))
 		}
@@ -179,7 +186,6 @@ reconnect:
 
 			select {
 			case <-ctx.Done():
-				log.Print("exiting discovery poller due to signal")
 				return
 			case _, more := <-ch:
 				if !more {
@@ -217,7 +223,7 @@ func (p *Poller) logAndMaybeWarn(memo string, err error) {
 	}
 }
 
-func (p *Poller) openWebsocket() (chan bool, error) {
+func (p *Poller) openWebsocket(ctx context.Context) (chan bool, error) {
 	if p.wsURL == nil {
 		return nil, nil
 	}
@@ -252,7 +258,10 @@ func (p *Poller) openWebsocket() (chan bool, error) {
 		log.Printf("discovery: wrote AUTH message to websocket")
 	}
 	go func(ws *websocket.Conn, ch chan bool) {
+		_, cancel := context.WithCancel(ctx)
+		defer cancel()
 		defer close(ch)
+
 		scanner := bufio.NewScanner(ws)
 		for scanner.Scan() {
 			if p.wsLimiter.Allow() {

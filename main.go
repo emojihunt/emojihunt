@@ -60,7 +60,6 @@ func main() {
 
 	// Initialize Sentry
 	config.Sentry.AttachStacktrace = true
-	// config.Sentry.Debug = true // TODO
 	if err := sentry.Init(*config.Sentry); err != nil {
 		log.Panicf("error initializing Sentry: %v", err)
 	}
@@ -72,21 +71,11 @@ func main() {
 		}
 	}()
 
-	// Set up our context, which is cancelled on Ctrl-C
+	// Set up the main context, which is cancelled on Ctrl-C
 	ctx, cancel := context.WithCancel(context.Background())
 	ch := make(chan os.Signal, 1)
 	signal.Notify(ch, os.Interrupt)
-	defer func() {
-		signal.Stop(ch)
-		cancel()
-	}()
-	go func() {
-		select {
-		case <-ch:
-			cancel()
-		case <-ctx.Done():
-		}
-	}()
+	go func() { <-ch; cancel() }()
 
 	// Start debug server
 	// http://localhost:6060/debug/pprof/goroutine?debug=2
@@ -116,13 +105,13 @@ func main() {
 	}
 
 	// Start internal engines
-	syncer := syncer.New(db, discord, drive)
+	syncer := syncer.New(ctx, db, discord, drive)
 	go syncer.RestorePlaceholderEvent()
-	log.Printf("started syncer")
+	log.Printf("created syncer")
 
 	var dscvpoller *discovery.Poller
 	if config.Autodiscovery != nil {
-		dscvpoller = discovery.New(db, discord, syncer, config.Autodiscovery, state)
+		dscvpoller = discovery.New(ctx, db, discord, syncer, config.Autodiscovery, state)
 		dscvpoller.RegisterReactionHandler(discord)
 		go dscvpoller.Poll(ctx)
 		log.Printf("started puzzle auto-discovery poller")
@@ -133,11 +122,11 @@ func main() {
 	discord.RegisterBots(
 		bot.NewEmojiNameBot(),
 		bot.NewHuntYetBot(),
-		bot.NewHuntBot(db, discord, dscvpoller, syncer, state),
+		bot.NewHuntBot(ctx, db, discord, dscvpoller, syncer, state),
 		bot.NewPuzzleBot(db, discord, syncer),
 		bot.NewQMBot(discord),
-		bot.NewReminderBot(db, discord, state),
-		bot.NewVoiceRoomBot(db, discord, syncer),
+		bot.NewReminderBot(ctx, db, discord, state),
+		bot.NewVoiceRoomBot(ctx, db, discord, syncer),
 	)
 	log.Printf("started discord bots")
 

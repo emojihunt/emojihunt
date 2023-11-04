@@ -3,10 +3,13 @@ package discord
 import (
 	"fmt"
 	"log"
+	"time"
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/davecgh/go-spew/spew"
 )
+
+const DefaultHandlerTimeout = 120 * time.Second
 
 type Bot interface {
 	Register() (ac *discordgo.ApplicationCommand, async bool)

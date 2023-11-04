@@ -40,7 +40,7 @@ func Start(db *db.Client, syncer *syncer.Syncer, config *ServerConfig) error {
 		mux := http.NewServeMux()
 		mux.HandleFunc("/robots.txt", server.robots)
 		mux.HandleFunc("/resync", server.resync)
-		err := http.ListenAndServe(":8000", mux)
+		err := http.ListenAndServe(":8000", mux) // TODO: set up Sentry, context
 		panic(err)
 	}()
 
