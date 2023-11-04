@@ -224,6 +224,8 @@ func (p *Poller) logAndMaybeWarn(memo string, err error) {
 }
 
 func (p *Poller) openWebsocket(ctx context.Context) (chan bool, error) {
+	// TODO: should panics bubble up?
+
 	if p.wsURL == nil {
 		return nil, nil
 	}
@@ -258,8 +260,6 @@ func (p *Poller) openWebsocket(ctx context.Context) (chan bool, error) {
 		log.Printf("discovery: wrote AUTH message to websocket")
 	}
 	go func(ws *websocket.Conn, ch chan bool) {
-		_, cancel := context.WithCancel(ctx)
-		defer cancel()
 		defer close(ch)
 
 		scanner := bufio.NewScanner(ws)

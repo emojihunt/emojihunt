@@ -28,8 +28,8 @@ type HuntBot struct {
 
 const fullResyncTimeout = 60 * time.Minute
 
-func NewHuntBot(main context.Context, db *db.Client, discord *discord.Client, discovery *discovery.Poller,
-	syncer *syncer.Syncer, state *state.State) discord.Bot {
+func NewHuntBot(main context.Context, db *db.Client, discord *discord.Client,
+	discovery *discovery.Poller, syncer *syncer.Syncer, state *state.State) discord.Bot {
 	return &HuntBot{main, db, discord, discovery, syncer, state}
 }
 
@@ -65,8 +65,11 @@ func (b *HuntBot) Register() (*discordgo.ApplicationCommand, bool) {
 	}, false
 }
 
-func (b *HuntBot) Handle(s *discordgo.Session, i *discord.CommandInput) (string, error) {
-	if i.IC.ChannelID != b.discord.QMChannel.ID && i.IC.ChannelID != b.discord.TechChannel.ID {
+func (b *HuntBot) Handle(ctx context.Context, s *discordgo.Session,
+	i *discord.CommandInput) (string, error) {
+
+	if i.IC.ChannelID != b.discord.QMChannel.ID &&
+		i.IC.ChannelID != b.discord.TechChannel.ID {
 		return fmt.Sprintf(
 			":tv: Please use `/huntbot` commands in the %s or %s channel.",
 			b.discord.QMChannel.Mention(),
@@ -97,12 +100,10 @@ func (b *HuntBot) Handle(s *discordgo.Session, i *discord.CommandInput) (string,
 			reply = "The bot was already enabled. Disable it with `/huntbot kill`."
 		}
 		go func() {
-			_, cancel := context.WithCancel(b.main)
 			defer func() {
 				if err := recover(); err != nil {
 					log.Printf("InitializeRoundCreation: %v", err)
 				}
-				cancel()
 			}()
 
 			// Will block until we release the state lock
@@ -125,7 +126,7 @@ func (b *HuntBot) Handle(s *discordgo.Session, i *discord.CommandInput) (string,
 }
 
 func (b *HuntBot) fullResync(s *discordgo.Session, i *discord.CommandInput) {
-	_, cancel := context.WithTimeout(b.main, fullResyncTimeout)
+	ctx, cancel := context.WithTimeout(b.main, fullResyncTimeout)
 	defer func() {
 		if err := recover(); err != nil {
 			log.Printf("RestorePlaceholderEvent: %v", err)
@@ -135,7 +136,7 @@ func (b *HuntBot) fullResync(s *discordgo.Session, i *discord.CommandInput) {
 
 	var errs = make(map[string]error)
 
-	puzzles, err := b.db.ListPuzzles()
+	puzzles, err := b.db.ListPuzzles(ctx)
 	if err == nil {
 		for j, id := range puzzles {
 			if b.state.IsKilled() {
@@ -144,13 +145,13 @@ func (b *HuntBot) fullResync(s *discordgo.Session, i *discord.CommandInput) {
 			}
 
 			var puzzle *schema.Puzzle
-			puzzle, err = b.db.LockByID(id)
+			puzzle, err = b.db.LockByID(ctx, id)
 			if err != nil {
 				err = fmt.Errorf("failed to load %q: %s", id, spew.Sdump(err))
 				break
 			}
 
-			_, err = b.syncer.ForceUpdate(context.TODO(), puzzle)
+			_, err = b.syncer.ForceUpdate(ctx, puzzle)
 			if err != nil {
 				log.Printf("huntbot yikes: re-sync err in %q: %v", puzzle.Name, spew.Sdump(err))
 				errs[puzzle.Name] = err

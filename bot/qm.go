@@ -1,6 +1,7 @@
 package bot
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/bwmarrin/discordgo"
@@ -34,7 +35,9 @@ func (b *QMBot) Register() (*discordgo.ApplicationCommand, bool) {
 	}, false
 }
 
-func (b *QMBot) Handle(s *discordgo.Session, i *discord.CommandInput) (string, error) {
+func (b *QMBot) Handle(ctx context.Context, s *discordgo.Session,
+	i *discord.CommandInput) (string, error) {
+
 	if i.IC.ChannelID != b.discord.QMChannel.ID {
 		return fmt.Sprintf(":tv: Please use `/qm` commands in the %s channel...",
 			b.discord.QMChannel.Mention()), nil

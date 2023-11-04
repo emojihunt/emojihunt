@@ -44,8 +44,10 @@ func (b *ReminderBot) Register() (*discordgo.ApplicationCommand, bool) {
 	}, false
 }
 
-func (b *ReminderBot) Handle(s *discordgo.Session, i *discord.CommandInput) (string, error) {
-	puzzles, err := b.db.ListWithReminder()
+func (b *ReminderBot) Handle(ctx context.Context, s *discordgo.Session,
+	i *discord.CommandInput) (string, error) {
+
+	puzzles, err := b.db.ListWithReminder(ctx)
 	if err != nil {
 		return "", err
 	}
@@ -74,7 +76,7 @@ func (b *ReminderBot) Handle(s *discordgo.Session, i *discord.CommandInput) (str
 }
 
 func (b *ReminderBot) notificationLoop(main context.Context) {
-	_, cancel := context.WithCancel(main)
+	ctx, cancel := context.WithCancel(main)
 	defer cancel() // *do* allow panics to bubble up to main()
 
 	for {
@@ -82,7 +84,8 @@ func (b *ReminderBot) notificationLoop(main context.Context) {
 		since := b.state.ReminderTimestamp
 		b.state.Unlock()
 
-		next, err := b.processNotifications(since)
+		// TODO: separate, time-limited context?
+		next, err := b.processNotifications(ctx, since)
 		b.state.Lock()
 		if err != nil {
 			log.Printf("reminder: error: %s", spew.Sprint(err))
@@ -112,10 +115,10 @@ func (b *ReminderBot) notificationLoop(main context.Context) {
 	}
 }
 
-func (b *ReminderBot) processNotifications(since time.Time) (*time.Time, error) {
+func (b *ReminderBot) processNotifications(ctx context.Context, since time.Time) (*time.Time, error) {
 	now := time.Now()
 
-	puzzles, err := b.db.ListWithReminder()
+	puzzles, err := b.db.ListWithReminder(ctx)
 	if err != nil {
 		return nil, err
 	}

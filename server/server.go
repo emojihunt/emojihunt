@@ -1,6 +1,7 @@
 package server
 
 import (
+	"context"
 	"crypto/subtle"
 	"fmt"
 	"log"
@@ -83,7 +84,7 @@ func (s *Server) resync(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	puzzle, err := s.db.LockByID(id)
+	puzzle, err := s.db.LockByID(context.TODO(), id)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		fmt.Fprintf(w, "error: %#v\n", err)

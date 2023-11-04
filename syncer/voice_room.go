@@ -17,8 +17,6 @@ const (
 	VoiceRoomPlaceholderTitle = "🫥 Placeholder Event"
 
 	eventDelay = 7 * 24 * time.Hour
-
-	restorePlaceholderTimeout = 120 * time.Minute
 )
 
 // SyncVoiceRooms synchronizes all Discord scheduled events, creating and
@@ -31,7 +29,7 @@ func (s *Syncer) SyncVoiceRooms(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	puzzles, err := s.db.ListWithVoiceRoom()
+	puzzles, err := s.db.ListWithVoiceRoom(ctx)
 	if err != nil {
 		return err
 	}
@@ -140,12 +138,10 @@ func (s *Syncer) SyncVoiceRooms(ctx context.Context) error {
 }
 
 func (s *Syncer) RestorePlaceholderEvent() {
-	_, cancel := context.WithTimeout(s.main, restorePlaceholderTimeout)
 	defer func() {
 		if err := recover(); err != nil {
 			log.Printf("RestorePlaceholderEvent: %v", err)
 		}
-		cancel()
 	}()
 
 	s.VoiceRoomMutex.Lock()

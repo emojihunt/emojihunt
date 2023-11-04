@@ -93,7 +93,7 @@ func main() {
 	}
 
 	// Set up clients
-	discord, err := discord.NewClient(config.Discord, state)
+	discord, err := discord.NewClient(ctx, config.Discord, state)
 	if err != nil {
 		log.Panicf("error creating discord client: %v", err)
 	}
@@ -105,7 +105,7 @@ func main() {
 	}
 
 	// Start internal engines
-	syncer := syncer.New(ctx, db, discord, drive)
+	syncer := syncer.New(db, discord, drive)
 	go syncer.RestorePlaceholderEvent()
 	log.Printf("created syncer")
 

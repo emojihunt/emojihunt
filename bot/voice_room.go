@@ -55,8 +55,8 @@ func (b *VoiceRoomBot) Register() (*discordgo.ApplicationCommand, bool) {
 	}, true
 }
 
-func (b *VoiceRoomBot) Handle(s *discordgo.Session, i *discord.CommandInput) (string, error) {
-	puzzle, err := b.db.LockByDiscordChannel(i.IC.ChannelID)
+func (b *VoiceRoomBot) Handle(ctx context.Context, s *discordgo.Session, i *discord.CommandInput) (string, error) {
+	puzzle, err := b.db.LockByDiscordChannel(ctx, i.IC.ChannelID)
 	if err != nil {
 		return "", err
 	} else if puzzle == nil {
@@ -89,13 +89,13 @@ func (b *VoiceRoomBot) Handle(s *discordgo.Session, i *discord.CommandInput) (st
 	}
 
 	// Sync the change!
-	if puzzle, err = b.db.SetVoiceRoom(puzzle, channel); err != nil {
+	if puzzle, err = b.db.SetVoiceRoom(ctx, puzzle, channel); err != nil {
 		return "", err
 	}
 	if err = b.syncer.DiscordCreateUpdatePin(puzzle); err != nil {
 		return "", err
 	}
-	if err = b.syncer.SyncVoiceRooms(context.TODO()); err != nil {
+	if err = b.syncer.SyncVoiceRooms(ctx); err != nil {
 		return "", err
 	}
 
@@ -105,7 +105,7 @@ func (b *VoiceRoomBot) Handle(s *discordgo.Session, i *discord.CommandInput) (st
 func (b *VoiceRoomBot) scheduledEventUpdateHandler(s *discordgo.Session,
 	i *discordgo.GuildScheduledEventUpdate) {
 
-	_, cancel := context.WithTimeout(b.main, discord.DefaultHandlerTimeout)
+	ctx, cancel := context.WithTimeout(b.main, discord.DefaultHandlerTimeout)
 	defer func() {
 		if err := recover(); err != nil {
 			log.Printf("scheduledEventUpdateHandler: %v", err)
@@ -128,7 +128,7 @@ func (b *VoiceRoomBot) scheduledEventUpdateHandler(s *discordgo.Session,
 	log.Printf("discord: processing scheduled event completion for %q", i.Name)
 
 	b.syncer.VoiceRoomMutex.Lock()
-	puzzles, err := b.db.ListWithVoiceRoom()
+	puzzles, err := b.db.ListWithVoiceRoom(ctx)
 	b.syncer.VoiceRoomMutex.Unlock()
 
 	if err != nil {
@@ -137,7 +137,7 @@ func (b *VoiceRoomBot) scheduledEventUpdateHandler(s *discordgo.Session,
 
 	var final error
 	for _, info := range puzzles {
-		if err = b.clearVoiceRoom(&info, i.ChannelID); err != nil {
+		if err = b.clearVoiceRoom(ctx, &info, i.ChannelID); err != nil {
 			final = err
 		}
 	}
@@ -146,8 +146,10 @@ func (b *VoiceRoomBot) scheduledEventUpdateHandler(s *discordgo.Session,
 	}
 }
 
-func (b *VoiceRoomBot) clearVoiceRoom(info *schema.VoicePuzzle, expectedVoiceRoom string) error {
-	puzzle, err := b.db.LockByID(info.ID)
+func (b *VoiceRoomBot) clearVoiceRoom(ctx context.Context, info *schema.VoicePuzzle,
+	expectedVoiceRoom string) error {
+
+	puzzle, err := b.db.LockByID(ctx, info.ID)
 	if err != nil {
 		return err
 	}
@@ -160,7 +162,7 @@ func (b *VoiceRoomBot) clearVoiceRoom(info *schema.VoicePuzzle, expectedVoiceRoo
 		return nil
 	}
 
-	puzzle, err = b.db.SetVoiceRoom(puzzle, nil)
+	puzzle, err = b.db.SetVoiceRoom(ctx, puzzle, nil)
 	if err != nil {
 		return err
 	}

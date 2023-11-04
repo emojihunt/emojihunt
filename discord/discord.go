@@ -1,6 +1,7 @@
 package discord
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"strings"
@@ -22,6 +23,8 @@ type Config struct {
 }
 
 type Client struct {
+	main context.Context
+
 	s     *discordgo.Session
 	Guild *discordgo.Guild
 
@@ -44,7 +47,7 @@ type Client struct {
 	rateLimits                map[string]*time.Time // url -> retryAfter time
 }
 
-func NewClient(config *Config, state *state.State) (*Client, error) {
+func NewClient(ctx context.Context, config *Config, state *state.State) (*Client, error) {
 	// Initialize discordgo client
 	s, err := discordgo.New(config.AuthToken)
 	if err != nil {
@@ -119,6 +122,7 @@ func NewClient(config *Config, state *state.State) (*Client, error) {
 
 	// Set up slash commands; return
 	discord := &Client{
+		main:                      ctx,
 		s:                         s,
 		Guild:                     guild,
 		HangingOutChannel:         hangingOutChannel,

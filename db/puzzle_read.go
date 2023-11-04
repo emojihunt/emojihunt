@@ -10,8 +10,8 @@ import (
 )
 
 // ListPuzzles returns a list of all known record IDs.
-func (c *Client) ListPuzzles() ([]int64, error) {
-	return c.queries.ListPuzzleIDs(context.TODO())
+func (c *Client) ListPuzzles(ctx context.Context) ([]int64, error) {
+	return c.queries.ListPuzzleIDs(ctx)
 }
 
 // ListPuzzleFragmentsAndRounds returns a collection of all puzzle names and
@@ -21,9 +21,11 @@ func (c *Client) ListPuzzles() ([]int64, error) {
 // so it's safe.
 //
 // Note that puzzle names and URLs are *uppercased* in the result map.
-func (c *Client) ListPuzzleFragmentsAndRounds() (map[string]bool, map[string]schema.Round, error) {
+func (c *Client) ListPuzzleFragmentsAndRounds(ctx context.Context) (
+	map[string]bool, map[string]schema.Round, error) {
+
 	var fragments = make(map[string]bool)
-	puzzles, err := c.queries.ListPuzzleDiscoveryFragments(context.TODO())
+	puzzles, err := c.queries.ListPuzzleDiscoveryFragments(ctx)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -34,7 +36,7 @@ func (c *Client) ListPuzzleFragmentsAndRounds() (map[string]bool, map[string]sch
 	}
 
 	var rounds = make(map[string]schema.Round)
-	result, err := c.queries.ListRounds(context.TODO())
+	result, err := c.queries.ListRounds(ctx)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -55,8 +57,8 @@ func (c *Client) ListPuzzleFragmentsAndRounds() (map[string]bool, map[string]sch
 // only written when holding VoiceRoomMutex.
 //
 // The caller *must* acquire VoiceRoomMutex before calling this function.
-func (c *Client) ListWithVoiceRoom() ([]schema.VoicePuzzle, error) {
-	puzzles, err := c.queries.ListPuzzlesWithVoiceRoom(context.TODO())
+func (c *Client) ListWithVoiceRoom(ctx context.Context) ([]schema.VoicePuzzle, error) {
+	puzzles, err := c.queries.ListPuzzlesWithVoiceRoom(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -80,8 +82,8 @@ func (c *Client) ListWithVoiceRoom() ([]schema.VoicePuzzle, error) {
 // enough.
 //
 // Results are returned in sorted order.
-func (c *Client) ListWithReminder() ([]schema.ReminderPuzzle, error) {
-	puzzles, err := c.queries.ListPuzzlesWithReminder(context.TODO())
+func (c *Client) ListWithReminder(ctx context.Context) ([]schema.ReminderPuzzle, error) {
+	puzzles, err := c.queries.ListPuzzlesWithReminder(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -101,10 +103,10 @@ func (c *Client) ListWithReminder() ([]schema.ReminderPuzzle, error) {
 // LockByID locks the given record ID and loads the corresponding puzzle under
 // the lock. If no error is returned, the caller is responsible for calling
 // Unlock() on the puzzle.
-func (c *Client) LockByID(id int64) (*schema.Puzzle, error) {
+func (c *Client) LockByID(ctx context.Context, id int64) (*schema.Puzzle, error) {
 	unlock := c.lockPuzzle(id)
 
-	record, err := c.queries.GetPuzzle(context.TODO(), id)
+	record, err := c.queries.GetPuzzle(ctx, id)
 	if err != nil {
 		unlock()
 		return nil, err
@@ -116,9 +118,9 @@ func (c *Client) LockByID(id int64) (*schema.Puzzle, error) {
 // LockByDiscordChannel finds, locks and returns the matching record. If no
 // error is returned, the caller is responsible for calling Unlock() on the
 // puzzle.
-func (c *Client) LockByDiscordChannel(channel string) (*schema.Puzzle, error) {
+func (c *Client) LockByDiscordChannel(ctx context.Context, channel string) (*schema.Puzzle, error) {
 	for i := 0; i < 5; i++ {
-		response, err := c.queries.GetPuzzlesByDiscordChannel(context.TODO(), channel)
+		response, err := c.queries.GetPuzzlesByDiscordChannel(ctx, channel)
 		if err != nil {
 			return nil, err
 		} else if len(response) < 1 {
@@ -129,7 +131,7 @@ func (c *Client) LockByDiscordChannel(channel string) (*schema.Puzzle, error) {
 
 		// Reload object under lock
 		unlock := c.lockPuzzle(response[0].ID)
-		record, err := c.queries.GetPuzzle(context.TODO(), response[0].ID)
+		record, err := c.queries.GetPuzzle(ctx, response[0].ID)
 		if err != nil {
 			unlock()
 			return nil, err

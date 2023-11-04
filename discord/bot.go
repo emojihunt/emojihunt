@@ -1,6 +1,7 @@
 package discord
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"time"
@@ -13,7 +14,7 @@ const DefaultHandlerTimeout = 120 * time.Second
 
 type Bot interface {
 	Register() (ac *discordgo.ApplicationCommand, async bool)
-	Handle(*discordgo.Session, *CommandInput) (string, error)
+	Handle(context.Context, *discordgo.Session, *CommandInput) (string, error)
 }
 
 type CommandInput struct {
@@ -27,7 +28,7 @@ type CommandInput struct {
 type commandHandler struct {
 	ApplicationCommand *discordgo.ApplicationCommand
 	Async              bool
-	Handler            func(*discordgo.Session, *CommandInput) (string, error)
+	Handler            func(context.Context, *discordgo.Session, *CommandInput) (string, error)
 }
 
 func (c *Client) RegisterBots(bots ...Bot) {
@@ -74,6 +75,14 @@ func (c *Client) OptionByName(options []*discordgo.ApplicationCommandInteraction
 }
 
 func (c *Client) commandHandler(s *discordgo.Session, i *discordgo.InteractionCreate) {
+	ctx, cancel := context.WithTimeout(c.main, DefaultHandlerTimeout)
+	defer func() {
+		if err := recover(); err != nil {
+			fmt.Printf("commandHandler: %v", err)
+		}
+		cancel()
+	}()
+
 	if i.Type != discordgo.InteractionApplicationCommand {
 		log.Printf("discord: ignoring interaction of unknown type: %v", i.Type)
 		return
@@ -119,7 +128,7 @@ func (c *Client) commandHandler(s *discordgo.Session, i *discordgo.InteractionCr
 	}
 
 	// Call the handler!
-	reply, err := command.Handler(s, input)
+	reply, err := command.Handler(ctx, s, input)
 	if err != nil {
 		log.Printf("discord: error handling command %q: %s", input.Slug, spew.Sdump(err))
 		reply = fmt.Sprintf("```*** 🚨 BOT ERROR ***\n\n%s\nPlease ping in #%s for help.\n```", spew.Sdump(err), c.TechChannel.Name)

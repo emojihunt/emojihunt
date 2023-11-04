@@ -1,6 +1,7 @@
 package bot
 
 import (
+	"context"
 	"fmt"
 	"time"
 
@@ -35,7 +36,9 @@ func (b *HuntYetBot) Register() (*discordgo.ApplicationCommand, bool) {
 	}, false
 }
 
-func (b *HuntYetBot) Handle(s *discordgo.Session, i *discord.CommandInput) (string, error) {
+func (b *HuntYetBot) Handle(ctx context.Context, s *discordgo.Session,
+	i *discord.CommandInput) (string, error) {
+
 	var now = time.Now()
 	for _, start := range b.hunts {
 		end := start.Add(b.duration)

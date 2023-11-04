@@ -1,7 +1,6 @@
 package syncer
 
 import (
-	"context"
 	"fmt"
 	"log"
 	"strings"
@@ -113,9 +112,6 @@ func (s *Syncer) discordUpdateChannel(puzzle *schema.Puzzle) error {
 	}
 	ch := make(chan error)
 	go func() {
-		_, cancel := context.WithTimeout(s.main, backgroundTaskTimeout)
-		defer cancel()
-
 		ch <- s.discord.SetChannelName(puzzle.DiscordChannel, title)
 	}()
 	select {

@@ -99,9 +99,10 @@ func (b *PuzzleBot) Register() (*discordgo.ApplicationCommand, bool) {
 	}, true
 }
 
-func (b *PuzzleBot) Handle(s *discordgo.Session, i *discord.CommandInput) (string, error) {
+func (b *PuzzleBot) Handle(ctx context.Context, s *discordgo.Session,
+	i *discord.CommandInput) (string, error) {
 
-	puzzle, err := b.db.LockByDiscordChannel(i.IC.ChannelID)
+	puzzle, err := b.db.LockByDiscordChannel(ctx, i.IC.ChannelID)
 	if err != nil {
 		return "", err
 	} else if puzzle == nil {
@@ -136,10 +137,10 @@ func (b *PuzzleBot) Handle(s *discordgo.Session, i *discord.CommandInput) (strin
 				"Was that right?", newStatus.Human(), puzzle.Answer)
 		}
 
-		if puzzle, err = b.db.SetStatusAndAnswer(puzzle, newStatus, newAnswer); err != nil {
+		if puzzle, err = b.db.SetStatusAndAnswer(ctx, puzzle, newStatus, newAnswer); err != nil {
 			return "", err
 		}
-		if puzzle, err = b.syncer.HandleStatusChange(context.TODO(), puzzle, true); err != nil {
+		if puzzle, err = b.syncer.HandleStatusChange(ctx, puzzle, true); err != nil {
 			return "", err
 		}
 	case "solved":
@@ -160,10 +161,10 @@ func (b *PuzzleBot) Handle(s *discordgo.Session, i *discord.CommandInput) (strin
 			newStatus.SolvedNoun(), newAnswer,
 		)
 
-		if puzzle, err = b.db.SetStatusAndAnswer(puzzle, newStatus, newAnswer); err != nil {
+		if puzzle, err = b.db.SetStatusAndAnswer(ctx, puzzle, newStatus, newAnswer); err != nil {
 			return "", err
 		}
-		if puzzle, err = b.syncer.HandleStatusChange(context.TODO(), puzzle, true); err != nil {
+		if puzzle, err = b.syncer.HandleStatusChange(ctx, puzzle, true); err != nil {
 			return "", err
 		}
 	case "description":
@@ -178,7 +179,7 @@ func (b *PuzzleBot) Handle(s *discordgo.Session, i *discord.CommandInput) (strin
 			reply += fmt.Sprintf(" Previous description was: ```\n%s\n```", puzzle.Description)
 		}
 
-		if puzzle, err = b.db.SetDescription(puzzle, newDescription); err != nil {
+		if puzzle, err = b.db.SetDescription(ctx, puzzle, newDescription); err != nil {
 			return "", err
 		}
 		if err = b.syncer.DiscordCreateUpdatePin(puzzle); err != nil {
@@ -196,7 +197,7 @@ func (b *PuzzleBot) Handle(s *discordgo.Session, i *discord.CommandInput) (strin
 			reply += fmt.Sprintf(" Previous location was: ```\n%s\n```", puzzle.Location)
 		}
 
-		if puzzle, err = b.db.SetLocation(puzzle, newLocation); err != nil {
+		if puzzle, err = b.db.SetLocation(ctx, puzzle, newLocation); err != nil {
 			return "", err
 		}
 		if err = b.syncer.DiscordCreateUpdatePin(puzzle); err != nil {
