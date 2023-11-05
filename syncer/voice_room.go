@@ -80,9 +80,11 @@ func (s *Syncer) SyncVoiceRooms(ctx context.Context) error {
 				if event.ChannelID != channelID {
 					// (changing the event's voice channel can't be done in the
 					// same call as starting the event, apparently)
-					event, err = s.discord.UpdateScheduledEvent(event, map[string]interface{}{
-						"channel_id": channelID,
-					})
+					event, err = s.discord.UpdateScheduledEvent(event,
+						&discordgo.GuildScheduledEventParams{
+							ChannelID: channelID,
+						},
+					)
 					if err != nil {
 						return err
 					}
@@ -105,27 +107,31 @@ func (s *Syncer) SyncVoiceRooms(ctx context.Context) error {
 			}
 
 			// Then start the event
-			event, err = s.discord.UpdateScheduledEvent(event, map[string]interface{}{
-				// FYI, we pass these fields again because Discord has (had?) a
-				// bug where events are sometimes created with fields missing.
-				"channel_id":  channelID,
-				"name":        eventTitle,
-				"description": VoiceRoomEventDescription,
+			event, err = s.discord.UpdateScheduledEvent(event,
+				&discordgo.GuildScheduledEventParams{
+					// FYI, we pass these fields again because Discord has (had?) a
+					// bug where events are sometimes created with fields missing.
+					ChannelID:   channelID,
+					Name:        eventTitle,
+					Description: VoiceRoomEventDescription,
 
-				// Start the event!
-				"status": discordgo.GuildScheduledEventStatusActive,
-			})
+					// Start the event!
+					Status: discordgo.GuildScheduledEventStatusActive,
+				},
+			)
 			if err != nil {
 				return err
 			} else if event.Status != discordgo.GuildScheduledEventStatusActive {
-				return xerrors.Errorf("UpdateScheduledEvent failed to start event: %v", event)
+				return xerrors.Errorf("UpdateScheduledEvent failed to start event %q", eventTitle)
 			}
 		} else if eventTitle != event.Name {
 			// Update event name
 			log.Printf("updating scheduled event %s in %s", event.ID, event.ChannelID)
-			_, err = s.discord.UpdateScheduledEvent(event, map[string]interface{}{
-				"name": eventTitle,
-			})
+			_, err = s.discord.UpdateScheduledEvent(event,
+				&discordgo.GuildScheduledEventParams{
+					Name: eventTitle,
+				},
+			)
 			if err != nil {
 				return err
 			}

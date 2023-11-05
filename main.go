@@ -59,10 +59,15 @@ func main() {
 
 	// Initialize Sentry
 	config.Sentry.BeforeSend = func(event *sentry.Event, hint *sentry.EventHint) *sentry.Event {
-		log.Printf("error: %s", hint.OriginalException)
+		if hint.OriginalException != nil {
+			log.Printf("error: %s", hint.OriginalException)
+		} else {
+			log.Printf("error: %s", hint.RecoveredException)
+		}
 		for _, exception := range event.Exception {
-			for _, frame := range exception.Stacktrace.Frames {
-				log.Printf("\t%s:%d", frame.AbsPath, frame.Lineno)
+			frames := exception.Stacktrace.Frames
+			for i := len(frames) - 1; i >= 0; i-- {
+				log.Printf("\t%s:%d", frames[i].AbsPath, frames[i].Lineno)
 			}
 		}
 		return event

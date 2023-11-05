@@ -42,6 +42,7 @@ func (c *Client) HandleApplicationCommand(ctx context.Context,
 	}
 
 	input := &CommandInput{
+		client:  c,
 		IC:      i,
 		User:    i.User,
 		Command: i.ApplicationCommandData().Name,
@@ -94,11 +95,13 @@ func (c *Client) HandleApplicationCommand(ctx context.Context,
 	}
 
 	if command.Async {
-		return input.EditMessage(reply)
+		err := input.EditMessage(reply)
+		return err
 	} else {
-		return c.s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+		err := c.s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 			Type: discordgo.InteractionResponseChannelMessageWithSource,
 			Data: &discordgo.InteractionResponseData{Content: reply},
 		})
+		return err
 	}
 }
