@@ -20,9 +20,11 @@ type VoiceRoomBot struct {
 	syncer  *syncer.Syncer
 }
 
-func NewVoiceRoomBot(main context.Context, db *db.Client, discord *discord.Client, syncer *syncer.Syncer) discord.Bot {
+func NewVoiceRoomBot(main context.Context, db *db.Client, discord *discord.Client,
+	syncer *syncer.Syncer) discord.Bot {
+
 	b := &VoiceRoomBot{main, db, discord, syncer}
-	discord.AddHandler(b.scheduledEventUpdateHandler)
+	discord.RegisterScheduledEventHandler(b.HandleScheduledEvent)
 	return b
 }
 
@@ -103,20 +105,12 @@ func (b *VoiceRoomBot) Handle(ctx context.Context, input *discord.CommandInput) 
 	return reply, nil
 }
 
-func (b *VoiceRoomBot) scheduledEventUpdateHandler(s *discordgo.Session,
-	i *discordgo.GuildScheduledEventUpdate) {
-
-	ctx, cancel := context.WithTimeout(b.main, discord.DefaultHandlerTimeout)
-	defer func() {
-		if err := recover(); err != nil {
-			log.Printf("scheduledEventUpdateHandler: %v", err)
-		}
-		cancel()
-	}()
+func (b *VoiceRoomBot) HandleScheduledEvent(
+	ctx context.Context, i *discordgo.GuildScheduledEventUpdate) error {
 
 	if i.Description != syncer.VoiceRoomEventDescription ||
 		i.Status != discordgo.GuildScheduledEventStatusCompleted {
-		return // ignore event
+		return nil // ignore event
 	}
 
 	// We don't have to worry about double-processing puzzles because, even
@@ -131,9 +125,8 @@ func (b *VoiceRoomBot) scheduledEventUpdateHandler(s *discordgo.Session,
 	b.syncer.VoiceRoomMutex.Lock()
 	puzzles, err := b.db.ListWithVoiceRoom(ctx)
 	b.syncer.VoiceRoomMutex.Unlock()
-
 	if err != nil {
-		panic(err)
+		return err
 	}
 
 	var final error
@@ -142,9 +135,7 @@ func (b *VoiceRoomBot) scheduledEventUpdateHandler(s *discordgo.Session,
 			final = err
 		}
 	}
-	if final != nil {
-		panic(final)
-	}
+	return final
 }
 
 func (b *VoiceRoomBot) clearVoiceRoom(ctx context.Context, info *schema.VoicePuzzle,

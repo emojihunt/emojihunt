@@ -12,24 +12,21 @@ import (
 )
 
 func (p *Poller) RegisterReactionHandler(dis *discord.Client) {
-	var handler discord.ReactionHandler = func(
-		s *discordgo.Session, r *discordgo.MessageReaction, kind string) error {
+	dis.RegisterReactionHandler(
+		func(ctx context.Context, r *discordgo.MessageReaction) error {
+			if p.state.IsKilled() {
+				return nil
+			}
+			roundName := p.isRoundNotification(r.MessageID)
+			if roundName == "" {
+				return nil
+			}
 
-		if p.state.IsKilled() {
-			return nil
-		}
-
-		roundName := p.isRoundNotification(r.MessageID)
-		if roundName == "" {
-			return nil
-		}
-
-		log.Printf("discord: handling reaction %s%s on message %q from user %s",
-			kind, r.Emoji.Name, r.MessageID, r.UserID)
-
-		return p.startOrCancelRoundCreation(roundName, r.MessageID)
-	}
-	dis.AddReactionHandler(&handler)
+			log.Printf("discord: handling reaction %s on message %q from user %s",
+				r.Emoji.Name, r.MessageID, r.UserID)
+			return p.startOrCancelRoundCreation(roundName, r.MessageID)
+		},
+	)
 }
 
 func (p *Poller) isRoundNotification(messageID string) string {

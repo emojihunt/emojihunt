@@ -49,8 +49,7 @@ func (c *Client) CreateScheduledEvent(
 }
 
 func (c *Client) UpdateScheduledEvent(
-	event *discordgo.GuildScheduledEvent,
-	params *discordgo.GuildScheduledEventParams,
+	event *discordgo.GuildScheduledEvent, params *discordgo.GuildScheduledEventParams,
 ) (*discordgo.GuildScheduledEvent, error) {
 	c.mu.Lock()
 	defer c.mu.Unlock()

@@ -105,7 +105,7 @@ func main() {
 	}
 
 	// Set up clients
-	discord, err := discord.NewClient(ctx, config.Discord, state)
+	discord, err := discord.Connect(ctx, config.Discord, state)
 	if err != nil {
 		panic(err)
 	}

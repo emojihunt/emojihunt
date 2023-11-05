@@ -13,6 +13,8 @@ type Bot interface {
 	Handle(context.Context, *CommandInput) (string, error)
 }
 
+const DefaultHandlerTimeout = 120 * time.Second
+
 type CommandInput struct {
 	client *Client
 
@@ -30,9 +32,7 @@ func (i CommandInput) EditMessage(msg string) error {
 	return err
 }
 
-const DefaultHandlerTimeout = 120 * time.Second
-
-type commandHandler struct {
+type botRegistration struct {
 	ApplicationCommand *discordgo.ApplicationCommand
 	Async              bool
 	Handler            func(context.Context, *CommandInput) (string, error)
@@ -50,11 +50,11 @@ func (c *Client) RegisterBots(bots ...Bot) {
 	var appCommands []*discordgo.ApplicationCommand
 	for _, bot := range bots {
 		ac, async := bot.Register()
-		if _, ok := c.appCommandHandlers[ac.Name]; ok {
+		if _, ok := c.commandHandlers[ac.Name]; ok {
 			panic("duplicate app command: " + ac.Name)
 		}
 		appCommands = append(appCommands, ac)
-		c.appCommandHandlers[ac.Name] = &commandHandler{
+		c.commandHandlers[ac.Name] = &botRegistration{
 			Handler:            bot.Handle,
 			ApplicationCommand: ac,
 			Async:              async,
@@ -68,9 +68,9 @@ func (c *Client) RegisterBots(bots ...Bot) {
 	}
 }
 
-func (c *Client) OptionByName(options []*discordgo.ApplicationCommandInteractionDataOption,
-	name string) (*discordgo.ApplicationCommandInteractionDataOption, error) {
-
+func (c *Client) OptionByName(
+	options []*discordgo.ApplicationCommandInteractionDataOption, name string,
+) (*discordgo.ApplicationCommandInteractionDataOption, error) {
 	var result *discordgo.ApplicationCommandInteractionDataOption
 	for _, opt := range options {
 		if opt.Name == name {

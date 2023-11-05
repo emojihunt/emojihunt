@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"strings"
 	"sync"
 	"time"
 
@@ -39,8 +38,9 @@ type Client struct {
 
 	QMRole *discordgo.Role // so QMs show up in the sidebar
 
-	appCommandHandlers map[string]*commandHandler
-	reactionHandlers   []*ReactionHandler
+	commandHandlers  map[string]*botRegistration
+	eventHandlers    []*func(context.Context, *discordgo.GuildScheduledEventUpdate) error
+	reactionHandlers []*func(context.Context, *discordgo.MessageReaction) error
 
 	mu                        sync.Mutex // hold while accessing everything below
 	commandsRegistered        bool
@@ -49,16 +49,15 @@ type Client struct {
 	rateLimits                map[string]*time.Time // url -> retryAfter time
 }
 
-func NewClient(ctx context.Context, config *Config, state *state.State) (*Client, error) {
+func Connect(ctx context.Context, config *Config, state *state.State) (*Client, error) {
 	// Initialize discordgo client
 	s, err := discordgo.New(config.AuthToken)
 	if err != nil {
 		return nil, err
 	}
-	// s.Debug = true // warning: it's *very* verbose
-	s.Identify.Intents = discordgo.IntentsGuildMessages |
-		discordgo.IntentsGuildScheduledEvents |
-		discordgo.IntentsGuildMessageReactions
+	s.Identify.Intents = discordgo.IntentsGuildMessageReactions |
+		discordgo.IntentsGuildScheduledEvents
+
 	state.Lock()
 	s.Identify.Presence.Status = computeBotStatus(state)
 	state.Unlock()
@@ -134,52 +133,32 @@ func NewClient(ctx context.Context, config *Config, state *state.State) (*Client
 		TechChannel:               techChannel,
 		DefaultVoiceChannel:       defaultVoiceChannel,
 		QMRole:                    qmRole,
-		appCommandHandlers:        make(map[string]*commandHandler),
+		commandHandlers:           make(map[string]*botRegistration),
 		scheduledEventsLastUpdate: time.Now().Add(-24 * time.Hour),
 		rateLimits:                make(map[string]*time.Time),
 	}
-	s.AddHandler(WrapHandler(ctx, "bot.unknown", discord.HandleApplicationCommand))
-	s.AddHandler(discord.reactionAddHandler)
-	s.AddHandler(discord.reactionRemoveHandler)
-	s.AddHandler(discord.reactionRemoveAllHandler)
-	s.AddHandler(func(s *discordgo.Session, r *discordgo.RateLimit) {
-		if strings.HasSuffix(r.URL, "/commands") {
-			// If we restart the bot too many times in a row, we'll get
-			// rate-limited on the Register Application Commands endpoint. Just
-			// ignore.
-			log.Printf("rate-limited when re-registering application commands")
-			return
-		}
 
-		expiry := time.Now().Add(r.TooManyRequests.RetryAfter)
-		wait := time.Until(expiry).Round(time.Second)
-		log.Printf("discord: hit rate limit at %q (wait %s): %#v", r.URL, wait, r.TooManyRequests)
+	// Register handlers. Remember to register the necessary intents above!
+	s.AddHandler(WrapHandler(ctx, "bot.unknown", discord.handleCommand))
+	s.AddHandler(WrapHandler(ctx, "event", discord.handleScheduledEvent))
+	s.AddHandler(WrapHandler(ctx, "reaction",
+		func(ctx context.Context, r *discordgo.MessageReactionAdd) error {
+			return discord.handleReaction(ctx, r.MessageReaction)
+		}),
+	)
+	s.AddHandler(WrapHandler(ctx, "reaction",
+		func(ctx context.Context, r *discordgo.MessageReactionRemove) error {
+			return discord.handleReaction(ctx, r.MessageReaction)
+		}),
+	)
+	s.AddHandler(WrapHandler(ctx, "reaction",
+		func(ctx context.Context, r *discordgo.MessageReactionRemoveAll) error {
+			return discord.handleReaction(ctx, r.MessageReaction)
+		}),
+	)
+	s.AddHandler(WrapHandler(ctx, "rate_limit", discord.handleRateLimit))
 
-		msg := fmt.Sprintf("```*** 🦥 DISCORD RATE LIMIT ***\n\n%s\n\nBlocked for %s.\n```", r.URL, wait)
-		if _, err := discord.ChannelSend(discord.TechChannel, msg); err != nil {
-			log.Printf("discord: failed to send rate limit notification: %v", err)
-		}
-
-		discord.mu.Lock()
-		defer discord.mu.Unlock()
-		discord.rateLimits[r.URL] = &expiry
-	})
 	return discord, nil
-}
-
-func (c *Client) CheckRateLimit(url string) *time.Time {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-	limit := c.rateLimits[url]
-	if limit == nil || time.Now().After(*limit) {
-		return nil
-	}
-	return limit
-}
-
-func (c *Client) AddHandler(handler interface{}) {
-	// Remember to add your intent type to the Intents assignment above!
-	c.s.AddHandler(handler)
 }
 
 func (c *Client) Close() error {
