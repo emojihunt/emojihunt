@@ -11,6 +11,7 @@ import (
 type Bot interface {
 	Register() (cmd *discordgo.ApplicationCommand, async bool)
 	Handle(context.Context, *CommandInput) (string, error)
+	HandleScheduledEvent(context.Context, *discordgo.GuildScheduledEventUpdate) error
 }
 
 const DefaultHandlerTimeout = 120 * time.Second
@@ -33,9 +34,11 @@ func (i CommandInput) EditMessage(msg string) error {
 }
 
 type botRegistration struct {
-	ApplicationCommand *discordgo.ApplicationCommand
-	Async              bool
-	Handler            func(context.Context, *CommandInput) (string, error)
+	Name                 string
+	ApplicationCommand   *discordgo.ApplicationCommand
+	Async                bool
+	Handle               func(context.Context, *CommandInput) (string, error)
+	HandleScheduledEvent func(context.Context, *discordgo.GuildScheduledEventUpdate) error
 }
 
 func (c *Client) RegisterBots(bots ...Bot) {
@@ -50,14 +53,16 @@ func (c *Client) RegisterBots(bots ...Bot) {
 	var appCommands []*discordgo.ApplicationCommand
 	for _, bot := range bots {
 		ac, async := bot.Register()
-		if _, ok := c.commandHandlers[ac.Name]; ok {
+		if _, ok := c.botsByCommand[ac.Name]; ok {
 			panic("duplicate app command: " + ac.Name)
 		}
 		appCommands = append(appCommands, ac)
-		c.commandHandlers[ac.Name] = &botRegistration{
-			Handler:            bot.Handle,
-			ApplicationCommand: ac,
-			Async:              async,
+		c.botsByCommand[ac.Name] = &botRegistration{
+			Name:                 ac.Name,
+			ApplicationCommand:   ac,
+			Async:                async,
+			Handle:               bot.Handle,
+			HandleScheduledEvent: bot.HandleScheduledEvent,
 		}
 	}
 

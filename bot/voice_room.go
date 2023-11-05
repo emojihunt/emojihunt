@@ -24,7 +24,6 @@ func NewVoiceRoomBot(main context.Context, db *db.Client, discord *discord.Clien
 	syncer *syncer.Syncer) discord.Bot {
 
 	b := &VoiceRoomBot{main, db, discord, syncer}
-	discord.RegisterScheduledEventHandler(b.HandleScheduledEvent)
 	return b
 }
 

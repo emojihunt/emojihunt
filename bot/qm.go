@@ -57,3 +57,8 @@ func (b *QMBot) Handle(ctx context.Context, input *discord.CommandInput) (string
 		return "", xerrors.Errorf("unexpected /qm subcommand: %q", input.Subcommand.Name)
 	}
 }
+
+func (b *QMBot) HandleScheduledEvent(context.Context,
+	*discordgo.GuildScheduledEventUpdate) error {
+	return nil
+}

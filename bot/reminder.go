@@ -152,3 +152,8 @@ func (b *ReminderBot) processNotifications(ctx context.Context, since time.Time)
 
 	return &now, nil
 }
+
+func (b *ReminderBot) HandleScheduledEvent(context.Context,
+	*discordgo.GuildScheduledEventUpdate) error {
+	return nil
+}

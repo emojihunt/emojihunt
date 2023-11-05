@@ -48,3 +48,8 @@ func (b *EmojiNameBot) Handle(ctx context.Context, input *discord.CommandInput) 
 		strings.Join(names, " — "),
 	), nil
 }
+
+func (b *EmojiNameBot) HandleScheduledEvent(context.Context,
+	*discordgo.GuildScheduledEventUpdate) error {
+	return nil
+}

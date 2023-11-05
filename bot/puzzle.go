@@ -208,3 +208,8 @@ func (b *PuzzleBot) Handle(ctx context.Context, input *discord.CommandInput) (st
 
 	return reply, nil
 }
+
+func (b *PuzzleBot) HandleScheduledEvent(context.Context,
+	*discordgo.GuildScheduledEventUpdate) error {
+	return nil
+}

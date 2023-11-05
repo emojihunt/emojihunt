@@ -60,7 +60,7 @@ func (c *Client) handleCommand(
 			input.Subcommand = opt
 		}
 	}
-	command, ok := c.commandHandlers[input.Command]
+	command, ok := c.botsByCommand[input.Command]
 	if !ok {
 		return fmt.Errorf("unknown command %q", input.Command)
 	}
@@ -87,7 +87,7 @@ func (c *Client) handleCommand(
 	}
 
 	// Call the handler!
-	reply, err := command.Handler(ctx, input)
+	reply, err := command.Handle(ctx, input)
 	if err != nil {
 		var url string
 		event := sentry.GetHubFromContext(ctx).CaptureException(err)
@@ -112,20 +112,15 @@ func (c *Client) handleCommand(
 
 // Scheduled Event Handling
 
-func (c *Client) RegisterScheduledEventHandler(
-	handler func(context.Context, *discordgo.GuildScheduledEventUpdate) error,
-) {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-
-	c.eventHandlers = append(c.eventHandlers, &handler)
-}
-
 func (c *Client) handleScheduledEvent(
 	ctx context.Context, e *discordgo.GuildScheduledEventUpdate,
 ) error {
-	for _, handler := range c.eventHandlers {
-		err := (*handler)(ctx, e)
+	hub := sentry.GetHubFromContext(ctx)
+	for _, bot := range c.botsByCommand {
+		hub.ConfigureScope(func(scope *sentry.Scope) {
+			scope.SetTag("task", fmt.Sprintf("bot.%s.event", bot.Name))
+		})
+		err := bot.HandleScheduledEvent(ctx, e)
 		if err != nil {
 			return err
 		}

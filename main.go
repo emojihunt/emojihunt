@@ -82,6 +82,7 @@ func main() {
 			panic(err)
 		}
 	}()
+	// TODO: set up context, error handling in all goroutines
 
 	// Set up the main context, which is cancelled on Ctrl-C
 	ctx, cancel := context.WithCancel(context.Background())

@@ -38,8 +38,8 @@ type Client struct {
 
 	QMRole *discordgo.Role // so QMs show up in the sidebar
 
-	commandHandlers  map[string]*botRegistration
-	eventHandlers    []*func(context.Context, *discordgo.GuildScheduledEventUpdate) error
+	// TODO: merge reactions into the Bot interface
+	botsByCommand    map[string]*botRegistration
 	reactionHandlers []*func(context.Context, *discordgo.MessageReaction) error
 
 	mu                        sync.Mutex // hold while accessing everything below
@@ -133,14 +133,14 @@ func Connect(ctx context.Context, config *Config, state *state.State) (*Client, 
 		TechChannel:               techChannel,
 		DefaultVoiceChannel:       defaultVoiceChannel,
 		QMRole:                    qmRole,
-		commandHandlers:           make(map[string]*botRegistration),
+		botsByCommand:             make(map[string]*botRegistration),
 		scheduledEventsLastUpdate: time.Now().Add(-24 * time.Hour),
 		rateLimits:                make(map[string]*time.Time),
 	}
 
 	// Register handlers. Remember to register the necessary intents above!
 	s.AddHandler(WrapHandler(ctx, "bot.unknown", discord.handleCommand))
-	s.AddHandler(WrapHandler(ctx, "event", discord.handleScheduledEvent))
+	s.AddHandler(WrapHandler(ctx, "bot.unknown", discord.handleScheduledEvent))
 	s.AddHandler(WrapHandler(ctx, "reaction",
 		func(ctx context.Context, r *discordgo.MessageReactionAdd) error {
 			return discord.handleReaction(ctx, r.MessageReaction)

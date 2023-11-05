@@ -187,3 +187,8 @@ func (b *HuntBot) fullResync(input *discord.CommandInput) {
 		log.Printf("huntbot yikes: failed to update with status %q: %v", msg, err)
 	}
 }
+
+func (b *HuntBot) HandleScheduledEvent(context.Context,
+	*discordgo.GuildScheduledEventUpdate) error {
+	return nil
+}

@@ -60,3 +60,8 @@ func (b *HuntYetBot) formatDuration(d time.Duration) string {
 		int(d.Milliseconds())%1000,
 	)
 }
+
+func (b *HuntYetBot) HandleScheduledEvent(context.Context,
+	*discordgo.GuildScheduledEventUpdate) error {
+	return nil
+}
