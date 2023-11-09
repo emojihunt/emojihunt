@@ -10,8 +10,8 @@ import (
 	"github.com/davecgh/go-spew/spew"
 	"github.com/emojihunt/emojihunt/db"
 	"github.com/emojihunt/emojihunt/discord"
-	"github.com/emojihunt/emojihunt/schema"
 	"github.com/emojihunt/emojihunt/state"
+	"github.com/emojihunt/emojihunt/util"
 )
 
 type ReminderBot struct {
@@ -66,7 +66,7 @@ func (b *ReminderBot) Handle(ctx context.Context, input *discord.CommandInput) (
 		msg += fmt.Sprintf(
 			" • %s @ %s ET%s\n",
 			puzzle.Name,
-			puzzle.Reminder.In(schema.BostonTime).Format("Mon 3:04 PM"),
+			puzzle.Reminder.In(util.BostonTime).Format("Mon 3:04 PM"),
 			suffix,
 		)
 	}
@@ -133,7 +133,7 @@ func (b *ReminderBot) processNotifications(ctx context.Context, since time.Time)
 		if puzzle.Reminder.Before(now) && puzzle.Reminder.After(since) {
 			msg = fmt.Sprintf(":alarm_clock: It's time! Puzzle %q has a reminder set for "+
 				"now (%s ET)",
-				puzzle.Name, puzzle.Reminder.In(schema.BostonTime).Format("Mon 3:04 PM"))
+				puzzle.Name, puzzle.Reminder.In(util.BostonTime).Format("Mon 3:04 PM"))
 		}
 
 		if msg != "" {

@@ -7,7 +7,7 @@ import (
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/emojihunt/emojihunt/discord"
-	"github.com/emojihunt/emojihunt/schema"
+	"github.com/emojihunt/emojihunt/util"
 )
 
 type HuntYetBot struct {
@@ -20,11 +20,11 @@ func NewHuntYetBot() discord.Bot {
 		duration: 72 * time.Hour,
 		hunts: []time.Time{
 			// must be ordered oldest to newest!
-			time.Date(2021, 1, 15, 12, 0, 0, 0, schema.BostonTime),
-			time.Date(2022, 1, 14, 12, 0, 0, 0, schema.BostonTime),
-			time.Date(2023, 1, 13, 12, 0, 0, 0, schema.BostonTime),
-			time.Date(2023, 1, 13, 12, 0, 0, 0, schema.BostonTime),
-			time.Date(2024, 1, 12, 12, 0, 0, 0, schema.BostonTime),
+			time.Date(2021, 1, 15, 12, 0, 0, 0, util.BostonTime),
+			time.Date(2022, 1, 14, 12, 0, 0, 0, util.BostonTime),
+			time.Date(2023, 1, 13, 12, 0, 0, 0, util.BostonTime),
+			time.Date(2023, 1, 13, 12, 0, 0, 0, util.BostonTime),
+			time.Date(2024, 1, 12, 12, 0, 0, 0, util.BostonTime),
 		},
 	}
 }

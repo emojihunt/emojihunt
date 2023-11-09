@@ -3,13 +3,11 @@ package syncer
 import (
 	"context"
 	"log"
-	"strings"
 	"sync"
 
 	"github.com/emojihunt/emojihunt/db"
 	"github.com/emojihunt/emojihunt/discord"
 	"github.com/emojihunt/emojihunt/drive"
-	"github.com/emojihunt/emojihunt/schema"
 	"golang.org/x/xerrors"
 )
 
@@ -34,10 +32,10 @@ func New(db *db.Client, discord *discord.Client, drive *drive.Client) *Syncer {
 // information in the database. When a puzzle is newly added, it creates the
 // spreadsheet and Discord channel and stores their IDs in the database. When a
 // puzzle's status is updated, it handles that also.
-func (s *Syncer) IdempotentCreateUpdate(ctx context.Context, puzzle *schema.Puzzle) (*schema.Puzzle, error) {
+func (s *Syncer) IdempotentCreateUpdate(ctx context.Context, puzzle *db.Puzzle) (*db.Puzzle, error) {
 	// 1. Create the spreadsheet, if required
 	if puzzle.SpreadsheetID == "" {
-		spreadsheet, err := s.drive.CreateSheet(ctx, puzzle.Name, puzzle.Round.Name)
+		spreadsheet, err := s.drive.CreateSheet(ctx, puzzle.Name, puzzle.RoundName())
 		if err != nil {
 			return nil, err
 		}
@@ -104,12 +102,11 @@ func (s *Syncer) IdempotentCreateUpdate(ctx context.Context, puzzle *schema.Puzz
 // calling this from a slash command handler, and the is going to acknowledge
 // the user in the puzzle channel, you can set `botRequest=true` to suppress
 // notifications to the puzzle channel.
-func (s *Syncer) HandleStatusChange(ctx context.Context, puzzle *schema.Puzzle, botRequest bool) (*schema.Puzzle, error) {
+func (s *Syncer) HandleStatusChange(
+	ctx context.Context, puzzle *db.Puzzle, botRequest bool,
+) (*db.Puzzle, error) {
 	log.Printf("syncer: handling status change for %q", puzzle.Name)
-
-	if problems := puzzle.Problems(); len(problems) > 0 {
-		return nil, xerrors.Errorf("puzzle has problems, skipping: %s", strings.Join(problems, " and "))
-	} else if puzzle.SpreadsheetID == "-" || puzzle.DiscordChannel == "-" {
+	if puzzle.SpreadsheetID == "-" || puzzle.DiscordChannel == "-" {
 		return nil, xerrors.Errorf("puzzle is a placeholder puzzle, skipping")
 	}
 
@@ -129,7 +126,7 @@ func (s *Syncer) HandleStatusChange(ctx context.Context, puzzle *schema.Puzzle, 
 	}
 
 	// Send notifications
-	if puzzle.Status.IsSolved() {
+	if puzzle.IsSolved() {
 		if puzzle.Answer != "" {
 			// Puzzle solved and answer entered! (Suppress puzzle channel
 			// notification if this is a bot request, since the bot will also
@@ -159,7 +156,7 @@ func (s *Syncer) HandleStatusChange(ctx context.Context, puzzle *schema.Puzzle, 
 				return nil, err
 			}
 		}
-	} else if puzzle.Status == schema.Working {
+	} else if puzzle.Status == "Working" { // TODO
 		if err = s.notifyPuzzleWorking(puzzle); err != nil {
 			return nil, err
 		}
@@ -170,10 +167,8 @@ func (s *Syncer) HandleStatusChange(ctx context.Context, puzzle *schema.Puzzle, 
 // ForceUpdate is a big hammer that will update Discord and Google Drive,
 // including overwriting the channel name, spreadsheet name, etc. It also
 // re-sends any status change notifications.
-func (s *Syncer) ForceUpdate(ctx context.Context, puzzle *schema.Puzzle) (*schema.Puzzle, error) {
-	if problems := puzzle.Problems(); len(problems) > 0 {
-		return nil, xerrors.Errorf("puzzle has problems, skipping: %s", strings.Join(problems, " and "))
-	} else if puzzle.SpreadsheetID == "-" || puzzle.DiscordChannel == "-" {
+func (s *Syncer) ForceUpdate(ctx context.Context, puzzle *db.Puzzle) (*db.Puzzle, error) {
+	if puzzle.SpreadsheetID == "-" || puzzle.DiscordChannel == "-" {
 		return nil, xerrors.Errorf("puzzle is a placeholder puzzle, skipping")
 	}
 
@@ -199,7 +194,7 @@ func (s *Syncer) ForceUpdate(ctx context.Context, puzzle *schema.Puzzle) (*schem
 // parallelHardUpdate updates the Discord pinned message, the Discord channel
 // name/category, and the Google spreadsheet name. It's called when the puzzle
 // status changes, and as part of ForceUpdate().
-func (s *Syncer) parallelHardUpdate(ctx context.Context, puzzle *schema.Puzzle) error {
+func (s *Syncer) parallelHardUpdate(ctx context.Context, puzzle *db.Puzzle) error {
 	var wg sync.WaitGroup
 	var ch = make(chan error, 3)
 	wg.Add(3)

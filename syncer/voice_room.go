@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/bwmarrin/discordgo"
-	"github.com/emojihunt/emojihunt/schema"
+	"github.com/emojihunt/emojihunt/db"
 	"golang.org/x/xerrors"
 )
 
@@ -35,7 +35,7 @@ func (s *Syncer) SyncVoiceRooms(ctx context.Context) error {
 	}
 
 	var placeholderEvents []*discordgo.GuildScheduledEvent
-	var puzzlesByChannel = make(map[string][]schema.VoicePuzzle)
+	var puzzlesByChannel = make(map[string][]db.VoicePuzzle)
 	var eventsByChannel = make(map[string]*discordgo.GuildScheduledEvent)
 	for _, puzzle := range puzzles {
 		if puzzle.VoiceRoom == "" {

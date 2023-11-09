@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/bwmarrin/discordgo"
-	"github.com/emojihunt/emojihunt/schema"
+	"github.com/emojihunt/emojihunt/db"
 )
 
 const (
@@ -23,7 +23,7 @@ const (
 //
 // This function is called by BasicUpdate. Other packages need to call it when
 // updating non-status fields, such as the voice room.
-func (s *Syncer) DiscordCreateUpdatePin(puzzle *schema.Puzzle) error {
+func (s *Syncer) DiscordCreateUpdatePin(puzzle *db.Puzzle) error {
 	log.Printf("syncer: updating pin for %q", puzzle.Name)
 
 	embed := &discordgo.MessageEmbed{
@@ -34,12 +34,12 @@ func (s *Syncer) DiscordCreateUpdatePin(puzzle *schema.Puzzle) error {
 		Fields: []*discordgo.MessageEmbedField{
 			{
 				Name:   "Round",
-				Value:  fmt.Sprintf("%s %s", puzzle.Round.Emoji, puzzle.Round.Name),
+				Value:  fmt.Sprintf("%s %s", puzzle.RoundEmoji(), puzzle.RoundName()),
 				Inline: false,
 			},
 			{
 				Name:   "Status",
-				Value:  puzzle.Status.Human(),
+				Value:  puzzle.HumanStatus(),
 				Inline: true,
 			},
 			{
@@ -63,7 +63,7 @@ func (s *Syncer) DiscordCreateUpdatePin(puzzle *schema.Puzzle) error {
 		})
 	}
 
-	if !puzzle.Status.IsSolved() {
+	if !puzzle.IsSolved() {
 		locationMsg := locationDefaultMsg
 		if puzzle.VoiceRoom != "" {
 			locationMsg = fmt.Sprintf("Join us in <#%s>!", puzzle.VoiceRoom)
@@ -84,7 +84,7 @@ func (s *Syncer) DiscordCreateUpdatePin(puzzle *schema.Puzzle) error {
 // channel. Categories are either "Puzzles" (for open puzzles) or "Solved" (for
 // solved puzzles), and the puzzle name includes a check mark when the puzzle is
 // solved. It needs to be called when the puzzle status changes.
-func (s *Syncer) discordUpdateChannel(puzzle *schema.Puzzle) error {
+func (s *Syncer) discordUpdateChannel(puzzle *db.Puzzle) error {
 	log.Printf("syncer: updating discord channel for %q", puzzle.Name)
 
 	// Move puzzle channel to the correct category
@@ -101,7 +101,7 @@ func (s *Syncer) discordUpdateChannel(puzzle *schema.Puzzle) error {
 	// minutes per channel), so finish renaming the channel asynchronously if we
 	// get rate-limited.
 	var title = puzzle.Title()
-	if puzzle.Status.IsSolved() {
+	if puzzle.IsSolved() {
 		title = "✅ " + title
 	}
 	ch := make(chan error)
@@ -125,7 +125,7 @@ func (s *Syncer) discordUpdateChannel(puzzle *schema.Puzzle) error {
 	}
 }
 
-func (s *Syncer) discordGetOrCreateCategory(puzzle *schema.Puzzle) (*discordgo.Channel, error) {
+func (s *Syncer) discordGetOrCreateCategory(puzzle *db.Puzzle) (*discordgo.Channel, error) {
 	s.DiscordCategoryMutex.Lock()
 	defer s.DiscordCategoryMutex.Unlock()
 
@@ -138,7 +138,7 @@ func (s *Syncer) discordGetOrCreateCategory(puzzle *schema.Puzzle) (*discordgo.C
 	if puzzle.ShouldArchive() {
 		targetName = solvedCategoryPrefix + puzzle.ArchiveCategory()
 	} else {
-		targetName = roundCategoryPrefix + puzzle.Round.Name
+		targetName = roundCategoryPrefix + puzzle.RoundName()
 	}
 
 	if item, ok := categories[targetName]; !ok {

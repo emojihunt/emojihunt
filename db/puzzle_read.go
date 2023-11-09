@@ -3,8 +3,8 @@ package db
 import (
 	"context"
 	"strings"
+	"time"
 
-	"github.com/emojihunt/emojihunt/schema"
 	"golang.org/x/xerrors"
 )
 
@@ -14,17 +14,12 @@ func (c *Client) ListPuzzles(ctx context.Context) ([]int64, error) {
 }
 
 // ListPuzzlesFull returns a list of all puzzles, including their contents.
-func (c *Client) ListPuzzlesFull(ctx context.Context) ([]*schema.Puzzle, error) {
-	records, err := c.queries.ListPuzzlesFull(ctx)
+func (c *Client) ListPuzzlesFull(ctx context.Context) ([]Puzzle, error) {
+	results, err := c.queries.ListPuzzlesFull(ctx)
 	if err != nil {
 		return nil, xerrors.Errorf("ListPuzzlesFull: %w", err)
 	}
-
-	var puzzles []*schema.Puzzle
-	for _, record := range records {
-		puzzles = append(puzzles, c.parseDatabaseResult(&record))
-	}
-	return puzzles, nil
+	return results, nil
 }
 
 // ListPuzzleFragmentsAndRounds returns a collection of all puzzle names and
@@ -33,7 +28,7 @@ func (c *Client) ListPuzzlesFull(ctx context.Context) ([]*schema.Puzzle, error) 
 //
 // Note that puzzle names and URLs are *uppercased* in the result map.
 func (c *Client) ListPuzzleFragmentsAndRounds(ctx context.Context) (
-	map[string]bool, map[string]schema.Round, error) {
+	map[string]bool, map[string]bool, error) {
 
 	var fragments = make(map[string]bool)
 	puzzles, err := c.queries.ListPuzzleDiscoveryFragments(ctx)
@@ -46,56 +41,68 @@ func (c *Client) ListPuzzleFragmentsAndRounds(ctx context.Context) (
 		fragments[strings.ToUpper(puzzle.OriginalURL)] = true
 	}
 
-	var rounds = make(map[string]schema.Round)
+	var rounds = make(map[string]bool)
 	result, err := c.queries.ListRounds(ctx)
 	if err != nil {
 		return nil, nil, xerrors.Errorf("ListRounds: %w", err)
 	}
 	for _, round := range result {
-		rounds[round.Name] = schema.Round{
-			Name:  round.Name,
-			Emoji: round.Emoji,
-		}
+		rounds[round.Name] = true
 	}
 
 	return fragments, rounds, nil
+}
+
+type VoicePuzzle struct {
+	ID        int64
+	Name      string
+	VoiceRoom string
 }
 
 // ListWithVoiceRoom returns all records with a voice room set. It returns a
 // miniature struct containing just the puzzle name and voice room ID.
 //
 // The caller *must* acquire VoiceRoomMutex before calling this function.
-func (c *Client) ListWithVoiceRoom(ctx context.Context) ([]schema.VoicePuzzle, error) {
+func (c *Client) ListWithVoiceRoom(ctx context.Context) ([]VoicePuzzle, error) {
 	puzzles, err := c.queries.ListPuzzlesWithVoiceRoom(ctx)
 	if err != nil {
 		return nil, xerrors.Errorf("ListPuzzlesWithVoiceRoom: %w", err)
 	}
 
-	var voicePuzzles []schema.VoicePuzzle
+	var voicePuzzles []VoicePuzzle
 	for _, puzzle := range puzzles {
-		voicePuzzles = append(voicePuzzles, schema.VoicePuzzle{
-			ID:        puzzle.ID,
-			Name:      puzzle.Name,
-			VoiceRoom: puzzle.VoiceRoom,
-		})
+		voicePuzzles = append(voicePuzzles, VoicePuzzle(puzzle))
 	}
 	return voicePuzzles, nil
 }
+
+type ReminderPuzzle struct {
+	ID             int64
+	Name           string
+	DiscordChannel string
+	Reminder       time.Time
+}
+
+type ReminderPuzzles []ReminderPuzzle
+
+func (rps ReminderPuzzles) Len() int           { return len(rps) }
+func (rps ReminderPuzzles) Less(i, j int) bool { return rps[i].Reminder.Before(rps[j].Reminder) }
+func (rps ReminderPuzzles) Swap(i, j int)      { rps[i], rps[j] = rps[j], rps[i] }
 
 // ListWithReminder returns all records with a reminder set. It returns a
 // miniature struct containing just the puzzle name, channel ID, and reminder
 // time.
 //
 // Results are returned in sorted order.
-func (c *Client) ListWithReminder(ctx context.Context) ([]schema.ReminderPuzzle, error) {
+func (c *Client) ListWithReminder(ctx context.Context) ([]ReminderPuzzle, error) {
 	puzzles, err := c.queries.ListPuzzlesWithReminder(ctx)
 	if err != nil {
 		return nil, xerrors.Errorf("ListPuzzlesWithReminder: %w", err)
 	}
 
-	var reminderPuzzles schema.ReminderPuzzles
+	var reminderPuzzles ReminderPuzzles
 	for _, puzzle := range puzzles {
-		reminderPuzzles = append(reminderPuzzles, schema.ReminderPuzzle{
+		reminderPuzzles = append(reminderPuzzles, ReminderPuzzle{
 			ID:             puzzle.ID,
 			Name:           puzzle.Name,
 			DiscordChannel: puzzle.DiscordChannel,
@@ -106,47 +113,24 @@ func (c *Client) ListWithReminder(ctx context.Context) ([]schema.ReminderPuzzle,
 }
 
 // LoadByID returns the given puzzle.
-func (c *Client) LoadByID(ctx context.Context, id int64) (*schema.Puzzle, error) {
-	record, err := c.queries.GetPuzzle(ctx, id)
+func (c *Client) LoadByID(ctx context.Context, id int64) (*Puzzle, error) {
+	result, err := c.queries.GetPuzzle(ctx, id)
 	if err != nil {
 		return nil, xerrors.Errorf("GetPuzzle: %w", err)
 	}
-	puzzle := c.parseDatabaseResult(&record)
-	return puzzle, nil
+	return &result, nil
 }
 
 // LoadByDiscordChannel finds, locks and returns the matching record.
-func (c *Client) LoadByDiscordChannel(ctx context.Context, channel string) (*schema.Puzzle, error) {
-	response, err := c.queries.GetPuzzlesByDiscordChannel(ctx, channel)
+func (c *Client) LoadByDiscordChannel(ctx context.Context, channel string) (*Puzzle, error) {
+	results, err := c.queries.GetPuzzlesByDiscordChannel(ctx, channel)
 	if err != nil {
 		return nil, err
-	} else if len(response) < 1 {
+	} else if len(results) < 1 {
 		return nil, nil
-	} else if len(response) > 1 {
+	} else if len(results) > 1 {
 		return nil, xerrors.Errorf("GetPuzzlesByDiscordChannel (%s)"+
-			": expected 0 or 1 record, got %d", channel, len(response))
+			": expected 0 or 1 record, got %d", channel, len(results))
 	}
-	puzzle := c.parseDatabaseResult(&response[0])
-	return puzzle, nil
-}
-
-func (c *Client) parseDatabaseResult(record *Puzzle) *schema.Puzzle {
-	return &schema.Puzzle{
-		ID:           record.ID,
-		Name:         record.Name,
-		Answer:       record.Answer,
-		Round:        schema.Round{},    // TODO
-		Status:       schema.NotStarted, // TODO
-		Description:  record.Description,
-		Location:     record.Location,
-		NameOverride: record.NameOverride,
-
-		PuzzleURL:      record.PuzzleURL,
-		SpreadsheetID:  record.SpreadsheetID,
-		DiscordChannel: record.DiscordChannel,
-
-		Archived:    record.Archived,
-		OriginalURL: record.OriginalURL,
-		VoiceRoom:   record.VoiceRoom,
-	}
+	return &results[0], nil
 }

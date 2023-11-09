@@ -8,7 +8,6 @@ import (
 	"github.com/bwmarrin/discordgo"
 	"github.com/emojihunt/emojihunt/db"
 	"github.com/emojihunt/emojihunt/discord"
-	"github.com/emojihunt/emojihunt/schema"
 	"github.com/emojihunt/emojihunt/syncer"
 	"golang.org/x/xerrors"
 )
@@ -63,11 +62,6 @@ func (b *VoiceRoomBot) Handle(ctx context.Context, input *discord.CommandInput) 
 		return "", err
 	} else if puzzle == nil {
 		return ":butterfly: I can't find a puzzle associated with this channel. Is this a puzzle channel?", nil
-	}
-
-	if problems := puzzle.Problems(); len(problems) > 0 {
-		return fmt.Sprintf(":cold_sweat: I can't update this puzzle because it has errors in "+
-			"Airtable. Please check %s for more information...", b.discord.QMChannel.Mention()), nil
 	}
 
 	b.syncer.VoiceRoomMutex.Lock()
@@ -136,7 +130,7 @@ func (b *VoiceRoomBot) HandleScheduledEvent(
 	return final
 }
 
-func (b *VoiceRoomBot) clearVoiceRoom(ctx context.Context, info *schema.VoicePuzzle,
+func (b *VoiceRoomBot) clearVoiceRoom(ctx context.Context, info *db.VoicePuzzle,
 	expectedVoiceRoom string) error {
 
 	puzzle, err := b.db.LoadByID(ctx, info.ID)

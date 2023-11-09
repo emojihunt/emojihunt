@@ -8,7 +8,6 @@ import (
 	"github.com/bwmarrin/discordgo"
 	"github.com/emojihunt/emojihunt/db"
 	"github.com/emojihunt/emojihunt/discord"
-	"github.com/emojihunt/emojihunt/schema"
 	"github.com/emojihunt/emojihunt/syncer"
 	"golang.org/x/xerrors"
 )
@@ -40,9 +39,9 @@ func (b *PuzzleBot) Register() (*discordgo.ApplicationCommand, bool) {
 						Type:        discordgo.ApplicationCommandOptionString,
 						Choices: []*discordgo.ApplicationCommandOptionChoice{
 							// Values are displayed in the mouseover UI, so don't use "" for NotStarted
-							{Name: "Not Started", Value: "Not Started"},
-							{Name: "✍️ Working", Value: schema.Working},
-							{Name: "🗑️ Abandoned", Value: schema.Abandoned},
+							{Name: "Not Started", Value: "Not Started"}, // TODO
+							{Name: "✍️ Working", Value: "Working"},
+							{Name: "🗑️ Abandoned", Value: "Abandoned"},
 						},
 					},
 				},
@@ -58,8 +57,8 @@ func (b *PuzzleBot) Register() (*discordgo.ApplicationCommand, bool) {
 						Required:    true,
 						Type:        discordgo.ApplicationCommandOptionString,
 						Choices: []*discordgo.ApplicationCommandOptionChoice{
-							{Name: "🏅 Solved", Value: schema.Solved},
-							{Name: "🤦 Backsolved", Value: schema.Backsolved},
+							{Name: "🏅 Solved", Value: "Solved"},
+							{Name: "🤦 Backsolved", Value: "Backsolved"},
 						},
 					},
 					{
@@ -108,31 +107,26 @@ func (b *PuzzleBot) Handle(ctx context.Context, input *discord.CommandInput) (st
 		return ":butterfly: I can't find a puzzle associated with this channel. Is this a puzzle channel?", nil
 	}
 
-	if problems := puzzle.Problems(); len(problems) > 0 {
-		return fmt.Sprintf(":cold_sweat: I can't update this puzzle because it has errors in "+
-			"Airtable. Please check %s for more information...", b.discord.QMChannel.Mention()), nil
-	}
-
 	var reply string
-	var newStatus schema.Status
+	var newStatus string // TODO
 	var newAnswer string
 	switch input.Subcommand.Name {
 	case "status":
 		if statusOpt, ok := b.discord.OptionByName(input.Subcommand.Options, "to"); !ok {
 			return "", xerrors.Errorf("missing option: to")
-		} else if newStatus, err = schema.ParseTextStatus(statusOpt.StringValue()); err != nil {
-			return "", err
+		} else {
+			newStatus = statusOpt.StringValue()
 		}
 
-		if puzzle.Status == newStatus {
-			return fmt.Sprintf(":elephant: This puzzle already has status %s", newStatus.Human()), nil
+		if puzzle.Status == string(newStatus) { // TODO
+			return fmt.Sprintf(":elephant: This puzzle already has status %s", newStatus), nil // TODO: human
 		}
 
 		if puzzle.Answer == "" {
-			reply = fmt.Sprintf(":face_with_monocle: Updated puzzle status to %s!", newStatus.Human())
+			reply = fmt.Sprintf(":face_with_monocle: Updated puzzle status to %s!", newStatus) // TODO: human
 		} else {
 			reply = fmt.Sprintf(":woozy_face: Updated puzzle status to %s and cleared answer `%s`. "+
-				"Was that right?", newStatus.Human(), puzzle.Answer)
+				"Was that right?", newStatus, puzzle.Answer) // TODO: human
 		}
 
 		if puzzle, err = b.db.SetStatusAndAnswer(ctx, puzzle, newStatus, newAnswer); err != nil {
@@ -144,8 +138,8 @@ func (b *PuzzleBot) Handle(ctx context.Context, input *discord.CommandInput) (st
 	case "solved":
 		if statusOpt, ok := b.discord.OptionByName(input.Subcommand.Options, "as"); !ok {
 			return "", xerrors.Errorf("missing option: as")
-		} else if newStatus, err = schema.ParseTextStatus(statusOpt.StringValue()); err != nil {
-			return "", err
+		} else {
+			newStatus = statusOpt.StringValue()
 		}
 
 		if answerOpt, ok := b.discord.OptionByName(input.Subcommand.Options, "answer"); !ok {
@@ -156,7 +150,7 @@ func (b *PuzzleBot) Handle(ctx context.Context, input *discord.CommandInput) (st
 
 		reply = fmt.Sprintf(
 			"🎉 Congratulations on the %s! I'll record the answer `%s` and archive this channel.",
-			newStatus.SolvedNoun(), newAnswer,
+			newStatus, newAnswer, // TODO: statusNoun
 		)
 
 		if puzzle, err = b.db.SetStatusAndAnswer(ctx, puzzle, newStatus, newAnswer); err != nil {

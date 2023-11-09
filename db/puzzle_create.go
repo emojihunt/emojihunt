@@ -3,18 +3,24 @@ package db
 import (
 	"context"
 
-	"github.com/emojihunt/emojihunt/schema"
 	"golang.org/x/xerrors"
 )
 
+type NewPuzzle struct {
+	Name        string
+	Round       string
+	PuzzleURL   string
+	OriginalURL string
+}
+
 // AddPuzzles creates the given puzzles and returns the created records as a
-// list of schema.Puzzle objects.
-func (c *Client) AddPuzzles(ctx context.Context, puzzles []schema.NewPuzzle, newRound bool) ([]schema.Puzzle, error) {
+// list of Puzzle objects.
+func (c *Client) AddPuzzles(ctx context.Context, puzzles []NewPuzzle, newRound bool) ([]Puzzle, error) {
 	if newRound {
 		return nil, xerrors.Errorf("TODO: insert-round logic")
 	}
 
-	var created []schema.Puzzle
+	var created []Puzzle
 	for _, puzzle := range puzzles {
 		record, err := c.queries.CreatePuzzle(ctx, CreatePuzzleParams{
 			Name:        puzzle.Name,
@@ -25,8 +31,7 @@ func (c *Client) AddPuzzles(ctx context.Context, puzzles []schema.NewPuzzle, new
 		if err != nil {
 			return created, err
 		}
-		parsed := c.parseDatabaseResult(&record)
-		created = append(created, *parsed)
+		created = append(created, record)
 	}
 	return created, nil
 }

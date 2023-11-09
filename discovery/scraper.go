@@ -7,12 +7,12 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/emojihunt/emojihunt/schema"
+	"github.com/emojihunt/emojihunt/db"
 	"golang.org/x/net/html"
 	"golang.org/x/xerrors"
 )
 
-func (p *Poller) Scrape(ctx context.Context) ([]schema.NewPuzzle, error) {
+func (p *Poller) Scrape(ctx context.Context) ([]db.NewPuzzle, error) {
 	// Download
 	req, err := http.NewRequestWithContext(ctx, "GET", p.puzzlesURL.String(), nil)
 	if err != nil {
@@ -93,7 +93,7 @@ func (p *Poller) Scrape(ctx context.Context) ([]schema.NewPuzzle, error) {
 	}
 
 	// Parse out individual puzzles
-	var puzzles []schema.NewPuzzle
+	var puzzles []db.NewPuzzle
 	for _, pair := range discovered {
 		nameNode, puzzleListNode := pair[0], pair[1]
 		var roundBuf bytes.Buffer
@@ -122,9 +122,9 @@ func (p *Poller) Scrape(ctx context.Context) ([]schema.NewPuzzle, error) {
 			}
 
 			url := p.puzzlesURL.ResolveReference(u).String()
-			puzzles = append(puzzles, schema.NewPuzzle{
+			puzzles = append(puzzles, db.NewPuzzle{
 				Name:        strings.TrimSpace(puzzleBuf.String()),
-				Round:       schema.Round{Name: roundName},
+				Round:       roundName,
 				PuzzleURL:   url,
 				OriginalURL: url,
 			})

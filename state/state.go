@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/emojihunt/emojihunt/db"
-	"github.com/emojihunt/emojihunt/schema"
 )
 
 type State struct {
@@ -23,7 +22,7 @@ type State struct {
 
 type NewRound struct {
 	MessageID string
-	Puzzles   []schema.NewPuzzle
+	Puzzles   []db.NewPuzzle
 }
 
 func Load(ctx context.Context, db *db.Client) (*State, error) {

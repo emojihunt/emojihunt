@@ -8,13 +8,13 @@ import (
 	"time"
 
 	"github.com/davecgh/go-spew/spew"
-	"github.com/emojihunt/emojihunt/schema"
+	"github.com/emojihunt/emojihunt/db"
 	"github.com/emojihunt/emojihunt/state"
 	"golang.org/x/xerrors"
 )
 
-func (d *Poller) SyncPuzzles(ctx context.Context, puzzles []schema.NewPuzzle) error {
-	puzzleMap := make(map[string]schema.NewPuzzle)
+func (d *Poller) SyncPuzzles(ctx context.Context, puzzles []db.NewPuzzle) error {
+	puzzleMap := make(map[string]db.NewPuzzle)
 	for _, puzzle := range puzzles {
 		puzzleMap[puzzle.PuzzleURL] = puzzle
 	}
@@ -25,22 +25,21 @@ func (d *Poller) SyncPuzzles(ctx context.Context, puzzles []schema.NewPuzzle) er
 		return err
 	}
 
-	var newPuzzles []schema.NewPuzzle
-	newRounds := make(map[string][]schema.NewPuzzle)
+	var newPuzzles []db.NewPuzzle
+	newRounds := make(map[string][]db.NewPuzzle)
 	for _, puzzle := range puzzleMap {
 		if fragments[strings.ToUpper(puzzle.PuzzleURL)] ||
 			fragments[strings.ToUpper(puzzle.Name)] {
 			// skip if name or URL matches an existing puzzle
 			continue
 		}
-		if round, ok := rounds[puzzle.Round.Name]; ok {
+		if _, ok := rounds[puzzle.Round]; ok {
 			log.Printf("discovery: preparing to add puzzle %q (%s) in round %q",
-				puzzle.Name, puzzle.PuzzleURL, puzzle.Round.Name)
-			puzzle.Round.Emoji = round.Emoji
+				puzzle.Name, puzzle.PuzzleURL, puzzle.Round)
 			newPuzzles = append(newPuzzles, puzzle)
 		} else {
 			// puzzle belongs to a new round
-			newRounds[puzzle.Round.Name] = append(newRounds[puzzle.Round.Name], puzzle)
+			newRounds[puzzle.Round] = append(newRounds[puzzle.Round], puzzle)
 		}
 	}
 
@@ -61,14 +60,14 @@ func (d *Poller) SyncPuzzles(ctx context.Context, puzzles []schema.NewPuzzle) er
 	return nil
 }
 
-func (d *Poller) handleNewPuzzles(ctx context.Context, newPuzzles []schema.NewPuzzle) error {
+func (d *Poller) handleNewPuzzles(ctx context.Context, newPuzzles []db.NewPuzzle) error {
 	msg := "```\n*** 🧐 NEW PUZZLES ***\n\n"
 	for i, puzzle := range newPuzzles {
 		if i == newPuzzleLimit {
 			msg += fmt.Sprintf("(...and more, %d in total...)\n\n", len(newPuzzles))
 			break
 		}
-		msg += fmt.Sprintf("%s %s\n%s\n\n", puzzle.Round.Emoji, puzzle.Name, puzzle.PuzzleURL)
+		msg += fmt.Sprintf("%s %s\n%s\n\n", "TODO: puzzle.Round.Emoji", puzzle.Name, puzzle.PuzzleURL)
 	}
 
 	var paused bool
@@ -93,7 +92,7 @@ func (d *Poller) handleNewPuzzles(ctx context.Context, newPuzzles []schema.NewPu
 	return d.createPuzzles(ctx, newPuzzles, false)
 }
 
-func (d *Poller) handleNewRounds(ctx context.Context, newRounds map[string][]schema.NewPuzzle) error {
+func (d *Poller) handleNewRounds(ctx context.Context, newRounds map[string][]db.NewPuzzle) error {
 	if len(newRounds) > newRoundLimit {
 		msg := fmt.Sprintf(
 			"```💥 Too many new rounds! Round creation paused, please contact #%s.\n```\n",
@@ -139,7 +138,7 @@ func (d *Poller) handleNewRounds(ctx context.Context, newRounds map[string][]sch
 	return nil
 }
 
-func (d *Poller) createPuzzles(ctx context.Context, newPuzzles []schema.NewPuzzle,
+func (d *Poller) createPuzzles(ctx context.Context, newPuzzles []db.NewPuzzle,
 	newRound bool) error {
 
 	created, err := d.db.AddPuzzles(ctx, newPuzzles, newRound)
@@ -174,11 +173,5 @@ func (d *Poller) createRound(ctx context.Context, name string, roundInfo state.N
 	} else if emoji == "" {
 		return xerrors.Errorf("no reaction for message")
 	}
-
-	puzzles := roundInfo.Puzzles
-	for i := range puzzles {
-		puzzles[i].Round.Emoji = emoji
-	}
-
-	return d.createPuzzles(ctx, puzzles, true)
+	return d.createPuzzles(ctx, roundInfo.Puzzles, true)
 }
