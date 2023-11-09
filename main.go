@@ -24,10 +24,10 @@ import (
 )
 
 type Config struct {
+	Production    bool                       `json:"production"`
 	Sentry        *sentry.ClientOptions      `json:"sentry"`
 	Discord       *discord.Config            `json:"discord"`
 	GoogleDrive   *drive.Config              `json:"google_drive"`
-	Server        *server.ServerConfig       `json:"server"`
 	Autodiscovery *discovery.DiscoveryConfig `json:"autodiscovery"`
 }
 
@@ -72,6 +72,12 @@ func main() {
 		}
 		return event
 	}
+	if config.Production {
+		config.Sentry.Environment = "prod"
+	} else {
+		config.Sentry.Environment = "dev"
+	}
+
 	if err := sentry.Init(*config.Sentry); err != nil {
 		panic(err)
 	}
@@ -118,20 +124,24 @@ func main() {
 	}
 
 	// Start internal engines
+	log.Printf("starting syncer")
 	syncer := syncer.New(db, discord, drive)
 	go syncer.RestorePlaceholderEvent()
-	log.Printf("created syncer")
 
 	var dscvpoller *discovery.Poller
 	if config.Autodiscovery != nil {
+		log.Printf("starting puzzle auto-discovery poller")
 		dscvpoller = discovery.New(ctx, db, discord, syncer, config.Autodiscovery, state)
 		dscvpoller.RegisterReactionHandler(discord)
 		go dscvpoller.Poll(ctx)
-		log.Printf("started puzzle auto-discovery poller")
 	} else {
 		log.Printf("puzzle auto-discovery is disabled (no config found)")
 	}
 
+	log.Printf("starting web server")
+	server.Start(ctx)
+
+	log.Printf("starting discord bots")
 	discord.RegisterBots(
 		bot.NewEmojiNameBot(),
 		bot.NewHuntYetBot(),
@@ -141,14 +151,6 @@ func main() {
 		bot.NewReminderBot(ctx, db, discord, state),
 		bot.NewVoiceRoomBot(ctx, db, discord, syncer),
 	)
-	log.Printf("started discord bots")
-
-	if config.Server != nil {
-		server.Start(db, syncer, config.Server)
-		log.Printf("started web server")
-	} else {
-		log.Printf("no server config found, skipping (for development only!)")
-	}
 
 	log.Print("press ctrl+C to exit")
 	<-ctx.Done()

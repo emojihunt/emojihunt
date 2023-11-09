@@ -2,103 +2,96 @@ package server
 
 import (
 	"context"
-	"crypto/subtle"
+	"errors"
 	"fmt"
 	"log"
 	"net/http"
-	"strconv"
-	"strings"
 
-	"github.com/davecgh/go-spew/spew"
-	"github.com/emojihunt/emojihunt/db"
-	"github.com/emojihunt/emojihunt/schema"
-	"github.com/emojihunt/emojihunt/syncer"
-	"golang.org/x/xerrors"
+	"github.com/getsentry/sentry-go"
+	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v4/middleware"
 )
 
-type ServerConfig struct {
-	SecretToken     string `json:"secret_token"`
-	CertificateFile string `json:"certificate_file"`
-	KeyFile         string `json:"key_file"`
-	Origin          string `json:"origin"`
-}
+const sentryContextKey = "emojihunt.sentry"
 
-type Server struct {
-	db             *db.Client
-	syncer         *syncer.Syncer
-	secret, origin string
-}
+func Start(ctx context.Context) {
+	e := echo.New()
+	e.HideBanner = true
+	e.Use(SentryMiddleware)
+	e.Use(middleware.RecoverWithConfig(middleware.RecoverConfig{
+		DisablePrintStack: true,
+	}))
+	e.HTTPErrorHandler = ErrorHandler
 
-func Start(db *db.Client, syncer *syncer.Syncer, config *ServerConfig) error {
-	if config.SecretToken == "" {
-		return xerrors.Errorf("secret token cannot be empty")
-	}
-	origin := config.Origin
-	if origin == "" {
-		origin = "http://localhost:8000"
-	}
-	server := &Server{db, syncer, config.SecretToken, origin}
+	// TODO: robots.txt "User-agent: *\nDisallow: /\n"
+	e.GET("/TODO/:id", GetTODO)
 	go func() {
-		mux := http.NewServeMux()
-		mux.HandleFunc("/robots.txt", server.robots)
-		mux.HandleFunc("/resync", server.resync)
-		err := http.ListenAndServe(":8000", mux)
-		panic(err)
+		err := e.Start(":8000")
+		if !errors.Is(err, http.ErrServerClosed) {
+			panic(err)
+		}
 	}()
-
-	return nil
+	go func() {
+		<-ctx.Done()
+		e.Shutdown(ctx)
+	}()
 }
 
-func (s *Server) ResyncURL(puzzle *schema.Puzzle) string {
-	return fmt.Sprintf(
-		"%s/resync?token=%s&record=%d",
-		s.origin, s.secret, puzzle.ID,
-	)
+func GetTODO(c echo.Context) error {
+	panic("TODO")
 }
 
-func (s *Server) robots(w http.ResponseWriter, r *http.Request) {
-	w.Write([]byte("User-agent: *\nDisallow: /\n"))
+func SentryMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
+	return func(c echo.Context) error {
+		hub := sentry.CurrentHub().Clone()
+		hub.ConfigureScope(func(scope *sentry.Scope) {
+			scope.SetRequest(c.Request())
+			scope.SetTag("task", "server")
+			scope.SetTag("method", c.Request().Method)
+			scope.SetTag("route", c.Path())
+		})
+		c.Set(sentryContextKey, hub)
+		return next(c)
+	}
 }
 
-func (s *Server) resync(w http.ResponseWriter, r *http.Request) {
-	if subtle.ConstantTimeCompare(
-		[]byte(s.secret),
-		[]byte(r.URL.Query().Get("token"))) == 0 {
-		w.WriteHeader(http.StatusForbidden)
-		w.Write([]byte("incorrect token"))
-		return
+func ErrorHandler(err error, c echo.Context) {
+	var code = http.StatusInternalServerError
+	var response = make(map[string]interface{})
+
+	if he, ok := err.(*echo.HTTPError); ok {
+		if he.Internal != nil {
+			if herr, ok := he.Internal.(*echo.HTTPError); ok {
+				he = herr
+			}
+		}
+		code = he.Code
+		response["message"] = he.Message
+	} else {
+		response["message"] = http.StatusText(http.StatusInternalServerError)
+		response["error"] = err.Error()
+
+		// Report unexpected errors to Sentry
+		hub, ok := c.Get(sentryContextKey).(*sentry.Hub)
+		if !ok {
+			hub = sentry.CurrentHub().Clone()
+		}
+		event := hub.CaptureException(err)
+		if event != nil {
+			response["sentry_url"] = fmt.Sprintf("TODO: issue URL %s", *event)
+		}
 	}
 
-	if strings.Contains(r.Header.Get("User-Agent"), "Discordbot") {
-		w.WriteHeader(http.StatusForbidden)
-		w.Write([]byte("ignoring request with discordbot user agent"))
-		log.Printf("ignoring HTTP request: %q %q", r.URL.Path, r.Header.Get("User-Agent"))
+	// See https://github.com/labstack/echo/blob/master/echo.go
+	if c.Response().Committed {
 		return
 	}
-
-	log.Printf("processing re-sync request: %q", r.URL.Query().Get("record"))
-
-	id, err := strconv.ParseInt(r.URL.Query().Get("record"), 10, 64)
+	if c.Request().Method == http.MethodHead {
+		err = c.NoContent(code)
+	} else {
+		err = c.JSON(code, response)
+	}
 	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		fmt.Fprintf(w, "error: %#v\n", err)
-		return
+		log.Printf("error replying with error: %v", err)
 	}
-
-	puzzle, err := s.db.LockByID(context.TODO(), id)
-	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		fmt.Fprintf(w, "error: %#v\n", err)
-		return
-	}
-	defer puzzle.Unlock()
-
-	_, err = s.syncer.ForceUpdate(r.Context(), puzzle)
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		spew.Fdump(w, err)
-		return
-	}
-
-	fmt.Fprintf(w, "Update succeeded! %#v\n", puzzle)
 }

@@ -1,7 +1,7 @@
 {
+    "production": false,
     "sentry": {
-        "dsn": "https://***",
-        "environment": "development"
+        "dsn": "https://***"
     },
     "discord": {
         "auth_token": "Bot ********",
@@ -27,10 +27,6 @@
             "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
             "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/huntbot-dev%40emojihunt.iam.gserviceaccount.com"
         }
-    },
-    "server": {
-        "secret_token": "",
-        "origin": ""
     },
     "autodiscovery": {
         "puzzles_url": "https://2021.teammatehunt.com/puzzles",
