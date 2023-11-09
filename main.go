@@ -24,11 +24,15 @@ import (
 )
 
 type Config struct {
-	Production    bool                       `json:"production"`
 	Sentry        *SentryConfig              `json:"sentry"`
 	Discord       *discord.Config            `json:"discord"`
 	GoogleDrive   *drive.Config              `json:"google_drive"`
 	Autodiscovery *discovery.DiscoveryConfig `json:"autodiscovery"`
+}
+
+type SentryConfig struct {
+	DSN      string `json:"dsn"`
+	IssueURL string `json:"issue_url"`
 }
 
 var (
@@ -59,9 +63,23 @@ func main() {
 
 	// Initialize Sentry
 	// TODO: set up context, error handling in all goroutines
-	if err := InitializeSentry(config.Production, config.Sentry); err != nil {
-		panic(err)
-	}
+	sentry.Init(sentry.ClientOptions{
+		Dsn: config.Sentry.DSN,
+		BeforeSend: func(event *sentry.Event, hint *sentry.EventHint) *sentry.Event {
+			if hint.OriginalException != nil {
+				log.Printf("error: %s", hint.OriginalException)
+			} else {
+				log.Printf("error: %s", hint.RecoveredException)
+			}
+			for _, exception := range event.Exception {
+				frames := exception.Stacktrace.Frames
+				for i := len(frames) - 1; i >= 0; i-- {
+					log.Printf("\t%s:%d", frames[i].AbsPath, frames[i].Lineno)
+				}
+			}
+			return event
+		},
+	})
 	defer sentry.Flush(time.Second * 5)
 	defer func() {
 		if err := recover(); err != nil {

@@ -1,8 +1,7 @@
 {
-    "production": false,
     "sentry": {
         "dsn": "https://***",
-        "issue_url": "https://emojihunt.sentry.io/issues/?query=%s"
+        "issue_url": "https://emojihunt.sentry.io/issues/?project=4506159265611776&query=%s"
     },
     "discord": {
         "auth_token": "Bot ********",
