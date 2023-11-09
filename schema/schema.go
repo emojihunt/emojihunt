@@ -37,9 +37,10 @@ type Puzzle struct {
 }
 
 type NewPuzzle struct {
-	Name      string
-	Round     Round
-	PuzzleURL string
+	Name        string
+	Round       Round
+	PuzzleURL   string
+	OriginalURL string
 }
 
 type InvalidPuzzle struct {

@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/emojihunt/emojihunt/db"
 	"github.com/getsentry/sentry-go"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
@@ -15,12 +16,14 @@ import (
 const sentryContextKey = "emojihunt.sentry"
 
 type Server struct {
-	issueURL string
+	db        *db.Client
+	sentryURL string
 }
 
-func Start(ctx context.Context, issueURL string) {
+func Start(ctx context.Context, db *db.Client, issueURL string) {
 	var s = &Server{
-		issueURL: issueURL,
+		db:        db,
+		sentryURL: issueURL,
 	}
 
 	var e = echo.New()
@@ -33,7 +36,10 @@ func Start(ctx context.Context, issueURL string) {
 
 	// TODO: robots.txt "User-agent: *\nDisallow: /\n"
 	// TODO: reimplement full-resync functionality
-	e.GET("/TODO/:id", s.GetTODO)
+	e.GET("/puzzles", s.ListPuzzles)
+	e.GET("/rounds", s.ListRounds)
+	e.POST("/rounds", s.CreateRound)
+
 	go func() {
 		err := e.Start(":8000")
 		if !errors.Is(err, http.ErrServerClosed) {
@@ -44,10 +50,6 @@ func Start(ctx context.Context, issueURL string) {
 		<-ctx.Done()
 		e.Shutdown(ctx)
 	}()
-}
-
-func (s *Server) GetTODO(c echo.Context) error {
-	panic("TODO")
 }
 
 func (s *Server) SentryMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
@@ -87,7 +89,7 @@ func (s *Server) ErrorHandler(err error, c echo.Context) {
 		}
 		event := hub.CaptureException(err)
 		if event != nil {
-			response["sentry_url"] = fmt.Sprintf(s.issueURL, *event)
+			response["sentry_url"] = fmt.Sprintf(s.sentryURL, *event)
 		}
 	}
 

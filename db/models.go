@@ -11,30 +11,30 @@ import (
 )
 
 type Puzzle struct {
-	ID             int64
-	Name           string
-	Answer         string
-	Rounds         schema.Rounds
-	Status         schema.Status
-	Description    string
-	Location       string
-	PuzzleURL      string
-	SpreadsheetID  string
-	DiscordChannel string
-	OriginalURL    string
-	NameOverride   string
-	Archived       bool
-	VoiceRoom      string
-	Reminder       sql.NullTime
+	ID             int64         `json:"id"`
+	Name           string        `json:"name"`
+	Answer         string        `json:"answer"`
+	Rounds         schema.Rounds `json:"rounds"`
+	Status         schema.Status `json:"status"`
+	Description    string        `json:"description"`
+	Location       string        `json:"location"`
+	PuzzleURL      string        `json:"puzzle_url"`
+	SpreadsheetID  string        `json:"spreadsheet_id"`
+	DiscordChannel string        `json:"discord_channel"`
+	OriginalURL    string        `json:"original_url"`
+	NameOverride   string        `json:"name_override"`
+	Archived       bool          `json:"archived"`
+	VoiceRoom      string        `json:"voice_room"`
+	Reminder       sql.NullTime  `json:"reminder"`
 }
 
 type Round struct {
-	ID    int64
-	Name  string
-	Emoji string
+	ID    int64  `json:"id"`
+	Name  string `json:"name"`
+	Emoji string `json:"emoji"`
 }
 
 type State struct {
-	ID   int64
-	Data []byte
+	ID   int64  `json:"id"`
+	Data []byte `json:"data"`
 }

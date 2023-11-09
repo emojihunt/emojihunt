@@ -14,6 +14,21 @@ func (c *Client) ListPuzzles(ctx context.Context) ([]int64, error) {
 	return c.queries.ListPuzzleIDs(ctx)
 }
 
+// ListPuzzlesFull returns a list of all puzzles, including their contents. It
+// does *not* take out the puzzle lock.
+func (c *Client) ListPuzzlesFull(ctx context.Context) ([]*schema.Puzzle, error) {
+	records, err := c.queries.ListPuzzlesFull(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	var puzzles []*schema.Puzzle
+	for _, record := range records {
+		puzzles = append(puzzles, c.parseDatabaseResult(&record, func() {}))
+	}
+	return puzzles, nil
+}
+
 // ListPuzzleFragmentsAndRounds returns a collection of all puzzle names and
 // URLs, and a collection of all known rounds. It's used by the discovery script
 // to deduplicate puzzles. No lock is held, but puzzle names, URLs and Original

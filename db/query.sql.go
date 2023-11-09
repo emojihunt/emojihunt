@@ -19,10 +19,10 @@ RETURNING id, name, answer, rounds, status, description, location, puzzle_url, s
 `
 
 type CreatePuzzleParams struct {
-	Name        string
-	Rounds      schema.Rounds
-	PuzzleURL   string
-	OriginalURL string
+	Name        string        `json:"name"`
+	Rounds      schema.Rounds `json:"rounds"`
+	PuzzleURL   string        `json:"puzzle_url"`
+	OriginalURL string        `json:"original_url"`
 }
 
 func (q *Queries) CreatePuzzle(ctx context.Context, arg CreatePuzzleParams) (Puzzle, error) {
@@ -50,6 +50,24 @@ func (q *Queries) CreatePuzzle(ctx context.Context, arg CreatePuzzleParams) (Puz
 		&i.VoiceRoom,
 		&i.Reminder,
 	)
+	return i, err
+}
+
+const createRound = `-- name: CreateRound :one
+INSERT INTO rounds (name, emoji)
+VALUES (?, ?)
+RETURNING id, name, emoji
+`
+
+type CreateRoundParams struct {
+	Name  string `json:"name"`
+	Emoji string `json:"emoji"`
+}
+
+func (q *Queries) CreateRound(ctx context.Context, arg CreateRoundParams) (Round, error) {
+	row := q.db.QueryRowContext(ctx, createRound, arg.Name, arg.Emoji)
+	var i Round
+	err := row.Scan(&i.ID, &i.Name, &i.Emoji)
 	return i, err
 }
 
@@ -159,10 +177,10 @@ ORDER BY id
 `
 
 type ListPuzzleDiscoveryFragmentsRow struct {
-	ID          int64
-	Name        string
-	PuzzleURL   string
-	OriginalURL string
+	ID          int64  `json:"id"`
+	Name        string `json:"name"`
+	PuzzleURL   string `json:"puzzle_url"`
+	OriginalURL string `json:"original_url"`
 }
 
 func (q *Queries) ListPuzzleDiscoveryFragments(ctx context.Context) ([]ListPuzzleDiscoveryFragmentsRow, error) {
@@ -221,6 +239,50 @@ func (q *Queries) ListPuzzleIDs(ctx context.Context) ([]int64, error) {
 	return items, nil
 }
 
+const listPuzzlesFull = `-- name: ListPuzzlesFull :many
+SELECT id, name, answer, rounds, status, description, location, puzzle_url, spreadsheet_id, discord_channel, original_url, name_override, archived, voice_room, reminder from puzzles
+ORDER BY id
+`
+
+func (q *Queries) ListPuzzlesFull(ctx context.Context) ([]Puzzle, error) {
+	rows, err := q.db.QueryContext(ctx, listPuzzlesFull)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Puzzle
+	for rows.Next() {
+		var i Puzzle
+		if err := rows.Scan(
+			&i.ID,
+			&i.Name,
+			&i.Answer,
+			&i.Rounds,
+			&i.Status,
+			&i.Description,
+			&i.Location,
+			&i.PuzzleURL,
+			&i.SpreadsheetID,
+			&i.DiscordChannel,
+			&i.OriginalURL,
+			&i.NameOverride,
+			&i.Archived,
+			&i.VoiceRoom,
+			&i.Reminder,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listPuzzlesWithReminder = `-- name: ListPuzzlesWithReminder :many
 SELECT id, name, discord_channel, reminder FROM puzzles
 WHERE reminder IS NOT NULL
@@ -228,10 +290,10 @@ ORDER BY reminder
 `
 
 type ListPuzzlesWithReminderRow struct {
-	ID             int64
-	Name           string
-	DiscordChannel string
-	Reminder       sql.NullTime
+	ID             int64        `json:"id"`
+	Name           string       `json:"name"`
+	DiscordChannel string       `json:"discord_channel"`
+	Reminder       sql.NullTime `json:"reminder"`
 }
 
 func (q *Queries) ListPuzzlesWithReminder(ctx context.Context) ([]ListPuzzlesWithReminderRow, error) {
@@ -269,9 +331,9 @@ ORDER BY id
 `
 
 type ListPuzzlesWithVoiceRoomRow struct {
-	ID        int64
-	Name      string
-	VoiceRoom string
+	ID        int64  `json:"id"`
+	Name      string `json:"name"`
+	VoiceRoom string `json:"voice_room"`
 }
 
 func (q *Queries) ListPuzzlesWithVoiceRoom(ctx context.Context) ([]ListPuzzlesWithVoiceRoomRow, error) {
@@ -332,8 +394,8 @@ RETURNING id, name, answer, rounds, status, description, location, puzzle_url, s
 `
 
 type UpdateArchivedParams struct {
-	ID       int64
-	Archived bool
+	ID       int64 `json:"id"`
+	Archived bool  `json:"archived"`
 }
 
 func (q *Queries) UpdateArchived(ctx context.Context, arg UpdateArchivedParams) (Puzzle, error) {
@@ -366,8 +428,8 @@ RETURNING id, name, answer, rounds, status, description, location, puzzle_url, s
 `
 
 type UpdateDescriptionParams struct {
-	ID          int64
-	Description string
+	ID          int64  `json:"id"`
+	Description string `json:"description"`
 }
 
 func (q *Queries) UpdateDescription(ctx context.Context, arg UpdateDescriptionParams) (Puzzle, error) {
@@ -400,8 +462,8 @@ RETURNING id, name, answer, rounds, status, description, location, puzzle_url, s
 `
 
 type UpdateDiscordChannelParams struct {
-	ID             int64
-	DiscordChannel string
+	ID             int64  `json:"id"`
+	DiscordChannel string `json:"discord_channel"`
 }
 
 func (q *Queries) UpdateDiscordChannel(ctx context.Context, arg UpdateDiscordChannelParams) (Puzzle, error) {
@@ -434,8 +496,8 @@ RETURNING id, name, answer, rounds, status, description, location, puzzle_url, s
 `
 
 type UpdateLocationParams struct {
-	ID       int64
-	Location string
+	ID       int64  `json:"id"`
+	Location string `json:"location"`
 }
 
 func (q *Queries) UpdateLocation(ctx context.Context, arg UpdateLocationParams) (Puzzle, error) {
@@ -468,8 +530,8 @@ RETURNING id, name, answer, rounds, status, description, location, puzzle_url, s
 `
 
 type UpdateSpreadsheetIDParams struct {
-	ID            int64
-	SpreadsheetID string
+	ID            int64  `json:"id"`
+	SpreadsheetID string `json:"spreadsheet_id"`
 }
 
 func (q *Queries) UpdateSpreadsheetID(ctx context.Context, arg UpdateSpreadsheetIDParams) (Puzzle, error) {
@@ -512,10 +574,10 @@ RETURNING id, name, answer, rounds, status, description, location, puzzle_url, s
 `
 
 type UpdateStatusAndAnswerParams struct {
-	ID       int64
-	Status   schema.Status
-	Answer   string
-	Archived bool
+	ID       int64         `json:"id"`
+	Status   schema.Status `json:"status"`
+	Answer   string        `json:"answer"`
+	Archived bool          `json:"archived"`
 }
 
 func (q *Queries) UpdateStatusAndAnswer(ctx context.Context, arg UpdateStatusAndAnswerParams) (Puzzle, error) {
@@ -553,9 +615,9 @@ RETURNING id, name, answer, rounds, status, description, location, puzzle_url, s
 `
 
 type UpdateVoiceRoomParams struct {
-	ID        int64
-	VoiceRoom string
-	Location  string
+	ID        int64  `json:"id"`
+	VoiceRoom string `json:"voice_room"`
+	Location  string `json:"location"`
 }
 
 func (q *Queries) UpdateVoiceRoom(ctx context.Context, arg UpdateVoiceRoomParams) (Puzzle, error) {

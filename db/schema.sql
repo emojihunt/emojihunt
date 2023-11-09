@@ -23,7 +23,10 @@ CREATE TABLE puzzles (
 CREATE TABLE rounds (
     id              INTEGER PRIMARY KEY,
     name            TEXT    NOT NULL,
-    emoji           TEXT    NOT NULL
+    emoji           TEXT    NOT NULL,
+
+    CONSTRAINT uc_name      UNIQUE(name),
+    CONSTRAINT uc_emoji     UNIQUE(emoji)
 );
 
 CREATE TABLE state (

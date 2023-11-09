@@ -10,6 +10,10 @@ WHERE discord_channel = ?;
 SELECT id FROM puzzles
 ORDER BY id;
 
+-- name: ListPuzzlesFull :many
+SELECT * from puzzles
+ORDER BY id;
+
 -- name: ListPuzzleDiscoveryFragments :many
 SELECT id, name, puzzle_url, original_url FROM puzzles
 ORDER BY id;
@@ -68,6 +72,11 @@ RETURNING *;
 -- name: ListRounds :many
 SELECT * FROM rounds
 ORDER BY id;
+
+-- name: CreateRound :one
+INSERT INTO rounds (name, emoji)
+VALUES (?, ?)
+RETURNING *;
 
 
 -- name: GetState :many

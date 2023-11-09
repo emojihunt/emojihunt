@@ -137,7 +137,7 @@ func main() {
 	}
 
 	log.Printf("starting web server")
-	server.Start(ctx, config.Sentry.IssueURL)
+	server.Start(ctx, db, config.Sentry.IssueURL)
 
 	log.Printf("starting discord bots")
 	discord.RegisterBots(

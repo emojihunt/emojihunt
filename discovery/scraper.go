@@ -121,10 +121,12 @@ func (p *Poller) Scrape(ctx context.Context) ([]schema.NewPuzzle, error) {
 				return nil, xerrors.Errorf("could not find puzzle url for puzzle: %#v", item)
 			}
 
+			url := p.puzzlesURL.ResolveReference(u).String()
 			puzzles = append(puzzles, schema.NewPuzzle{
-				Name:      strings.TrimSpace(puzzleBuf.String()),
-				Round:     schema.Round{Name: roundName},
-				PuzzleURL: p.puzzlesURL.ResolveReference(u).String(),
+				Name:        strings.TrimSpace(puzzleBuf.String()),
+				Round:       schema.Round{Name: roundName},
+				PuzzleURL:   url,
+				OriginalURL: url,
 			})
 		}
 	}

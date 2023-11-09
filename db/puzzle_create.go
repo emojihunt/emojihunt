@@ -21,7 +21,7 @@ func (c *Client) AddPuzzles(ctx context.Context, puzzles []schema.NewPuzzle, new
 			Name:        puzzle.Name,
 			Rounds:      schema.Rounds{puzzle.Round},
 			PuzzleURL:   puzzle.PuzzleURL,
-			OriginalURL: puzzle.PuzzleURL,
+			OriginalURL: puzzle.OriginalURL,
 		})
 		if err != nil {
 			return created, err
