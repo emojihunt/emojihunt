@@ -19,7 +19,7 @@ func (c *Client) ListPuzzles(ctx context.Context) ([]int64, error) {
 func (c *Client) ListPuzzlesFull(ctx context.Context) ([]*schema.Puzzle, error) {
 	records, err := c.queries.ListPuzzlesFull(ctx)
 	if err != nil {
-		return nil, err
+		return nil, xerrors.Errorf("ListPuzzlesFull: %w", err)
 	}
 
 	var puzzles []*schema.Puzzle
@@ -42,7 +42,7 @@ func (c *Client) ListPuzzleFragmentsAndRounds(ctx context.Context) (
 	var fragments = make(map[string]bool)
 	puzzles, err := c.queries.ListPuzzleDiscoveryFragments(ctx)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, xerrors.Errorf("ListPuzzleDiscoveryFragments: %w", err)
 	}
 	for _, puzzle := range puzzles {
 		fragments[strings.ToUpper(puzzle.Name)] = true
@@ -53,7 +53,7 @@ func (c *Client) ListPuzzleFragmentsAndRounds(ctx context.Context) (
 	var rounds = make(map[string]schema.Round)
 	result, err := c.queries.ListRounds(ctx)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, xerrors.Errorf("ListRounds: %w", err)
 	}
 	for _, round := range result {
 		rounds[round.Name] = schema.Round{
@@ -75,7 +75,7 @@ func (c *Client) ListPuzzleFragmentsAndRounds(ctx context.Context) (
 func (c *Client) ListWithVoiceRoom(ctx context.Context) ([]schema.VoicePuzzle, error) {
 	puzzles, err := c.queries.ListPuzzlesWithVoiceRoom(ctx)
 	if err != nil {
-		return nil, err
+		return nil, xerrors.Errorf("ListPuzzlesWithVoiceRoom: %w", err)
 	}
 
 	var voicePuzzles []schema.VoicePuzzle
@@ -100,7 +100,7 @@ func (c *Client) ListWithVoiceRoom(ctx context.Context) ([]schema.VoicePuzzle, e
 func (c *Client) ListWithReminder(ctx context.Context) ([]schema.ReminderPuzzle, error) {
 	puzzles, err := c.queries.ListPuzzlesWithReminder(ctx)
 	if err != nil {
-		return nil, err
+		return nil, xerrors.Errorf("ListPuzzlesWithReminder: %w", err)
 	}
 
 	var reminderPuzzles schema.ReminderPuzzles
@@ -124,7 +124,7 @@ func (c *Client) LockByID(ctx context.Context, id int64) (*schema.Puzzle, error)
 	record, err := c.queries.GetPuzzle(ctx, id)
 	if err != nil {
 		unlock()
-		return nil, err
+		return nil, xerrors.Errorf("GetPuzzle: %w", err)
 	}
 	puzzle := c.parseDatabaseResult(&record, unlock)
 	return puzzle, nil
@@ -141,7 +141,8 @@ func (c *Client) LockByDiscordChannel(ctx context.Context, channel string) (*sch
 		} else if len(response) < 1 {
 			return nil, nil
 		} else if len(response) > 1 {
-			return nil, xerrors.Errorf("expected 0 or 1 record, got %d", len(response))
+			return nil, xerrors.Errorf("GetPuzzlesByDiscordChannel (%s)"+
+				": expected 0 or 1 record, got %d", channel, len(response))
 		}
 
 		// Reload object under lock
@@ -149,7 +150,7 @@ func (c *Client) LockByDiscordChannel(ctx context.Context, channel string) (*sch
 		record, err := c.queries.GetPuzzle(ctx, response[0].ID)
 		if err != nil {
 			unlock()
-			return nil, err
+			return nil, xerrors.Errorf("GetPuzzle (%d): %w", response[0].ID, err)
 		}
 		puzzle := c.parseDatabaseResult(&record, unlock)
 		if puzzle.DiscordChannel == channel {
@@ -158,7 +159,7 @@ func (c *Client) LockByDiscordChannel(ctx context.Context, channel string) (*sch
 		// Discord channel changed since lock was taken out, retry
 		unlock()
 	}
-	return nil, xerrors.Errorf("discord channel %q is unstable", channel)
+	return nil, xerrors.Errorf("LockByDiscordChannel: channel %q is unstable", channel)
 }
 
 func (c *Client) lockPuzzle(id int64) func() {

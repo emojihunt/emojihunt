@@ -3,7 +3,6 @@ package bot
 import (
 	"context"
 	"fmt"
-	"log"
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/emojihunt/emojihunt/db"
@@ -79,16 +78,7 @@ func (b *HuntBot) Handle(ctx context.Context, input *discord.CommandInput) (stri
 		} else {
 			reply = "The bot was already enabled. Disable it with `/huntbot kill`."
 		}
-		go func() {
-			defer func() {
-				if err := recover(); err != nil {
-					log.Printf("InitializeRoundCreation: %v", err)
-				}
-			}()
-
-			// Will block until we release the state lock
-			b.discovery.InitializeRoundCreation() // TODO: factor out
-		}()
+		go b.discovery.InitializeRoundCreation()
 		b.discord.UpdateStatus(b.state) // best-effort, ignore errors
 		return reply, nil
 	default:

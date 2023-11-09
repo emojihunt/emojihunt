@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/bwmarrin/discordgo"
+	"golang.org/x/xerrors"
 )
 
 func (c *Client) GetScheduledEvent(id string) (*discordgo.GuildScheduledEvent, error) {
@@ -22,7 +23,7 @@ func (c *Client) ListScheduledEvents() (map[string]*discordgo.GuildScheduledEven
 
 	raw, err := c.s.GuildScheduledEvents(c.Guild.ID, false)
 	if err != nil {
-		return nil, err
+		return nil, xerrors.Errorf("GuildScheduledEvents: %w", err)
 	}
 
 	events := make(map[string]*discordgo.GuildScheduledEvent)
@@ -42,7 +43,7 @@ func (c *Client) CreateScheduledEvent(
 
 	event, err := c.s.GuildScheduledEventCreate(c.Guild.ID, params)
 	if err != nil {
-		return nil, err
+		return nil, xerrors.Errorf("GuildScheduledEventCreate: %w", err)
 	}
 	c.scheduledEventsCache[event.ID] = event
 	return event, nil
@@ -57,7 +58,7 @@ func (c *Client) UpdateScheduledEvent(
 	var err error
 	event, err = c.s.GuildScheduledEventEdit(c.Guild.ID, event.ID, params)
 	if err != nil {
-		return nil, err
+		return nil, xerrors.Errorf("GuildScheduledEventEdit: %w", err)
 	}
 	c.scheduledEventsCache[event.ID] = event
 	return event, nil
@@ -69,7 +70,7 @@ func (c *Client) DeleteScheduledEvent(event *discordgo.GuildScheduledEvent) erro
 
 	err := c.s.GuildScheduledEventDelete(c.Guild.ID, event.ID)
 	if err != nil {
-		return err
+		return xerrors.Errorf("GuildScheduledEventDelete: %w", err)
 	}
 	delete(c.scheduledEventsCache, event.ID)
 	return nil

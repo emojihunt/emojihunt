@@ -17,7 +17,7 @@ func (c *Client) LoadState(ctx context.Context) ([]byte, error) {
 		}
 		return c.LoadState(ctx)
 	} else if len(result) > 1 {
-		return nil, xerrors.Errorf("found multiple state rows")
+		return nil, xerrors.Errorf("LoadState: multiple rows found")
 	}
 	return result[0].Data, nil
 }

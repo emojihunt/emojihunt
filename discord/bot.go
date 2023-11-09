@@ -30,7 +30,7 @@ func (i CommandInput) EditMessage(msg string) error {
 		i.IC.Interaction,
 		&discordgo.WebhookEdit{Content: &msg},
 	)
-	return err
+	return xerrors.Errorf("InteractionResponseEdit: %w", err)
 }
 
 type botRegistration struct {
@@ -75,7 +75,7 @@ func (c *Client) RegisterBots(bots ...Bot) {
 
 func (c *Client) OptionByName(
 	options []*discordgo.ApplicationCommandInteractionDataOption, name string,
-) (*discordgo.ApplicationCommandInteractionDataOption, error) {
+) (*discordgo.ApplicationCommandInteractionDataOption, bool) {
 	var result *discordgo.ApplicationCommandInteractionDataOption
 	for _, opt := range options {
 		if opt.Name == name {
@@ -83,7 +83,7 @@ func (c *Client) OptionByName(
 		}
 	}
 	if result == nil {
-		return nil, xerrors.Errorf("could not find option %q in options list", name)
+		return nil, false
 	}
-	return result, nil
+	return result, true
 }

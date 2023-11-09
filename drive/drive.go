@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log"
 	"sync"
 
 	"golang.org/x/xerrors"
@@ -34,16 +33,16 @@ type Client struct {
 func NewClient(ctx context.Context, config *Config) (*Client, error) {
 	rawServiceAccount, err := json.Marshal(config.ServiceAccount)
 	if err != nil {
-		return nil, err
+		return nil, xerrors.Errorf("json.Marshal: %w", err)
 	}
 
 	sheetsService, err := sheets.NewService(ctx, option.WithCredentialsJSON(rawServiceAccount))
 	if err != nil {
-		return nil, err
+		return nil, xerrors.Errorf("sheets.NewService: %w", err)
 	}
 	driveService, err := drive.NewService(ctx, option.WithCredentialsJSON(rawServiceAccount))
 	if err != nil {
-		return nil, err
+		return nil, xerrors.Errorf("drive.NewService: %w", err)
 	}
 
 	return &Client{
@@ -55,10 +54,9 @@ func NewClient(ctx context.Context, config *Config) (*Client, error) {
 }
 
 func (c *Client) CreateSheet(ctx context.Context, name, roundName string) (id string, err error) {
-	log.Printf("Creating sheet for %v", name)
 	sheet, err := c.sheets.Spreadsheets.Create(&sheets.Spreadsheet{}).Context(ctx).Do()
 	if err != nil {
-		return "", xerrors.Errorf("unable to create sheet for %q: %w", name, err)
+		return "", xerrors.Errorf("sheets.Create (%q): %w", name, err)
 	}
 	return sheet.SpreadsheetId, nil
 }
@@ -78,7 +76,10 @@ func (c *Client) SetSheetTitle(ctx context.Context, sheetID, title string) error
 		BatchUpdate(sheetID, req).
 		Context(ctx).
 		Do()
-	return err
+	if err != nil {
+		return xerrors.Errorf("sheets.BatchUpdate (%s): %w", sheetID, err)
+	}
+	return nil
 }
 
 func (c *Client) SetSheetFolder(ctx context.Context, sheetID, roundName string) error {
@@ -91,7 +92,10 @@ func (c *Client) SetSheetFolder(ctx context.Context, sheetID, roundName string) 
 		AddParents(folderID).
 		Context(ctx).
 		Do()
-	return err
+	if err != nil {
+		return xerrors.Errorf("drive.AddParents (%s): %w", sheetID, err)
+	}
+	return nil
 }
 
 const folderMimeType = "application/vnd.google-apps.folder"
@@ -107,7 +111,7 @@ func (c *Client) roundFolder(ctx context.Context, name string) (id string, err e
 	query := fmt.Sprintf("mimeType='%s' and '%s' in parents and name = '%s'", folderMimeType, c.rootFolderID, name)
 	list, err := c.drive.Files.List().Q(query).Context(ctx).Do()
 	if err != nil {
-		return "", xerrors.Errorf("couldn't query for existing folder for round %q: %w", name, err)
+		return "", xerrors.Errorf("drive.Query (%q): %w", name, err)
 	}
 
 	var file *drive.File
@@ -120,7 +124,7 @@ func (c *Client) roundFolder(ctx context.Context, name string) (id string, err e
 		}
 		file, err = c.drive.Files.Create(file).Context(ctx).Do()
 		if err != nil {
-			return "", xerrors.Errorf("couldn't create folder for round %q: %w", name, err)
+			return "", xerrors.Errorf("drive.Create (%q): %w", name, err)
 		}
 	case 1:
 		file = list.Files[0]

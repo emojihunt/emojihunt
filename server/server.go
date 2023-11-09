@@ -11,6 +11,7 @@ import (
 	"github.com/getsentry/sentry-go"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
+	"golang.org/x/xerrors"
 )
 
 const sentryContextKey = "emojihunt.sentry"
@@ -43,7 +44,7 @@ func Start(ctx context.Context, db *db.Client, issueURL string) {
 	go func() {
 		err := e.Start(":8000")
 		if !errors.Is(err, http.ErrServerClosed) {
-			panic(err)
+			panic(xerrors.Errorf("echo.Start: %w", err))
 		}
 	}()
 	go func() {

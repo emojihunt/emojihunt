@@ -103,7 +103,7 @@ func (b *PuzzleBot) Register() (*discordgo.ApplicationCommand, bool) {
 func (b *PuzzleBot) Handle(ctx context.Context, input *discord.CommandInput) (string, error) {
 	puzzle, err := b.db.LockByDiscordChannel(ctx, input.IC.ChannelID)
 	if err != nil {
-		return "", err
+		return "", xerrors.Errorf("LockByDiscordChannel: %w", err)
 	} else if puzzle == nil {
 		return ":butterfly: I can't find a puzzle associated with this channel. Is this a puzzle channel?", nil
 	}
@@ -119,8 +119,8 @@ func (b *PuzzleBot) Handle(ctx context.Context, input *discord.CommandInput) (st
 	var newAnswer string
 	switch input.Subcommand.Name {
 	case "status":
-		if statusOpt, err := b.discord.OptionByName(input.Subcommand.Options, "to"); err != nil {
-			return "", err
+		if statusOpt, ok := b.discord.OptionByName(input.Subcommand.Options, "to"); !ok {
+			return "", xerrors.Errorf("missing option: to")
 		} else if newStatus, err = schema.ParseTextStatus(statusOpt.StringValue()); err != nil {
 			return "", err
 		}
@@ -139,18 +139,18 @@ func (b *PuzzleBot) Handle(ctx context.Context, input *discord.CommandInput) (st
 		if puzzle, err = b.db.SetStatusAndAnswer(ctx, puzzle, newStatus, newAnswer); err != nil {
 			return "", err
 		}
-		if puzzle, err = b.syncer.HandleStatusChange(ctx, puzzle, true); err != nil {
+		if _, err = b.syncer.HandleStatusChange(ctx, puzzle, true); err != nil {
 			return "", err
 		}
 	case "solved":
-		if statusOpt, err := b.discord.OptionByName(input.Subcommand.Options, "as"); err != nil {
-			return "", err
+		if statusOpt, ok := b.discord.OptionByName(input.Subcommand.Options, "as"); !ok {
+			return "", xerrors.Errorf("missing option: as")
 		} else if newStatus, err = schema.ParseTextStatus(statusOpt.StringValue()); err != nil {
 			return "", err
 		}
 
-		if answerOpt, err := b.discord.OptionByName(input.Subcommand.Options, "answer"); err != nil {
-			return "", err
+		if answerOpt, ok := b.discord.OptionByName(input.Subcommand.Options, "answer"); !ok {
+			return "", xerrors.Errorf("missing option: answer")
 		} else {
 			newAnswer = strings.ToUpper(answerOpt.StringValue())
 		}
@@ -163,12 +163,12 @@ func (b *PuzzleBot) Handle(ctx context.Context, input *discord.CommandInput) (st
 		if puzzle, err = b.db.SetStatusAndAnswer(ctx, puzzle, newStatus, newAnswer); err != nil {
 			return "", err
 		}
-		if puzzle, err = b.syncer.HandleStatusChange(ctx, puzzle, true); err != nil {
+		if _, err = b.syncer.HandleStatusChange(ctx, puzzle, true); err != nil {
 			return "", err
 		}
 	case "description":
 		var newDescription string
-		if descriptionOpt, err := b.discord.OptionByName(input.Subcommand.Options, "is"); err == nil {
+		if descriptionOpt, ok := b.discord.OptionByName(input.Subcommand.Options, "is"); ok {
 			newDescription = descriptionOpt.StringValue()
 			reply = ":writing_hand: Updated puzzle description!"
 		} else {
@@ -186,7 +186,7 @@ func (b *PuzzleBot) Handle(ctx context.Context, input *discord.CommandInput) (st
 		}
 	case "location":
 		var newLocation string
-		if locationOpt, err := b.discord.OptionByName(input.Subcommand.Options, "is"); err == nil {
+		if locationOpt, ok := b.discord.OptionByName(input.Subcommand.Options, "is"); ok {
 			newLocation = locationOpt.StringValue()
 			reply = ":writing_hand: Updated puzzle location!"
 		} else {

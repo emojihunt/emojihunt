@@ -62,7 +62,7 @@ func (c *Client) handleCommand(
 	}
 	command, ok := c.botsByCommand[input.Command]
 	if !ok {
-		return fmt.Errorf("unknown command %q", input.Command)
+		return xerrors.Errorf("unknown command %q", input.Command)
 	}
 
 	var task = fmt.Sprintf("bot.%s", input.Command)
@@ -82,7 +82,7 @@ func (c *Client) handleCommand(
 			Type: discordgo.InteractionResponseDeferredChannelMessageWithSource,
 		})
 		if err != nil {
-			return err
+			return xerrors.Errorf("InteractionRespond: %w", err)
 		}
 	}
 
@@ -90,7 +90,9 @@ func (c *Client) handleCommand(
 	reply, err := command.Handle(ctx, input)
 	if err != nil {
 		var url string
-		event := sentry.GetHubFromContext(ctx).CaptureException(err)
+		event := sentry.GetHubFromContext(ctx).CaptureException(
+			xerrors.Errorf("%s.Handle: %w", command.Name, err),
+		)
 		if event != nil {
 			url = fmt.Sprintf(c.issueURL, *event)
 		}
@@ -106,7 +108,10 @@ func (c *Client) handleCommand(
 			Type: discordgo.InteractionResponseChannelMessageWithSource,
 			Data: &discordgo.InteractionResponseData{Content: reply},
 		})
-		return err
+		if err != nil {
+			return xerrors.Errorf("InteractionRespond: %w", err)
+		}
+		return nil
 	}
 }
 
@@ -122,7 +127,7 @@ func (c *Client) handleScheduledEvent(
 		})
 		err := bot.HandleScheduledEvent(ctx, e)
 		if err != nil {
-			return err
+			return xerrors.Errorf("%s.HandleScheduledEvent: %w", bot.Name, err)
 		}
 	}
 	return nil
@@ -145,7 +150,7 @@ func (c *Client) handleReaction(
 	for _, handler := range c.reactionHandlers {
 		err := (*handler)(ctx, r)
 		if err != nil {
-			return err
+			return xerrors.Errorf("reaction handler: %w", err)
 		}
 	}
 	return nil
@@ -181,7 +186,5 @@ func (c *Client) handleRateLimit(
 	c.rateLimits[r.URL] = &expiry
 
 	wait := time.Until(expiry).Round(time.Second)
-	log.Printf("hit rate limit at %q (wait %s)", r.URL, wait)
-
-	return xerrors.Errorf("discord rate limit: %s", r.URL)
+	return xerrors.Errorf("discord rate limit: %s (wait %s)", r.URL, wait)
 }

@@ -5,6 +5,7 @@ import (
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/emojihunt/emojihunt/schema"
+	"golang.org/x/xerrors"
 )
 
 // Set[...] updates the given fields in Airtable and returns the updated record.
@@ -18,7 +19,7 @@ func (c *Client) SetDiscordChannel(ctx context.Context, puzzle *schema.Puzzle,
 		ID: puzzle.ID, DiscordChannel: channel,
 	})
 	if err != nil {
-		return nil, err
+		return nil, xerrors.Errorf("SetDiscordChannel: %w", err)
 	}
 	return c.parseDatabaseResult(&result, puzzle.Unlock), nil
 }
@@ -30,7 +31,7 @@ func (c *Client) SetSpreadsheetID(ctx context.Context, puzzle *schema.Puzzle,
 		ID: puzzle.ID, SpreadsheetID: spreadsheet,
 	})
 	if err != nil {
-		return nil, err
+		return nil, xerrors.Errorf("UpdateSpreadsheetID: %w", err)
 	}
 	return c.parseDatabaseResult(&result, puzzle.Unlock), nil
 }
@@ -42,7 +43,7 @@ func (c *Client) SetStatusAndAnswer(ctx context.Context, puzzle *schema.Puzzle,
 		ID: puzzle.ID, Status: "TODO", Answer: answer, Archived: status.IsSolved(),
 	})
 	if err != nil {
-		return nil, err
+		return nil, xerrors.Errorf("UpdateStatusAndAnswer: %w", err)
 	}
 	return c.parseDatabaseResult(&result, puzzle.Unlock), nil
 }
@@ -54,7 +55,7 @@ func (c *Client) SetDescription(ctx context.Context, puzzle *schema.Puzzle,
 		ID: puzzle.ID, Description: description,
 	})
 	if err != nil {
-		return nil, err
+		return nil, xerrors.Errorf("UpdateDescription: %w", err)
 	}
 	return c.parseDatabaseResult(&result, puzzle.Unlock), nil
 }
@@ -66,7 +67,7 @@ func (c *Client) SetLocation(ctx context.Context, puzzle *schema.Puzzle,
 		ID: puzzle.ID, Location: location,
 	})
 	if err != nil {
-		return nil, err
+		return nil, xerrors.Errorf("UpdateLocation: %w", err)
 	}
 	return c.parseDatabaseResult(&result, puzzle.Unlock), nil
 }
@@ -78,7 +79,7 @@ func (c *Client) SetBotFields(ctx context.Context, puzzle *schema.Puzzle) (
 		ID: puzzle.ID, Archived: puzzle.ShouldArchive(),
 	})
 	if err != nil {
-		return nil, err
+		return nil, xerrors.Errorf("UpdateArchived: %w", err)
 	}
 	return c.parseDatabaseResult(&result, puzzle.Unlock), nil
 }
@@ -95,7 +96,7 @@ func (c *Client) SetVoiceRoom(ctx context.Context, puzzle *schema.Puzzle,
 		ID: puzzle.ID, VoiceRoom: channelID, Location: channelName,
 	})
 	if err != nil {
-		return nil, err
+		return nil, xerrors.Errorf("UpdateVoiceRoom: %w", err)
 	}
 	return c.parseDatabaseResult(&result, puzzle.Unlock), nil
 }

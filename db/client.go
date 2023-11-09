@@ -10,6 +10,7 @@ import (
 	_ "embed"
 
 	_ "github.com/mattn/go-sqlite3"
+	"golang.org/x/xerrors"
 )
 
 //go:embed schema.sql
@@ -30,11 +31,14 @@ func OpenDatabase(ctx context.Context, path string) *Client {
 
 	dbx, err := sql.Open("sqlite3", path)
 	if err != nil {
-		panic(err)
+		panic(xerrors.Errorf("sql.Open: %w", err))
+	}
+	if err := dbx.PingContext(ctx); err != nil {
+		panic(xerrors.Errorf("PingContext: %w", err))
 	}
 	if shouldInitialize {
 		if _, err := dbx.ExecContext(ctx, ddl); err != nil {
-			panic(err)
+			panic(xerrors.Errorf("ExecContext(ctx, ddl): %w", err))
 		}
 	}
 	return &Client{New(dbx), &sync.Map{}}

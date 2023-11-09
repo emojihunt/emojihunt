@@ -78,9 +78,9 @@ func (b *VoiceRoomBot) Handle(ctx context.Context, input *discord.CommandInput) 
 	var channel *discordgo.Channel
 	switch input.Subcommand.Name {
 	case "start":
-		channelOpt, err := b.discord.OptionByName(input.Subcommand.Options, "in")
-		if err != nil {
-			return "", err
+		channelOpt, ok := b.discord.OptionByName(input.Subcommand.Options, "in")
+		if !ok {
+			return "", xerrors.Errorf("missing option: in")
 		}
 		channel = b.discord.ChannelValue(channelOpt)
 		reply = fmt.Sprintf("Set the room for puzzle %q to %s", puzzle.Name, channel.Mention())
@@ -131,7 +131,7 @@ func (b *VoiceRoomBot) HandleScheduledEvent(
 	var final error
 	for _, info := range puzzles {
 		if err = b.clearVoiceRoom(ctx, &info, i.ChannelID); err != nil {
-			final = err
+			final = xerrors.Errorf("clearVoiceRoom: %w", err)
 		}
 	}
 	return final

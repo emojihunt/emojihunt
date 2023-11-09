@@ -39,17 +39,17 @@ func (s *Syncer) IdempotentCreateUpdate(ctx context.Context, puzzle *schema.Puzz
 	if puzzle.SpreadsheetID == "" {
 		spreadsheet, err := s.drive.CreateSheet(ctx, puzzle.Name, puzzle.Round.Name)
 		if err != nil {
-			return nil, xerrors.Errorf("error creating spreadsheet for %q: %w", puzzle.Name, err)
+			return nil, err
 		}
 
 		puzzle, err = s.db.SetSpreadsheetID(ctx, puzzle, spreadsheet)
 		if err != nil {
-			return nil, xerrors.Errorf("error setting spreadsheet id for puzzle %q: %w", puzzle.Name, err)
+			return nil, err
 		}
 
 		err = s.driveUpdateSpreadsheet(ctx, puzzle)
 		if err != nil {
-			return nil, xerrors.Errorf("error setting up spreadsheet for puzzle %q: %w", puzzle.Name, err)
+			return nil, err
 		}
 	}
 
@@ -58,32 +58,32 @@ func (s *Syncer) IdempotentCreateUpdate(ctx context.Context, puzzle *schema.Puzz
 		log.Printf("Adding channel for new puzzle %q", puzzle.Name)
 		category, err := s.discordGetOrCreateCategory(puzzle)
 		if err != nil {
-			return nil, xerrors.Errorf("error configuring discord category for %q: %w", puzzle.Name, err)
+			return nil, err
 		}
 
 		channel, err := s.discord.CreateChannel(puzzle.Name, category)
 		if err != nil {
-			return nil, xerrors.Errorf("error creating discord channel for %q: %w", puzzle.Name, err)
+			return nil, err
 		}
 
 		puzzle, err = s.db.SetDiscordChannel(ctx, puzzle, channel.ID)
 		if err != nil {
-			return nil, xerrors.Errorf("error setting discord channel for puzzle %q: %w", puzzle.Name, err)
+			return nil, err
 		}
 
 		err = s.DiscordCreateUpdatePin(puzzle)
 		if err != nil {
-			return nil, xerrors.Errorf("error pinning info for puzzle %q: %w", puzzle.Name, err)
+			return nil, err
 		}
 
 		if err := s.discordUpdateChannel(puzzle); err != nil {
-			return nil, xerrors.Errorf("unable to set channel category for %q: %w", puzzle.Name, err)
+			return nil, err
 		}
 
 		// Treat Discord channel creation as the sentinel to also notify the
 		// team about the new puzzle.
 		if err := s.notifyNewPuzzle(puzzle); err != nil {
-			return nil, xerrors.Errorf("error notifying channel about new puzzle %q: %w", puzzle.Name, err)
+			return nil, err
 		}
 	}
 
@@ -124,7 +124,7 @@ func (s *Syncer) HandleStatusChange(ctx context.Context, puzzle *schema.Puzzle, 
 	if !botRequest {
 		puzzle, err = s.db.SetBotFields(ctx, puzzle)
 		if err != nil {
-			return nil, xerrors.Errorf("failed to update bot fields for puzzle %q: %w", puzzle.Name, err)
+			return nil, err
 		}
 	}
 
@@ -141,7 +141,7 @@ func (s *Syncer) HandleStatusChange(ctx context.Context, puzzle *schema.Puzzle, 
 			err = s.notifyPuzzleSolvedMissingAnswer(puzzle)
 		}
 		if err != nil {
-			return nil, xerrors.Errorf("error posting puzzle status announcement: %w", err)
+			return nil, err
 		}
 
 		// Also unset the voice room, if applicable
@@ -150,7 +150,7 @@ func (s *Syncer) HandleStatusChange(ctx context.Context, puzzle *schema.Puzzle, 
 			defer s.VoiceRoomMutex.Unlock()
 			puzzle, err = s.db.SetVoiceRoom(ctx, puzzle, nil)
 			if err != nil {
-				return nil, xerrors.Errorf("error unsetting voice room: %w", err)
+				return nil, err
 			}
 			if err = s.DiscordCreateUpdatePin(puzzle); err != nil {
 				return nil, err
