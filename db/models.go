@@ -6,26 +6,24 @@ package db
 
 import (
 	"database/sql"
-
-	"github.com/emojihunt/emojihunt/schema"
 )
 
 type Puzzle struct {
-	ID             int64         `json:"id"`
-	Name           string        `json:"name"`
-	Answer         string        `json:"answer"`
-	Rounds         schema.Rounds `json:"rounds"`
-	Status         schema.Status `json:"status"`
-	Description    string        `json:"description"`
-	Location       string        `json:"location"`
-	PuzzleURL      string        `json:"puzzle_url"`
-	SpreadsheetID  string        `json:"spreadsheet_id"`
-	DiscordChannel string        `json:"discord_channel"`
-	OriginalURL    string        `json:"original_url"`
-	NameOverride   string        `json:"name_override"`
-	Archived       bool          `json:"archived"`
-	VoiceRoom      string        `json:"voice_room"`
-	Reminder       sql.NullTime  `json:"reminder"`
+	ID             int64        `json:"id"`
+	Name           string       `json:"name"`
+	Answer         string       `json:"answer"`
+	Round          int64        `json:"round"`
+	Status         string       `json:"status"`
+	Description    string       `json:"description"`
+	Location       string       `json:"location"`
+	PuzzleURL      string       `json:"puzzle_url"`
+	SpreadsheetID  string       `json:"spreadsheet_id"`
+	DiscordChannel string       `json:"discord_channel"`
+	OriginalURL    string       `json:"original_url"`
+	NameOverride   string       `json:"name_override"`
+	Archived       bool         `json:"archived"`
+	VoiceRoom      string       `json:"voice_room"`
+	Reminder       sql.NullTime `json:"reminder"`
 }
 
 type Round struct {

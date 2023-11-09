@@ -10,7 +10,7 @@ import (
 // notifyNewPuzzle sends the "New puzzle!" message to #more-eyes.
 func (s *Syncer) notifyNewPuzzle(puzzle *schema.Puzzle) error {
 	msg := fmt.Sprintf("%s **New puzzle!** <#%s>",
-		puzzle.Rounds.Emojis(), puzzle.DiscordChannel)
+		puzzle.Round.Emoji, puzzle.DiscordChannel)
 	_, err := s.discord.ChannelSend(s.discord.MoreEyesChannel, msg)
 	return err
 }
@@ -18,7 +18,7 @@ func (s *Syncer) notifyNewPuzzle(puzzle *schema.Puzzle) error {
 // notifyPuzzleWorking sends the "Work started on puzzle" message to #more-eyes.
 func (s *Syncer) notifyPuzzleWorking(puzzle *schema.Puzzle) error {
 	msg := fmt.Sprintf("%s Work started on puzzle <#%s>",
-		puzzle.Rounds.Emojis(), puzzle.DiscordChannel)
+		puzzle.Round.Emoji, puzzle.DiscordChannel)
 	_, err := s.discord.ChannelSend(s.discord.MoreEyesChannel, msg)
 	return err
 }
@@ -38,7 +38,7 @@ func (s *Syncer) notifyPuzzleFullySolved(puzzle *schema.Puzzle, suppressSolveNot
 	}
 
 	msg := fmt.Sprintf("%s Puzzle <#%s> was **%s!** Answer: `%s`.",
-		puzzle.Rounds.Emojis(), puzzle.DiscordChannel, puzzle.Status.SolvedVerb(), puzzle.Answer)
+		puzzle.Round.Emoji, puzzle.DiscordChannel, puzzle.Status.SolvedVerb(), puzzle.Answer)
 	_, err := s.discord.ChannelSend(s.discord.HangingOutChannel, msg)
 	return err
 }

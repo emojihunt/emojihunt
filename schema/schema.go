@@ -4,7 +4,6 @@ import (
 	"crypto/sha256"
 	"encoding/binary"
 	"fmt"
-	"strings"
 	"time"
 
 	"golang.org/x/xerrors"
@@ -17,7 +16,7 @@ type Puzzle struct {
 
 	Name         string
 	Answer       string
-	Rounds       Rounds
+	Round        Round
 	Status       Status
 	Description  string
 	Location     string
@@ -110,14 +109,9 @@ func (p Puzzle) Problems() []string {
 	if p.Name == "" {
 		problems = append(problems, "missing puzzle name")
 	}
-	if len(p.Rounds) == 0 {
-		problems = append(problems, "missing a round")
-	}
-	for _, round := range p.Rounds {
-		if round.Name == "" || round.Emoji == "" {
-			problems = append(problems, "invalid round (did you put a space between the "+
-				"emoji and the round name?)")
-		}
+	if p.Round.Name == "" || p.Round.Emoji == "" {
+		problems = append(problems, "invalid round (did you put a space between the "+
+			"emoji and the round name?)")
 	}
 	if p.PuzzleURL == "" {
 		problems = append(problems, "missing puzzle URL")
@@ -133,56 +127,8 @@ type Round struct {
 	Emoji string
 }
 
-func ParseRound(raw string) Round {
-	parts := strings.SplitN(raw, " ", 2)
-	if len(parts) != 2 {
-		// Return an empty Round object; we have to check for this and notify
-		// the QM so they can fix it.
-		return Round{}
-	}
-	return Round{parts[1], parts[0]}
-}
-
-func (r Round) TwemojiURL() string {
-	codePoints := make([]string, 0)
-	for _, runeValue := range r.Emoji {
-		codePoints = append(codePoints, fmt.Sprintf("%04x", runeValue))
-	}
-	return fmt.Sprintf("https://twemoji.maxcdn.com/2/72x72/%s.png", strings.Join(codePoints, "-"))
-}
-
 func (r Round) Serialize() string {
 	return r.Emoji + " " + r.Name
-}
-
-type Rounds []Round
-
-func (rs Rounds) Len() int           { return len(rs) }
-func (rs Rounds) Less(i, j int) bool { return rs[i].Name < rs[j].Name }
-func (rs Rounds) Swap(i, j int)      { rs[i], rs[j] = rs[j], rs[i] }
-
-func (rs Rounds) Emojis() string {
-	var emojis []string
-	for _, r := range rs {
-		emojis = append(emojis, r.Emoji)
-	}
-	return strings.Join(emojis, "")
-}
-
-func (rs Rounds) Names() string {
-	var names []string
-	for _, r := range rs {
-		names = append(names, r.Name)
-	}
-	return strings.Join(names, "–")
-}
-
-func (rs Rounds) EmojisAndNames() []string {
-	var result []string
-	for _, r := range rs {
-		result = append(result, fmt.Sprintf("%s %s", r.Emoji, r.Name))
-	}
-	return result
 }
 
 type Status string

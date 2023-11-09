@@ -3,7 +3,6 @@ package syncer
 import (
 	"fmt"
 	"log"
-	"strings"
 	"time"
 
 	"github.com/bwmarrin/discordgo"
@@ -27,10 +26,6 @@ const (
 func (s *Syncer) DiscordCreateUpdatePin(puzzle *schema.Puzzle) error {
 	log.Printf("syncer: updating pin for %q", puzzle.Name)
 
-	roundHeader := "Round"
-	if len(puzzle.Rounds) > 1 {
-		roundHeader = "Rounds"
-	}
 	embed := &discordgo.MessageEmbed{
 		Author: &discordgo.MessageEmbedAuthor{Name: pinnedStatusHeader},
 		Title:  puzzle.Name,
@@ -38,8 +33,8 @@ func (s *Syncer) DiscordCreateUpdatePin(puzzle *schema.Puzzle) error {
 		Color:  embedColor,
 		Fields: []*discordgo.MessageEmbedField{
 			{
-				Name:   roundHeader,
-				Value:  strings.Join(puzzle.Rounds.EmojisAndNames(), ", "),
+				Name:   "Round",
+				Value:  fmt.Sprintf("%s %s", puzzle.Round.Emoji, puzzle.Round.Name),
 				Inline: false,
 			},
 			{
@@ -143,7 +138,7 @@ func (s *Syncer) discordGetOrCreateCategory(puzzle *schema.Puzzle) (*discordgo.C
 	if puzzle.ShouldArchive() {
 		targetName = solvedCategoryPrefix + puzzle.ArchiveCategory()
 	} else {
-		targetName = roundCategoryPrefix + puzzle.Rounds[0].Name
+		targetName = roundCategoryPrefix + puzzle.Round.Name
 	}
 
 	if item, ok := categories[targetName]; !ok {

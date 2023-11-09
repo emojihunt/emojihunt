@@ -29,7 +29,7 @@ WHERE reminder IS NOT NULL
 ORDER BY reminder;
 
 -- name: CreatePuzzle :one
-INSERT INTO puzzles (name, rounds, puzzle_url, original_url)
+INSERT INTO puzzles (name, round, puzzle_url, original_url)
 VALUES (?, ?, ?, ?)
 RETURNING *;
 

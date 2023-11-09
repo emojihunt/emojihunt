@@ -19,7 +19,7 @@ func (c *Client) AddPuzzles(ctx context.Context, puzzles []schema.NewPuzzle, new
 	for _, puzzle := range puzzles {
 		record, err := c.queries.CreatePuzzle(ctx, CreatePuzzleParams{
 			Name:        puzzle.Name,
-			Rounds:      schema.Rounds{puzzle.Round},
+			Round:       0, // TODO
 			PuzzleURL:   puzzle.PuzzleURL,
 			OriginalURL: puzzle.OriginalURL,
 		})

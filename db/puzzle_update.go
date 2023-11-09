@@ -39,7 +39,7 @@ func (c *Client) SetStatusAndAnswer(ctx context.Context, puzzle *schema.Puzzle,
 	status schema.Status, answer string) (*schema.Puzzle, error) {
 
 	result, err := c.queries.UpdateStatusAndAnswer(ctx, UpdateStatusAndAnswerParams{
-		ID: puzzle.ID, Status: status, Answer: answer, Archived: status.IsSolved(),
+		ID: puzzle.ID, Status: "TODO", Answer: answer, Archived: status.IsSolved(),
 	})
 	if err != nil {
 		return nil, err

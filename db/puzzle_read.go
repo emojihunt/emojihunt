@@ -174,8 +174,8 @@ func (c *Client) parseDatabaseResult(record *Puzzle, unlock func()) *schema.Puzz
 		ID:           record.ID,
 		Name:         record.Name,
 		Answer:       record.Answer,
-		Rounds:       record.Rounds,
-		Status:       record.Status,
+		Round:        schema.Round{},    // TODO
+		Status:       schema.NotStarted, // TODO
 		Description:  record.Description,
 		Location:     record.Location,
 		NameOverride: record.NameOverride,
