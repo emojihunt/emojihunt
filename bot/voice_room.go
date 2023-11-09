@@ -58,13 +58,12 @@ func (b *VoiceRoomBot) Register() (*discordgo.ApplicationCommand, bool) {
 }
 
 func (b *VoiceRoomBot) Handle(ctx context.Context, input *discord.CommandInput) (string, error) {
-	puzzle, err := b.db.LockByDiscordChannel(ctx, input.IC.ChannelID)
+	puzzle, err := b.db.LoadByDiscordChannel(ctx, input.IC.ChannelID)
 	if err != nil {
 		return "", err
 	} else if puzzle == nil {
 		return ":butterfly: I can't find a puzzle associated with this channel. Is this a puzzle channel?", nil
 	}
-	defer puzzle.Unlock()
 
 	if problems := puzzle.Problems(); len(problems) > 0 {
 		return fmt.Sprintf(":cold_sweat: I can't update this puzzle because it has errors in "+
@@ -140,11 +139,10 @@ func (b *VoiceRoomBot) HandleScheduledEvent(
 func (b *VoiceRoomBot) clearVoiceRoom(ctx context.Context, info *schema.VoicePuzzle,
 	expectedVoiceRoom string) error {
 
-	puzzle, err := b.db.LockByID(ctx, info.ID)
+	puzzle, err := b.db.LoadByID(ctx, info.ID)
 	if err != nil {
 		return err
 	}
-	defer puzzle.Unlock()
 
 	if puzzle.VoiceRoom != expectedVoiceRoom {
 		// We've let go of VoiceRoomMutex (since we aren't allowed to

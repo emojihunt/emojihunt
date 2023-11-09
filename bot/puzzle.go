@@ -101,13 +101,12 @@ func (b *PuzzleBot) Register() (*discordgo.ApplicationCommand, bool) {
 }
 
 func (b *PuzzleBot) Handle(ctx context.Context, input *discord.CommandInput) (string, error) {
-	puzzle, err := b.db.LockByDiscordChannel(ctx, input.IC.ChannelID)
+	puzzle, err := b.db.LoadByDiscordChannel(ctx, input.IC.ChannelID)
 	if err != nil {
-		return "", xerrors.Errorf("LockByDiscordChannel: %w", err)
+		return "", err
 	} else if puzzle == nil {
 		return ":butterfly: I can't find a puzzle associated with this channel. Is this a puzzle channel?", nil
 	}
-	defer puzzle.Unlock()
 
 	if problems := puzzle.Problems(); len(problems) > 0 {
 		return fmt.Sprintf(":cold_sweat: I can't update this puzzle because it has errors in "+

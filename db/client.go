@@ -5,7 +5,6 @@ import (
 	"database/sql"
 	"errors"
 	"os"
-	"sync"
 
 	_ "embed"
 
@@ -18,11 +17,6 @@ var ddl string
 
 type Client struct {
 	queries *Queries
-
-	// A map of ID -> puzzle mutex. The puzzle mutex should be held while
-	// reading or writing the puzzle, and should be acquired before the voice
-	// room mutex (if needed).
-	mutexes *sync.Map
 }
 
 func OpenDatabase(ctx context.Context, path string) *Client {
@@ -41,5 +35,5 @@ func OpenDatabase(ctx context.Context, path string) *Client {
 			panic(xerrors.Errorf("ExecContext(ctx, ddl): %w", err))
 		}
 	}
-	return &Client{New(dbx), &sync.Map{}}
+	return &Client{New(dbx)}
 }

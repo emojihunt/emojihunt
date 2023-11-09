@@ -31,8 +31,6 @@ type Puzzle struct {
 	OriginalURL string
 	VoiceRoom   string
 	Reminder    *time.Time
-
-	Unlock func()
 }
 
 type NewPuzzle struct {

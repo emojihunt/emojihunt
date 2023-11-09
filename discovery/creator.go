@@ -142,8 +142,6 @@ func (d *Poller) handleNewRounds(ctx context.Context, newRounds map[string][]sch
 func (d *Poller) createPuzzles(ctx context.Context, newPuzzles []schema.NewPuzzle,
 	newRound bool) error {
 
-	// Warning! Puzzle locks are acquired here and must be released before this
-	// function returns.
 	created, err := d.db.AddPuzzles(ctx, newPuzzles, newRound)
 	if err != nil {
 		return err
@@ -162,7 +160,6 @@ func (d *Poller) createPuzzles(ctx context.Context, newPuzzles []schema.NewPuzzl
 				errs = append(errs, err)
 			}
 		}
-		puzzle.Unlock()
 	}
 	if len(errs) > 0 {
 		return xerrors.Errorf("errors sending new puzzle notifications: %#v", spew.Sdump(errs))

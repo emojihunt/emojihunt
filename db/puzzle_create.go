@@ -8,8 +8,7 @@ import (
 )
 
 // AddPuzzles creates the given puzzles and returns the created records as a
-// list of schema.Puzzle objects. It acquires the lock for each created puzzle;
-// if the error is nil, the caller must call Unlock() on each puzzle.
+// list of schema.Puzzle objects.
 func (c *Client) AddPuzzles(ctx context.Context, puzzles []schema.NewPuzzle, newRound bool) ([]schema.Puzzle, error) {
 	if newRound {
 		return nil, xerrors.Errorf("TODO: insert-round logic")
@@ -26,8 +25,7 @@ func (c *Client) AddPuzzles(ctx context.Context, puzzles []schema.NewPuzzle, new
 		if err != nil {
 			return created, err
 		}
-		unlock := c.lockPuzzle(record.ID)
-		parsed := c.parseDatabaseResult(&record, unlock)
+		parsed := c.parseDatabaseResult(&record)
 		created = append(created, *parsed)
 	}
 	return created, nil

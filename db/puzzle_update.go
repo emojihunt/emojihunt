@@ -8,10 +8,6 @@ import (
 	"golang.org/x/xerrors"
 )
 
-// Set[...] updates the given fields in Airtable and returns the updated record.
-// The caller *must* hold the puzzle lock. The unlock function is passed through
-// to the updated puzzle object unchanged.
-
 func (c *Client) SetDiscordChannel(ctx context.Context, puzzle *schema.Puzzle,
 	channel string) (*schema.Puzzle, error) {
 
@@ -21,7 +17,7 @@ func (c *Client) SetDiscordChannel(ctx context.Context, puzzle *schema.Puzzle,
 	if err != nil {
 		return nil, xerrors.Errorf("SetDiscordChannel: %w", err)
 	}
-	return c.parseDatabaseResult(&result, puzzle.Unlock), nil
+	return c.parseDatabaseResult(&result), nil
 }
 
 func (c *Client) SetSpreadsheetID(ctx context.Context, puzzle *schema.Puzzle,
@@ -33,7 +29,7 @@ func (c *Client) SetSpreadsheetID(ctx context.Context, puzzle *schema.Puzzle,
 	if err != nil {
 		return nil, xerrors.Errorf("UpdateSpreadsheetID: %w", err)
 	}
-	return c.parseDatabaseResult(&result, puzzle.Unlock), nil
+	return c.parseDatabaseResult(&result), nil
 }
 
 func (c *Client) SetStatusAndAnswer(ctx context.Context, puzzle *schema.Puzzle,
@@ -45,7 +41,7 @@ func (c *Client) SetStatusAndAnswer(ctx context.Context, puzzle *schema.Puzzle,
 	if err != nil {
 		return nil, xerrors.Errorf("UpdateStatusAndAnswer: %w", err)
 	}
-	return c.parseDatabaseResult(&result, puzzle.Unlock), nil
+	return c.parseDatabaseResult(&result), nil
 }
 
 func (c *Client) SetDescription(ctx context.Context, puzzle *schema.Puzzle,
@@ -57,7 +53,7 @@ func (c *Client) SetDescription(ctx context.Context, puzzle *schema.Puzzle,
 	if err != nil {
 		return nil, xerrors.Errorf("UpdateDescription: %w", err)
 	}
-	return c.parseDatabaseResult(&result, puzzle.Unlock), nil
+	return c.parseDatabaseResult(&result), nil
 }
 
 func (c *Client) SetLocation(ctx context.Context, puzzle *schema.Puzzle,
@@ -69,7 +65,7 @@ func (c *Client) SetLocation(ctx context.Context, puzzle *schema.Puzzle,
 	if err != nil {
 		return nil, xerrors.Errorf("UpdateLocation: %w", err)
 	}
-	return c.parseDatabaseResult(&result, puzzle.Unlock), nil
+	return c.parseDatabaseResult(&result), nil
 }
 
 func (c *Client) SetBotFields(ctx context.Context, puzzle *schema.Puzzle) (
@@ -81,7 +77,7 @@ func (c *Client) SetBotFields(ctx context.Context, puzzle *schema.Puzzle) (
 	if err != nil {
 		return nil, xerrors.Errorf("UpdateArchived: %w", err)
 	}
-	return c.parseDatabaseResult(&result, puzzle.Unlock), nil
+	return c.parseDatabaseResult(&result), nil
 }
 
 func (c *Client) SetVoiceRoom(ctx context.Context, puzzle *schema.Puzzle,
@@ -98,5 +94,5 @@ func (c *Client) SetVoiceRoom(ctx context.Context, puzzle *schema.Puzzle,
 	if err != nil {
 		return nil, xerrors.Errorf("UpdateVoiceRoom: %w", err)
 	}
-	return c.parseDatabaseResult(&result, puzzle.Unlock), nil
+	return c.parseDatabaseResult(&result), nil
 }
