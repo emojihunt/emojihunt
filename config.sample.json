@@ -1,11 +1,11 @@
 {
     "production": false,
     "sentry": {
-        "dsn": "https://***"
+        "dsn": "https://***",
+        "issue_url": "https://emojihunt.sentry.io/issues/?query=%s"
     },
     "discord": {
         "auth_token": "Bot ********",
-        "issue_url": "https://emojihunt.sentry.io/issues/?query=%s",
         "guild_id": "1058090773582721214",
         "hanging_out_channel_id": "1058090774488678532",
         "more_eyes_channel_id": "1058092531688157266",

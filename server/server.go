@@ -14,18 +14,26 @@ import (
 
 const sentryContextKey = "emojihunt.sentry"
 
-func Start(ctx context.Context) {
-	e := echo.New()
+type Server struct {
+	issueURL string
+}
+
+func Start(ctx context.Context, issueURL string) {
+	var s = &Server{
+		issueURL: issueURL,
+	}
+
+	var e = echo.New()
 	e.HideBanner = true
-	e.Use(SentryMiddleware)
+	e.Use(s.SentryMiddleware)
 	e.Use(middleware.RecoverWithConfig(middleware.RecoverConfig{
 		DisablePrintStack: true,
 	}))
-	e.HTTPErrorHandler = ErrorHandler
+	e.HTTPErrorHandler = s.ErrorHandler
 
 	// TODO: robots.txt "User-agent: *\nDisallow: /\n"
 	// TODO: reimplement full-resync functionality
-	e.GET("/TODO/:id", GetTODO)
+	e.GET("/TODO/:id", s.GetTODO)
 	go func() {
 		err := e.Start(":8000")
 		if !errors.Is(err, http.ErrServerClosed) {
@@ -38,11 +46,11 @@ func Start(ctx context.Context) {
 	}()
 }
 
-func GetTODO(c echo.Context) error {
+func (s *Server) GetTODO(c echo.Context) error {
 	panic("TODO")
 }
 
-func SentryMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
+func (s *Server) SentryMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		hub := sentry.CurrentHub().Clone()
 		hub.ConfigureScope(func(scope *sentry.Scope) {
@@ -56,7 +64,7 @@ func SentryMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 	}
 }
 
-func ErrorHandler(err error, c echo.Context) {
+func (s *Server) ErrorHandler(err error, c echo.Context) {
 	var code = http.StatusInternalServerError
 	var response = make(map[string]interface{})
 
@@ -79,7 +87,7 @@ func ErrorHandler(err error, c echo.Context) {
 		}
 		event := hub.CaptureException(err)
 		if event != nil {
-			response["sentry_url"] = fmt.Sprintf("TODO: issue URL %s", *event)
+			response["sentry_url"] = fmt.Sprintf(s.issueURL, *event)
 		}
 	}
 

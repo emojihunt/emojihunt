@@ -25,7 +25,7 @@ import (
 
 type Config struct {
 	Production    bool                       `json:"production"`
-	Sentry        *sentry.ClientOptions      `json:"sentry"`
+	Sentry        *SentryConfig              `json:"sentry"`
 	Discord       *discord.Config            `json:"discord"`
 	GoogleDrive   *drive.Config              `json:"google_drive"`
 	Autodiscovery *discovery.DiscoveryConfig `json:"autodiscovery"`
@@ -58,27 +58,8 @@ func main() {
 	}
 
 	// Initialize Sentry
-	config.Sentry.BeforeSend = func(event *sentry.Event, hint *sentry.EventHint) *sentry.Event {
-		if hint.OriginalException != nil {
-			log.Printf("error: %s", hint.OriginalException)
-		} else {
-			log.Printf("error: %s", hint.RecoveredException)
-		}
-		for _, exception := range event.Exception {
-			frames := exception.Stacktrace.Frames
-			for i := len(frames) - 1; i >= 0; i-- {
-				log.Printf("\t%s:%d", frames[i].AbsPath, frames[i].Lineno)
-			}
-		}
-		return event
-	}
-	if config.Production {
-		config.Sentry.Environment = "prod"
-	} else {
-		config.Sentry.Environment = "dev"
-	}
-
-	if err := sentry.Init(*config.Sentry); err != nil {
+	// TODO: set up context, error handling in all goroutines
+	if err := InitializeSentry(config.Production, config.Sentry); err != nil {
 		panic(err)
 	}
 	defer sentry.Flush(time.Second * 5)
@@ -88,7 +69,6 @@ func main() {
 			panic(err)
 		}
 	}()
-	// TODO: set up context, error handling in all goroutines
 
 	// Set up the main context, which is cancelled on Ctrl-C
 	ctx, cancel := context.WithCancel(context.Background())
@@ -139,7 +119,7 @@ func main() {
 	}
 
 	log.Printf("starting web server")
-	server.Start(ctx)
+	server.Start(ctx, config.Sentry.IssueURL)
 
 	log.Printf("starting discord bots")
 	discord.RegisterBots(
