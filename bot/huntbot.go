@@ -4,15 +4,11 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"strings"
-	"time"
 
 	"github.com/bwmarrin/discordgo"
-	"github.com/davecgh/go-spew/spew"
 	"github.com/emojihunt/emojihunt/db"
 	"github.com/emojihunt/emojihunt/discord"
 	"github.com/emojihunt/emojihunt/discovery"
-	"github.com/emojihunt/emojihunt/schema"
 	"github.com/emojihunt/emojihunt/state"
 	"github.com/emojihunt/emojihunt/syncer"
 	"golang.org/x/xerrors"
@@ -26,8 +22,6 @@ type HuntBot struct {
 	syncer    *syncer.Syncer
 	state     *state.State
 }
-
-const fullResyncTimeout = 60 * time.Minute
 
 func NewHuntBot(main context.Context, db *db.Client, discord *discord.Client,
 	discovery *discovery.Poller, syncer *syncer.Syncer, state *state.State) discord.Bot {
@@ -48,19 +42,6 @@ func (b *HuntBot) Register() (*discordgo.ApplicationCommand, bool) {
 				Name:        "enable",
 				Description: "Re-enable Huntbot 📡",
 				Type:        discordgo.ApplicationCommandOptionSubCommand,
-			},
-			{
-				Name:        "yikes",
-				Description: "Force re-sync all puzzles 🔨",
-				Type:        discordgo.ApplicationCommandOptionSubCommand,
-				Options: []*discordgo.ApplicationCommandOption{
-					{
-						Name:        "confirm",
-						Description: "Please enter ⚠️ to confirm this operation",
-						Type:        discordgo.ApplicationCommandOptionString,
-						Required:    true,
-					},
-				},
 			},
 		},
 	}, false
@@ -110,81 +91,8 @@ func (b *HuntBot) Handle(ctx context.Context, input *discord.CommandInput) (stri
 		}()
 		b.discord.UpdateStatus(b.state) // best-effort, ignore errors
 		return reply, nil
-	case "yikes":
-		if confirmOpt, err := b.discord.OptionByName(input.Subcommand.Options, "confirm"); err != nil {
-			return "", err
-		} else if value := confirmOpt.StringValue(); value != "⚠️" {
-			return fmt.Sprintf(":no_smoking: Incorrect confirmation value %q, operation aborted.",
-				value), nil
-		}
-		go b.fullResync(input)
-		return ":warning: Initiated full re-sync!", nil
 	default:
 		return "", xerrors.Errorf("unexpected /huntbot subcommand: %q", input.Subcommand.Name)
-	}
-}
-
-func (b *HuntBot) fullResync(input *discord.CommandInput) {
-	ctx, cancel := context.WithTimeout(b.main, fullResyncTimeout)
-	defer func() {
-		if err := recover(); err != nil {
-			log.Printf("RestorePlaceholderEvent: %v", err)
-		}
-		cancel()
-	}()
-
-	var errs = make(map[string]error)
-
-	puzzles, err := b.db.ListPuzzles(ctx)
-	if err == nil {
-		for j, id := range puzzles {
-			if b.state.IsKilled() {
-				err = xerrors.Errorf("huntbot is disabled")
-				break
-			}
-
-			var puzzle *schema.Puzzle
-			puzzle, err = b.db.LockByID(ctx, id)
-			if err != nil {
-				err = xerrors.Errorf("failed to load %q: %w", id, err)
-				break
-			}
-
-			_, err = b.syncer.ForceUpdate(ctx, puzzle)
-			if err != nil {
-				log.Printf("huntbot yikes: re-sync err in %q: %v", puzzle.Name, err)
-				errs[puzzle.Name] = err
-			}
-			puzzle.Unlock()
-
-			if j%10 == 0 {
-				input.EditMessage(
-					fmt.Sprintf(":warning: Initiated full re-sync! (%d / %d)", j, len(puzzles)),
-				)
-				if err != nil {
-					err = xerrors.Errorf("failed to update with progress: %w", err)
-					break
-				}
-			}
-		}
-	}
-
-	var msg string
-	if err != nil {
-		log.Printf("huntbot yikes: failed to re-sync: %v", err)
-		msg = fmt.Sprintf("```*** ⚠️ FULL RE-SYNC FAILED ***\n\n%s```", spew.Sdump(err))
-	} else if len(errs) > 0 {
-		msg = "```*** FULL RE-SYNC COMPLETED WITH ERRORS ***\n\n"
-		for name, err := range errs {
-			msg += fmt.Sprintf("%s: %s\n", strings.ToUpper(name), spew.Sdump(err))
-		}
-	} else {
-		log.Printf("huntbot yikes: completed successfully")
-		msg = ":recycle: Full re-sync completed successfully!"
-	}
-	err = input.EditMessage(msg)
-	if err != nil {
-		log.Printf("huntbot yikes: failed to update with status %q: %v", msg, err)
 	}
 }
 

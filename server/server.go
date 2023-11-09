@@ -24,6 +24,7 @@ func Start(ctx context.Context) {
 	e.HTTPErrorHandler = ErrorHandler
 
 	// TODO: robots.txt "User-agent: *\nDisallow: /\n"
+	// TODO: reimplement full-resync functionality
 	e.GET("/TODO/:id", GetTODO)
 	go func() {
 		err := e.Start(":8000")
