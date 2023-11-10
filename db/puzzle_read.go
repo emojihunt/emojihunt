@@ -8,18 +8,17 @@ import (
 	"golang.org/x/xerrors"
 )
 
-// ListPuzzles returns a list of all known record IDs.
-func (c *Client) ListPuzzles(ctx context.Context) ([]int64, error) {
-	return c.queries.ListPuzzleIDs(ctx)
-}
-
-// ListPuzzlesFull returns a list of all puzzles, including their contents.
-func (c *Client) ListPuzzlesFull(ctx context.Context) ([]Puzzle, error) {
-	results, err := c.queries.ListPuzzlesFull(ctx)
+// ListPuzzles returns a list of all puzzles, including their contents.
+func (c *Client) ListPuzzles(ctx context.Context) ([]Puzzle, error) {
+	results, err := c.queries.ListPuzzles(ctx)
 	if err != nil {
 		return nil, xerrors.Errorf("ListPuzzlesFull: %w", err)
 	}
-	return results, nil
+	var puzzles = make([]Puzzle, len(results))
+	for i, result := range results {
+		puzzles[i] = Puzzle(result)
+	}
+	return puzzles, nil
 }
 
 // ListPuzzleFragmentsAndRounds returns a collection of all puzzle names and
@@ -118,7 +117,8 @@ func (c *Client) LoadByID(ctx context.Context, id int64) (*Puzzle, error) {
 	if err != nil {
 		return nil, xerrors.Errorf("GetPuzzle: %w", err)
 	}
-	return &result, nil
+	var puzzle = Puzzle(result)
+	return &puzzle, nil
 }
 
 // LoadByDiscordChannel finds, locks and returns the matching record.
@@ -132,5 +132,6 @@ func (c *Client) LoadByDiscordChannel(ctx context.Context, channel string) (*Puz
 		return nil, xerrors.Errorf("GetPuzzlesByDiscordChannel (%s)"+
 			": expected 0 or 1 record, got %d", channel, len(results))
 	}
-	return &results[0], nil
+	var puzzle = Puzzle(results[0])
+	return &puzzle, nil
 }

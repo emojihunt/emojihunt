@@ -22,5 +22,5 @@ func (s *Syncer) driveUpdateSpreadsheet(ctx context.Context, puzzle *db.Puzzle) 
 		return err
 	}
 
-	return s.drive.SetSheetFolder(ctx, puzzle.SpreadsheetID, puzzle.RoundName())
+	return s.drive.SetSheetFolder(ctx, puzzle.SpreadsheetID, puzzle.Round.Name)
 }

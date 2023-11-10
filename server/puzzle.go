@@ -7,7 +7,7 @@ import (
 )
 
 func (s *Server) ListPuzzles(c echo.Context) error {
-	puzzles, err := s.db.ListPuzzlesFull(c.Request().Context())
+	puzzles, err := s.db.ListPuzzles(c.Request().Context())
 	if err != nil {
 		return err
 	}

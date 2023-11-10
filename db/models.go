@@ -10,7 +10,7 @@ import (
 	"github.com/emojihunt/emojihunt/db/field"
 )
 
-type Puzzle struct {
+type RawPuzzle struct {
 	ID             int64        `json:"id"`
 	Name           string       `json:"name"`
 	Answer         string       `json:"answer"`

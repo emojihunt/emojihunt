@@ -34,7 +34,7 @@ func (s *Syncer) DiscordCreateUpdatePin(puzzle *db.Puzzle) error {
 		Fields: []*discordgo.MessageEmbedField{
 			{
 				Name:   "Round",
-				Value:  fmt.Sprintf("%s %s", puzzle.RoundEmoji(), puzzle.RoundName()),
+				Value:  fmt.Sprintf("%s %s", puzzle.Round.Emoji, puzzle.Round.Name),
 				Inline: false,
 			},
 			{
@@ -138,7 +138,7 @@ func (s *Syncer) discordGetOrCreateCategory(puzzle *db.Puzzle) (*discordgo.Chann
 	if puzzle.ShouldArchive() {
 		targetName = solvedCategoryPrefix + puzzle.ArchiveCategory()
 	} else {
-		targetName = roundCategoryPrefix + puzzle.RoundName()
+		targetName = roundCategoryPrefix + puzzle.Round.Name
 	}
 
 	if item, ok := categories[targetName]; !ok {

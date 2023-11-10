@@ -2,9 +2,31 @@ package db
 
 import (
 	"crypto/sha256"
+	"database/sql"
 	"encoding/binary"
 	"fmt"
+
+	"github.com/emojihunt/emojihunt/db/field"
 )
+
+// Fields must match GetPuzzleRow and friends
+type Puzzle struct {
+	ID             int64        `json:"id"`
+	Name           string       `json:"name"`
+	Answer         string       `json:"answer"`
+	Round          Round        `json:"round"`
+	Status         field.Status `json:"status"`
+	Description    string       `json:"description"`
+	Location       string       `json:"location"`
+	PuzzleURL      string       `json:"puzzle_url"`
+	SpreadsheetID  string       `json:"spreadsheet_id"`
+	DiscordChannel string       `json:"discord_channel"`
+	OriginalURL    string       `json:"original_url"`
+	NameOverride   string       `json:"name_override"`
+	Archived       bool         `json:"archived"`
+	VoiceRoom      string       `json:"voice_room"`
+	Reminder       sql.NullTime `json:"reminder"`
+}
 
 func (p Puzzle) Title() string {
 	// Puzzle name for Discord channel, spreadsheet, etc. (may be an abbreviated
@@ -13,14 +35,6 @@ func (p Puzzle) Title() string {
 		return p.NameOverride
 	}
 	return p.Name
-}
-
-func (p Puzzle) RoundName() string {
-	return "TODO: Round Name"
-}
-
-func (p Puzzle) RoundEmoji() string {
-	return "🐞" // TODO
 }
 
 func (p Puzzle) SpreadsheetURL() string {

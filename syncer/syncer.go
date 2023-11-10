@@ -36,7 +36,7 @@ func New(db *db.Client, discord *discord.Client, drive *drive.Client) *Syncer {
 func (s *Syncer) IdempotentCreateUpdate(ctx context.Context, puzzle *db.Puzzle) (*db.Puzzle, error) {
 	// 1. Create the spreadsheet, if required
 	if puzzle.SpreadsheetID == "" {
-		spreadsheet, err := s.drive.CreateSheet(ctx, puzzle.Name, puzzle.RoundName())
+		spreadsheet, err := s.drive.CreateSheet(ctx, puzzle.Name, puzzle.Round.Name)
 		if err != nil {
 			return nil, err
 		}

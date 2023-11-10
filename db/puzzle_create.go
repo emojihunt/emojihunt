@@ -2,6 +2,8 @@ package db
 
 import (
 	"context"
+
+	"golang.org/x/xerrors"
 )
 
 type NewPuzzle struct {
@@ -16,16 +18,20 @@ type NewPuzzle struct {
 func (c *Client) AddPuzzles(ctx context.Context, puzzles []NewPuzzle) ([]Puzzle, error) {
 	var created []Puzzle
 	for _, puzzle := range puzzles {
-		record, err := c.queries.CreatePuzzle(ctx, CreatePuzzleParams{
+		id, err := c.queries.CreatePuzzle(ctx, CreatePuzzleParams{
 			Name:        puzzle.Name,
 			Round:       1, // TODO
 			PuzzleURL:   puzzle.PuzzleURL,
 			OriginalURL: puzzle.OriginalURL,
 		})
 		if err != nil {
-			return created, err
+			return created, xerrors.Errorf("CreatePuzzle: %w", err)
 		}
-		created = append(created, record)
+		record, err := c.queries.GetPuzzle(ctx, id)
+		if err != nil {
+			return created, xerrors.Errorf("GetPuzzle: %w", err)
+		}
+		created = append(created, Puzzle(record))
 	}
 	return created, nil
 }
