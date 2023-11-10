@@ -30,7 +30,10 @@ func (i CommandInput) EditMessage(msg string) error {
 		i.IC.Interaction,
 		&discordgo.WebhookEdit{Content: &msg},
 	)
-	return xerrors.Errorf("InteractionResponseEdit: %w", err)
+	if err != nil {
+		return xerrors.Errorf("InteractionResponseEdit: %w", err)
+	}
+	return nil
 }
 
 type botRegistration struct {
