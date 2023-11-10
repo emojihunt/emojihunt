@@ -23,7 +23,7 @@ func OpenDatabase(ctx context.Context, path string) *Client {
 	_, err := os.Stat(path)
 	shouldInitialize := errors.Is(err, os.ErrNotExist)
 
-	dbx, err := sql.Open("sqlite3", path)
+	dbx, err := sql.Open("sqlite3", path+"?_fk=on")
 	if err != nil {
 		panic(xerrors.Errorf("sql.Open: %w", err))
 	}

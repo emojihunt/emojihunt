@@ -29,8 +29,11 @@ WHERE reminder IS NOT NULL
 ORDER BY reminder;
 
 -- name: CreatePuzzle :one
-INSERT INTO puzzles (name, round, puzzle_url, original_url)
-VALUES (?, ?, ?, ?)
+INSERT INTO puzzles (
+    name, answer, round, status, description, location, puzzle_url,
+    spreadsheet_id, discord_channel, original_url, name_override,
+    archived, voice_room
+) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 RETURNING *;
 
 -- name: UpdateDiscordChannel :one

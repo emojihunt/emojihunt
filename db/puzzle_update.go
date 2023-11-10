@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/bwmarrin/discordgo"
+	"github.com/emojihunt/emojihunt/db/field"
 	"golang.org/x/xerrors"
 )
 
@@ -32,10 +33,10 @@ func (c *Client) SetSpreadsheetID(
 }
 
 func (c *Client) SetStatusAndAnswer(
-	ctx context.Context, puzzle *Puzzle, status string, answer string,
+	ctx context.Context, puzzle *Puzzle, status field.Status, answer string,
 ) (*Puzzle, error) {
 	result, err := c.queries.UpdateStatusAndAnswer(ctx, UpdateStatusAndAnswerParams{
-		ID: puzzle.ID, Status: status, Answer: answer, Archived: puzzle.IsSolved(),
+		ID: puzzle.ID, Status: status, Answer: answer, Archived: puzzle.Status.IsSolved(),
 	})
 	if err != nil {
 		return nil, xerrors.Errorf("UpdateStatusAndAnswer: %w", err)

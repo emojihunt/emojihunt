@@ -16,11 +16,11 @@ func (p Puzzle) Title() string {
 }
 
 func (p Puzzle) RoundName() string {
-	panic("TODO")
+	return "TODO: Round Name"
 }
 
 func (p Puzzle) RoundEmoji() string {
-	panic("TODO")
+	return "🐞" // TODO
 }
 
 func (p Puzzle) SpreadsheetURL() string {
@@ -31,48 +31,13 @@ func (p Puzzle) SpreadsheetURL() string {
 }
 
 func (p Puzzle) EditURL() string {
-	panic("TODO")
-}
-
-func (p Puzzle) HumanStatus() string {
-	// switch s {
-	// case NotStarted:
-	// 	return "Not Started"
-	// case "Working":
-	// 	return "✍️ Working"
-	// case "Abandoned":
-	// 	return "🗑️ Abandoned"
-	// case "Solved":
-	// 	return "🏅 Solved"
-	// case "Backsolved":
-	// 	return "🤦‍♀️ Backsolved"
-	// default:
-	// 	panic(xerrors.Errorf("called Human() on unknown status %q", s))
-	// }
-	panic("TODO")
-}
-
-func (p Puzzle) IsSolved() bool {
-	// return s == Solved || s == Backsolved
-	panic("TODO")
-}
-
-func (p Puzzle) SolvedVerb() string {
-	// switch s {
-	// case Solved:
-	// 	return "solved"
-	// case Backsolved:
-	// 	return "backsolved"
-	// default:
-	// 	panic("called SolvedVerb() on an unsolved puzzle")
-	// }
-	panic("TODO")
+	return "https://todo.emojihunt.tech/TODO"
 }
 
 func (p Puzzle) ShouldArchive() bool {
 	// We shouldn't archive the channel until the answer has been filled in on
 	// Airtable
-	return p.IsSolved() && p.Answer != ""
+	return p.Status.IsSolved() && p.Answer != ""
 }
 
 var categories = []string{"A", "B", "C"}

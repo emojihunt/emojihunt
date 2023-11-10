@@ -11,3 +11,6 @@ sql:
           puzzle_url: "PuzzleURL"
           original_url: "OriginalURL"
         emit_json_tags: true
+        overrides:
+          - column: "puzzles.status"
+            go_type: "github.com/emojihunt/emojihunt/db/field.Status"

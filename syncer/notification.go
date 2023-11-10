@@ -30,7 +30,7 @@ func (s *Syncer) notifyPuzzleFullySolved(puzzle *db.Puzzle, suppressSolveNotif b
 	if !suppressSolveNotif {
 		msg := fmt.Sprintf(
 			"Puzzle %s! The answer was `%v`. I'll archive this channel.",
-			puzzle.SolvedVerb(), puzzle.Answer,
+			puzzle.Status.SolvedVerb(), puzzle.Answer,
 		)
 		if err := s.discord.ChannelSendRawID(puzzle.DiscordChannel, msg); err != nil {
 			return err
@@ -38,7 +38,7 @@ func (s *Syncer) notifyPuzzleFullySolved(puzzle *db.Puzzle, suppressSolveNotif b
 	}
 
 	msg := fmt.Sprintf("%s Puzzle <#%s> was **%s!** Answer: `%s`.",
-		puzzle.RoundEmoji(), puzzle.DiscordChannel, puzzle.SolvedVerb(), puzzle.Answer)
+		puzzle.RoundEmoji(), puzzle.DiscordChannel, puzzle.Status.SolvedVerb(), puzzle.Answer)
 	_, err := s.discord.ChannelSend(s.discord.HangingOutChannel, msg)
 	return err
 }
@@ -48,7 +48,7 @@ func (s *Syncer) notifyPuzzleFullySolved(puzzle *db.Puzzle, suppressSolveNotif b
 func (s *Syncer) notifyPuzzleSolvedMissingAnswer(puzzle *db.Puzzle) error {
 	puzMsg := fmt.Sprintf(
 		"Puzzle %s! Please add the answer to Airtable.",
-		puzzle.SolvedVerb(),
+		puzzle.Status.SolvedVerb(),
 	)
 	if err := s.discord.ChannelSendRawID(puzzle.DiscordChannel, puzMsg); err != nil {
 		return err
@@ -57,7 +57,7 @@ func (s *Syncer) notifyPuzzleSolvedMissingAnswer(puzzle *db.Puzzle) error {
 	msg := fmt.Sprintf(
 		"**:woman_shrugging: Help!** Puzzle %q is marked as %s, but no answer was "+
 			"entered in Airtable.",
-		puzzle.Name, puzzle.SolvedVerb(),
+		puzzle.Name, puzzle.Status.SolvedVerb(),
 	)
 	components := []discordgo.MessageComponent{
 		discordgo.Button{

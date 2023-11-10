@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log"
 	"strings"
-	"time"
 
 	"github.com/davecgh/go-spew/spew"
 	"github.com/emojihunt/emojihunt/db"
@@ -89,7 +88,7 @@ func (d *Poller) handleNewPuzzles(ctx context.Context, newPuzzles []db.NewPuzzle
 		return nil
 	}
 
-	return d.createPuzzles(ctx, newPuzzles, false)
+	return d.createPuzzles(ctx, newPuzzles)
 }
 
 func (d *Poller) handleNewRounds(ctx context.Context, newRounds map[string][]db.NewPuzzle) error {
@@ -138,17 +137,16 @@ func (d *Poller) handleNewRounds(ctx context.Context, newRounds map[string][]db.
 	return nil
 }
 
-func (d *Poller) createPuzzles(ctx context.Context, newPuzzles []db.NewPuzzle,
-	newRound bool) error {
-
-	created, err := d.db.AddPuzzles(ctx, newPuzzles, newRound)
+func (d *Poller) createPuzzles(ctx context.Context, newPuzzles []db.NewPuzzle) error {
+	created, err := d.db.AddPuzzles(ctx, newPuzzles)
 	if err != nil {
 		return err
 	}
 
-	if !newRound {
-		time.Sleep(puzzleCreationPause)
-	}
+	// TODO: handle this...
+	// if !newRound {
+	// 	time.Sleep(puzzleCreationPause)
+	// }
 
 	var errs []error
 	for _, puzzle := range created {
@@ -173,5 +171,6 @@ func (d *Poller) createRound(ctx context.Context, name string, roundInfo state.N
 	} else if emoji == "" {
 		return xerrors.Errorf("no reaction for message")
 	}
-	return d.createPuzzles(ctx, roundInfo.Puzzles, true)
+	// TODO: create round in database
+	return d.createPuzzles(ctx, roundInfo.Puzzles)
 }

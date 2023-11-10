@@ -8,27 +8,50 @@ package db
 import (
 	"context"
 	"database/sql"
+
+	"github.com/emojihunt/emojihunt/db/field"
 )
 
 const createPuzzle = `-- name: CreatePuzzle :one
-INSERT INTO puzzles (name, round, puzzle_url, original_url)
-VALUES (?, ?, ?, ?)
+INSERT INTO puzzles (
+    name, answer, round, status, description, location, puzzle_url,
+    spreadsheet_id, discord_channel, original_url, name_override,
+    archived, voice_room
+) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 RETURNING id, name, answer, round, status, description, location, puzzle_url, spreadsheet_id, discord_channel, original_url, name_override, archived, voice_room, reminder
 `
 
 type CreatePuzzleParams struct {
-	Name        string `json:"name"`
-	Round       int64  `json:"round"`
-	PuzzleURL   string `json:"puzzle_url"`
-	OriginalURL string `json:"original_url"`
+	Name           string       `json:"name"`
+	Answer         string       `json:"answer"`
+	Round          int64        `json:"round"`
+	Status         field.Status `json:"status"`
+	Description    string       `json:"description"`
+	Location       string       `json:"location"`
+	PuzzleURL      string       `json:"puzzle_url"`
+	SpreadsheetID  string       `json:"spreadsheet_id"`
+	DiscordChannel string       `json:"discord_channel"`
+	OriginalURL    string       `json:"original_url"`
+	NameOverride   string       `json:"name_override"`
+	Archived       bool         `json:"archived"`
+	VoiceRoom      string       `json:"voice_room"`
 }
 
 func (q *Queries) CreatePuzzle(ctx context.Context, arg CreatePuzzleParams) (Puzzle, error) {
 	row := q.db.QueryRowContext(ctx, createPuzzle,
 		arg.Name,
+		arg.Answer,
 		arg.Round,
+		arg.Status,
+		arg.Description,
+		arg.Location,
 		arg.PuzzleURL,
+		arg.SpreadsheetID,
+		arg.DiscordChannel,
 		arg.OriginalURL,
+		arg.NameOverride,
+		arg.Archived,
+		arg.VoiceRoom,
 	)
 	var i Puzzle
 	err := row.Scan(
@@ -572,10 +595,10 @@ RETURNING id, name, answer, round, status, description, location, puzzle_url, sp
 `
 
 type UpdateStatusAndAnswerParams struct {
-	ID       int64  `json:"id"`
-	Status   string `json:"status"`
-	Answer   string `json:"answer"`
-	Archived bool   `json:"archived"`
+	ID       int64        `json:"id"`
+	Status   field.Status `json:"status"`
+	Answer   string       `json:"answer"`
+	Archived bool         `json:"archived"`
 }
 
 func (q *Queries) UpdateStatusAndAnswer(ctx context.Context, arg UpdateStatusAndAnswerParams) (Puzzle, error) {

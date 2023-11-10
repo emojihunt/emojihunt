@@ -39,7 +39,7 @@ func (s *Syncer) DiscordCreateUpdatePin(puzzle *db.Puzzle) error {
 			},
 			{
 				Name:   "Status",
-				Value:  puzzle.HumanStatus(),
+				Value:  puzzle.Status.Pretty(),
 				Inline: true,
 			},
 			{
@@ -63,7 +63,7 @@ func (s *Syncer) DiscordCreateUpdatePin(puzzle *db.Puzzle) error {
 		})
 	}
 
-	if !puzzle.IsSolved() {
+	if !puzzle.Status.IsSolved() {
 		locationMsg := locationDefaultMsg
 		if puzzle.VoiceRoom != "" {
 			locationMsg = fmt.Sprintf("Join us in <#%s>!", puzzle.VoiceRoom)
@@ -101,7 +101,7 @@ func (s *Syncer) discordUpdateChannel(puzzle *db.Puzzle) error {
 	// minutes per channel), so finish renaming the channel asynchronously if we
 	// get rate-limited.
 	var title = puzzle.Title()
-	if puzzle.IsSolved() {
+	if puzzle.Status.IsSolved() {
 		title = "✅ " + title
 	}
 	ch := make(chan error)

@@ -6,6 +6,7 @@ import (
 	"sync"
 
 	"github.com/emojihunt/emojihunt/db"
+	"github.com/emojihunt/emojihunt/db/field"
 	"github.com/emojihunt/emojihunt/discord"
 	"github.com/emojihunt/emojihunt/drive"
 	"golang.org/x/xerrors"
@@ -126,7 +127,7 @@ func (s *Syncer) HandleStatusChange(
 	}
 
 	// Send notifications
-	if puzzle.IsSolved() {
+	if puzzle.Status.IsSolved() {
 		if puzzle.Answer != "" {
 			// Puzzle solved and answer entered! (Suppress puzzle channel
 			// notification if this is a bot request, since the bot will also
@@ -156,7 +157,7 @@ func (s *Syncer) HandleStatusChange(
 				return nil, err
 			}
 		}
-	} else if puzzle.Status == "Working" { // TODO
+	} else if puzzle.Status == field.StatusWorking {
 		if err = s.notifyPuzzleWorking(puzzle); err != nil {
 			return nil, err
 		}

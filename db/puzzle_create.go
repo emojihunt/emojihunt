@@ -2,8 +2,6 @@ package db
 
 import (
 	"context"
-
-	"golang.org/x/xerrors"
 )
 
 type NewPuzzle struct {
@@ -15,16 +13,12 @@ type NewPuzzle struct {
 
 // AddPuzzles creates the given puzzles and returns the created records as a
 // list of Puzzle objects.
-func (c *Client) AddPuzzles(ctx context.Context, puzzles []NewPuzzle, newRound bool) ([]Puzzle, error) {
-	if newRound {
-		return nil, xerrors.Errorf("TODO: insert-round logic")
-	}
-
+func (c *Client) AddPuzzles(ctx context.Context, puzzles []NewPuzzle) ([]Puzzle, error) {
 	var created []Puzzle
 	for _, puzzle := range puzzles {
 		record, err := c.queries.CreatePuzzle(ctx, CreatePuzzleParams{
 			Name:        puzzle.Name,
-			Round:       0, // TODO
+			Round:       1, // TODO
 			PuzzleURL:   puzzle.PuzzleURL,
 			OriginalURL: puzzle.OriginalURL,
 		})

@@ -15,7 +15,7 @@ import (
 func (s *Syncer) driveUpdateSpreadsheet(ctx context.Context, puzzle *db.Puzzle) error {
 	log.Printf("syncer: updating spreadsheet for %q", puzzle.Name)
 	var name = puzzle.Name
-	if puzzle.IsSolved() {
+	if puzzle.Status.IsSolved() {
 		name = "[SOLVED] " + name
 	}
 	if err := s.drive.SetSheetTitle(ctx, puzzle.SpreadsheetID, name); err != nil {

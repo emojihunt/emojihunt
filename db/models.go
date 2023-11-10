@@ -6,6 +6,8 @@ package db
 
 import (
 	"database/sql"
+
+	"github.com/emojihunt/emojihunt/db/field"
 )
 
 type Puzzle struct {
@@ -13,7 +15,7 @@ type Puzzle struct {
 	Name           string       `json:"name"`
 	Answer         string       `json:"answer"`
 	Round          int64        `json:"round"`
-	Status         string       `json:"status"`
+	Status         field.Status `json:"status"`
 	Description    string       `json:"description"`
 	Location       string       `json:"location"`
 	PuzzleURL      string       `json:"puzzle_url"`
