@@ -22,7 +22,13 @@ type State struct {
 
 type NewRound struct {
 	MessageID string
-	Puzzles   []db.NewPuzzle
+	Puzzles   []DiscoveredPuzzle
+}
+
+type DiscoveredPuzzle struct {
+	Name  string
+	Round string
+	URL   string
 }
 
 func Load(ctx context.Context, db *db.Client) (*State, error) {

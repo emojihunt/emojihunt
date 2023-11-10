@@ -27,7 +27,7 @@ func (c *Client) ListPuzzles(ctx context.Context) ([]Puzzle, error) {
 //
 // Note that puzzle names and URLs are *uppercased* in the result map.
 func (c *Client) ListPuzzleFragmentsAndRounds(ctx context.Context) (
-	map[string]bool, map[string]bool, error) {
+	map[string]bool, map[string]int64, error) {
 
 	var fragments = make(map[string]bool)
 	puzzles, err := c.queries.ListPuzzleDiscoveryFragments(ctx)
@@ -40,13 +40,13 @@ func (c *Client) ListPuzzleFragmentsAndRounds(ctx context.Context) (
 		fragments[strings.ToUpper(puzzle.OriginalURL)] = true
 	}
 
-	var rounds = make(map[string]bool)
+	var rounds = make(map[string]int64)
 	result, err := c.queries.ListRounds(ctx)
 	if err != nil {
 		return nil, nil, xerrors.Errorf("ListRounds: %w", err)
 	}
 	for _, round := range result {
-		rounds[round.Name] = true
+		rounds[round.Name] = round.ID
 	}
 
 	return fragments, rounds, nil

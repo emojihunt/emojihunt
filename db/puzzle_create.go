@@ -7,10 +7,9 @@ import (
 )
 
 type NewPuzzle struct {
-	Name        string
-	Round       string
-	PuzzleURL   string
-	OriginalURL string
+	Name  string
+	Round int64
+	URL   string
 }
 
 // AddPuzzles creates the given puzzles and returns the created records as a
@@ -20,9 +19,9 @@ func (c *Client) AddPuzzles(ctx context.Context, puzzles []NewPuzzle) ([]Puzzle,
 	for _, puzzle := range puzzles {
 		id, err := c.queries.CreatePuzzle(ctx, CreatePuzzleParams{
 			Name:        puzzle.Name,
-			Round:       1, // TODO
-			PuzzleURL:   puzzle.PuzzleURL,
-			OriginalURL: puzzle.OriginalURL,
+			Round:       puzzle.Round,
+			PuzzleURL:   puzzle.URL,
+			OriginalURL: puzzle.URL,
 		})
 		if err != nil {
 			return created, xerrors.Errorf("CreatePuzzle: %w", err)

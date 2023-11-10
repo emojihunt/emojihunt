@@ -57,9 +57,9 @@ func main() {
 			currentRound = puzzle.Round
 		}
 		if len(puzzle.Name) <= 32 {
-			fmt.Printf(" - %-32s  %s\n", puzzle.Name, puzzle.PuzzleURL)
+			fmt.Printf(" - %-32s  %s\n", puzzle.Name, puzzle.URL)
 		} else {
-			fmt.Printf(" - %s\n   %s\n", puzzle.Name, puzzle.PuzzleURL)
+			fmt.Printf(" - %s\n   %s\n", puzzle.Name, puzzle.URL)
 		}
 	}
 }
