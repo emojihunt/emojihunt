@@ -72,9 +72,10 @@ func main() {
 				log.Printf("error: %s", hint.RecoveredException)
 			}
 			for _, exception := range event.Exception {
-				frames := exception.Stacktrace.Frames
-				for i := len(frames) - 1; i >= 0; i-- {
-					log.Printf("\t%s:%d", frames[i].AbsPath, frames[i].Lineno)
+				if tr := exception.Stacktrace; tr != nil {
+					for i := len(tr.Frames) - 1; i >= 0; i-- {
+						log.Printf("\t%s:%d", tr.Frames[i].AbsPath, tr.Frames[i].Lineno)
+					}
 				}
 			}
 			return event
