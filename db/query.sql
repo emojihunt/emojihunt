@@ -75,14 +75,23 @@ UPDATE puzzles SET voice_room = ?2, location = ?3
 WHERE id = ?1;
 
 
--- name: ListRounds :many
-SELECT * FROM rounds
-ORDER BY id;
-
 -- name: CreateRound :one
 INSERT INTO rounds (name, emoji)
 VALUES (?, ?)
 RETURNING *;
+
+-- name: GetRound :one
+SELECT * FROM rounds
+WHERE id = ? LIMIT 1;
+
+-- name: UpdateRound :exec
+UPDATE rounds
+SET name = ?2, emoji = ?3
+WHERE id = ?1;
+
+-- name: ListRounds :many
+SELECT * FROM rounds
+ORDER BY id;
 
 
 -- name: GetState :many

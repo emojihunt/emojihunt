@@ -39,7 +39,9 @@ func Start(ctx context.Context, db *db.Client, issueURL string) {
 	// TODO: reimplement full-resync functionality
 	e.GET("/puzzles", s.ListPuzzles)
 	e.GET("/rounds", s.ListRounds)
+	e.GET("/rounds/:id", s.GetRound)
 	e.POST("/rounds", s.CreateRound)
+	e.POST("/rounds/:id", s.UpdateRound)
 
 	go func() {
 		err := e.Start(":8000")

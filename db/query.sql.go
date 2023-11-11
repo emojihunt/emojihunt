@@ -197,6 +197,18 @@ func (q *Queries) GetPuzzlesByDiscordChannel(ctx context.Context, discordChannel
 	return items, nil
 }
 
+const getRound = `-- name: GetRound :one
+SELECT id, name, emoji FROM rounds
+WHERE id = ? LIMIT 1
+`
+
+func (q *Queries) GetRound(ctx context.Context, id int64) (Round, error) {
+	row := q.db.QueryRowContext(ctx, getRound, id)
+	var i Round
+	err := row.Scan(&i.ID, &i.Name, &i.Emoji)
+	return i, err
+}
+
 const getState = `-- name: GetState :many
 SELECT id, data from state
 ORDER BY id
@@ -495,6 +507,23 @@ type UpdateLocationParams struct {
 
 func (q *Queries) UpdateLocation(ctx context.Context, arg UpdateLocationParams) error {
 	_, err := q.db.ExecContext(ctx, updateLocation, arg.ID, arg.Location)
+	return err
+}
+
+const updateRound = `-- name: UpdateRound :exec
+UPDATE rounds
+SET name = ?2, emoji = ?3
+WHERE id = ?1
+`
+
+type UpdateRoundParams struct {
+	ID    int64  `json:"id"`
+	Name  string `json:"name"`
+	Emoji string `json:"emoji"`
+}
+
+func (q *Queries) UpdateRound(ctx context.Context, arg UpdateRoundParams) error {
+	_, err := q.db.ExecContext(ctx, updateRound, arg.ID, arg.Name, arg.Emoji)
 	return err
 }
 
