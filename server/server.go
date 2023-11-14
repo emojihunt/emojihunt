@@ -42,6 +42,7 @@ func Start(ctx context.Context, db *db.Client, issueURL string) {
 	e.GET("/rounds/:id", s.GetRound)
 	e.POST("/rounds", s.CreateRound)
 	e.POST("/rounds/:id", s.UpdateRound)
+	e.DELETE("/rounds/:id", s.DeleteRound)
 
 	go func() {
 		err := e.Start(":8000")

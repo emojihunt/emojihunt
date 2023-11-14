@@ -75,6 +75,16 @@ func (q *Queries) CreateRound(ctx context.Context, arg CreateRoundParams) (Round
 	return i, err
 }
 
+const deleteRound = `-- name: DeleteRound :exec
+DELETE FROM rounds
+WHERE id = ?
+`
+
+func (q *Queries) DeleteRound(ctx context.Context, id int64) error {
+	_, err := q.db.ExecContext(ctx, deleteRound, id)
+	return err
+}
+
 const getPuzzle = `-- name: GetPuzzle :one
 SELECT
     p.id, p.name, p.answer, rounds.id, rounds.name, rounds.emoji, p.status, p.description,

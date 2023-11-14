@@ -89,6 +89,10 @@ UPDATE rounds
 SET name = ?2, emoji = ?3
 WHERE id = ?1;
 
+-- name: DeleteRound :exec
+DELETE FROM rounds
+WHERE id = ?;
+
 -- name: ListRounds :many
 SELECT * FROM rounds
 ORDER BY id;

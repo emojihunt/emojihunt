@@ -33,6 +33,14 @@ func (c *Client) UpdateRound(ctx context.Context, round Round) error {
 	return nil
 }
 
+func (c *Client) DeleteRound(ctx context.Context, id int64) error {
+	err := c.queries.DeleteRound(ctx, id)
+	if err != nil {
+		return xerrors.Errorf("DeleteRound: %w", err)
+	}
+	return nil
+}
+
 func (c *Client) ListRounds(ctx context.Context) ([]Round, error) {
 	rounds, err := c.queries.ListRounds(ctx)
 	if err != nil {

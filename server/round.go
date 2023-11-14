@@ -103,3 +103,22 @@ outer:
 	}
 	return c.JSON(http.StatusOK, round)
 }
+
+func (s *Server) DeleteRound(c echo.Context) error {
+	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid id")
+	}
+	round, err := s.db.GetRound(c.Request().Context(), id)
+	if errors.Is(err, sql.ErrNoRows) {
+		return echo.NewHTTPError(http.StatusNotFound, "no such round")
+	} else if err != nil {
+		return err
+	}
+
+	err = s.db.DeleteRound(c.Request().Context(), id)
+	if err != nil {
+		return err
+	}
+	return c.JSON(http.StatusOK, round)
+}
