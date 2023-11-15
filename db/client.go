@@ -4,11 +4,11 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"fmt"
 	"os"
 
 	_ "embed"
 
-	"github.com/mattn/go-sqlite3"
 	"golang.org/x/xerrors"
 )
 
@@ -39,29 +39,10 @@ func OpenDatabase(ctx context.Context, path string) *Client {
 }
 
 type ValidationError struct {
-	Field string
+	Message string
+	Field   string
 }
 
 func (e ValidationError) Error() string {
-	return e.Field
-}
-
-// Unfortunately, sqlite3.Error can't be used with errors.Is/As. This helper
-// checks if an error wraps a sqlite3.Error and extracts the (positive) extended
-// error code if so. Otherwise, it returns zero.
-//
-// See: https://github.com/mattn/go-sqlite3/issues/949
-func ErrorCode(err error) sqlite3.ErrNoExtended {
-	if s, ok := err.(sqlite3.Error); ok {
-		return s.ExtendedCode
-	} else if e, ok := err.(interface{ Unwrap() []error }); ok {
-		for _, err := range e.Unwrap() {
-			if c := ErrorCode(err); c > 0 {
-				return c
-			}
-		}
-	} else if e, ok := err.(interface{ Unwrap() error }); ok {
-		return ErrorCode(e.Unwrap())
-	}
-	return 0
+	return fmt.Sprintf("%s: %s", e.Message, e.Field)
 }

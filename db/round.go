@@ -58,14 +58,14 @@ func (c *Client) DeleteRound(ctx context.Context, id int64) error {
 
 func (r Round) Validate() error {
 	if r.Name == "" {
-		return xerrors.Errorf("missing required field: %w", ValidationError{"name"})
+		return ValidationError{"missing required field", "name"}
 	} else if r.Emoji == "" {
-		return xerrors.Errorf("missing required field: %w", ValidationError{"emoji"})
+		return ValidationError{"missing required field", "emoji"}
 	} else if uniseg.GraphemeClusterCount(r.Emoji) != 1 {
-		return xerrors.Errorf("field value must be an emoji: %w", ValidationError{"emoji"})
+		return ValidationError{"value must be an emoji", "emoji"}
 	} else if uniseg.StringWidth(r.Emoji) != 2 {
 		// *almost* correct, see https://github.com/rivo/uniseg/issues/27
-		return xerrors.Errorf("field value must be an emoji: %w", ValidationError{"emoji"})
+		return ValidationError{"value must be an emoji", "emoji"}
 	}
 	return nil
 }
