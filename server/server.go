@@ -3,9 +3,9 @@ package server
 import (
 	"context"
 	"errors"
-	"fmt"
-	"log"
 	"net/http"
+	"reflect"
+	"strconv"
 
 	"github.com/emojihunt/emojihunt/db"
 	"github.com/getsentry/sentry-go"
@@ -38,6 +38,7 @@ func Start(ctx context.Context, db *db.Client, issueURL string) {
 	// TODO: robots.txt "User-agent: *\nDisallow: /\n"
 	// TODO: reimplement full-resync functionality
 	e.GET("/puzzles", s.ListPuzzles)
+
 	e.GET("/rounds", s.ListRounds)
 	e.GET("/rounds/:id", s.GetRound)
 	e.POST("/rounds", s.CreateRound)
@@ -70,43 +71,33 @@ func (s *Server) SentryMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 	}
 }
 
-func (s *Server) ErrorHandler(err error, c echo.Context) {
-	var code = http.StatusInternalServerError
-	var response = make(map[string]interface{})
-
-	if he, ok := err.(*echo.HTTPError); ok {
-		if he.Internal != nil {
-			if herr, ok := he.Internal.(*echo.HTTPError); ok {
-				he = herr
-			}
-		}
-		code = he.Code
-		response["message"] = he.Message
-	} else {
-		response["message"] = http.StatusText(http.StatusInternalServerError)
-		response["error"] = err.Error()
-
-		// Report unexpected errors to Sentry
-		hub, ok := c.Get(sentryContextKey).(*sentry.Hub)
-		if !ok {
-			hub = sentry.CurrentHub().Clone()
-		}
-		event := hub.CaptureException(err)
-		if event != nil {
-			response["sentry_url"] = fmt.Sprintf(s.sentryURL, *event)
-		}
-	}
-
-	// See https://github.com/labstack/echo/blob/master/echo.go
-	if c.Response().Committed {
-		return
-	}
-	if c.Request().Method == http.MethodHead {
-		err = c.NoContent(code)
-	} else {
-		err = c.JSON(code, response)
-	}
+func parseID(val string) (int64, error) {
+	id, err := strconv.ParseInt(val, 10, 64)
 	if err != nil {
-		log.Printf("error replying with error: %v", err)
+		return 0, APIError{Type: ErrInvalidValue, Field: "id"}
 	}
+	return id, nil
+}
+
+func parseParams[T any](c echo.Context, obj T) error {
+	params, err := c.FormParams()
+	if err != nil {
+		return err
+	}
+
+	var rt = reflect.TypeOf(obj).Elem()
+	var tags = make(map[string]int)
+	for i := 0; i < rt.NumField(); i++ {
+		tags[rt.Field(i).Tag.Get("json")] = i
+	}
+
+	var rv = reflect.ValueOf(obj).Elem()
+	for pk, pv := range params {
+		if i, ok := tags[pk]; ok {
+			rv.Field(i).Set(reflect.ValueOf(pv[0]))
+		} else {
+			return APIError{Type: ErrUnknownKey, Field: pk}
+		}
+	}
+	return nil
 }

@@ -38,6 +38,14 @@ func OpenDatabase(ctx context.Context, path string) *Client {
 	return &Client{New(dbx)}
 }
 
+type ValidationError struct {
+	Field string
+}
+
+func (e ValidationError) Error() string {
+	return e.Field
+}
+
 // Unfortunately, sqlite3.Error can't be used with errors.Is/As. This helper
 // checks if an error wraps a sqlite3.Error and extracts the (positive) extended
 // error code if so. Otherwise, it returns zero.
