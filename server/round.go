@@ -32,7 +32,7 @@ func (s *Server) GetRound(c echo.Context) error {
 	}
 	round, err := s.db.GetRound(c.Request().Context(), id.ID)
 	if err != nil {
-		return translateError(err)
+		return err
 	}
 	return c.JSON(http.StatusOK, round)
 }
@@ -44,7 +44,7 @@ func (s *Server) CreateRound(c echo.Context) error {
 	}
 	round, err := s.db.CreateRound(c.Request().Context(), db.Round(params))
 	if err != nil {
-		return translateError(err)
+		return err
 	}
 	return c.JSON(http.StatusOK, round)
 }
@@ -56,7 +56,7 @@ func (s *Server) UpdateRound(c echo.Context) error {
 	}
 	round, err := s.db.GetRound(c.Request().Context(), id.ID)
 	if err != nil {
-		return translateError(err)
+		return err
 	}
 
 	var params = RoundParams(round)
@@ -65,7 +65,7 @@ func (s *Server) UpdateRound(c echo.Context) error {
 	}
 	err = s.db.UpdateRound(c.Request().Context(), db.Round(params))
 	if err != nil {
-		return translateError(err)
+		return err
 	}
 	return c.JSON(http.StatusOK, round)
 }
@@ -77,11 +77,11 @@ func (s *Server) DeleteRound(c echo.Context) error {
 	}
 	round, err := s.db.GetRound(c.Request().Context(), id.ID)
 	if err != nil {
-		return translateError(err)
+		return err
 	}
 	err = s.db.DeleteRound(c.Request().Context(), id.ID)
 	if err != nil {
-		return translateError(err)
+		return err
 	}
 	return c.JSON(http.StatusOK, round)
 }
