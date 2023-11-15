@@ -75,6 +75,16 @@ func (q *Queries) CreateRound(ctx context.Context, arg CreateRoundParams) (Round
 	return i, err
 }
 
+const deletePuzzle = `-- name: DeletePuzzle :exec
+DELETE FROM puzzles
+WHERE id = ?
+`
+
+func (q *Queries) DeletePuzzle(ctx context.Context, id int64) error {
+	_, err := q.db.ExecContext(ctx, deletePuzzle, id)
+	return err
+}
+
 const deleteRound = `-- name: DeleteRound :exec
 DELETE FROM rounds
 WHERE id = ?
@@ -92,7 +102,7 @@ SELECT
     p.original_url, p.name_override, p.archived, p.voice_room, p.reminder
 FROM puzzles AS p
 INNER JOIN rounds ON p.round = rounds.id
-WHERE puzzles.id = ? LIMIT 1
+WHERE p.id = ?
 `
 
 type GetPuzzleRow struct {
@@ -139,13 +149,14 @@ func (q *Queries) GetPuzzle(ctx context.Context, id int64) (GetPuzzleRow, error)
 }
 
 const getPuzzlesByDiscordChannel = `-- name: GetPuzzlesByDiscordChannel :many
+
 SELECT
     p.id, p.name, p.answer, rounds.id, rounds.name, rounds.emoji, p.status, p.description,
     p.location, p.puzzle_url, p.spreadsheet_id, p.discord_channel,
     p.original_url, p.name_override, p.archived, p.voice_room, p.reminder
-FROM puzzles as p
-INNER JOIN rounds on p.round = rounds.id
-WHERE discord_channel = ?
+FROM puzzles AS p
+INNER JOIN rounds ON p.round = rounds.id
+WHERE p.discord_channel = ?
 `
 
 type GetPuzzlesByDiscordChannelRow struct {
@@ -205,6 +216,34 @@ func (q *Queries) GetPuzzlesByDiscordChannel(ctx context.Context, discordChannel
 		return nil, err
 	}
 	return items, nil
+}
+
+const getRawPuzzle = `-- name: GetRawPuzzle :one
+SELECT id, name, answer, round, status, description, location, puzzle_url, spreadsheet_id, discord_channel, original_url, name_override, archived, voice_room, reminder FROM puzzles
+WHERE id = ? LIMIT 1
+`
+
+func (q *Queries) GetRawPuzzle(ctx context.Context, id int64) (RawPuzzle, error) {
+	row := q.db.QueryRowContext(ctx, getRawPuzzle, id)
+	var i RawPuzzle
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.Answer,
+		&i.Round,
+		&i.Status,
+		&i.Description,
+		&i.Location,
+		&i.PuzzleURL,
+		&i.SpreadsheetID,
+		&i.DiscordChannel,
+		&i.OriginalURL,
+		&i.NameOverride,
+		&i.Archived,
+		&i.VoiceRoom,
+		&i.Reminder,
+	)
+	return i, err
 }
 
 const getRound = `-- name: GetRound :one
@@ -292,8 +331,8 @@ SELECT
     p.id, p.name, p.answer, rounds.id, rounds.name, rounds.emoji, p.status, p.description,
     p.location, p.puzzle_url, p.spreadsheet_id, p.discord_channel,
     p.original_url, p.name_override, p.archived, p.voice_room, p.reminder
-FROM puzzles as p
-INNER JOIN rounds on p.round = rounds.id
+FROM puzzles AS p
+INNER JOIN rounds ON p.round = rounds.id
 ORDER BY p.id
 `
 
@@ -517,6 +556,54 @@ type UpdateLocationParams struct {
 
 func (q *Queries) UpdateLocation(ctx context.Context, arg UpdateLocationParams) error {
 	_, err := q.db.ExecContext(ctx, updateLocation, arg.ID, arg.Location)
+	return err
+}
+
+const updatePuzzle = `-- name: UpdatePuzzle :exec
+UPDATE puzzles
+SET name = ?2, answer = ?3, round = ?4, status = ?5, description = ?6,
+location = ?7, puzzle_url = ?8, spreadsheet_id = ?9, discord_channel = ?10,
+original_url = ?11, name_override = ?12, archived = ?13, voice_room = ?14,
+reminder = ?15
+WHERE id = ?1
+`
+
+type UpdatePuzzleParams struct {
+	ID             int64        `json:"id"`
+	Name           string       `json:"name"`
+	Answer         string       `json:"answer"`
+	Round          int64        `json:"round"`
+	Status         field.Status `json:"status"`
+	Description    string       `json:"description"`
+	Location       string       `json:"location"`
+	PuzzleURL      string       `json:"puzzle_url"`
+	SpreadsheetID  string       `json:"spreadsheet_id"`
+	DiscordChannel string       `json:"discord_channel"`
+	OriginalURL    string       `json:"original_url"`
+	NameOverride   string       `json:"name_override"`
+	Archived       bool         `json:"archived"`
+	VoiceRoom      string       `json:"voice_room"`
+	Reminder       sql.NullTime `json:"reminder"`
+}
+
+func (q *Queries) UpdatePuzzle(ctx context.Context, arg UpdatePuzzleParams) error {
+	_, err := q.db.ExecContext(ctx, updatePuzzle,
+		arg.ID,
+		arg.Name,
+		arg.Answer,
+		arg.Round,
+		arg.Status,
+		arg.Description,
+		arg.Location,
+		arg.PuzzleURL,
+		arg.SpreadsheetID,
+		arg.DiscordChannel,
+		arg.OriginalURL,
+		arg.NameOverride,
+		arg.Archived,
+		arg.VoiceRoom,
+		arg.Reminder,
+	)
 	return err
 }
 

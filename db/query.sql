@@ -5,24 +5,29 @@ SELECT
     p.original_url, p.name_override, p.archived, p.voice_room, p.reminder
 FROM puzzles AS p
 INNER JOIN rounds ON p.round = rounds.id
-WHERE puzzles.id = ? LIMIT 1;
+WHERE p.id = ?;
 
 -- name: GetPuzzlesByDiscordChannel :many
+
 SELECT
     p.id, p.name, p.answer, sqlc.embed(rounds), p.status, p.description,
     p.location, p.puzzle_url, p.spreadsheet_id, p.discord_channel,
     p.original_url, p.name_override, p.archived, p.voice_room, p.reminder
-FROM puzzles as p
-INNER JOIN rounds on p.round = rounds.id
-WHERE discord_channel = ?;
+FROM puzzles AS p
+INNER JOIN rounds ON p.round = rounds.id
+WHERE p.discord_channel = ?;
+
+-- name: GetRawPuzzle :one
+SELECT * FROM puzzles
+WHERE id = ? LIMIT 1;
 
 -- name: ListPuzzles :many
 SELECT
     p.id, p.name, p.answer, sqlc.embed(rounds), p.status, p.description,
     p.location, p.puzzle_url, p.spreadsheet_id, p.discord_channel,
     p.original_url, p.name_override, p.archived, p.voice_room, p.reminder
-FROM puzzles as p
-INNER JOIN rounds on p.round = rounds.id
+FROM puzzles AS p
+INNER JOIN rounds ON p.round = rounds.id
 ORDER BY p.id;
 
 -- name: ListPuzzleDiscoveryFragments :many
@@ -45,6 +50,18 @@ INSERT INTO puzzles (
     spreadsheet_id, discord_channel, original_url, name_override,
     archived, voice_room
 ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id;
+
+-- name: DeletePuzzle :exec
+DELETE FROM puzzles
+WHERE id = ?;
+
+-- name: UpdatePuzzle :exec
+UPDATE puzzles
+SET name = ?2, answer = ?3, round = ?4, status = ?5, description = ?6,
+location = ?7, puzzle_url = ?8, spreadsheet_id = ?9, discord_channel = ?10,
+original_url = ?11, name_override = ?12, archived = ?13, voice_room = ?14,
+reminder = ?15
+WHERE id = ?1;
 
 -- name: UpdateDiscordChannel :exec
 UPDATE puzzles SET discord_channel = ?2

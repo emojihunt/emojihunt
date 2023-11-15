@@ -7,10 +7,6 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
-type IDParams struct {
-	ID int64 `param:"id"`
-}
-
 type RoundParams struct {
 	ID    int64  `param:"id"`
 	Name  string `form:"name"`

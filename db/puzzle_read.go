@@ -121,6 +121,14 @@ func (c *Client) LoadByID(ctx context.Context, id int64) (*Puzzle, error) {
 	return &puzzle, nil
 }
 
+func (c *Client) GetRawPuzzle(ctx context.Context, id int64) (RawPuzzle, error) {
+	result, err := c.queries.GetRawPuzzle(ctx, id)
+	if err != nil {
+		return RawPuzzle{}, xerrors.Errorf("GetRawPuzzle: %w", err)
+	}
+	return result, nil
+}
+
 // LoadByDiscordChannel finds, locks and returns the matching record.
 func (c *Client) LoadByDiscordChannel(ctx context.Context, channel string) (*Puzzle, error) {
 	results, err := c.queries.GetPuzzlesByDiscordChannel(ctx, channel)

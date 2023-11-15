@@ -8,6 +8,17 @@ import (
 	"golang.org/x/xerrors"
 )
 
+func (c *Client) UpdatePuzzle(ctx context.Context, puzzle RawPuzzle) error {
+	if err := puzzle.Validate(); err != nil {
+		return err
+	}
+	err := c.queries.UpdatePuzzle(ctx, UpdatePuzzleParams(puzzle))
+	if err != nil {
+		return xerrors.Errorf("UpdatePuzzle: %w", err)
+	}
+	return nil
+}
+
 func (c *Client) SetDiscordChannel(
 	ctx context.Context, puzzle *Puzzle, channel string,
 ) (*Puzzle, error) {

@@ -21,6 +21,10 @@ type Server struct {
 	echo *echo.Echo
 }
 
+type IDParams struct {
+	ID int64 `param:"id"`
+}
+
 func Start(ctx context.Context, db *db.Client, issueURL string) {
 	var e = echo.New()
 	var s = &Server{db: db, echo: e}
@@ -34,6 +38,10 @@ func Start(ctx context.Context, db *db.Client, issueURL string) {
 	// TODO: robots.txt "User-agent: *\nDisallow: /\n"
 	// TODO: reimplement full-resync functionality
 	e.GET("/puzzles", s.ListPuzzles)
+	e.GET("/puzzles/:id", s.GetPuzzle)
+	e.POST("/puzzles", s.CreatePuzzle)
+	e.POST("/puzzles/:id", s.UpdatePuzzle)
+	e.DELETE("/puzzles/:id", s.DeletePuzzle)
 
 	e.GET("/rounds", s.ListRounds)
 	e.GET("/rounds/:id", s.GetRound)
@@ -73,7 +81,7 @@ func (s *Server) ErrorHandler(err error, c echo.Context) {
 	if _, ok := err.(*echo.HTTPError); ok {
 	} else if ok := errors.As(err, &ve); ok {
 		err = echo.NewHTTPError(http.StatusBadRequest, err.Error())
-	} else if ok := errors.As(err, &se); ok && se.ExtendedCode == sqlite3.ErrConstraintUnique {
+	} else if ok := errors.As(err, &se); ok && se.Code == sqlite3.ErrConstraint {
 		err = echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	} else if errors.Is(err, sql.ErrNoRows) {
 		err = echo.NewHTTPError(http.StatusNotFound, err.Error())
