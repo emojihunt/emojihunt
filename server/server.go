@@ -4,8 +4,6 @@ import (
 	"context"
 	"errors"
 	"net/http"
-	"reflect"
-	"strconv"
 
 	"github.com/emojihunt/emojihunt/db"
 	"github.com/getsentry/sentry-go"
@@ -69,35 +67,4 @@ func (s *Server) SentryMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 		c.Set(sentryContextKey, hub)
 		return next(c)
 	}
-}
-
-func parseID(val string) (int64, error) {
-	id, err := strconv.ParseInt(val, 10, 64)
-	if err != nil {
-		return 0, APIError{Type: ErrInvalidValue, Field: "id"}
-	}
-	return id, nil
-}
-
-func parseParams[T any](c echo.Context, obj T) error {
-	params, err := c.FormParams()
-	if err != nil {
-		return err
-	}
-
-	var rt = reflect.TypeOf(obj).Elem()
-	var tags = make(map[string]int)
-	for i := 0; i < rt.NumField(); i++ {
-		tags[rt.Field(i).Tag.Get("json")] = i
-	}
-
-	var rv = reflect.ValueOf(obj).Elem()
-	for pk, pv := range params {
-		if i, ok := tags[pk]; ok {
-			rv.Field(i).Set(reflect.ValueOf(pv[0]))
-		} else {
-			return APIError{Type: ErrUnknownKey, Field: pk}
-		}
-	}
-	return nil
 }

@@ -7,6 +7,16 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
+type IDParams struct {
+	ID int64 `param:"id"`
+}
+
+type RoundParams struct {
+	ID    int64  `param:"id"`
+	Name  string `form:"name"`
+	Emoji string `form:"emoji"`
+}
+
 func (s *Server) ListRounds(c echo.Context) error {
 	rounds, err := s.db.ListRounds(c.Request().Context())
 	if err != nil {
@@ -16,31 +26,23 @@ func (s *Server) ListRounds(c echo.Context) error {
 }
 
 func (s *Server) GetRound(c echo.Context) error {
-	id, err := parseID(c.Param("id"))
-	if err != nil {
+	var id IDParams
+	if err := c.Bind(&id); err != nil {
 		return err
 	}
-	round, err := s.db.GetRound(c.Request().Context(), id)
+	round, err := s.db.GetRound(c.Request().Context(), id.ID)
 	if err != nil {
 		return translateError(err)
 	}
 	return c.JSON(http.StatusOK, round)
 }
 
-type CreateRoundParams struct {
-	Name  string `form:"name"`
-	Emoji string `form:"emoji"`
-}
-
 func (s *Server) CreateRound(c echo.Context) error {
-	var params CreateRoundParams
+	var params RoundParams
 	if err := c.Bind(&params); err != nil {
 		return err
 	}
-	round, err := s.db.CreateRound(c.Request().Context(), db.Round{
-		Name:  params.Name,
-		Emoji: params.Emoji,
-	})
+	round, err := s.db.CreateRound(c.Request().Context(), db.Round(params))
 	if err != nil {
 		return translateError(err)
 	}
@@ -48,18 +50,20 @@ func (s *Server) CreateRound(c echo.Context) error {
 }
 
 func (s *Server) UpdateRound(c echo.Context) error {
-	id, err := parseID(c.Param("id"))
-	if err != nil {
+	var id IDParams
+	if err := c.Bind(&id); err != nil {
 		return err
 	}
-	round, err := s.db.GetRound(c.Request().Context(), id)
+	round, err := s.db.GetRound(c.Request().Context(), id.ID)
 	if err != nil {
 		return translateError(err)
 	}
-	if err = parseParams(c, &round); err != nil {
+
+	var params = RoundParams(round)
+	if err := c.Bind(&params); err != nil {
 		return err
 	}
-	err = s.db.UpdateRound(c.Request().Context(), round)
+	err = s.db.UpdateRound(c.Request().Context(), db.Round(params))
 	if err != nil {
 		return translateError(err)
 	}
@@ -67,15 +71,15 @@ func (s *Server) UpdateRound(c echo.Context) error {
 }
 
 func (s *Server) DeleteRound(c echo.Context) error {
-	id, err := parseID(c.Param("id"))
-	if err != nil {
+	var id IDParams
+	if err := c.Bind(&id); err != nil {
 		return err
 	}
-	round, err := s.db.GetRound(c.Request().Context(), id)
+	round, err := s.db.GetRound(c.Request().Context(), id.ID)
 	if err != nil {
 		return translateError(err)
 	}
-	err = s.db.DeleteRound(c.Request().Context(), id)
+	err = s.db.DeleteRound(c.Request().Context(), id.ID)
 	if err != nil {
 		return translateError(err)
 	}
