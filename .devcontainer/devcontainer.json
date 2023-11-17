@@ -6,7 +6,9 @@
 	"customizations": {
 		"vscode": {
 			"extensions": [
-				"golang.go"
+				"golang.go",
+				"Nuxtr.nuxtr-vscode",
+				"Vue.volar"
 			]
 		}
 	},

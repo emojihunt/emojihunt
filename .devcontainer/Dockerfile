@@ -2,7 +2,8 @@
 
 FROM mcr.microsoft.com/vscode/devcontainers/base:0-jammy
 
-ADD --apt sqlite3
+COPY *.sources /etc/apt/sources.list.d/
+ADD --apt nodejs sqlite3
 
 # Install Go
 RUN (curl -sL https://golang.org/dl/go1.21.4.linux-amd64.tar.gz | tar xzC /usr/local) && \
@@ -11,5 +12,7 @@ RUN (curl -sL https://golang.org/dl/go1.21.4.linux-amd64.tar.gz | tar xzC /usr/l
          github.com/sqlc-dev/sqlc/cmd/sqlc@latest
 
 # Install flyctl
-ENV FLYCTL_INSTALL=/usr/local
-RUN (curl https://fly.io/install.sh | sh)
+RUN (curl -fsSL https://fly.io/install.sh | FLYCTL_INSTALL=/usr/local sh)
+
+# Install bun
+RUN (curl -fsSL https://bun.sh/install | BUN_INSTALL=/usr/local bash)
