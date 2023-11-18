@@ -49,6 +49,7 @@ func Start(ctx context.Context, db *db.Client, discord *discord.Client,
 	e.Use(middleware.RecoverWithConfig(middleware.RecoverConfig{
 		DisablePrintStack: true,
 	}))
+	e.Use(middleware.CORS())
 	e.Use(s.AuthenticationMiddleware)
 	e.HTTPErrorHandler = s.ErrorHandler
 
