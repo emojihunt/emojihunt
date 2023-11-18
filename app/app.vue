@@ -1,4 +1,9 @@
 <script setup lang="ts">
+type Authentication = {
+  api_key: string,
+  username: string,
+};
+
 type Puzzle = {
   id: number,
   name: string,
@@ -22,19 +27,52 @@ type Round = {
   emoji: string,
 };
 
-const { data: puzzles } = <{ data: Ref<Puzzle[]>; }>await useFetch("http://localhost:8000/puzzles");
-const { data: rounds } = <{ data: Ref<Round[]>; }>await useFetch("http://localhost:8000/rounds");
+const url = useRequestURL();
+const token = new URLSearchParams(url.hash.substring(1)).get("access_token");
+if (!token) {
+  const authenticate = new URL("https://discord.com/api/oauth2/authorize");
+  const params = authenticate.searchParams;
+  params.set("client_id", "1058094051586490368");
+  params.set("redirect_url", url.toString());
+  params.set("response_type", "token");
+  params.set("scope", "identify");
+  navigateTo(authenticate.toString(), { external: true });
+  throw "Redirecting...zs";
+}
+
+const params1 = new URLSearchParams();
+params1.set("access_token", token);
+const { data: auth } = await < { data: Ref<Authentication>; } > useFetch(
+  "http://localhost:8000/authenticate",
+  {
+    method: "POST",
+    body: params1.toString(),
+    headers: {
+      "Content-Type": "application/x-www-form-urlencoded"
+    },
+  },
+);
+const { data: puzzles } = <{ data: Ref<Puzzle[]>; }>await useFetch(
+  "http://localhost:8000/puzzles",
+  { headers: { Authorization: `Bearer ${auth.value.api_key}` } },
+);
+const { data: rounds } = <{ data: Ref<Round[]>; }>await useFetch(
+  "http://localhost:8000/rounds",
+  { headers: { Authorization: `Bearer ${auth.value.api_key}` } },
+);
 </script>
 
 <template>
+  <h1>Hello, {{ auth.username }}!</h1>
+
   <h1>Rounds</h1>
   <ol>
-    <li v-for="round in rounds">{{ round.emoji }} {{ round.name }}</li>
+    <li v-for="round in rounds" :value=round.id>{{ round.emoji }} {{ round.name }}</li>
   </ol>
 
   <h1>Puzzles</h1>
   <ol>
-    <li v-for="puzzle in puzzles">
+    <li v-for="puzzle in puzzles" :value=puzzle.id>
       {{ puzzle.round.emoji }}
       <a :href="puzzle.puzzle_url">
         {{ puzzle.name }}
