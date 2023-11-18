@@ -26,8 +26,9 @@ type Client struct {
 	main     context.Context
 	issueURL string
 
-	s     *discordgo.Session
-	Guild *discordgo.Guild
+	s           *discordgo.Session
+	Guild       *discordgo.Guild
+	Application *discordgo.Application
 
 	HangingOutChannel *discordgo.Channel // for solves, to celebrate
 	MoreEyesChannel   *discordgo.Channel // for verbose puzzle updates
@@ -69,6 +70,11 @@ func Connect(ctx context.Context, config *Config, state *state.State) (*Client, 
 	guild, err := s.Guild(config.GuildID)
 	if err != nil {
 		return nil, xerrors.Errorf("failed to load guild %s: %w", config.GuildID, err)
+	}
+
+	app, err := s.Application("@me")
+	if err != nil {
+		return nil, xerrors.Errorf("failed to load application @me: %w", err)
 	}
 
 	hangingOutChannel, err := s.Channel(config.HangingOutChannelID)
@@ -127,6 +133,7 @@ func Connect(ctx context.Context, config *Config, state *state.State) (*Client, 
 		issueURL:                  config.IssueURL,
 		s:                         s,
 		Guild:                     guild,
+		Application:               app,
 		HangingOutChannel:         hangingOutChannel,
 		MoreEyesChannel:           moreEyesChannel,
 		QMChannel:                 qmChannel,

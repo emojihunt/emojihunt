@@ -25,6 +25,7 @@ import (
 
 type Config struct {
 	Sentry        *SentryConfig              `json:"sentry"`
+	Server        *server.Config             `json:"server"`
 	Discord       *discord.Config            `json:"discord"`
 	GoogleDrive   *drive.Config              `json:"google_drive"`
 	Autodiscovery *discovery.DiscoveryConfig `json:"autodiscovery"`
@@ -138,7 +139,7 @@ func main() {
 	}
 
 	log.Printf("starting web server")
-	server.Start(ctx, db, config.Sentry.IssueURL)
+	server.Start(ctx, db, discord, config.Sentry.IssueURL, config.Server)
 
 	log.Printf("starting discord bots")
 	discord.RegisterBots(

@@ -3,6 +3,9 @@
         "dsn": "https://***",
         "issue_url": "https://emojihunt.sentry.io/issues/?project=4506159265611776&query=%s"
     },
+    "server": {
+        "secret_key": "(use `openssl rand -hex 32`)"
+    },
     "discord": {
         "auth_token": "Bot ********",
         "guild_id": "1058090773582721214",

@@ -3,10 +3,12 @@ package server
 import (
 	"context"
 	"database/sql"
+	"encoding/hex"
 	"errors"
 	"net/http"
 
 	"github.com/emojihunt/emojihunt/db"
+	"github.com/emojihunt/emojihunt/discord"
 	"github.com/getsentry/sentry-go"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
@@ -14,29 +16,46 @@ import (
 	"golang.org/x/xerrors"
 )
 
-const sentryContextKey = "emojihunt.sentry"
+type Config struct {
+	SecretKey string `json:"secret_key"`
+}
 
 type Server struct {
-	db   *db.Client
-	echo *echo.Echo
+	db        *db.Client
+	discord   *discord.Client
+	echo      *echo.Echo
+	secretKey [32]byte
 }
 
 type IDParams struct {
 	ID int64 `param:"id"`
 }
 
-func Start(ctx context.Context, db *db.Client, issueURL string) {
+const sentryContextKey = "emojihunt.sentry"
+
+func Start(ctx context.Context, db *db.Client, discord *discord.Client,
+	issueURL string, config *Config) {
+
 	var e = echo.New()
-	var s = &Server{db: db, echo: e}
+	var s = &Server{db: db, discord: discord, echo: e}
+	key, err := hex.DecodeString(config.SecretKey)
+	if err != nil || len(key) != 32 {
+		panic(xerrors.Errorf("expected 32-byte key in hex: %w", err))
+	}
+	copy(s.secretKey[:], key)
+
 	e.HideBanner = true
 	e.Use(s.SentryMiddleware)
 	e.Use(middleware.RecoverWithConfig(middleware.RecoverConfig{
 		DisablePrintStack: true,
 	}))
+	e.Use(s.AuthenticationMiddleware)
 	e.HTTPErrorHandler = s.ErrorHandler
 
 	// TODO: robots.txt "User-agent: *\nDisallow: /\n"
 	// TODO: reimplement full-resync functionality
+	e.POST("/authenticate", s.Authenticate)
+
 	e.GET("/puzzles", s.ListPuzzles)
 	e.GET("/puzzles/:id", s.GetPuzzle)
 	e.POST("/puzzles", s.CreatePuzzle)
