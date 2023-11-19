@@ -2,11 +2,13 @@ FROM golang:1.21-alpine AS build
 
 WORKDIR /build
 COPY . .
-RUN CGO_ENABLED=0 go build -ldflags="-w -s" .
+RUN apk add --no-cache build-base
+RUN go build -ldflags="-w -s" .
 
 FROM alpine
+RUN apk add --no-cache tzdata
 COPY --from=build /build/emojihunt /bin/huntbot
 
 USER root
 WORKDIR /state
-ENTRYPOINT ["huntbot"]
+ENTRYPOINT ["huntbot", "-config", "/config.json"]
