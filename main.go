@@ -24,16 +24,11 @@ import (
 )
 
 type Config struct {
-	Sentry        *SentryConfig              `json:"sentry"`
-	Server        *server.Config             `json:"server"`
-	Discord       *discord.Config            `json:"discord"`
-	GoogleDrive   *drive.Config              `json:"google_drive"`
-	Autodiscovery *discovery.DiscoveryConfig `json:"autodiscovery"`
-}
-
-type SentryConfig struct {
-	DSN      string `json:"dsn"`
-	IssueURL string `json:"issue_url"`
+	Server         *server.Config             `json:"server"`
+	SentryIssueURL string                     `json:"sentry_issue_url"`
+	Discord        *discord.Config            `json:"discord"`
+	GoogleDrive    *drive.Config              `json:"google_drive"`
+	Autodiscovery  *discovery.DiscoveryConfig `json:"autodiscovery"`
 }
 
 var (
@@ -54,31 +49,33 @@ func main() {
 
 	// Initialize Sentry
 	// TODO: set up context, error handling in all goroutines
-	sentry.Init(sentry.ClientOptions{
-		Dsn: config.Sentry.DSN,
-		BeforeSend: func(event *sentry.Event, hint *sentry.EventHint) *sentry.Event {
-			if hint.OriginalException != nil {
-				log.Printf("error: %s", hint.OriginalException)
-			} else {
-				log.Printf("error: %s", hint.RecoveredException)
-			}
-			for _, exception := range event.Exception {
-				if tr := exception.Stacktrace; tr != nil {
-					for i := len(tr.Frames) - 1; i >= 0; i-- {
-						log.Printf("\t%s:%d", tr.Frames[i].AbsPath, tr.Frames[i].Lineno)
+	if dsn, ok := os.LookupEnv("SENTRY_DSN"); ok {
+		sentry.Init(sentry.ClientOptions{
+			Dsn: dsn,
+			BeforeSend: func(event *sentry.Event, hint *sentry.EventHint) *sentry.Event {
+				if hint.OriginalException != nil {
+					log.Printf("error: %s", hint.OriginalException)
+				} else {
+					log.Printf("error: %s", hint.RecoveredException)
+				}
+				for _, exception := range event.Exception {
+					if tr := exception.Stacktrace; tr != nil {
+						for i := len(tr.Frames) - 1; i >= 0; i-- {
+							log.Printf("\t%s:%d", tr.Frames[i].AbsPath, tr.Frames[i].Lineno)
+						}
 					}
 				}
+				return event
+			},
+		})
+		defer sentry.Flush(time.Second * 5)
+		defer func() {
+			if err := recover(); err != nil {
+				sentry.CurrentHub().Recover(err)
+				panic(err)
 			}
-			return event
-		},
-	})
-	defer sentry.Flush(time.Second * 5)
-	defer func() {
-		if err := recover(); err != nil {
-			sentry.CurrentHub().Recover(err)
-			panic(err)
-		}
-	}()
+		}()
+	}
 
 	// Set up the main context, which is cancelled on Ctrl-C
 	ctx, cancel := context.WithCancel(context.Background())
@@ -129,7 +126,7 @@ func main() {
 	}
 
 	log.Printf("starting web server")
-	server.Start(ctx, db, discord, config.Sentry.IssueURL, config.Server)
+	server.Start(ctx, db, discord, config.SentryIssueURL, config.Server)
 
 	log.Printf("starting discord bots")
 	discord.RegisterBots(
