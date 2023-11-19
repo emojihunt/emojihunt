@@ -1,4 +1,4 @@
 # flyctl launch added from .gitignore
-config.json
 db.sqlite
 fly.toml
+secrets

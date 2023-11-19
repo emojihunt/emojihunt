@@ -15,7 +15,3 @@ primary_region = "ord"
 [[mounts]]
   source = "state"
   destination = "/state"
-
-[[files]]
-  guest_path = "/config.json"
-  secret_name = "HUNTBOT_CONFIG"

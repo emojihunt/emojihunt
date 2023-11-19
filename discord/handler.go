@@ -89,15 +89,11 @@ func (c *Client) handleCommand(
 	// Call the handler!
 	reply, err := command.Handle(ctx, input)
 	if err != nil {
-		var url string
-		event := sentry.GetHubFromContext(ctx).CaptureException(
+		sentry.GetHubFromContext(ctx).CaptureException(
 			xerrors.Errorf("%s.Handle: %w", command.Name, err),
 		)
-		if event != nil {
-			url = fmt.Sprintf(c.issueURL, *event)
-		}
-		reply = fmt.Sprintf("🚨 Error! Please ping in %s for help. %s",
-			c.TechChannel.Mention(), url)
+		reply = fmt.Sprintf("🚨 Error! Please ping in %s for help.",
+			c.TechChannel.Mention())
 	}
 
 	if command.Async {

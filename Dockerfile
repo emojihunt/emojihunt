@@ -11,4 +11,4 @@ COPY --from=build /build/emojihunt /bin/huntbot
 
 USER root
 WORKDIR /state
-ENTRYPOINT ["huntbot", "-config", "/config.json"]
+ENTRYPOINT ["huntbot"]

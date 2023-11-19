@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"encoding/json"
 	"flag"
 	"log"
 	"os"
@@ -22,59 +21,42 @@ import (
 	"github.com/getsentry/sentry-go"
 )
 
-type Config struct {
-	Server         *server.Config             `json:"server"`
-	SentryIssueURL string                     `json:"sentry_issue_url"`
-	Discord        *discord.Config            `json:"discord"`
-	GoogleDrive    *drive.Config              `json:"google_drive"`
-	Autodiscovery  *discovery.DiscoveryConfig `json:"autodiscovery"`
-}
-
-var (
-	configPath = flag.String("config", "config.json", "path to the configuration file")
-	dbPath     = flag.String("db", "db.sqlite", "path to the database file")
-)
+var prod = flag.Bool("prod", false, "selects development or production")
 
 func init() { flag.Parse() }
 
 func main() {
-	// Load configuration
-	var config Config
-	if bs, err := os.ReadFile(*configPath); err != nil {
-		panic(err)
-	} else if err := json.Unmarshal(bs, &config); err != nil {
-		panic(err)
-	}
-
 	// Initialize Sentry
 	// TODO: set up context, error handling in all goroutines
-	if dsn, ok := os.LookupEnv("SENTRY_DSN"); ok {
-		sentry.Init(sentry.ClientOptions{
-			Dsn: dsn,
-			BeforeSend: func(event *sentry.Event, hint *sentry.EventHint) *sentry.Event {
-				if hint.OriginalException != nil {
-					log.Printf("error: %s", hint.OriginalException)
-				} else {
-					log.Printf("error: %s", hint.RecoveredException)
-				}
-				for _, exception := range event.Exception {
-					if tr := exception.Stacktrace; tr != nil {
-						for i := len(tr.Frames) - 1; i >= 0; i-- {
-							log.Printf("\t%s:%d", tr.Frames[i].AbsPath, tr.Frames[i].Lineno)
-						}
+	dsn, ok := os.LookupEnv("SENTRY_DSN")
+	if !ok {
+		panic("SENTRY_DSN is required")
+	}
+	sentry.Init(sentry.ClientOptions{
+		Dsn: dsn,
+		BeforeSend: func(event *sentry.Event, hint *sentry.EventHint) *sentry.Event {
+			if hint.OriginalException != nil {
+				log.Printf("error: %s", hint.OriginalException)
+			} else {
+				log.Printf("error: %s", hint.RecoveredException)
+			}
+			for _, exception := range event.Exception {
+				if tr := exception.Stacktrace; tr != nil {
+					for i := len(tr.Frames) - 1; i >= 0; i-- {
+						log.Printf("\t%s:%d", tr.Frames[i].AbsPath, tr.Frames[i].Lineno)
 					}
 				}
-				return event
-			},
-		})
-		defer sentry.Flush(time.Second * 5)
-		defer func() {
-			if err := recover(); err != nil {
-				sentry.CurrentHub().Recover(err)
-				panic(err)
 			}
-		}()
-	}
+			return event
+		},
+	})
+	defer sentry.Flush(time.Second * 5)
+	defer func() {
+		if err := recover(); err != nil {
+			sentry.CurrentHub().Recover(err)
+			panic(err)
+		}
+	}()
 
 	// Set up the main context, which is cancelled on Ctrl-C
 	ctx, cancel := context.WithCancel(context.Background())
@@ -83,43 +65,25 @@ func main() {
 	go func() { <-ch; cancel() }()
 
 	// Open database connection
-	db := db.OpenDatabase(ctx, *dbPath)
+	var db = db.OpenDatabase(ctx, "db.sqlite")
 
 	// Load state
-	state, err := state.Load(ctx, db)
-	if err != nil {
-		panic(err)
-	}
+	var state = state.Load(ctx, db)
 
 	// Set up clients
-	discord, err := discord.Connect(ctx, config.Discord, state)
-	if err != nil {
-		panic(err)
-	}
+	var discord = discord.Connect(ctx, *prod, state)
 	defer discord.Close()
-
-	drive, err := drive.NewClient(ctx, config.GoogleDrive)
-	if err != nil {
-		panic(err)
-	}
+	var drive = drive.NewClient(ctx, *prod)
 
 	// Start internal engines
 	log.Printf("starting syncer")
-	syncer := syncer.New(db, discord, drive)
+	var syncer = syncer.New(db, discord, drive)
 	go syncer.RestorePlaceholderEvent()
-
+	// TODO: initialize discovery poller from database config
 	var dscvpoller *discovery.Poller
-	if config.Autodiscovery != nil {
-		log.Printf("starting puzzle auto-discovery poller")
-		dscvpoller = discovery.New(ctx, db, discord, syncer, config.Autodiscovery, state)
-		dscvpoller.RegisterReactionHandler(discord)
-		go dscvpoller.Poll(ctx)
-	} else {
-		log.Printf("puzzle auto-discovery is disabled (no config found)")
-	}
 
 	log.Printf("starting web server")
-	server.Start(ctx, db, discord, config.SentryIssueURL, config.Server)
+	server.Start(ctx, db, discord)
 
 	log.Printf("starting discord bots")
 	discord.RegisterBots(

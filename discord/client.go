@@ -3,6 +3,7 @@ package discord
 import (
 	"context"
 	"log"
+	"os"
 	"sync"
 	"time"
 
@@ -12,27 +13,42 @@ import (
 )
 
 type Config struct {
-	AuthToken           string `json:"auth_token"`
-	IssueURL            string `json:"issue_url"`
-	GuildID             string `json:"guild_id"`
-	QMChannelID         string `json:"qm_channel_id"`
-	HangingOutChannelID string `json:"hanging_out_channel_id"`
-	MoreEyesChannelID   string `json:"more_eyes_channel_id"`
-	TechChannelID       string `json:"tech_channel_id"`
-	QMRoleID            string `json:"qm_role_id"`
+	GuildID             string
+	QMRoleID            string
+	QMChannelID         string
+	HangingOutChannelID string
+	MoreEyesChannelID   string
+	TechChannelID       string
+}
+
+var DevConfig = Config{
+	GuildID:             "1058090773582721214",
+	QMRoleID:            "1058092621475614751",
+	QMChannelID:         "1058092560926646282",
+	HangingOutChannelID: "1058090774488678532",
+	MoreEyesChannelID:   "1058092531688157266",
+	TechChannelID:       "1058092586398650448",
+}
+
+var ProdConfig = Config{
+	GuildID:             "793599987694436374",
+	QMRoleID:            "793618399322046515",
+	QMChannelID:         "795780814846689321",
+	HangingOutChannelID: "793599987694436377",
+	MoreEyesChannelID:   "793607709022748683",
+	TechChannelID:       "795033372979626004",
 }
 
 type Client struct {
-	main     context.Context
-	issueURL string
+	main context.Context
 
 	s           *discordgo.Session
 	Guild       *discordgo.Guild
 	Application *discordgo.Application
 
+	QMChannel         *discordgo.Channel // for puzzle maintenance
 	HangingOutChannel *discordgo.Channel // for solves, to celebrate
 	MoreEyesChannel   *discordgo.Channel // for verbose puzzle updates
-	QMChannel         *discordgo.Channel // for puzzle maintenance
 	TechChannel       *discordgo.Channel // for error messages
 
 	DefaultVoiceChannel *discordgo.Channel // for placeholder events
@@ -50,58 +66,65 @@ type Client struct {
 	rateLimits                map[string]*time.Time // url -> retryAfter time
 }
 
-func Connect(ctx context.Context, config *Config, state *state.State) (*Client, error) {
+func Connect(ctx context.Context, prod bool, state *state.State) *Client {
+
 	// Initialize discordgo client
-	s, err := discordgo.New(config.AuthToken)
+	token, ok := os.LookupEnv("DISCORD_TOKEN")
+	if !ok {
+		panic("DISCORD_TOKEN is required")
+	}
+	s, err := discordgo.New(token)
 	if err != nil {
-		return nil, xerrors.Errorf("discordgo.New: %w", err)
+		panic(err)
 	}
 	s.Identify.Intents = discordgo.IntentsGuildMessageReactions |
 		discordgo.IntentsGuildScheduledEvents
-
 	state.Lock()
 	s.Identify.Presence.Status = computeBotStatus(state)
 	state.Unlock()
 	if err := s.Open(); err != nil {
-		return nil, xerrors.Errorf("discordgo.Open: %w", err)
+		log.Panicf("discordgo.Open: %s", err)
 	}
 
 	// Validate config
+	var config = DevConfig
+	if prod {
+		config = ProdConfig
+	}
 	guild, err := s.Guild(config.GuildID)
 	if err != nil {
-		return nil, xerrors.Errorf("failed to load guild %s: %w", config.GuildID, err)
+		log.Panicf("failed to load guild %s: %s", config.GuildID, err)
 	}
 
 	app, err := s.Application("@me")
 	if err != nil {
-		return nil, xerrors.Errorf("failed to load application @me: %w", err)
+		log.Panicf("failed to load application @me: %s", err)
 	}
 
 	hangingOutChannel, err := s.Channel(config.HangingOutChannelID)
 	if err != nil {
-		return nil, xerrors.Errorf("failed to load hanging-out channel %q: %w",
+		log.Panicf("failed to load hanging-out channel %q: %s",
 			config.HangingOutChannelID, err)
 	}
 	moreEyesChannel, err := s.Channel(config.MoreEyesChannelID)
 	if err != nil {
-		return nil, xerrors.Errorf("failed to load more-eyes channel %q: %w",
+		log.Panicf("failed to load more-eyes channel %q: %s",
 			config.MoreEyesChannelID, err)
 	}
 	qmChannel, err := s.Channel(config.QMChannelID)
 	if err != nil {
-		return nil, xerrors.Errorf("failed to load qm channel %q: %w",
-			config.QMChannelID, err)
+		log.Panicf("failed to load qm channel %q: %s", config.QMChannelID, err)
 	}
 	techChannel, err := s.Channel(config.TechChannelID)
 	if err != nil {
-		return nil, xerrors.Errorf("failed to load tech channel %q: %w",
+		log.Panicf("failed to load tech channel %q: %s",
 			config.TechChannelID, err)
 	}
 
 	var defaultVoiceChannel *discordgo.Channel
 	channels, err := s.GuildChannels(config.GuildID)
 	if err != nil {
-		return nil, xerrors.Errorf("failed to load voice channels: %w", err)
+		log.Panicf("failed to load voice channels: %s", err)
 	}
 	for _, channel := range channels {
 		if channel.Type == discordgo.ChannelTypeGuildVoice {
@@ -110,12 +133,12 @@ func Connect(ctx context.Context, config *Config, state *state.State) (*Client, 
 		}
 	}
 	if defaultVoiceChannel == nil {
-		return nil, xerrors.Errorf("no voice channels found")
+		log.Panicf("no voice channels found")
 	}
 
 	allRoles, err := s.GuildRoles(guild.ID)
 	if err != nil {
-		return nil, xerrors.Errorf("failed to load guild roles: %w", err)
+		log.Panicf("failed to load guild roles: %s", err)
 	}
 	var qmRole *discordgo.Role
 	for _, role := range allRoles {
@@ -124,13 +147,12 @@ func Connect(ctx context.Context, config *Config, state *state.State) (*Client, 
 		}
 	}
 	if qmRole == nil {
-		return nil, xerrors.Errorf("role %q not found in guild %q", config.QMRoleID, guild.ID)
+		log.Panicf("role %q not found in guild %q", config.QMRoleID, guild.ID)
 	}
 
 	// Set up slash commands; return
 	discord := &Client{
 		main:                      ctx,
-		issueURL:                  config.IssueURL,
 		s:                         s,
 		Guild:                     guild,
 		Application:               app,
@@ -165,7 +187,7 @@ func Connect(ctx context.Context, config *Config, state *state.State) (*Client, 
 	)
 	s.AddHandler(WrapHandler(ctx, "rate_limit", discord.handleRateLimit))
 
-	return discord, nil
+	return discord
 }
 
 func (c *Client) Close() error {

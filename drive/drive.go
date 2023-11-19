@@ -2,8 +2,10 @@ package drive
 
 import (
 	"context"
-	"encoding/json"
+	"encoding/base64"
 	"fmt"
+	"log"
+	"os"
 	"sync"
 
 	"golang.org/x/xerrors"
@@ -12,10 +14,10 @@ import (
 	"google.golang.org/api/sheets/v4"
 )
 
-type Config struct {
-	RootFolderID   string      `json:"root_folder_id"`
-	ServiceAccount interface{} `json:"service_account"`
-}
+var (
+	DevRootFolderID  = "1KNcBa-GjA9Uz8LJ5OYs_zfWRvFRDVu1d"
+	ProdRootFolderID = "1gg7CZmoteIjLrk2ifHcc8FSG5HVo2vpt"
+)
 
 type Client struct {
 	// ID of this year's root folder (e.g. "emoji hunt/2021")
@@ -30,27 +32,35 @@ type Client struct {
 	drive  *drive.Service
 }
 
-func NewClient(ctx context.Context, config *Config) (*Client, error) {
-	rawServiceAccount, err := json.Marshal(config.ServiceAccount)
+func NewClient(ctx context.Context, prod bool) *Client {
+	raw, ok := os.LookupEnv("GOOGLE_CREDENTIALS")
+	if !ok {
+		log.Panicf("GOOGLE_CREDENTIALS is required")
+
+	}
+	credentials, err := base64.StdEncoding.DecodeString(raw)
 	if err != nil {
-		return nil, xerrors.Errorf("json.Marshal: %w", err)
+		log.Panicf("GOOGLE_CREDENTIALS is not valid base64")
+	}
+	sheetsService, err := sheets.NewService(ctx, option.WithCredentialsJSON(credentials))
+	if err != nil {
+		log.Panicf("sheets.NewService: %s", err)
+	}
+	driveService, err := drive.NewService(ctx, option.WithCredentialsJSON(credentials))
+	if err != nil {
+		log.Panicf("drive.NewService: %s", err)
 	}
 
-	sheetsService, err := sheets.NewService(ctx, option.WithCredentialsJSON(rawServiceAccount))
-	if err != nil {
-		return nil, xerrors.Errorf("sheets.NewService: %w", err)
+	var rootFolderID = DevRootFolderID
+	if prod {
+		rootFolderID = ProdRootFolderID
 	}
-	driveService, err := drive.NewService(ctx, option.WithCredentialsJSON(rawServiceAccount))
-	if err != nil {
-		return nil, xerrors.Errorf("drive.NewService: %w", err)
-	}
-
 	return &Client{
-		rootFolderID:   config.RootFolderID,
+		rootFolderID:   rootFolderID,
 		roundFolderIDs: make(map[string]string),
 		sheets:         sheetsService,
 		drive:          driveService,
-	}, nil
+	}
 }
 
 func (c *Client) CreateSheet(ctx context.Context, name, roundName string) (id string, err error) {

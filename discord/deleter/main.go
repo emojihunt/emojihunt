@@ -1,35 +1,28 @@
 package main
 
 import (
-	"encoding/json"
 	"flag"
 	"log"
 	"os"
 
 	"github.com/bwmarrin/discordgo"
+	"github.com/emojihunt/emojihunt/discord"
 	"golang.org/x/xerrors"
 )
 
 var (
-	configPath = flag.String("config", "config.json", "path to the configuration file")
-	category   = flag.String("category", "", "name of category to delete from")
-	dryRun     = flag.Bool("dry_run", true, "whether to run in dry run mode or not")
+	prod     = flag.Bool("prod", false, "selects development or production")
+	category = flag.String("category", "", "name of category to delete from")
+	dryRun   = flag.Bool("dry_run", true, "whether to run in dry run mode or not")
 )
 
 func main() {
-	// Load config file
-	bs, err := os.ReadFile(*configPath)
-	if err != nil {
-		panic(err)
-	}
-	var raw map[string]interface{}
-	if err := json.Unmarshal(bs, &raw); err != nil {
-		panic(err)
-	}
-	config := raw["discord"].(map[string]interface{})
-
 	// Create Discord client and get channel list
-	dg, err := discordgo.New(config["auth_token"].(string))
+	token, ok := os.LookupEnv("DISCORD_TOKEN")
+	if !ok {
+		panic("DISCORD_TOKEN is required")
+	}
+	dg, err := discordgo.New(token)
 	if err != nil {
 		panic(err)
 	}
@@ -38,7 +31,11 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	chs, err := dg.GuildChannels(config["guild_id"].(string))
+	guildID := discord.DevConfig.GuildID
+	if *prod {
+		guildID = discord.ProdConfig.GuildID
+	}
+	chs, err := dg.GuildChannels(guildID)
 	if err != nil {
 		panic(err)
 	}

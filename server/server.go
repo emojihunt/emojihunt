@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"encoding/hex"
 	"errors"
+	"log"
 	"net/http"
 	"os"
 
@@ -14,12 +15,7 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	"github.com/mattn/go-sqlite3"
-	"golang.org/x/xerrors"
 )
-
-type Config struct {
-	SecretKey string `json:"secret_key"`
-}
 
 type Server struct {
 	db        *db.Client
@@ -34,16 +30,17 @@ type IDParams struct {
 
 const sentryContextKey = "emojihunt.sentry"
 
-func Start(ctx context.Context, db *db.Client, discord *discord.Client,
-	issueURL string, config *Config) {
-
+func Start(ctx context.Context, db *db.Client, discord *discord.Client) {
 	var e = echo.New()
 	var s = &Server{db: db, discord: discord, echo: e}
-	key, err := hex.DecodeString(config.SecretKey)
-	if err != nil || len(key) != 32 {
-		panic(xerrors.Errorf("expected 32-byte key in hex: %w", err))
+
+	if raw, ok := os.LookupEnv("SERVER_SECRET"); !ok {
+		log.Panicf("SERVER_SECRET is required")
+	} else if key, err := hex.DecodeString(raw); err != nil || len(key) != 32 {
+		log.Panicf("expected SERVER_SECRET to be 32 bytes in hex: %s", err)
+	} else {
+		copy(s.secretKey[:], key)
 	}
-	copy(s.secretKey[:], key)
 
 	e.HideBanner = true
 	e.Use(s.SentryMiddleware)
@@ -82,7 +79,7 @@ func Start(ctx context.Context, db *db.Client, discord *discord.Client,
 	go func() {
 		err := e.Start(":8080")
 		if !errors.Is(err, http.ErrServerClosed) {
-			panic(xerrors.Errorf("echo.Start: %w", err))
+			log.Panicf("echo.Start: %s", err)
 		}
 	}()
 	go func() {

@@ -3,6 +3,7 @@ package state
 import (
 	"context"
 	"encoding/json"
+	"log"
 	"sync"
 	"time"
 
@@ -31,18 +32,20 @@ type DiscoveredPuzzle struct {
 	URL   string
 }
 
-func Load(ctx context.Context, db *db.Client) (*State, error) {
+func Load(ctx context.Context, db *db.Client) *State {
 	data, err := db.LoadState(ctx)
 	if err != nil {
-		return nil, err
+		log.Panicf("could not load state: %s", err)
 	}
 	var state State
-	err = json.Unmarshal(data, &state)
+	if err := json.Unmarshal(data, &state); err != nil {
+		log.Panicf("could not unmarshal state: %s", err)
+	}
 	if state.DiscoveryNewRounds == nil {
 		state.DiscoveryNewRounds = make(map[string]NewRound)
 	}
 	state.db = db
-	return &state, err
+	return &state
 }
 
 func (s *State) Lock() {
