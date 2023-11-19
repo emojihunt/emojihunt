@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"flag"
 	"log"
-	"net/http"
 	"os"
 	"os/signal"
 	"time"
@@ -82,12 +81,6 @@ func main() {
 	ch := make(chan os.Signal, 1)
 	signal.Notify(ch, os.Interrupt)
 	go func() { <-ch; cancel() }()
-
-	// Start debug server
-	// http://localhost:6060/debug/pprof/goroutine?debug=2
-	go func() {
-		http.ListenAndServe("localhost:6060", nil)
-	}()
 
 	// Open database connection
 	db := db.OpenDatabase(ctx, *dbPath)
