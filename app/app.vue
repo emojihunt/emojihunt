@@ -43,7 +43,7 @@ if (!token) {
 const params1 = new URLSearchParams();
 params1.set("access_token", token);
 const { data: auth } = await < { data: Ref<Authentication>; } > useFetch(
-  "http://localhost:8000/authenticate",
+  "http://localhost:8080/authenticate",
   {
     method: "POST",
     body: params1.toString(),
@@ -53,11 +53,11 @@ const { data: auth } = await < { data: Ref<Authentication>; } > useFetch(
   },
 );
 const { data: puzzles } = <{ data: Ref<Puzzle[]>; }>await useFetch(
-  "http://localhost:8000/puzzles",
+  "http://localhost:8080/puzzles",
   { headers: { Authorization: `Bearer ${auth.value.api_key}` } },
 );
 const { data: rounds } = <{ data: Ref<Round[]>; }>await useFetch(
-  "http://localhost:8000/rounds",
+  "http://localhost:8080/rounds",
   { headers: { Authorization: `Bearer ${auth.value.api_key}` } },
 );
 </script>

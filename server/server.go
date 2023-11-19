@@ -70,7 +70,7 @@ func Start(ctx context.Context, db *db.Client, discord *discord.Client,
 	e.DELETE("/rounds/:id", s.DeleteRound)
 
 	go func() {
-		err := e.Start(":8000")
+		err := e.Start(":8080")
 		if !errors.Is(err, http.ErrServerClosed) {
 			panic(xerrors.Errorf("echo.Start: %w", err))
 		}
