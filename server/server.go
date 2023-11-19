@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"net/http"
+	"os"
 
 	"github.com/emojihunt/emojihunt/db"
 	"github.com/emojihunt/emojihunt/discord"
@@ -50,24 +51,33 @@ func Start(ctx context.Context, db *db.Client, discord *discord.Client,
 		DisablePrintStack: true,
 	}))
 	e.Use(middleware.CORS())
-	e.Use(s.AuthenticationMiddleware)
 	e.HTTPErrorHandler = s.ErrorHandler
 
-	// TODO: robots.txt "User-agent: *\nDisallow: /\n"
-	// TODO: reimplement full-resync functionality
+	e.GET("/", func(c echo.Context) error {
+		return c.JSON(http.StatusOK, map[string]string{
+			"instance": os.Getenv("FLY_MACHINE_VERSION"),
+			"status":   "healthy",
+		})
+	})
+	e.GET("/robots.txt", func(c echo.Context) error {
+		return c.String(http.StatusOK, "User-agent: *\nDisallow: /\n")
+	})
 	e.POST("/authenticate", s.Authenticate)
 
-	e.GET("/puzzles", s.ListPuzzles)
-	e.GET("/puzzles/:id", s.GetPuzzle)
-	e.POST("/puzzles", s.CreatePuzzle)
-	e.POST("/puzzles/:id", s.UpdatePuzzle)
-	e.DELETE("/puzzles/:id", s.DeletePuzzle)
+	var pg = e.Group("/puzzles", s.AuthenticationMiddleware)
+	pg.GET("", s.ListPuzzles)
+	pg.GET("/:id", s.GetPuzzle)
+	pg.POST("", s.CreatePuzzle)
+	pg.POST("/:id", s.UpdatePuzzle)
+	pg.DELETE("/:id", s.DeletePuzzle)
+	// TODO: reimplement full-resync functionality
 
-	e.GET("/rounds", s.ListRounds)
-	e.GET("/rounds/:id", s.GetRound)
-	e.POST("/rounds", s.CreateRound)
-	e.POST("/rounds/:id", s.UpdateRound)
-	e.DELETE("/rounds/:id", s.DeleteRound)
+	var rg = e.Group("/rounds", s.AuthenticationMiddleware)
+	rg.GET("", s.ListRounds)
+	rg.GET("/:id", s.GetRound)
+	rg.POST("", s.CreateRound)
+	rg.POST("/:id", s.UpdateRound)
+	rg.DELETE("/:id", s.DeleteRound)
 
 	go func() {
 		err := e.Start(":8080")

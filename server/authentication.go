@@ -21,10 +21,6 @@ type Session struct {
 
 func (s *Server) AuthenticationMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 	return func(c echo.Context) error {
-		if c.Path() == "/authenticate" {
-			return next(c)
-		}
-
 		header := c.Request().Header.Get("Authorization")
 		if header == "" {
 			return echo.NewHTTPError(http.StatusForbidden, "missing Authrorization header")
