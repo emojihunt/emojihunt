@@ -45,20 +45,10 @@ func init() { flag.Parse() }
 
 func main() {
 	// Load configuration
-	var bs []byte
-	if raw, ok := os.LookupEnv("HUNTBOT_CONFIG"); ok {
-		// In production, configuration is stored in a secret (environment
-		// variable).
-		bs = []byte(raw)
-	} else {
-		// In development, configuration is stored in a local file.
-		var err error
-		if bs, err = os.ReadFile(*configPath); err != nil {
-			panic(err)
-		}
-	}
-	config := Config{}
-	if err := json.Unmarshal(bs, &config); err != nil {
+	var config Config
+	if bs, err := os.ReadFile(*configPath); err != nil {
+		panic(err)
+	} else if err := json.Unmarshal(bs, &config); err != nil {
 		panic(err)
 	}
 
