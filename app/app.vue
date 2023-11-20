@@ -1,4 +1,9 @@
 <script setup lang="ts">
+type Config = {
+  apiBase: string,
+  clientID: string,
+};
+
 type Authentication = {
   api_key: string,
   username: string,
@@ -28,36 +33,38 @@ type Round = {
 };
 
 const url = useRequestURL();
+const config = <Config>useRuntimeConfig().public;
+
 const token = new URLSearchParams(url.hash.substring(1)).get("access_token");
 if (!token) {
   const authenticate = new URL("https://discord.com/api/oauth2/authorize");
   const params = authenticate.searchParams;
-  params.set("client_id", "1058094051586490368");
+  params.set("client_id", config.clientID);
   params.set("redirect_url", url.toString());
   params.set("response_type", "token");
   params.set("scope", "identify");
   navigateTo(authenticate.toString(), { external: true });
-  throw "Redirecting...zs";
+  throw "Redirecting...";
 }
 
-const params1 = new URLSearchParams();
-params1.set("access_token", token);
+const params = new URLSearchParams();
+params.set("access_token", token);
 const { data: auth } = await < { data: Ref<Authentication>; } > useFetch(
-  "http://localhost:8080/authenticate",
+  config.apiBase + "/authenticate",
   {
     method: "POST",
-    body: params1.toString(),
+    body: params.toString(),
     headers: {
       "Content-Type": "application/x-www-form-urlencoded"
     },
   },
 );
 const { data: puzzles } = <{ data: Ref<Puzzle[]>; }>await useFetch(
-  "http://localhost:8080/puzzles",
+  config.apiBase + "/puzzles",
   { headers: { Authorization: `Bearer ${auth.value.api_key}` } },
 );
 const { data: rounds } = <{ data: Ref<Round[]>; }>await useFetch(
-  "http://localhost:8080/rounds",
+  config.apiBase + "/rounds",
   { headers: { Authorization: `Bearer ${auth.value.api_key}` } },
 );
 </script>
