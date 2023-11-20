@@ -1,9 +1,4 @@
 <script setup lang="ts">
-type Config = {
-  apiBase: string,
-  clientID: string,
-};
-
 type Authentication = {
   api_key: string,
   username: string,
@@ -33,14 +28,14 @@ type Round = {
 };
 
 const url = useRequestURL();
-const config = <Config>useRuntimeConfig().public;
+const config = useAppConfig();
 
 const token = new URLSearchParams(url.hash.substring(1)).get("access_token");
 if (!token) {
   const authenticate = new URL("https://discord.com/api/oauth2/authorize");
   const params = authenticate.searchParams;
   params.set("client_id", config.clientID);
-  params.set("redirect_url", url.toString());
+  params.set("redirect_uri", url.toString());
   params.set("response_type", "token");
   params.set("scope", "identify");
   navigateTo(authenticate.toString(), { external: true });
