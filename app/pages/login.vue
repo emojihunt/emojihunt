@@ -16,12 +16,7 @@ function authorizeURL(): string {
 var error: string | null = null;
 const url = useRequestURL();
 const code = url.searchParams.get("code");
-const canceled = url.searchParams.get("error");
-if (canceled) {
-  error = "Login canceled.";
-} else if (code) {
-  error = "TODO: implement me!";
-}
+const canceled = !!url.searchParams.get("error");
 </script>
 
 <template>
@@ -35,7 +30,10 @@ if (canceled) {
       <div class="vh"></div>
       <span>Log in</span>
     </a>
-    <div class="error" v-if="error">{{ error }}</div>
+    <div class="error" v-if="canceled">Canceled.</div>
+    <div class="error" v-if="code">
+      <b>@username</b> is not a member of the Discord server.
+    </div>
   </section>
 </template>
 
