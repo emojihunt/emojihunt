@@ -28,7 +28,6 @@ RUN bun install
 COPY --link . .
 
 # Build application
-RUN mv app.config.prod.ts app.config.ts
 RUN bun run build
 
 # Remove development dependencies
