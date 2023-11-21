@@ -5,5 +5,4 @@ export default defineNuxtConfig({
     "assets/main.css",
   ],
   devtools: { enabled: true },
-  ssr: false,
 })
