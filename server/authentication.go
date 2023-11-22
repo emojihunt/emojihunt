@@ -23,14 +23,14 @@ func (s *Server) AuthenticationMiddleware(next echo.HandlerFunc) echo.HandlerFun
 	return func(c echo.Context) error {
 		header := c.Request().Header.Get("Authorization")
 		if header == "" {
-			return echo.NewHTTPError(http.StatusForbidden, "missing Authrorization header")
+			return echo.NewHTTPError(http.StatusUnauthorized, "missing Authrorization header")
 		}
 		token, ok := strings.CutPrefix(header, "Bearer ")
 		if !ok {
-			return echo.NewHTTPError(http.StatusForbidden, "only Bearer tokens are supported")
+			return echo.NewHTTPError(http.StatusUnauthorized, "only Bearer tokens are supported")
 		}
 		if !s.verifyToken(token) {
-			return echo.NewHTTPError(http.StatusForbidden, "malformed or expired token")
+			return echo.NewHTTPError(http.StatusUnauthorized, "malformed or expired token")
 		}
 		return next(c)
 	}

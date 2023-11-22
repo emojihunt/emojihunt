@@ -8,7 +8,7 @@ const clear = () => clearError({ redirect: '/' });
 </script>
 
 <template>
-  <Login v-if="error.statusCode == 403 && r" :return="r" />
+  <Login v-if="error.statusCode == 401 && r" :return="r" />
   <section v-else>
     <div class="center">
       <h1>
