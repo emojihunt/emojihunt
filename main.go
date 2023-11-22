@@ -83,7 +83,7 @@ func main() {
 	var dscvpoller *discovery.Poller
 
 	log.Printf("starting web server")
-	server.Start(ctx, db, discord)
+	server.Start(ctx, *prod, db, discord)
 
 	log.Printf("starting discord bots")
 	discord.RegisterBots(

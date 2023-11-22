@@ -19,27 +19,21 @@ type OAuth2Session struct {
 	User        discordgo.User        `json:"user"`
 }
 
-func (c *Client) CheckOAuth2Token(ctx context.Context, token string) (*discordgo.Member, error) {
+func (c *Client) GetOAuth2Session(ctx context.Context, token string) (*OAuth2Session, error) {
 	req, err := http.NewRequestWithContext(ctx, "GET", EndpointOAuth2Session, nil)
-	req.Header.Set("Authorization", "Bearer "+token)
 	if err != nil {
-		return nil, xerrors.New("invalid access token")
+		return nil, xerrors.Errorf("call to /oauth2/@me failed: %w", err)
 	}
+	req.Header.Set("Authorization", "Bearer "+token)
 	res, err := http.DefaultClient.Do(req)
 	if err != nil {
-		return nil, xerrors.New("invalid access token")
+		return nil, xerrors.Errorf("call to /oauth2/@me failed: %w", err)
 	}
 	defer res.Body.Close()
 
 	var session OAuth2Session
 	if err := json.NewDecoder(res.Body).Decode(&session); err != nil {
-		return nil, xerrors.New("invalid access token")
-	} else if session.Application.ID != c.Application.ID {
-		return nil, xerrors.Errorf("unexpected application ID: %s", session.Application.ID)
+		return nil, xerrors.Errorf("failed to decode /oauth2/@me response: %w", err)
 	}
-	member, err := c.s.GuildMember(c.Guild.ID, session.User.ID)
-	if err != nil {
-		return nil, xerrors.Errorf("not a member of guild")
-	}
-	return member, nil
+	return &session, nil
 }

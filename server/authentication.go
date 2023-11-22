@@ -4,15 +4,24 @@ import (
 	"crypto/rand"
 	"encoding/base64"
 	"encoding/json"
+	"log"
 	"net/http"
+	"net/url"
 	"strings"
 	"time"
 
 	"github.com/labstack/echo/v4"
 	"golang.org/x/crypto/nacl/secretbox"
+	"golang.org/x/xerrors"
 )
 
-const SessionExpiry = 4 * 24 * time.Hour
+const (
+	SessionExpiry  = 4 * 24 * time.Hour
+	OAuth2TokenURL = "https://discord.com/api/v10/oauth2/token"
+
+	DevRedirectURI  = "http://localhost:3000/login"
+	ProdRedirectURI = "https://www.emojihunt.tech/login"
+)
 
 type Session struct {
 	DiscordUser string    `json:"u"`
@@ -57,7 +66,7 @@ func (s *Server) verifyToken(token string) bool {
 }
 
 type AuthenticateParams struct {
-	AccessToken string `form:"access_token"`
+	Code string `form:"code"`
 }
 
 type AuthenticateResponse struct {
@@ -70,29 +79,40 @@ func (s *Server) Authenticate(c echo.Context) error {
 	if err := c.Bind(&params); err != nil {
 		return err
 	}
-	if params.AccessToken == "" {
-		return echo.NewHTTPError(http.StatusBadRequest, "access_token is required")
+	if params.Code == "" {
+		return echo.NewHTTPError(http.StatusBadRequest, "code is required")
 	}
-	member, err := s.discord.CheckOAuth2Token(c.Request().Context(), params.AccessToken)
+
+	token, err := s.oauth2TokenExchange(params.Code)
+	if err != nil {
+		log.Printf("OAuth2 token exchange failed: %#v", err)
+		return echo.NewHTTPError(http.StatusBadRequest, "token exchange failed")
+	}
+
+	session, err := s.discord.GetOAuth2Session(c.Request().Context(), token)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err)
+	}
+	member, err := s.discord.GetGuildMember(&session.User)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusForbidden, err)
 	}
 
 	var nonce [24]byte
 	if _, err := rand.Read(nonce[:]); err != nil {
 		return err
 	}
-	session := Session{
-		DiscordUser: member.User.ID,
+	data := Session{
+		DiscordUser: session.User.ID,
 		Expiry:      time.Now().Add(SessionExpiry).Round(time.Second),
 	}
-	inner, err := json.Marshal(session)
+	inner, err := json.Marshal(data)
 	if err != nil {
 		return err
 	}
 	sealed := secretbox.Seal(nonce[:], inner, &nonce, &s.secretKey)
 
-	username := member.User.Username
+	username := session.User.Username
 	if member.Nick != "" {
 		username = member.Nick
 	}
@@ -100,4 +120,34 @@ func (s *Server) Authenticate(c echo.Context) error {
 		APIKey:   base64.RawURLEncoding.EncodeToString(sealed),
 		Username: username,
 	})
+}
+
+func (s *Server) oauth2TokenExchange(code string) (string, error) {
+	endpoint, err := url.Parse(OAuth2TokenURL)
+	if err != nil {
+		return "", err
+	}
+	endpoint.User = s.credentials
+
+	var query = url.Values{}
+	query.Add("grant_type", "authorization_code")
+	query.Add("code", code)
+	query.Add("redirect_uri", s.redirectURI)
+
+	resp, err := http.PostForm(endpoint.String(), query)
+	if err != nil {
+		return "", err
+	}
+	defer resp.Body.Close()
+
+	var data map[string]interface{}
+	if err := json.NewDecoder(resp.Body).Decode(&data); err != nil {
+		return "", err
+	} else if raw, ok := data["access_token"]; !ok {
+		return "", xerrors.Errorf("malformed token response: %#v", data)
+	} else if token, ok := raw.(string); !ok {
+		return "", xerrors.Errorf("malformed token response: %#v", data)
+	} else {
+		return token, nil
+	}
 }

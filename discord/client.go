@@ -356,6 +356,14 @@ func (c *Client) CreateUpdatePin(chanID, header string, embed *discordgo.Message
 	}
 }
 
+func (c *Client) GetGuildMember(user *discordgo.User) (*discordgo.Member, error) {
+	member, err := c.s.GuildMember(c.Guild.ID, user.ID)
+	if err != nil {
+		return nil, xerrors.Errorf("GuildMember: %w", err)
+	}
+	return member, nil
+}
+
 func (c *Client) MakeQM(user *discordgo.User) error {
 	err := c.s.GuildMemberRoleAdd(c.Guild.ID, user.ID, c.QMRole.ID)
 	if err != nil {

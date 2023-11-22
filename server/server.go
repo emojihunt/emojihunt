@@ -7,7 +7,9 @@ import (
 	"errors"
 	"log"
 	"net/http"
+	"net/url"
 	"os"
+	"strings"
 
 	"github.com/emojihunt/emojihunt/db"
 	"github.com/emojihunt/emojihunt/discord"
@@ -22,6 +24,10 @@ type Server struct {
 	discord   *discord.Client
 	echo      *echo.Echo
 	secretKey [32]byte
+
+	// for OAuth2 authentication
+	credentials *url.Userinfo
+	redirectURI string
 }
 
 type IDParams struct {
@@ -30,7 +36,7 @@ type IDParams struct {
 
 const sentryContextKey = "emojihunt.sentry"
 
-func Start(ctx context.Context, db *db.Client, discord *discord.Client) {
+func Start(ctx context.Context, prod bool, db *db.Client, discord *discord.Client) {
 	var e = echo.New()
 	var s = &Server{db: db, discord: discord, echo: e}
 
@@ -40,6 +46,19 @@ func Start(ctx context.Context, db *db.Client, discord *discord.Client) {
 		log.Panicf("expected SERVER_SECRET to be 32 bytes in hex: %s", err)
 	} else {
 		copy(s.secretKey[:], key)
+	}
+
+	if raw, ok := os.LookupEnv("OAUTH2_CREDENTIALS"); !ok {
+		log.Panicf("OAUTH2_CREDENTIALS is required")
+	} else if parts := strings.SplitN(raw, ":", 2); len(parts) != 2 {
+		log.Panicf("expected OAUTH2_CREDENTIALS to be CLIENT_ID:CLIENT_SECRET")
+	} else {
+		s.credentials = url.UserPassword(parts[0], parts[1])
+	}
+
+	s.redirectURI = DevRedirectURI
+	if prod {
+		s.redirectURI = ProdRedirectURI
 	}
 
 	e.HideBanner = true
