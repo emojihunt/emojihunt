@@ -2,6 +2,8 @@
 import type { NuxtError } from 'nuxt/app';
 
 const props = defineProps<{ error: NuxtError; }>();
+console.error(props.error);
+
 let r: string | undefined;
 if ("url" in props.error && typeof props.error.url === "string") {
   r = props.error.url;
