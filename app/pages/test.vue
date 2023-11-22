@@ -1,6 +1,5 @@
 <script setup>
-const { data, error } = useFetch("/api/puzzles");
-if (error) throw createError({ statusCode: 403 });
+const data = await useAPI("/puzzles");
 </script>
 
 <template>
