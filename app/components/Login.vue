@@ -63,7 +63,7 @@ a {
     6px 15.1px 14.8px hsl(var(--button-hsl) / 10%);
   --button-hsl: 235 86% 65%;
 
-  background-image: linear-gradient(-120deg, hsla(0, 0%, 100%, 20%) 60%, hsla(0, 0%, 100%, 0) 100%);
+  background-image: linear-gradient(68deg, hsla(0, 0%, 100%, 20%) 60%, hsla(0, 0%, 100%, 0) 100%);
 }
 
 a:hover {
