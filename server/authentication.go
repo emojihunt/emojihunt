@@ -95,7 +95,10 @@ func (s *Server) Authenticate(c echo.Context) error {
 	}
 	member, err := s.discord.GetGuildMember(&session.User)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusForbidden, err)
+		// return username for error ui
+		return c.JSON(http.StatusUnauthorized, AuthenticateResponse{
+			Username: session.User.Username,
+		})
 	}
 
 	var nonce [24]byte
