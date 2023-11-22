@@ -44,6 +44,7 @@ h1 {
   margin: 0.4rem 0.2rem;
   font-size: 1.2rem;
   letter-spacing: 0.2rem;
+  user-select: none;
   opacity: 75%;
   filter: drop-shadow(0.9px 2.3px 4px hsl(206deg 80% 70% / 40%));
 }
@@ -56,6 +57,7 @@ a {
 
   color: white;
   text-decoration: none;
+  user-select: none;
   background-color: hsl(var(--button-hsl));
   box-shadow: 0 0 1px 1px hsl(235 100% 65% / 70%) inset,
     0.9px 2.3px 2.2px hsl(var(--button-hsl) / 5%),
