@@ -1,6 +1,6 @@
 <script setup lang="ts">
 const props = defineProps<{
-  return: string;
+  return?: string;
 }>();
 
 const authenticate = new URL("https://discord.com/api/oauth2/authorize");
@@ -8,7 +8,7 @@ const params = authenticate.searchParams;
 
 const config = useAppConfig();
 const url = useRequestURL();
-const state = { r: props.return };
+const state = { r: props.return || "/" };
 params.set("client_id", config.clientID);
 params.set("redirect_uri", (new URL("/login", url)).toString());
 params.set("response_type", "code");

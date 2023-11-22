@@ -2,9 +2,10 @@
 import type { NuxtError } from 'nuxt/app';
 
 const props = defineProps<{ error: NuxtError; }>();
-const r = <string>('url' in props.error && props.error.url);
-
-const clear = () => clearError({ redirect: '/' });
+let r: string | undefined;
+if ("url" in props.error && typeof props.error.url === "string") {
+  r = props.error.url;
+}
 </script>
 
 <template>
@@ -12,12 +13,12 @@ const clear = () => clearError({ redirect: '/' });
   <section v-else>
     <div class="center">
       <h1>
-        <span class="emoji">🔥</span>Error {{ error.statusCode }}
+        <span class="emoji">🔥</span>Site Error
       </h1>
       <div class="details">
         <div class="message">{{ error.message }}</div>
         <div v-html="error.stack"></div>
-        <button @click="clear">Home</button>
+        <a href="/">Home</a>
       </div>
     </div>
   </section>
@@ -31,7 +32,7 @@ section {
 .center {
   text-align: start;
   display: inline-block;
-  width: auto;
+  min-width: 25rem;
   margin: 30vh 0;
 }
 
@@ -50,21 +51,14 @@ h1 {
   padding-left: 2.2rem;
 }
 
-.message {
-  width: 25rem;
-}
-
-button {
+a {
+  display: block;
   margin: 1.8rem 0;
-  padding: 0;
-  border: none;
-  background-color: inherit;
-  text-decoration: underline;
+  color: black;
   user-select: none;
 }
 
-button:hover {
+a:hover {
   opacity: 70%;
-  cursor: pointer;
 }
 </style>
