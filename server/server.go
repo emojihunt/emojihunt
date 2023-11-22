@@ -14,18 +14,19 @@ import (
 	"github.com/emojihunt/emojihunt/db"
 	"github.com/emojihunt/emojihunt/discord"
 	"github.com/getsentry/sentry-go"
+	"github.com/gorilla/securecookie"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	"github.com/mattn/go-sqlite3"
 )
 
 type Server struct {
-	db        *db.Client
-	discord   *discord.Client
-	echo      *echo.Echo
-	secretKey [32]byte
+	db      *db.Client
+	discord *discord.Client
+	echo    *echo.Echo
 
-	// for OAuth2 authentication
+	// authentication and OAuth2 settings
+	cookie      *securecookie.SecureCookie
 	credentials *url.Userinfo
 	redirectURI string
 }
@@ -45,7 +46,7 @@ func Start(ctx context.Context, prod bool, db *db.Client, discord *discord.Clien
 	} else if key, err := hex.DecodeString(raw); err != nil || len(key) != 32 {
 		log.Panicf("expected SERVER_SECRET to be 32 bytes in hex: %s", err)
 	} else {
-		copy(s.secretKey[:], key)
+		s.cookie = securecookie.New(key, nil)
 	}
 
 	if raw, ok := os.LookupEnv("OAUTH2_CREDENTIALS"); !ok {
@@ -66,7 +67,6 @@ func Start(ctx context.Context, prod bool, db *db.Client, discord *discord.Clien
 	e.Use(middleware.RecoverWithConfig(middleware.RecoverConfig{
 		DisablePrintStack: true,
 	}))
-	e.Use(middleware.CORS())
 	e.HTTPErrorHandler = s.ErrorHandler
 
 	e.GET("/", func(c echo.Context) error {

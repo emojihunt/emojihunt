@@ -1,68 +1,51 @@
 package server
 
 import (
-	"crypto/rand"
-	"encoding/base64"
 	"encoding/json"
 	"log"
 	"net/http"
 	"net/url"
-	"strings"
 	"time"
 
 	"github.com/labstack/echo/v4"
-	"golang.org/x/crypto/nacl/secretbox"
 	"golang.org/x/xerrors"
 )
 
 const (
-	SessionExpiry  = 4 * 24 * time.Hour
-	OAuth2TokenURL = "https://discord.com/api/v10/oauth2/token"
+	SessionDuration = 4 * 24 * time.Hour
+	OAuth2TokenURL  = "https://discord.com/api/v10/oauth2/token"
 
 	DevRedirectURI  = "http://localhost:3000/login"
 	ProdRedirectURI = "https://www.emojihunt.tech/login"
+
+	CookieName = "session"
 )
 
 type Session struct {
 	DiscordUser string    `json:"u"`
-	Expiry      time.Time `json:"e"`
+	Expires     time.Time `json:"e"`
 }
 
 func (s *Server) AuthenticationMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 	return func(c echo.Context) error {
-		header := c.Request().Header.Get("Authorization")
-		if header == "" {
-			return echo.NewHTTPError(http.StatusUnauthorized, "missing Authrorization header")
+		encoded, err := c.Cookie(CookieName)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusUnauthorized, "missing session cookie")
 		}
-		token, ok := strings.CutPrefix(header, "Bearer ")
-		if !ok {
-			return echo.NewHTTPError(http.StatusUnauthorized, "only Bearer tokens are supported")
+
+		var session Session
+		err = s.cookie.Decode(CookieName, encoded.Value, &session)
+		if err != nil {
+			log.Printf("invalid session cookie: %v", err)
+			return echo.NewHTTPError(http.StatusUnauthorized, "invalid session cookie")
 		}
-		if !s.verifyToken(token) {
-			return echo.NewHTTPError(http.StatusUnauthorized, "malformed or expired token")
+
+		if time.Until(session.Expires) < 0 {
+			log.Println("expired session")
+			return echo.NewHTTPError(http.StatusUnauthorized, "session expired")
 		}
 		return next(c)
 	}
-}
-
-func (s *Server) verifyToken(token string) bool {
-	bytes, err := base64.RawURLEncoding.DecodeString(token)
-	if err != nil {
-		return false
-	}
-
-	var nonce [24]byte
-	copy(nonce[:], bytes[:24])
-	inner, ok := secretbox.Open(nil, bytes[24:], &nonce, &s.secretKey)
-	if !ok {
-		return false
-	}
-
-	var session Session
-	if err := json.Unmarshal(inner, &session); err != nil {
-		return false
-	}
-	return time.Until(session.Expiry) > 0
 }
 
 type AuthenticateParams struct {
@@ -70,7 +53,6 @@ type AuthenticateParams struct {
 }
 
 type AuthenticateResponse struct {
-	APIKey   string `json:"api_key"`
 	Username string `json:"username"`
 }
 
@@ -86,41 +68,43 @@ func (s *Server) Authenticate(c echo.Context) error {
 	token, err := s.oauth2TokenExchange(params.Code)
 	if err != nil {
 		log.Printf("OAuth2 token exchange failed: %#v", err)
-		return echo.NewHTTPError(http.StatusBadRequest, "token exchange failed")
+		return c.JSON(http.StatusForbidden, AuthenticateResponse{})
 	}
 
 	session, err := s.discord.GetOAuth2Session(c.Request().Context(), token)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err)
+		return err
 	}
 	member, err := s.discord.GetGuildMember(&session.User)
 	if err != nil {
 		// return username for error ui
-		return c.JSON(http.StatusUnauthorized, AuthenticateResponse{
+		return c.JSON(http.StatusForbidden, AuthenticateResponse{
 			Username: session.User.Username,
 		})
 	}
 
-	var nonce [24]byte
-	if _, err := rand.Read(nonce[:]); err != nil {
-		return err
-	}
-	data := Session{
+	var expires = time.Now().Add(SessionDuration).Round(time.Second)
+	encoded, err := s.cookie.Encode(CookieName, Session{
 		DiscordUser: session.User.ID,
-		Expiry:      time.Now().Add(SessionExpiry).Round(time.Second),
-	}
-	inner, err := json.Marshal(data)
+		Expires:     expires,
+	})
 	if err != nil {
 		return err
 	}
-	sealed := secretbox.Seal(nonce[:], inner, &nonce, &s.secretKey)
+	c.SetCookie(&http.Cookie{
+		Name:     CookieName,
+		Value:    encoded,
+		Expires:  expires.Add(-10 * time.Minute),
+		Path:     "/",
+		Secure:   true,
+		HttpOnly: true,
+	})
 
 	username := session.User.Username
 	if member.Nick != "" {
 		username = member.Nick
 	}
 	return c.JSON(http.StatusOK, AuthenticateResponse{
-		APIKey:   base64.RawURLEncoding.EncodeToString(sealed),
 		Username: username,
 	})
 }
