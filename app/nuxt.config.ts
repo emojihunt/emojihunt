@@ -9,6 +9,7 @@ export default defineNuxtConfig({
   ],
   devtools: { enabled: true },
   routeRules: {
-    "/api/**": { proxy: "http://localhost:8080/**" }
+    "/api/**": { proxy: "http://localhost:8080/**" },
+    "/login": { ssr: false },
   },
 });

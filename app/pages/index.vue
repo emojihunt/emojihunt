@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
 const data = await useAPI("/puzzles");
 </script>
 

@@ -2,16 +2,19 @@
 import type { NuxtError } from 'nuxt/app';
 
 const props = defineProps<{ error: NuxtError; }>();
+const stack = import.meta.dev && props.error.stack;
 console.error(props.error);
 
-let r: string | undefined;
+// When prompting the user to log in, they should be returned to this page after
+// logging in successfully.
+let returnURL = "/";
 if ("url" in props.error && typeof props.error.url === "string") {
-  r = props.error.url;
+  returnURL = props.error.url;
 }
 </script>
 
 <template>
-  <Login v-if="error.statusCode == 401 && r" :return="r" />
+  <Login v-if="error.statusCode == 401" :returnURL="returnURL" />
   <section v-else>
     <div class="center">
       <h1>
@@ -19,7 +22,7 @@ if ("url" in props.error && typeof props.error.url === "string") {
       </h1>
       <div class="details">
         <div class="message">{{ error.message }}</div>
-        <div v-html="error.stack"></div>
+        <pre v-if="stack">{{ stack }}</pre>
         <a href="/">Home</a>
       </div>
     </div>
