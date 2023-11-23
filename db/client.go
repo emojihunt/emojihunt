@@ -39,10 +39,10 @@ func OpenDatabase(ctx context.Context, path string) *Client {
 }
 
 type ValidationError struct {
-	Message string
 	Field   string
+	Message string
 }
 
 func (e ValidationError) Error() string {
-	return fmt.Sprintf("%s: %s", e.Message, e.Field)
+	return fmt.Sprintf("%s %s", e.Field, e.Message)
 }

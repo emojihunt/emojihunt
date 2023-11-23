@@ -70,15 +70,15 @@ func (c *Client) DeletePuzzle(ctx context.Context, id int64) error {
 
 func (p RawPuzzle) Validate() error {
 	if p.Name == "" {
-		return ValidationError{"missing required field", "name"}
+		return ValidationError{"name", "is required"}
 	} else if p.Round == 0 {
-		return ValidationError{"missing required field", "round"}
+		return ValidationError{"round", "is required"}
 	} else if p.PuzzleURL == "" {
-		return ValidationError{"missing required field", "puzzle_url"}
-	} else if p.Answer != "" && !p.Status.IsSolved() {
-		return ValidationError{"unsolved puzzle cannot have an answer", "status"}
-	} else if p.Answer == "" && p.Status.IsSolved() {
-		return ValidationError{"solved puzzle requires an answer", "status"}
+		return ValidationError{"puzzle_url", "is required"}
+	} else if !p.Status.IsSolved() && p.Answer != "" {
+		return ValidationError{"status", "is unsolved but answer is not blank"}
+	} else if p.Status.IsSolved() && p.Answer == "" {
+		return ValidationError{"status", "is solved but answer is blank"}
 	}
 	return nil
 }
