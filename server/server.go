@@ -59,7 +59,7 @@ func Start(ctx context.Context, prod bool, db *db.Client, discord *discord.Clien
 	}
 
 	s.redirectURI = DevRedirectURI
-	if prod {
+	if _, ok := os.LookupEnv("FLY_REGION"); prod || ok { // TODO
 		s.redirectURI = ProdRedirectURI
 	}
 

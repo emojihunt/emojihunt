@@ -11,8 +11,7 @@ RUN (curl -sL https://golang.org/dl/go1.21.4.linux-amd64.tar.gz | tar xzC /usr/l
     GOPATH=/usr/local/go PATH=$PATH:/usr/local/go/bin go install \
          github.com/sqlc-dev/sqlc/cmd/sqlc@latest
 
-# Install flyctl
+# Install CLIs
 RUN (curl -fsSL https://fly.io/install.sh | FLYCTL_INSTALL=/usr/local sh)
-
-# Install bun
 RUN (curl -fsSL https://bun.sh/install | BUN_INSTALL=/usr/local bash)
+RUN npm install -g vercel

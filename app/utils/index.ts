@@ -3,7 +3,7 @@ export const loginNonceValue = "login.nonce";
 export const useAPI = async (endpoint: string, params?: { [name: string]: any; }): Promise<any> => {
     if (import.meta.server && !useCookie("session").value) {
         throw createError({
-            message: "Optimization: triggering login",
+            message: "short-circuiting to login page",
             statusCode: 401,
         });
     }
