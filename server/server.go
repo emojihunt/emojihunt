@@ -47,6 +47,7 @@ func Start(ctx context.Context, prod bool, db *db.Client, discord *discord.Clien
 		log.Panicf("expected SERVER_SECRET to be 32 bytes in hex: %s", err)
 	} else {
 		s.cookie = securecookie.New(key, nil)
+		s.cookie.MaxAge(int(SessionDuration.Seconds()))
 	}
 
 	if raw, ok := os.LookupEnv("OAUTH2_CREDENTIALS"); !ok {

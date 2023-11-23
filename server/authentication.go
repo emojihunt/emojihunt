@@ -21,11 +21,6 @@ const (
 	CookieName = "session"
 )
 
-type Session struct {
-	DiscordUser string    `json:"u"`
-	Expires     time.Time `json:"e"`
-}
-
 func (s *Server) AuthenticationMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		encoded, err := c.Cookie(CookieName)
@@ -33,16 +28,11 @@ func (s *Server) AuthenticationMiddleware(next echo.HandlerFunc) echo.HandlerFun
 			return echo.NewHTTPError(http.StatusUnauthorized, "missing session cookie")
 		}
 
-		var session Session
-		err = s.cookie.Decode(CookieName, encoded.Value, &session)
+		var userID string
+		err = s.cookie.Decode(CookieName, encoded.Value, &userID)
 		if err != nil {
 			log.Printf("invalid session cookie: %v", err)
 			return echo.NewHTTPError(http.StatusUnauthorized, "invalid session cookie")
-		}
-
-		if time.Until(session.Expires) < 0 {
-			log.Println("expired session")
-			return echo.NewHTTPError(http.StatusUnauthorized, "session expired")
 		}
 		return next(c)
 	}
@@ -83,18 +73,14 @@ func (s *Server) Authenticate(c echo.Context) error {
 		})
 	}
 
-	var expires = time.Now().Add(SessionDuration).Round(time.Second)
-	encoded, err := s.cookie.Encode(CookieName, Session{
-		DiscordUser: session.User.ID,
-		Expires:     expires,
-	})
+	encoded, err := s.cookie.Encode(CookieName, session.User.ID)
 	if err != nil {
 		return err
 	}
 	c.SetCookie(&http.Cookie{
 		Name:     CookieName,
 		Value:    encoded,
-		Expires:  expires.Add(-10 * time.Minute),
+		Expires:  time.Now().Add(SessionDuration - 10*time.Minute),
 		Path:     "/",
 		Secure:   true,
 		HttpOnly: true,
