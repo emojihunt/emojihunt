@@ -53,6 +53,11 @@ const hue = props.puzzle.round.color;
   user-select: none;
 }
 
+.name {
+  font-weight: 430;
+  color: oklch(23% 0.16 calc(v-bind(hue) + 40));
+}
+
 .status {
   cursor: pointer;
   box-sizing: border-box;
