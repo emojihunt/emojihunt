@@ -34,13 +34,6 @@ div {
 /* Themeing */
 header {
   font-size: 1.15rem;
-  border: 2px solid transparent;
-  border-radius: 2px;
-  background: linear-gradient(white, white) padding-box,
-    linear-gradient(90deg,
-      oklch(77% 0.14 calc(v-bind(hue))),
-      oklch(60% 0.21 calc(v-bind(hue) + 75))) border-box;
-  filter: drop-shadow(0px 6px 4px oklch(55% 0.21 calc(v-bind(hue)) / 5%));
 }
 
 .emoji {
@@ -51,7 +44,6 @@ header {
 }
 
 .round {
-  color: oklch(25% 0.25 v-bind(hue));
   font-weight: 800;
 }
 
@@ -59,7 +51,6 @@ header {
   padding-right: 1rem;
   text-align: right;
   font-variant-numeric: diagonal-fractions;
-  color: oklch(55% 0.25 calc(v-bind(hue) + 75));
 }
 
 .round,

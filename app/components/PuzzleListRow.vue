@@ -40,7 +40,6 @@ const hue = props.puzzle.round.color;
 }
 
 .name {
-  color: oklch(35% 0.25 v-bind(hue));
   font-weight: 500;
 }
 
