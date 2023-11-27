@@ -17,14 +17,15 @@ const hue = props.puzzle.round.color;
         {{ puzzle.answer || puzzle.status || 'Not Started' }}
       </span>
     </div>
-    <div class="cell note">{{ puzzle.location }} {{ puzzle.description || '-' }}</div>
+    <div class="cell location">{{ puzzle.location || '-' }}</div>
+    <div class="cell description">{{ puzzle.description || '-' }}</div>
   </span>
 </template>
 
 <style scoped>
 /* Layout */
 .row {
-  grid-column: 1 / 5;
+  grid-column: 1 / 6;
   display: grid;
   grid-template-columns: subgrid;
 }
@@ -41,7 +42,7 @@ const hue = props.puzzle.round.color;
 
 .buttons {
   text-align: center;
-  letter-spacing: 5px;
+  letter-spacing: 4px;
   cursor: pointer;
 }
 
@@ -70,7 +71,8 @@ const hue = props.puzzle.round.color;
       oklch(91% 0.25 100deg / 0%));
 }
 
-.note {
+.location,
+.description {
   font-weight: 300;
   font-size: 0.86rem;
 }

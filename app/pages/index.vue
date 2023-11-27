@@ -36,6 +36,6 @@ main {
   padding: 0 0 16vh 2rem;
   min-width: 75rem;
   display: grid;
-  grid-template-columns: 8rem 8fr 8fr 12fr;
+  grid-template-columns: 8rem 6fr 6fr 4fr 8fr;
 }
 </style>
