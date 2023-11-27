@@ -33,7 +33,7 @@ for (const puzzle of data.value) {
 
 <style scoped>
 main {
-  padding: 0 0 16vh 2rem;
+  padding: 0 0 16vh 1rem;
   min-width: 75rem;
   display: grid;
   grid-template-columns: 8rem 6fr 6fr 4fr 8fr;
