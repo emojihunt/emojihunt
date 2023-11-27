@@ -44,7 +44,7 @@ h1 {
   letter-spacing: 0.2rem;
   user-select: none;
   opacity: 75%;
-  filter: drop-shadow(0.9px 2.3px 4px hsl(206deg 80% 70% / 40%));
+  filter: drop-shadow(0 2.5px 4px oklch(77% 0.10 243deg / 40%));
 }
 
 a {
@@ -56,18 +56,18 @@ a {
   color: white;
   text-decoration: none;
   user-select: none;
-  background-color: hsl(var(--button-hsl));
-  box-shadow: 0 0 1px 1px hsl(235 100% 65% / 70%) inset,
-    0.9px 2.3px 2.2px hsl(var(--button-hsl) / 5%),
-    2.5px 6.3px 6.1px hsl(var(--button-hsl) / 7%),
-    6px 15.1px 14.8px hsl(var(--button-hsl) / 10%);
-  --button-hsl: 235 86% 65%;
+  background-color: oklch(var(--button-oklch));
 
-  background-image: linear-gradient(68deg, hsla(0, 0%, 100%, 20%) 60%, hsla(0, 0%, 100%, 0) 100%);
+  box-shadow: 0 0 1px 1px oklch(var(--button-oklch)) inset;
+  filter: drop-shadow(0 6px 8px oklch(var(--button-oklch) / 25%));
+  background-image: linear-gradient(68deg,
+      oklch(100% 0 0deg / 20%) 60%, oklch(0% 0 0deg / 0%) 100%);
+
+  --button-oklch: 58% 0.21 274deg;
 }
 
 a:hover {
-  --button-hsl: 235 51% 52%;
+  --button-oklch: 49% 0.18 274deg;
 }
 
 a svg {
@@ -90,6 +90,6 @@ a span {
 
 .error {
   padding: 1rem 0.2rem;
-  color: hsl(0, 74%, 60%);
+  color: oklch(60% 0.20 24deg)
 }
 </style>
