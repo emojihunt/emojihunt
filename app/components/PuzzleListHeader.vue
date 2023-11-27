@@ -63,6 +63,7 @@ const hue = props.puzzles[0].round.color;
   text-align: right;
   font-variant-numeric: diagonal-fractions;
   color: oklch(60% 0.30 calc(v-bind(hue) + 60));
+  user-select: none;
 }
 
 .titles {
@@ -71,5 +72,7 @@ const hue = props.puzzles[0].round.color;
   font-size: 0.8rem;
   font-weight: 430;
   color: oklch(55% 0 0deg);
+
+  user-select: none;
 }
 </style>

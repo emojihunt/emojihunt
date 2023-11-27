@@ -50,6 +50,7 @@ const hue = props.puzzle.round.color;
   text-align: center;
   letter-spacing: 4px;
   cursor: pointer;
+  user-select: none;
 }
 
 .status {
