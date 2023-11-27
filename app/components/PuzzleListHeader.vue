@@ -5,9 +5,9 @@ const hue = props.puzzles[0].round.color;
 
 <template>
   <header>
-    <div class="cell emoji">{{ puzzles[0].round.emoji }}&#xfe0f;</div>
-    <div class="cell round">{{ puzzles[0].round.name }}</div>
-    <div class="cell progress">
+    <div class="emoji">{{ puzzles[0].round.emoji }}&#xfe0f;</div>
+    <div class="round">{{ puzzles[0].round.name }}</div>
+    <div class="progress">
       {{ puzzles.filter((p: any) => !!p.answer).length }}/{{ puzzles.length }}
     </div>
   </header>
@@ -16,45 +16,39 @@ const hue = props.puzzles[0].round.color;
 <style scoped>
 /* Layout */
 header {
-  margin: 2rem 0 0.5rem;
-  grid-column: 1 / 6;
-  display: grid;
-  grid-template-columns: subgrid;
-}
+  width: 83%;
+  grid-column: 1 / 3;
+  margin: 2.4rem 0 0.5rem;
+  display: flex;
 
-div {
-  height: 2.8rem;
-  line-height: 2.8rem;
-}
-
-.round {
-  grid-column: 2 / 5;
+  height: 2.25rem;
+  line-height: 2.25rem;
 }
 
 /* Themeing */
 header {
-  font-size: 1.15rem;
+  font-size: 1.07rem;
+  padding: 0 1rem;
+
+  color: oklch(30% 0 0deg);
+  background-color: oklch(92% 0.08 v-bind(hue));
+  border-radius: 0.5rem;
+
+  box-shadow: 0 0 1px 1px oklch(79% 0.07 v-bind(hue)) inset;
+  filter: drop-shadow(0 1px 2px oklch(70% 0.07 v-bind(hue) / 25%));
 }
 
 .emoji {
-  padding: 0;
-  padding-right: 0.5rem;
-  font-size: 1.7rem;
-  text-align: right;
+  padding-right: 0.7rem;
 }
 
 .round {
-  font-weight: 800;
+  font-weight: 750;
 }
 
 .progress {
-  padding-right: 1rem;
+  flex-grow: 1;
   text-align: right;
   font-variant-numeric: diagonal-fractions;
-}
-
-.round,
-.progress {
-  line-height: 3rem;
 }
 </style>

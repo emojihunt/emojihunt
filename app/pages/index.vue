@@ -33,9 +33,9 @@ for (const puzzle of data.value) {
 
 <style scoped>
 main {
-  padding: 1vh 4vw 5vh;
+  padding: 0 0 16vh 2rem;
   min-width: 75rem;
   display: grid;
-  grid-template-columns: 4rem 8fr 8rem 8fr 12fr;
+  grid-template-columns: 8rem 8fr 8fr 12fr;
 }
 </style>

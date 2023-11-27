@@ -5,11 +5,11 @@ const hue = props.puzzle.round.color;
 
 <template>
   <span class="row">
-    <div class="cell name">
-      {{ puzzle.name }}
-    </div>
     <div class="cell buttons">
       🌎 ✏️&#xfe0f; 💬
+    </div>
+    <div class="cell name">
+      {{ puzzle.name }}
     </div>
     <div class="cell status" v-bind:class="puzzle.answer ? 'solved' : 'unsolved'">
       <span>
@@ -24,7 +24,7 @@ const hue = props.puzzle.round.color;
 <style scoped>
 /* Layout */
 .row {
-  grid-column: 2 / 6;
+  grid-column: 1 / 5;
   display: grid;
   grid-template-columns: subgrid;
 }
@@ -36,11 +36,7 @@ const hue = props.puzzle.round.color;
 
 /* Themeing */
 .row {
-  font-size: 0.95rem;
-}
-
-.name {
-  font-weight: 500;
+  font-size: 0.9rem;
 }
 
 .buttons {
@@ -55,7 +51,7 @@ const hue = props.puzzle.round.color;
   border: 1px solid transparent;
   border-radius: 1px;
 
-  font-size: 0.9rem;
+  font-size: 0.87rem;
 }
 
 .solved {
