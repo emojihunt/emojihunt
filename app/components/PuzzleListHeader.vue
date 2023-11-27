@@ -23,11 +23,14 @@ const hue = props.puzzles[0].round.color;
 .pill {
   grid-column: 1 / 3;
   width: 83%;
-  margin: 2.4rem 0 0.5rem;
+  margin: 2.4rem 0 1rem;
   display: flex;
 
   height: 2.25rem;
   line-height: 2.35rem;
+
+  position: sticky;
+  top: calc(6rem - 1.4rem);
 }
 
 .titles {
@@ -35,6 +38,9 @@ const hue = props.puzzles[0].round.color;
   display: grid;
   grid-template-columns: subgrid;
   align-self: flex-end;
+
+  position: sticky;
+  top: 4.75rem;
 }
 
 /* Themeing */

@@ -23,6 +23,7 @@ for (const puzzle of data.value) {
 </script>
 
 <template>
+  <header></header>
   <main>
     <template v-for="id in Object.keys(puzzles)">
       <PuzzleListHeader :puzzles="puzzles[id as any]" />
@@ -32,10 +33,24 @@ for (const puzzle of data.value) {
 </template>
 
 <style scoped>
+/* Layout */
+header {
+  width: 100%;
+  height: 6rem;
+  position: fixed;
+}
+
 main {
-  padding: 1rem 1rem 16vh 2rem;
+  padding: 2rem 1rem 16vh 2rem;
   min-width: 75rem;
   display: grid;
   grid-template-columns: 8rem 6fr 6fr 4fr 8fr;
+}
+
+/* Themeing */
+header {
+  background-color: oklch(98% 0.01 286deg);
+  border-bottom: 1px solid oklch(80% 0.01 286deg);
+  filter: drop-shadow(0 1.5rem 1rem oklch(100% 0 0deg));
 }
 </style>
