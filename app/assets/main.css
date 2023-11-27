@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@600&display=swap');
+
 @font-face {
   font-family: InterVariable;
   font-style: normal;
@@ -17,4 +19,12 @@
 :root {
   font-family: "InterVariable", sans-serif;
   font-optical-sizing: auto;
+  padding: 1rem;
+}
+
+.cell {
+  padding: 0 0.5rem;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
