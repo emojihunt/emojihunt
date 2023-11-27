@@ -33,6 +33,7 @@ params.set("state", props.returnURL || "/");
 
 <style scoped>
 section {
+  padding: 1rem;
   margin: 30vh auto;
   max-width: 25rem;
 }
