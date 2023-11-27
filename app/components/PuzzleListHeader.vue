@@ -27,7 +27,7 @@ const hue = props.puzzles[0].round.color;
   display: flex;
 
   height: 2.25rem;
-  line-height: 2.25rem;
+  line-height: 2.35rem;
 }
 
 .titles {
@@ -40,28 +40,29 @@ const hue = props.puzzles[0].round.color;
 /* Themeing */
 .pill {
   font-size: 1.07rem;
-  padding: 0 1rem;
+  padding: 0 1.2rem;
+  gap: 0.6rem;
 
-  color: oklch(30% 0 0deg);
-  background-color: oklch(92% 0.08 v-bind(hue));
-  border-radius: 0.5rem;
-
-  box-shadow: 0 0 1px 1px oklch(79% 0.07 v-bind(hue)) inset;
+  color: oklch(48% 0.075 v-bind(hue));
+  border-radius: 0.6rem;
+  border: 1.5px solid transparent;
+  background: linear-gradient(68deg, oklch(100% 0 0deg / 94%),
+      oklch(100% 0 0deg / 87%)) padding-box,
+    linear-gradient(68deg,
+      oklch(77% 0.10 v-bind(hue)) 7%,
+      oklch(60% 0.30 calc(v-bind(hue) + 60))) border-box;
   filter: drop-shadow(0 1px 2px oklch(70% 0.07 v-bind(hue) / 25%));
 }
 
-.emoji {
-  padding-right: 0.7rem;
-}
-
 .round {
-  font-weight: 750;
+  font-weight: 715;
 }
 
 .progress {
   flex-grow: 1;
   text-align: right;
   font-variant-numeric: diagonal-fractions;
+  color: oklch(60% 0.30 calc(v-bind(hue) + 60));
 }
 
 .titles {
