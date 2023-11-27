@@ -18,7 +18,7 @@ const hue = props.puzzle.round.color;
       </span>
     </div>
     <div class="cell location">{{ puzzle.location || '-' }}</div>
-    <div class="cell description">{{ puzzle.description || '-' }}</div>
+    <div class="cell note">{{ puzzle.description || '-' }}</div>
   </span>
 </template>
 
@@ -38,6 +38,12 @@ const hue = props.puzzle.round.color;
 /* Themeing */
 .row {
   font-size: 0.9rem;
+  border-top: 1px solid transparent;
+  border-bottom: 1px solid transparent;
+}
+
+.row:hover {
+  border-color: lightgray;
 }
 
 .buttons {
@@ -72,7 +78,7 @@ const hue = props.puzzle.round.color;
 }
 
 .location,
-.description {
+.note {
   font-weight: 300;
   font-size: 0.86rem;
 }
