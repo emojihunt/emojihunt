@@ -27,3 +27,11 @@
   white-space: nowrap;
   text-overflow: ellipsis;
 }
+
+.pill:nth-last-child(n+2 of .stuck) {
+  visibility: hidden;
+}
+
+.pill:nth-last-child(n+2 of .stuck)+.titles {
+  visibility: hidden;
+}

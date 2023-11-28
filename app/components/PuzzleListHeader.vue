@@ -1,10 +1,39 @@
 <script setup lang="ts">
 const props = defineProps<{ puzzles: any; }>();
 const hue = props.puzzles[0].round.color;
+
+// We use IntersectionObserver to add a "stuck" class to the pill when it
+// reaches its sticky position. TODO: this code requires pixel-perfect accuracy,
+// so it works on Firefox but not Chrome.
+const pill = ref<HTMLElement>();
+onMounted(() => {
+  const callback: IntersectionObserverCallback = (entries) => {
+    // We get events when the pill touches or un-touches the header *and* when
+    // it enters or exits the viewport. Check the y-coordinate to disambiguate,
+    // but note that it may be offset if the page is scrolling quickly.
+    for (const { isIntersecting, target } of entries) {
+      if (!isIntersecting && target.getBoundingClientRect().y < 75) {
+        target.classList.add("stuck");  // stick!
+      } else {
+        target.classList.remove("stuck");  // ...anything else is an unstick
+      }
+    }
+  };
+  const observer = new IntersectionObserver(callback, {
+    root: null,
+    rootMargin: '-74px 0px 0px 0px',
+    threshold: 1.0,
+  });
+  if (pill.value) {
+    observer.observe(pill.value);
+  } else {
+    console.warn("Failed to register IntersectionObserver: pill is undefined");
+  }
+});
 </script>
 
 <template>
-  <header class="pill">
+  <header class="pill" ref="pill">
     <div class="emoji">{{ puzzles[0].round.emoji }}&#xfe0f;</div>
     <div class="round">{{ puzzles[0].round.name }}</div>
     <div class="progress">
@@ -80,5 +109,10 @@ const hue = props.puzzles[0].round.color;
   color: oklch(55% 0 0deg);
 
   user-select: none;
+
+  /* avoid flicker when scrolling at medium speed */
+  transition: visibility 0.025s;
 }
+
+/* see main.css for additional `stuck` styles */
 </style>
