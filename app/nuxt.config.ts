@@ -2,7 +2,7 @@
 const prod = import.meta.env.NODE_ENV == "production";
 export default defineNuxtConfig({
   appConfig: {
-    clientID: prod ? '1058094051586490368' : '1058094051586490368',
+    clientID: prod ? '794725034152689664' : '1058094051586490368',
   },
   css: [
     "assets/normalize.css",
