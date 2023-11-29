@@ -28,6 +28,18 @@
   text-overflow: ellipsis;
 }
 
+@keyframes fade-out {
+
+  0% {
+    opacity: 1;
+  }
+
+  99%,
+  100% {
+    opacity: 0;
+  }
+}
+
 .pill:nth-last-child(n+2 of .stuck) {
   visibility: hidden;
 }

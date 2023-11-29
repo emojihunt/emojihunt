@@ -2,11 +2,20 @@
 const props = defineProps<{
   puzzles: any;
   hue: number;
+  timeline: string;
+  nextTimeline: string | undefined;
   observer: IntersectionObserver | undefined;
 }>();
 
 const pill = ref<HTMLElement>();
-onMounted(() => props.observer?.observe(pill.value!));
+const titles = ref<HTMLElement>();
+onMounted(() => {
+  if (props.nextTimeline) {
+    pill.value?.classList.add("ready");
+    titles.value?.classList.add("ready");
+  }
+  props.observer?.observe(pill.value!);
+});
 </script>
 
 <template>
@@ -17,7 +26,7 @@ onMounted(() => props.observer?.observe(pill.value!));
       {{ puzzles.filter((p: any) => !!p.answer).length }}/{{ puzzles.length }}
     </div>
   </header>
-  <header class="titles">
+  <header class="titles" ref="titles">
     <div class="cell">Status &bull; Answer</div>
     <div class="cell">Location</div>
     <div class="cell">Note</div>
@@ -86,10 +95,27 @@ onMounted(() => props.observer?.observe(pill.value!));
   color: oklch(55% 0 0deg);
 
   user-select: none;
+}
 
-  /* avoid flicker when scrolling at medium speed */
+/* Animation */
+@supports(view-timeline: --test) {
+  .pill {
+    view-timeline: v-bind(timeline);
+  }
+
+  .pill.ready,
+  .titles.ready {
+    animation: fade-out ease-in both;
+    animation-range-start: cover calc(100vh - (6rem - 1.4rem) - 2.35rem - 6px);
+    animation-range-end: cover calc(100vh - (6rem - 1.4rem) - 6px);
+    animation-timeline: v-bind(nextTimeline);
+  }
+}
+
+.titles {
+  /* fallback: avoid flicker when scrolling at medium speed */
   transition: visibility 0.025s;
 }
 
-/* see main.css for additional `stuck` styles */
+/* see main.css for keyframes and `stuck` styles */
 </style>
