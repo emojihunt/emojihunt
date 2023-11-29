@@ -1,0 +1,7 @@
+{
+    "editor.tabSize": 2,
+    "html.format.wrapLineLength": 90,
+    "nuxtr.defaultPackageManager": "Bun",
+    "nuxtr.vueFiles.style.alwaysScoped": true,
+    "vue.server.runtime": "bun"
+}
