@@ -1,35 +1,12 @@
 <script setup lang="ts">
-const props = defineProps<{ puzzles: any; }>();
-const hue = props.puzzles[0].round.color;
+const props = defineProps<{
+  puzzles: any;
+  hue: number;
+  observer: IntersectionObserver | undefined;
+}>();
 
-// We use IntersectionObserver to add a "stuck" class to the pill when it
-// reaches its sticky position. TODO: this code requires pixel-perfect accuracy,
-// so it works on Firefox but not Chrome.
 const pill = ref<HTMLElement>();
-onMounted(() => {
-  const callback: IntersectionObserverCallback = (entries) => {
-    // We get events when the pill touches or un-touches the header *and* when
-    // it enters or exits the viewport. Check the y-coordinate to disambiguate,
-    // but note that it may be offset if the page is scrolling quickly.
-    for (const { isIntersecting, target } of entries) {
-      if (!isIntersecting && target.getBoundingClientRect().y < 75) {
-        target.classList.add("stuck");  // stick!
-      } else {
-        target.classList.remove("stuck");  // ...anything else is an unstick
-      }
-    }
-  };
-  const observer = new IntersectionObserver(callback, {
-    root: null,
-    rootMargin: '-74px 0px 0px 0px',
-    threshold: 1.0,
-  });
-  if (pill.value) {
-    observer.observe(pill.value);
-  } else {
-    console.warn("Failed to register IntersectionObserver: pill is undefined");
-  }
-});
+onMounted(() => props.observer?.observe(pill.value!));
 </script>
 
 <template>

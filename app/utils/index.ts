@@ -28,3 +28,31 @@ export const useAPI = async (endpoint: string, params?: { [name: string]: any; }
     }
     return data;
 };
+
+// Set up an IntersectionObserver to detect when elements with `position:
+// sticky` sticks to the top of the page. The observer signals sticking by
+// adding or removing the `stuck` class from the given element.
+//
+// Note: this helper does not work on Chrome if the element has a drop-shadow
+// filter. See: crbug.com/1358819.
+//
+export const useStickyIntersectionObserver = (margin: number): IntersectionObserver | undefined => {
+    if (!import.meta.client) return;
+    const callback: IntersectionObserverCallback = (entries) => {
+        // We get events when the element touches or un-touches the header *and*
+        // when it enters or exits the viewport from below. Check the
+        // y-coordinate to disambiguate.
+        for (const { boundingClientRect, isIntersecting, target } of entries) {
+            if (!isIntersecting && boundingClientRect.y < (margin + 1)) {
+                target.classList.add("stuck");
+            } else {
+                target.classList.remove("stuck");
+            }
+        }
+    };
+    return new IntersectionObserver(callback, {
+        root: null,
+        rootMargin: `-${margin}px 0px 0px 0px`,
+        threshold: 1.0,
+    });
+};
