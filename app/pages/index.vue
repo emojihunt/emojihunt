@@ -19,11 +19,16 @@ for (const puzzle of data.value) {
 // Compute round stats
 const rounds: { [round: string]: RoundStats; } = {};
 for (const id of Object.keys(puzzles)) {
+  const example = puzzles[id][0].round;
   rounds[id] = {
+    anchor: example.name.trim().toLowerCase().replaceAll(" ", "-"),
     hue: hues[id],
     solved: puzzles[id].map((p) => !!p.answer).length,
     total: puzzles[id].length,
-    ...puzzles[id][0].round,
+
+    id: example.id,
+    name: example.name.trim(),
+    emoji: example.emoji,
   };
 }
 
@@ -44,7 +49,7 @@ const observer = import.meta.client && CSS.supports("view-timeline", "--test") ?
 </script>
 
 <template>
-  <header></header>
+  <Navbar :rounds="Object.values(rounds)" />
   <main>
     <template v-for="id of Object.keys(puzzles)">
       <PuzzleListHeader :round="rounds[id]" :timeline="timelineFromID(id)"
@@ -56,24 +61,11 @@ const observer = import.meta.client && CSS.supports("view-timeline", "--test") ?
 
 <style scoped>
 /* Layout */
-header {
-  width: 100%;
-  height: 6rem;
-  position: fixed;
-}
-
 main {
-  padding: 2rem 1rem 16vh 2rem;
+  padding: 2rem 1rem 18vh 2rem;
   min-width: 75rem;
   display: grid;
   grid-template-columns: 8rem 6fr 6fr 4fr 8fr;
-}
-
-/* Themeing */
-header {
-  background-color: oklch(98% 0.01 286deg);
-  border-bottom: 1px solid oklch(80% 0.01 286deg);
-  filter: drop-shadow(0 1.5rem 1rem oklch(100% 0 0deg));
 }
 
 /* Animation */

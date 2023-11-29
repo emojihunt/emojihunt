@@ -19,7 +19,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <header class="pill" ref="pill">
+  <header class="pill" ref="pill" :id="round.anchor">
     <div class="emoji">{{ round.emoji }}&#xfe0f;</div>
     <div class="round">{{ round.name }}</div>
     <div class="progress">{{ round.solved }}/{{ round.total }} </div>
@@ -44,6 +44,7 @@ onMounted(() => {
 
   position: sticky;
   top: calc(6rem - 1.4rem);
+  scroll-margin-block-start: calc(6rem - 1.4rem);
 }
 
 .titles {

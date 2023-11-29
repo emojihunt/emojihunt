@@ -31,12 +31,12 @@
 @keyframes fade-out {
 
   0% {
-    opacity: 1;
+    opacity: 100%;
   }
 
   99%,
   100% {
-    opacity: 0;
+    opacity: 0%;
   }
 }
 
