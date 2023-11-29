@@ -1,13 +1,25 @@
 <script setup lang="ts">
 const props = defineProps<{ rounds: RoundStats[]; }>();
+
+// Navigate to anchors without changing the fragment:
+const navigate = (e: MouseEvent) => {
+  const target = e.target! as HTMLAnchorElement;
+  const id = (new URL(target.href)).hash;
+  document.querySelector(id)?.scrollIntoView();
+  e.preventDefault();
+};
+
+onMounted(() => document.location.hash && history.pushState(
+  "", document.title, window.location.pathname + window.location.search,
+));
 </script>
 
 <template>
   <header>
-    <section class="rounds">
-      <NuxtLink v-for="round of rounds" v-if="rounds.length > 2" :href="`#${round.anchor}`">
+    <section class="rounds" v-if="rounds.length > 2">
+      <a v-for="round of rounds" :href="`#${round.anchor}`" @click="navigate">
         {{ round.emoji }}&#xfe0f;
-      </NuxtLink>
+      </a>
     </section>
   </header>
 </template>
@@ -23,10 +35,9 @@ header {
 .rounds {
   position: absolute;
   top: 1rem;
-  right: 2rem;
+  right: 1.75rem;
 
   display: flex;
-  gap: 0.5rem;
 }
 
 /* Themeing */
@@ -39,6 +50,8 @@ header {
 }
 
 a {
+  width: 2rem;
+  text-align: center;
   opacity: 70%;
   text-decoration: none;
 }

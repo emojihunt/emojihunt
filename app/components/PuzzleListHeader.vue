@@ -19,6 +19,7 @@ onMounted(() => {
 </script>
 
 <template>
+  <span class="spacer" :id="round.anchor"></span>
   <header class="pill" ref="pill" :id="round.anchor">
     <div class="emoji">{{ round.emoji }}&#xfe0f;</div>
     <div class="round">{{ round.name }}</div>
@@ -33,10 +34,15 @@ onMounted(() => {
 
 <style scoped>
 /* Layout */
+.spacer {
+  height: 2.8rem;
+  scroll-margin-block-start: calc(6rem - 1.4rem - 2.8rem);
+}
+
 .pill {
   grid-column: 1 / 3;
   width: 83%;
-  margin: 2.4rem 0 1rem;
+  margin: 0 0 1rem;
   display: flex;
 
   height: 2.25rem;
@@ -44,7 +50,6 @@ onMounted(() => {
 
   position: sticky;
   top: calc(6rem - 1.4rem);
-  scroll-margin-block-start: calc(6rem - 1.4rem);
 }
 
 .titles {
@@ -54,7 +59,7 @@ onMounted(() => {
   align-self: flex-end;
 
   position: sticky;
-  top: 4.75rem;
+  top: calc(6rem - 1.4rem + 0.1rem);
 }
 
 /* Themeing */
