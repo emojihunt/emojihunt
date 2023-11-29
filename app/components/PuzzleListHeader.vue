@@ -109,7 +109,11 @@ onMounted(() => {
 
   .pill.ready,
   .titles.ready {
-    animation: fade-out ease-in both;
+    /* FYI, if we use the `animation` shorthand propety, Nuxt may incorrectly
+       re-order it with other `animation-*` properties. */
+    animation-name: fade-out;
+    animation-timing-function: ease-in;
+    animation-fill-mode: both;
     animation-range-start: cover calc(100vh - (6rem - 1.4rem) - 2.35rem - 6px);
     animation-range-end: cover calc(100vh - (6rem - 1.4rem) - 6px);
     animation-timeline: v-bind(nextTimeline);
