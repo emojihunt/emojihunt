@@ -9,18 +9,36 @@ const hues: { [round: string]: number; } = {
 };
 
 // Group puzzles by round
-const puzzles: { [round: string]: any; } = {};
+const puzzles: { [round: string]: Puzzle[]; } = {};
 for (const puzzle of data.value) {
   const id = puzzle.round.id;
   puzzles[id] ||= [];
   puzzles[id].push(puzzle);
 }
 
+// Compute round stats
+const rounds: { [round: string]: RoundStats; } = {};
+for (const id of Object.keys(puzzles)) {
+  rounds[id] = {
+    hue: hues[id],
+    solved: puzzles[id].map((p) => !!p.answer).length,
+    total: puzzles[id].length,
+    ...puzzles[id][0].round,
+  };
+}
+
+// Puzzle & Round Helpers
+const timelineFromID = (id: string) => `--round-${id}`;
+const nextTimelineFromID = (id: string): string | undefined => {
+  const i = (parseInt(id) + 1).toString();
+  return puzzles[i] ? timelineFromID(i) : undefined;
+};
+
 // It doesn't look great when the round headers stack up on top of one another.
 // We want each round header to disappear when it's covered by the next. Use CSS
 // scroll-linked animations if supported and fall back to IntersectionObserver
 // if not.
-const timelines = Object.keys(puzzles).map((id) => `--round-${id}`);
+const timelines = Object.keys(puzzles).map(timelineFromID);
 const observer = import.meta.client && CSS.supports("view-timeline", "--test") ?
   undefined : useStickyIntersectionObserver(74);
 </script>
@@ -28,9 +46,9 @@ const observer = import.meta.client && CSS.supports("view-timeline", "--test") ?
 <template>
   <header></header>
   <main>
-    <template v-for="id in Object.keys(puzzles)">
-      <PuzzleListHeader :puzzles="puzzles[id]" :hue="hues[id]" :timeline="`--round-${id}`"
-        :next-timeline="!!puzzles[(parseInt(id) + 1)] ? `--round-${parseInt(id) + 1}` : undefined" :observer="observer" />
+    <template v-for="id of Object.keys(puzzles)">
+      <PuzzleListHeader :round="rounds[id]" :timeline="timelineFromID(id)"
+        :next-timeline="nextTimelineFromID(id)" :observer="observer" />
       <PuzzleListRow v-for="puzzle in puzzles[id]" :puzzle="puzzle" />
     </template>
   </main>

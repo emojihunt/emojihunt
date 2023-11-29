@@ -1,11 +1,11 @@
 <script setup lang="ts">
 const props = defineProps<{
-  puzzles: any;
-  hue: number;
+  round: RoundStats,
   timeline: string;
   nextTimeline: string | undefined;
   observer: IntersectionObserver | undefined;
 }>();
+const hue = props.round.hue;
 
 const pill = ref<HTMLElement>();
 const titles = ref<HTMLElement>();
@@ -20,11 +20,9 @@ onMounted(() => {
 
 <template>
   <header class="pill" ref="pill">
-    <div class="emoji">{{ puzzles[0].round.emoji }}&#xfe0f;</div>
-    <div class="round">{{ puzzles[0].round.name }}</div>
-    <div class="progress">
-      {{ puzzles.filter((p: any) => !!p.answer).length }}/{{ puzzles.length }}
-    </div>
+    <div class="emoji">{{ round.emoji }}&#xfe0f;</div>
+    <div class="round">{{ round.name }}</div>
+    <div class="progress">{{ round.solved }}/{{ round.total }} </div>
   </header>
   <header class="titles" ref="titles">
     <div class="cell">Status &bull; Answer</div>
