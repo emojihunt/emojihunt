@@ -1,12 +1,28 @@
 <script setup lang="ts">
-const props = defineProps<{ rounds: RoundStats[]; }>();
+const props = defineProps<{
+  rounds: RoundStats[];
+  observer: IntersectionObserver | undefined;
+}>();
 
 // Navigate to anchors without changing the fragment:
 const navigate = (e: MouseEvent) => {
   const target = e.target! as HTMLAnchorElement;
   const id = (new URL(target.href)).hash;
+
   document.querySelector(id)?.scrollIntoView();
   e.preventDefault();
+
+  // IntersectionObserver doesn't fire with scrollIntoView, so fix up the
+  // `stuck` classes manually.
+  if (props.observer) {
+    for (const pill of document.querySelectorAll(".pill")) {
+      if (pill.getBoundingClientRect().y < 75) {
+        pill.classList.add("stuck");
+      } else {
+        pill.classList.remove("stuck");
+      }
+    }
+  }
 };
 
 onMounted(() => document.location.hash && history.pushState(

@@ -42,7 +42,7 @@ onMounted(() => {
 .pill {
   grid-column: 1 / 3;
   width: 83%;
-  margin: 0 0 1rem;
+  margin: 0 0 0.8rem;
   display: flex;
 
   height: 2.25rem;
@@ -57,6 +57,8 @@ onMounted(() => {
   display: grid;
   grid-template-columns: subgrid;
   align-self: flex-end;
+
+  padding-bottom: 0.25rem;
 
   position: sticky;
   top: calc(6rem - 1.4rem + 0.1rem);
@@ -92,8 +94,6 @@ onMounted(() => {
 }
 
 .titles {
-  padding-bottom: 0.2rem;
-
   font-size: 0.8rem;
   font-weight: 430;
   color: oklch(55% 0 0deg);

@@ -36,8 +36,7 @@ export const useAPI = async (endpoint: string, params?: { [name: string]: any; }
 // Note: this helper does not work on Chrome if the element has a drop-shadow
 // filter. See: crbug.com/1358819.
 //
-export const useStickyIntersectionObserver = (margin: number): IntersectionObserver | undefined => {
-    if (!import.meta.client) return;
+export const useStickyIntersectionObserver = (margin: number): IntersectionObserver => {
     const callback: IntersectionObserverCallback = (entries) => {
         // We get events when the element touches or un-touches the header *and*
         // when it enters or exits the viewport from below. Check the

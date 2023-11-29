@@ -44,12 +44,15 @@ const nextTimelineFromID = (id: string): string | undefined => {
 // scroll-linked animations if supported and fall back to IntersectionObserver
 // if not.
 const timelines = Object.keys(puzzles).map(timelineFromID);
-const observer = import.meta.client && CSS.supports("view-timeline", "--test") ?
-  undefined : useStickyIntersectionObserver(74);
+let observer: IntersectionObserver | undefined;
+if (import.meta.client && !CSS.supports("view-timeline", "--test")) {
+  console.log("Falling back to IntersectionObserver...");
+  observer = useStickyIntersectionObserver(74);
+}
 </script>
 
 <template>
-  <Navbar :rounds="Object.values(rounds)" />
+  <Navbar :rounds="Object.values(rounds)" :observer="observer" />
   <main>
     <template v-for="id of Object.keys(puzzles)">
       <PuzzleListHeader :round="rounds[id]" :timeline="timelineFromID(id)"
