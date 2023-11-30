@@ -26,9 +26,9 @@ onMounted(() => {
     <div class="progress">{{ round.solved }}/{{ round.total }} </div>
   </header>
   <header class="titles" ref="titles">
-    <div class="cell">Status &bull; Answer</div>
-    <div class="cell">Location</div>
-    <div class="cell">Note</div>
+    <span>Status &bull; Answer</span>
+    <span>Location</span>
+    <span>Note</span>
   </header>
 </template>
 
@@ -62,6 +62,10 @@ onMounted(() => {
 
   position: sticky;
   top: calc(6rem - 1.4rem + 0.1rem);
+}
+
+.titles span {
+  padding: 0 0.30rem;
 }
 
 /* Themeing */

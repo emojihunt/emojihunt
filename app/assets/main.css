@@ -28,6 +28,12 @@
   text-overflow: ellipsis;
 }
 
+hr {
+  margin: 0;
+  padding: 0;
+  border: none;
+}
+
 @keyframes fade-out {
 
   0% {

@@ -54,10 +54,14 @@ if (import.meta.client && !CSS.supports("view-timeline", "--test")) {
 <template>
   <Navbar :rounds="Object.values(rounds)" :observer="observer" />
   <main>
+    <div class="rule first"></div>
+    <div class="rule"></div>
+    <div class="rule"></div>
     <template v-for="id of Object.keys(puzzles)">
       <PuzzleListHeader :round="rounds[id]" :timeline="timelineFromID(id)"
         :next-timeline="nextTimelineFromID(id)" :observer="observer" />
       <PuzzleListRow v-for="puzzle in puzzles[id]" :puzzle="puzzle" />
+      <hr>
     </template>
   </main>
 </template>
@@ -69,6 +73,32 @@ main {
   min-width: 75rem;
   display: grid;
   grid-template-columns: 8rem 6fr 6fr 4fr 8fr;
+}
+
+.rule {
+  width: 0;
+  height: calc(100vh - 6rem - 1px);
+  position: sticky;
+  top: calc(6rem + 1px);
+  margin-bottom: -100vh;
+
+  margin-left: -0.33rem;
+  border-left: 1px solid oklch(96% 0.01 286deg);
+}
+
+.rule.first {
+  grid-column: 3;
+}
+
+hr {
+  width: 100vw;
+  height: 0;
+
+  position: relative;
+  left: -2rem;
+  top: 0.5rem;
+
+  border-bottom: 1px solid oklch(96% 0.01 286deg);
 }
 
 /* Animation */
