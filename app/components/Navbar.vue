@@ -54,6 +54,7 @@ header {
   right: 1.75rem;
 
   display: flex;
+  gap: 0.5rem;
 }
 
 /* Themeing */
@@ -66,10 +67,13 @@ header {
 }
 
 a {
-  width: 2rem;
+  width: 1.5rem;
+  line-height: 1.5rem;
+  border-radius: 0.33rem;
+
   text-align: center;
-  opacity: 70%;
   text-decoration: none;
+  opacity: 70%;
 }
 
 a:hover {
