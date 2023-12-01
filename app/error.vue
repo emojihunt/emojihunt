@@ -3,7 +3,9 @@ import type { NuxtError } from 'nuxt/app';
 
 const props = defineProps<{ error: NuxtError; }>();
 const stack = import.meta.dev && props.error.stack;
-console.error(props.error);
+if (props.error.statusCode != 401) {
+  console.error(props.error);
+}
 
 // When prompting the user to log in, they should be returned to this page after
 // logging in successfully.
