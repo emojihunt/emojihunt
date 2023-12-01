@@ -61,7 +61,7 @@ if (import.meta.client && !CSS.supports("view-timeline", "--test")) {
     <template v-for="id of Object.keys(puzzles)">
       <PuzzleListHeader :round="rounds[id]" :timeline="timelineFromID(id)"
         :next-timeline="nextTimelineFromID(id)" :observer="observer" />
-      <PuzzleListRow v-for="puzzle in puzzles[id]" :puzzle="puzzle" />
+      <PuzzleListRow v-for="puzzle in puzzles[id]" :puzzle="puzzle" :round="rounds[id]" />
       <hr>
     </template>
   </main>

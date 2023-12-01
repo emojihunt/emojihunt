@@ -1,24 +1,38 @@
 <script setup lang="ts">
-const props = defineProps<{ puzzle: any; }>();
-const hue = props.puzzle.round.color;
+const config = useAppConfig();
+const props = defineProps<{ puzzle: Puzzle; round: RoundStats; }>();
+const { hue } = props.round;
+
+const spreadsheetURL = (p: Puzzle) => `https://docs.google.com/spreadsheets/d/${p.spreadsheet_id}`;
+const discordURL = (p: Puzzle) => `https://discord.com/channels/${config.discordGuild}/${p.discord_channel}`;
 </script>
 
 <template>
   <span class="row">
-    <div class="cell buttons">
-      🌎 ✏️&#xfe0f; 💬
+    <div class="buttons">
+      <NuxtLink :href="puzzle.puzzle_url" :ok="puzzle.puzzle_url.length > 1">
+        🌎
+      </NuxtLink>
+      <NuxtLink :href="spreadsheetURL(puzzle)" :ok="puzzle.spreadsheet_id.length > 1">
+        ✏️&#xfe0f;
+      </NuxtLink>
+      <NuxtLink :href="discordURL(puzzle)" :ok="puzzle.discord_channel.length > 1">
+        💬
+      </NuxtLink>
     </div>
-    <div class="cell name">
-      {{ puzzle.name }}
-    </div>
-    <div class="cell status" v-bind:class="puzzle.answer ? 'solved' : 'unsolved'">
-      <span>
-        {{ (!puzzle.answer && puzzle.status) ? '✍️' : '' }}
-        {{ puzzle.answer || puzzle.status || 'Not Started' }}
-      </span>
-    </div>
-    <div class="cell location">{{ puzzle.location || '-' }}</div>
-    <div class="cell note">{{ puzzle.description || '-' }}</div>
+    <span class="text">
+      <div class="cell name">
+        {{ puzzle.name }}
+      </div>
+      <div class="cell status" v-bind:class="puzzle.answer ? 'solved' : 'unsolved'">
+        <span>
+          {{ (!puzzle.answer && puzzle.status) ? '✍️' : '' }}
+          {{ puzzle.answer || puzzle.status || 'Not Started' }}
+        </span>
+      </div>
+      <div class="cell location">{{ puzzle.location || '-' }}</div>
+      <div class="cell note">{{ puzzle.description || '-' }}</div>
+    </span>
   </span>
 </template>
 
@@ -31,26 +45,58 @@ const hue = props.puzzle.round.color;
 }
 
 .row div {
-  height: 1.75em;
-  line-height: 1.75rem;
+  height: 1.85em;
+  line-height: 1.85rem;
+}
+
+.text {
+  grid-column: 2 / 6;
+  display: grid;
+  grid-template-columns: subgrid;
+}
+
+.buttons {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: center;
+}
+
+.buttons a {
+  width: 1.85rem;
+  height: 1.85rem;
+  line-height: 1.85rem;
+  align-self: center;
 }
 
 /* Themeing */
-.row {
+.text {
   font-size: 0.9rem;
   border-top: 1px solid transparent;
   border-bottom: 1px solid transparent;
 }
 
-.row:hover {
-  border-color: lightgray;
+.row:hover .text {
+  border-color: oklch(86% 0 0deg);
 }
 
-.buttons {
+.buttons a {
   text-align: center;
-  letter-spacing: 4px;
-  cursor: pointer;
+  text-decoration: none;
+
+  background-color: white;
+  border-radius: 0.33rem;
   user-select: none;
+}
+
+.buttons a:hover {
+  box-shadow: inset 0 0 2px oklch(90% 0 0deg);
+  filter: drop-shadow(0 1px 1px oklch(80% 0 0deg));
+}
+
+.buttons a[ok="false"] {
+  opacity: 50%;
+  filter: grayscale(100%);
+  pointer-events: none;
 }
 
 .name {
