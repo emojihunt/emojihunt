@@ -99,6 +99,7 @@ hr {
   top: 0.5rem;
 
   border-bottom: 1px solid oklch(96% 0.01 286deg);
+  z-index: -1;
 }
 
 /* Animation */
