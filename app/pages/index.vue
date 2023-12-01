@@ -70,7 +70,7 @@ if (import.meta.client && !CSS.supports("view-timeline", "--test")) {
 <style scoped>
 /* Layout */
 main {
-  padding: calc(6rem - 1.4rem - 2.8rem) 1rem 18vh 2rem;
+  padding: calc(6rem - 1.4rem - 2.8rem) 0.5vw 18vh 2vw;
   min-width: 75rem;
   display: grid;
   grid-template-columns: 8rem 6fr 6fr 4fr 8fr;
