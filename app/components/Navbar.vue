@@ -77,7 +77,7 @@ label {
   display: block;
   width: 0.75rem;
   height: 0.75rem;
-  margin-top: -0.4rem;
+  margin-top: -0.33rem;
 }
 
 
@@ -92,6 +92,7 @@ header {
 
 span {
   opacity: 60%;
+  pointer-events: none;
 }
 
 a {
@@ -101,13 +102,15 @@ a {
 
   text-align: center;
   text-decoration: none;
+
+  pointer-events: auto;
 }
 
 span:hover {
   opacity: 100%;
 }
 
-a:hover {
+span:hover a {
   border-color: oklch(80% 0.01 286deg);
   filter: drop-shadow(0 1px 2px oklch(95% 0 0deg));
 }
@@ -119,7 +122,6 @@ label {
 
   background-color: oklch(98% 0.01 286deg);
   border-radius: 0.3rem;
-  pointer-events: none;
 
   z-index: 3;
 }
