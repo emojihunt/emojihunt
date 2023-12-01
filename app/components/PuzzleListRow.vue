@@ -45,14 +45,19 @@ const discordURL = (p: Puzzle) => `https://discord.com/channels/${config.discord
 }
 
 .row div {
-  height: 1.85em;
-  line-height: 1.85rem;
+  line-height: 1.75em;
 }
 
 .text {
   grid-column: 2 / 6;
   display: grid;
   grid-template-columns: subgrid;
+
+  padding-top: 2px;
+}
+
+.text div:hover {
+  white-space: unset;
 }
 
 .buttons {
@@ -65,7 +70,6 @@ const discordURL = (p: Puzzle) => `https://discord.com/channels/${config.discord
   width: 1.85rem;
   height: 1.85rem;
   line-height: 1.85rem;
-  align-self: center;
 }
 
 /* Themeing */
