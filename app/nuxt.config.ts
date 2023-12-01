@@ -2,7 +2,8 @@
 const prod = import.meta.env.NODE_ENV == "production";
 export default defineNuxtConfig({
   appConfig: {
-    clientID: prod ? '794725034152689664' : '1058094051586490368',
+    clientID: prod ? "794725034152689664" : "1058094051586490368",
+    discordGuild: prod ? "793599987694436374" : "1058090773582721214",
   },
   css: [
     "assets/normalize.css",
@@ -10,7 +11,7 @@ export default defineNuxtConfig({
   ],
   devtools: { enabled: true },
   nitro: {
-    preset: 'vercel-edge',
+    preset: "vercel-edge",
   },
   routeRules: {
     "/api/**": {
