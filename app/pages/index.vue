@@ -22,8 +22,9 @@ for (const id of Object.keys(puzzles)) {
   const example = puzzles[id][0].round;
   rounds[id] = {
     anchor: example.name.trim().toLowerCase().replaceAll(" ", "-"),
+    complete: puzzles[id].filter((p => !p.answer)).length == 0,
     hue: hues[id],
-    solved: puzzles[id].map((p) => !!p.answer).length,
+    solved: puzzles[id].filter((p) => !!p.answer).length,
     total: puzzles[id].length,
 
     id: example.id,

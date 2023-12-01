@@ -23,6 +23,7 @@ type Puzzle = {
 
 type RoundStats = Round & {
   anchor: string;
+  complete: boolean;
   hue: number;
   solved: number;
   total: number;
