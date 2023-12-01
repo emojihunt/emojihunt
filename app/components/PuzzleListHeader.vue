@@ -50,6 +50,8 @@ onMounted(() => {
 
   position: sticky;
   top: calc(6rem - 1.4rem);
+
+  z-index: 20;
 }
 
 .titles {
@@ -62,6 +64,7 @@ onMounted(() => {
 
   position: sticky;
   top: calc(6rem - 1.4rem + 0.1rem);
+  z-index: 20;
 }
 
 .titles span {

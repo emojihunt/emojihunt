@@ -49,6 +49,7 @@ header {
   width: 100%;
   height: 6rem;
   position: fixed;
+  z-index: 10;
 }
 
 .rounds {
