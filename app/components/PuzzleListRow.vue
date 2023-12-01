@@ -3,20 +3,24 @@ const config = useAppConfig();
 const props = defineProps<{ puzzle: Puzzle; round: RoundStats; }>();
 const { hue } = props.round;
 
-const spreadsheetURL = (p: Puzzle) => `https://docs.google.com/spreadsheets/d/${p.spreadsheet_id}`;
-const discordURL = (p: Puzzle) => `https://discord.com/channels/${config.discordGuild}/${p.discord_channel}`;
+const puzzleURL = props.puzzle.puzzle_url.length > 1 ?
+  props.puzzle.puzzle_url : '';
+const spreadsheetURL = props.puzzle.spreadsheet_id.length > 1 ?
+  `https://docs.google.com/spreadsheets/d/${props.puzzle.spreadsheet_id}` : '';
+const discordURL = props.puzzle.discord_channel.length > 1 ?
+  `https://discord.com/channels/${config.discordGuild}/${props.puzzle.discord_channel}` : '';
 </script>
 
 <template>
   <span class="row">
     <div class="buttons">
-      <NuxtLink :href="puzzle.puzzle_url" :ok="puzzle.puzzle_url.length > 1">
+      <NuxtLink :href="puzzleURL" :ok="!!puzzleURL">
         🌎
       </NuxtLink>
-      <NuxtLink :href="spreadsheetURL(puzzle)" :ok="puzzle.spreadsheet_id.length > 1">
+      <NuxtLink :href="spreadsheetURL" :ok="!!spreadsheetURL">
         ✏️&#xfe0f;
       </NuxtLink>
-      <NuxtLink :href="discordURL(puzzle)" :ok="puzzle.discord_channel.length > 1">
+      <NuxtLink :href="discordURL" :ok="!!discordURL">
         💬
       </NuxtLink>
     </div>
@@ -62,7 +66,7 @@ const discordURL = (p: Puzzle) => `https://discord.com/channels/${config.discord
 
 .buttons {
   display: flex;
-  gap: 0.5rem;
+  gap: 0.25rem;
   justify-content: center;
 }
 

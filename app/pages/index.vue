@@ -74,6 +74,7 @@ main {
   min-width: 75rem;
   display: grid;
   grid-template-columns: 8rem 6fr 6fr 4fr 8fr;
+  column-gap: 0.66rem;
 }
 
 .rule {
@@ -85,6 +86,8 @@ main {
 
   margin-left: -0.33rem;
   border-left: 1px solid oklch(96% 0.01 286deg);
+
+  z-index: 12;
 }
 
 .rule.first {
