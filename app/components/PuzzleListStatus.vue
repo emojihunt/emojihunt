@@ -37,6 +37,7 @@ div:hover {
 
 .solved {
   font-family: 'IBM Plex Mono', monospace;
+  font-weight: 600;
 }
 
 .unsolved span {

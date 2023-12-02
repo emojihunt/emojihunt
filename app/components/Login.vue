@@ -1,4 +1,16 @@
 <script setup lang="ts">
+// Preload the fonts used in the app, since they're quite large. We have a
+// special subset font for the glyphs used on this page; it *isn't* preloaded
+// because it's small and gets inlined by the build step.
+import inter from "~/assets/InterVariable.woff2";
+import plex from "~/assets/IBMPlexMono-Bold-Latin1.woff2";
+useHead({
+  title: "Log in",
+  // @ts-ignore
+  link: [inter, plex].map((href) =>
+    ({ rel: "preload", href, as: "font", type: "font/woff2", crossorigin: true })),
+});
+
 const config = useAppConfig();
 const url = useRequestURL();
 const props = defineProps<{
@@ -27,7 +39,7 @@ params.set("state", props.returnURL || "/");
       <span>Log in</span>
     </a>
     <div class="error">
-      <slot />
+      <slot></slot>
     </div>
   </section>
 </template>
@@ -37,6 +49,7 @@ section {
   padding: 1rem;
   margin: 30vh auto;
   max-width: 25rem;
+  font-family: "Inter Variable Login", sans-serif;
 }
 
 h1 {

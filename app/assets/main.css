@@ -1,7 +1,5 @@
-@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@600&display=swap');
-
 @font-face {
-  font-family: InterVariable;
+  font-family: "Inter Variable";
   font-style: normal;
   font-weight: 100 900;
   font-display: swap;
@@ -9,15 +7,31 @@
 }
 
 @font-face {
-  font-family: InterVariable;
+  font-family: "Inter Variable";
   font-style: italic;
   font-weight: 100 900;
   font-display: swap;
   src: url("InterVariable-Italic.woff2") format("woff2");
 }
 
+@font-face {
+  font-family: "Inter Variable Login";
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url("InterVariable-Login.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "IBM Plex Mono";
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("IBMPlexMono-Bold-Latin1.woff2") format("woff2");
+}
+
 :root {
-  font-family: "InterVariable", sans-serif;
+  font-family: "Inter Variable", sans-serif;
   font-optical-sizing: auto;
 }
 
