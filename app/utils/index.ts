@@ -1,6 +1,6 @@
 export const loginNonceValue = "login.nonce";
 
-export const useAPI = async (endpoint: string, params?: { [name: string]: any; }): Promise<any> => {
+export const useAPI = async <T>(endpoint: string, params?: { [name: string]: any; }): Promise<Ref<T>> => {
     if (import.meta.server && !useCookie("session").value) {
         throw createError({
             message: "short-circuiting to login page",
@@ -26,7 +26,7 @@ export const useAPI = async (endpoint: string, params?: { [name: string]: any; }
             statusCode: error.value.statusCode,
         });
     }
-    return data;
+    return data as Ref<T>;
 };
 
 // Set up an IntersectionObserver to detect when elements with `position:

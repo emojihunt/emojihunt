@@ -4,12 +4,13 @@ const props = defineProps<{ puzzle: Puzzle; round: RoundStats; }>();
 
 <template>
   <span class="row">
-    <PuzzleButtons :puzzle="puzzle" />
+    <PuzzleListButtons :puzzle="puzzle" />
     <span class="data">
-      <PuzzleListCell :content="puzzle.name" :hue="round.hue" :style="'thick'" />
+      <PuzzleListCell :puzzle="puzzle" field="name" :hue="round.hue" :style="'thick'"
+        readonly />
       <PuzzleListStatus :puzzle="puzzle" />
-      <PuzzleListCell :content="puzzle.location" :style="'thin'" />
-      <PuzzleListCell :content="puzzle.description" :style="'thin'" />
+      <PuzzleListCell :puzzle="puzzle" field="location" :style="'thin'" />
+      <PuzzleListCell :puzzle="puzzle" field="description" :style="'thin'" />
     </span>
   </span>
 </template>

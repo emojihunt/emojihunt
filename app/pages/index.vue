@@ -1,6 +1,6 @@
 <script setup lang="ts">
 useHead({ title: "Puzzle Tracker" });
-const data = await useAPI("/puzzles");
+const data = await useAPI<Puzzle[]>("/puzzles");
 
 // HACK: apply hard-coded colors to rounds for testing
 const hues: { [round: string]: number; } = {
