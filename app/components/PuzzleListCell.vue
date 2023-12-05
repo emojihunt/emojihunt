@@ -10,34 +10,62 @@ const props = defineProps<{
 const content = ref(props.puzzle[props.field].trim());
 const editing = ref(false);
 const pending = ref(false);
+const div = ref<HTMLDivElement>();
 
-const click = (e: MouseEvent) => {
-  if (props.readonly) return;
-  const div = e.target as HTMLDivElement;
+const click = () => !props.readonly && !editing.value && beginEdit();
+const blur = () => !props.readonly && editing.value && saveEdit();
 
-  editing.value = true;
-  div.contentEditable = "plaintext-only";
-  div.focus();
+const keydown = (e: KeyboardEvent) => {
+  if (props.readonly) {
+    return;
+  } else if (e.key == "Enter") {
+    if (editing.value) saveEdit();
+    else beginEdit();
+    e.preventDefault();
+
+    // For key press events, we need to manually move focus into the cell. Click
+    // events do this automatically.
+    const node = div.value!.childNodes[0];
+    const range = document.createRange();
+    range.setStart(node, 0);
+    range.setEnd(node, node.textContent?.length || 0);
+    const selection = window.getSelection();
+    selection?.removeAllRanges();
+    selection?.addRange(range);
+  } else if (e.key == "Escape") {
+    if (editing.value) cancelEdit();
+  }
 };
 
-const blur = (e: FocusEvent) => {
-  if (props.readonly) return;
-  const div = e.target as HTMLDivElement;
+const beginEdit = () => {
+  editing.value = true;
+  div.value!.focus();
+};
 
-  const updated = div.textContent?.trim() || "";
+const cancelEdit = () => {
+  editing.value = false;
+  div.value!.innerText = content.value || "-";
+};
+
+const saveEdit = () => {
+  let updated = div.value!.textContent?.trim() || "";
+  if (updated == "-") {
+    updated = "";
+  }
   if (updated != content.value) {
-    content.value = updated;
     pending.value = true;
     useAPI(`/puzzles/${props.puzzle.id}`, { [props.field]: content.value })
       .then(() => { pending.value = false; });
   };
   editing.value = false;
-  div.contentEditable = "false";
+  content.value = updated;
+  div.value!.innerText = content.value || "-";
 };
 </script>
 
 <template>
-  <div class="cell" :class="style" @click="click" @blur="blur" spellcheck="false">
+  <div ref="div" class="cell" :class="style" @click="click" @blur="blur" @keydown="keydown"
+    :contenteditable="editing ? 'plaintext-only' : 'false'" spellcheck="false" tabindex="0">
     {{ content || (editing ? "" : "-") }}
     <Spinner v-if="pending" />
   </div>
