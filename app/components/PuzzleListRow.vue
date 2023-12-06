@@ -31,8 +31,6 @@ const props = defineProps<{
   grid-column: 2 / 6;
   display: grid;
   grid-template-columns: subgrid;
-
-  padding-top: 2px;
 }
 
 /* Themeing */

@@ -12,14 +12,10 @@ const props = defineProps<{ puzzle: Puzzle; }>();
 </template>
 
 <style scoped>
-/* Layout */
-div {
-  line-height: 1.75em;
-}
-
 /* Theming */
 div {
   font-size: 0.9rem;
+  line-height: 2em;
 }
 
 div:hover {

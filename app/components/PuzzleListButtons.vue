@@ -34,9 +34,10 @@ nav {
 }
 
 a {
-  width: 1.85rem;
-  height: 1.85rem;
-  line-height: 1.85rem;
+  width: 1.75rem;
+  height: 1.75rem;
+  line-height: 1.75rem;
+  margin: 0.05rem 0;
 }
 
 /* Theming */
@@ -58,5 +59,13 @@ a[ok="false"] {
   opacity: 50%;
   filter: grayscale(100%);
   pointer-events: none;
+}
+
+a:focus-visible {
+  z-index: 1;
+}
+
+a:hover {
+  z-index: 3;
 }
 </style>
