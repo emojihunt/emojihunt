@@ -12,6 +12,8 @@ const click = (e: MouseEvent) => {
   const current = useRequestURL();
   const id = (new URL(`#${props.round.anchor}`, current)).hash;
   document.querySelector(id)?.scrollIntoView();
+  // @ts-ignore
+  document.querySelector(`${id} ~ .row [tabIndex='0']`)?.focus();
   e.preventDefault();
   props.observerFixup();
 };
