@@ -79,7 +79,7 @@ a:focus-visible {
 }
 
 a:hover:not(:focus-visible) span {
-  background: oklch(100% 0.10 v-bind(hue) / 33%);
+  background-color: oklch(98% 0.06 v-bind(hue));
   border-color: oklch(85% 0.10 v-bind(hue));
   filter: drop-shadow(0 1px 2px oklch(95% 0 0deg));
 }
@@ -94,6 +94,6 @@ a:focus-visible label {
 }
 
 a:focus-visible {
-  background-color: oklch(100% 0.10 v-bind(hue) / 33%);
+  background-color: oklch(98% 0.06 v-bind(hue));
 }
 </style>
