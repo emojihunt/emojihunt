@@ -96,7 +96,7 @@ onMounted(() => {
   flex-grow: 1;
   text-align: right;
   font-variant-numeric: diagonal-fractions;
-  color: oklch(60% 0.30 calc(v-bind(hue) + 75));
+  color: oklch(50% 0.30 calc(v-bind(hue) + 75));
   user-select: none;
 }
 
