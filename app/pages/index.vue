@@ -52,7 +52,25 @@ if (import.meta.client && !CSS.supports("view-timeline", "--test")) {
   observer = useStickyIntersectionObserver(74);
 }
 
-const [focused, keydown] = useRovingTabIndex(7, 3);
+const [focused, tabKeydown] = useRovingTabIndex(7, 3);
+const keydown = (e: KeyboardEvent) => {
+  let sibling;
+
+  const row = getStopParent(document.activeElement);
+  if (e.key == "ArrowUp") {
+    sibling = row?.previousElementSibling;
+  } else if (e.key == "ArrowDown") {
+    sibling = row?.nextElementSibling;
+  }
+
+  if (sibling) {
+    // @ts-ignore
+    sibling.querySelector("[tabindex='0']")?.focus();
+    e.preventDefault();
+  } else {
+    tabKeydown(e);
+  }
+};
 </script>
 
 <template>

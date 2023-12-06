@@ -1,5 +1,3 @@
-export const loginNonceValue = "login.nonce";
-
 export const useAPI = async <T>(endpoint: string,
     params?: { [name: string]: any; }): Promise<Ref<T>> => {
 
@@ -87,7 +85,7 @@ export const useRovingTabIndex = (limit: number, start: number = 0):
 
 
 // Gets the nearest parent of the given element that has the class "stop".
-const getStopParent = (element: Element | null): Element | null => {
+export const getStopParent = (element: Element | null): Element | null => {
     if (!element) {
         return null;
     } else if (element.classList.contains("stop")) {
