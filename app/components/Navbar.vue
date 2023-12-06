@@ -32,9 +32,9 @@ onMounted(() => document.location.hash && history.pushState(
 
 <template>
   <header>
-    <section class="rounds" v-if="rounds.length > 2">
+    <nav v-if="rounds.length > 2">
       <NavbarEmoji v-for="round of rounds" :round="round" :navigate="navigate" />
-    </section>
+    </nav>
   </header>
 </template>
 
@@ -47,7 +47,7 @@ header {
   z-index: 10;
 }
 
-.rounds {
+nav {
   position: absolute;
   top: 1rem;
   right: 1.75rem;

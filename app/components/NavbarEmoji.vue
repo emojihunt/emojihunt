@@ -46,7 +46,6 @@ span {
 }
 
 a {
-  background-color: oklch(98% 0.01 286deg);
   border: 1px solid transparent;
   border-radius: 0.33rem;
 
@@ -62,18 +61,22 @@ span:hover {
 
 span:hover a {
   background: oklch(100% 0.10 v-bind(hue) / 33%);
-  border-color: oklch(80% 0.01 286deg);
+  border-color: oklch(85% 0.10 v-bind(hue));
   filter: drop-shadow(0 1px 2px oklch(95% 0 0deg));
 }
 
 label {
-  color: oklch(60% 0.01 286deg);
+  color: oklch(60% 0 0deg);
   font-size: 0.6rem;
   text-align: center;
 
-  background-color: oklch(98% 0.01 286deg);
+  background-color: oklch(98% 0 0deg);
   border-radius: 0.3rem;
 
   z-index: 3;
+}
+
+span:hover label {
+  color: oklch(60% 0.20 v-bind(hue))
 }
 </style>
