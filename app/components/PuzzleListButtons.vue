@@ -1,6 +1,6 @@
 <script setup lang="ts">
 const config = useAppConfig();
-const props = defineProps<{ puzzle: Puzzle; }>();
+const props = defineProps<{ puzzle: Puzzle; focused: FocusInfo; }>();
 
 const puzzleURL = props.puzzle.puzzle_url.length > 1 ?
   props.puzzle.puzzle_url : '';
@@ -12,13 +12,14 @@ const discordURL = props.puzzle.discord_channel.length > 1 ?
 
 <template>
   <nav>
-    <NuxtLink :href="puzzleURL" :ok="!!puzzleURL">
+    <NuxtLink :href="puzzleURL" :ok="!!puzzleURL" :tabindex="tabIndex(focused, 0)">
       🌎
     </NuxtLink>
-    <NuxtLink :href="spreadsheetURL" :ok="!!spreadsheetURL">
+    <NuxtLink :href="spreadsheetURL" :ok="!!spreadsheetURL"
+      :tabindex="tabIndex(focused, 1)">
       ✏️&#xfe0f;
     </NuxtLink>
-    <NuxtLink :href="discordURL" :ok="!!discordURL">
+    <NuxtLink :href="discordURL" :ok="!!discordURL" :tabindex="tabIndex(focused, 2)">
       💬
     </NuxtLink>
   </nav>

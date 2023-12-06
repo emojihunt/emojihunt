@@ -1,3 +1,5 @@
+type FocusInfo = { index: number; };
+
 type Round = {
   id: number;
   name: string;

@@ -18,33 +18,18 @@ const observerFixup = () => {
   }
 };
 
-// Use the "roving tabindex" technique to avoid having to tab through every
-// round in the navbar.
-const nav = ref<HTMLElement>();
-const selected = reactive({ idx: 0 });
-const keydown = (e: KeyboardEvent) => {
-  if (e.key == "ArrowRight") {
-    if (selected.idx < props.rounds.length - 1) selected.idx += 1;
-  } else if (e.key == "ArrowLeft") {
-    if (selected.idx > 0) selected.idx -= 1;
-  } else {
-    return;
-  }
-  // @ts-ignore
-  setTimeout(() => nav.value?.querySelector("[tabindex='0']")?.focus(), 0);
-  e.preventDefault();
-};
-
 onMounted(() => document.location.hash && history.pushState(
   "", document.title, window.location.pathname + window.location.search,
 ));
+
+const [focused, keydown] = useRovingTabIndex(props.rounds.length);
 </script>
 
 <template>
   <header>
-    <nav v-if="rounds.length > 2" @keydown="keydown" ref="nav">
+    <nav v-if="rounds.length > 2" @keydown="keydown" class="stop">
       <NavbarEmoji v-for="round of rounds" :round="round" :observer-fixup="observerFixup"
-        :selected="round.id == rounds[selected.idx].id" />
+        :selected="round.id == rounds[focused.index].id" />
     </nav>
   </header>
 </template>

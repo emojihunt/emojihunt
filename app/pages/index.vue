@@ -51,18 +51,21 @@ if (import.meta.client && !CSS.supports("view-timeline", "--test")) {
   console.log("Falling back to IntersectionObserver...");
   observer = useStickyIntersectionObserver(74);
 }
+
+const [focused, keydown] = useRovingTabIndex(7, 3);
 </script>
 
 <template>
   <Navbar :rounds="Object.values(rounds)" :observer="observer" />
-  <main>
+  <main @keydown="keydown">
     <div class="rule first"></div>
     <div class="rule"></div>
     <div class="rule"></div>
     <template v-for="id of Object.keys(puzzles)">
       <PuzzleListHeader :round="rounds[id]" :timeline="timelineFromID(id)"
         :next-timeline="nextTimelineFromID(id)" :observer="observer" />
-      <PuzzleListRow v-for="puzzle in puzzles[id]" :puzzle="puzzle" :round="rounds[id]" />
+      <PuzzleListRow v-for="puzzle in puzzles[id]" :puzzle="puzzle" :round="rounds[id]"
+        :focused="focused" />
       <hr>
     </template>
   </main>

@@ -1,6 +1,8 @@
 export const loginNonceValue = "login.nonce";
 
-export const useAPI = async <T>(endpoint: string, params?: { [name: string]: any; }): Promise<Ref<T>> => {
+export const useAPI = async <T>(endpoint: string,
+    params?: { [name: string]: any; }): Promise<Ref<T>> => {
+
     if (import.meta.server && !useCookie("session").value) {
         throw createError({
             message: "short-circuiting to login page",
@@ -55,3 +57,45 @@ export const useStickyIntersectionObserver = (margin: number): IntersectionObser
         threshold: 1.0,
     });
 };
+
+// Set up the "roving tabindex" accessibility strategy. A single element in the
+// container will be selectable (tabIndex=0) while the others will not
+// (tabIndex=-1); the left and right keys change which element is selected.
+//
+// The parent container should have the `stop` class, the returned keydown
+// handler should be registered on it, and tab indexes should be set according
+// to the returned index variable.
+export const useRovingTabIndex = (limit: number, start: number = 0):
+    [FocusInfo, (e: KeyboardEvent) => void] => {
+
+    const state = reactive({ index: start });
+    const keydown = (e: KeyboardEvent) => {
+        if (e.key == "ArrowRight") {
+            if (state.index < limit - 1) state.index += 1;
+        } else if (e.key == "ArrowLeft") {
+            if (state.index > 0) state.index -= 1;
+        } else {
+            return;
+        }
+        const parent = getStopParent(document.activeElement);
+        // @ts-ignore
+        setTimeout(() => parent?.querySelector("[tabindex='0']")?.focus(), 0);
+        e.preventDefault();
+    };
+    return [state, keydown];
+};
+
+
+// Gets the nearest parent of the given element that has the class "stop".
+const getStopParent = (element: Element | null): Element | null => {
+    if (!element) {
+        return null;
+    } else if (element.classList.contains("stop")) {
+        return element;
+    } else {
+        return getStopParent(element.parentElement);
+    }
+};
+
+export const tabIndex = (focused: FocusInfo, target: number): number =>
+    focused.index == target ? 0 : -1;
