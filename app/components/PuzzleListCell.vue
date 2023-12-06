@@ -19,19 +19,23 @@ const keydown = (e: KeyboardEvent) => {
   if (props.readonly) {
     return;
   } else if (e.key == "Enter") {
-    if (editing.value) saveEdit();
-    else beginEdit();
-    e.preventDefault();
+    if (editing.value) {
+      saveEdit();
+    }
+    else {
+      beginEdit();
 
-    // For key press events, we need to manually move focus into the cell. Click
-    // events do this automatically.
-    const node = div.value!.childNodes[0];
-    const range = document.createRange();
-    range.setStart(node, 0);
-    range.setEnd(node, node.textContent?.length || 0);
-    const selection = window.getSelection();
-    selection?.removeAllRanges();
-    selection?.addRange(range);
+      // For key press events, we need to manually move focus into the cell. Click
+      // events do this automatically.
+      const node = div.value!.childNodes[0];
+      const range = document.createRange();
+      range.setStart(node, 0);
+      range.setEnd(node, node.textContent?.length || 0);
+      const selection = window.getSelection();
+      selection?.removeAllRanges();
+      selection?.addRange(range);
+    }
+    e.preventDefault();
   } else if (e.key == "Escape") {
     if (editing.value) cancelEdit();
   }
