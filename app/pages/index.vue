@@ -59,8 +59,14 @@ const keydown = (e: KeyboardEvent) => {
   const row = getStopParent(document.activeElement);
   if (e.key == "ArrowUp") {
     sibling = row?.previousElementSibling;
+    while (sibling && !sibling.classList.contains("stop")) {
+      sibling = sibling?.previousElementSibling;
+    }
   } else if (e.key == "ArrowDown") {
     sibling = row?.nextElementSibling;
+    while (sibling && !sibling.classList.contains("stop")) {
+      sibling = sibling?.nextElementSibling;
+    }
   }
 
   if (sibling) {
