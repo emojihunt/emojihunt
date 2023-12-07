@@ -28,7 +28,7 @@ const [focused, keydown] = useRovingTabIndex(props.rounds.length);
 <template>
   <header>
     <nav v-if="rounds.length > 2" @keydown="keydown" class="stop">
-      <NavbarEmoji v-for="round of rounds" :round="round" :observer-fixup="observerFixup"
+      <EmojiNav v-for="round of rounds" :round="round" :observer-fixup="observerFixup"
         :selected="round.id == rounds[focused.index].id" />
     </nav>
   </header>
@@ -45,18 +45,17 @@ header {
 
 nav {
   position: absolute;
-  top: 1rem;
-  right: 1.75rem;
+  top: 0.75rem;
+  right: 1.5rem;
 
   display: flex;
-  gap: 0.5rem;
+  gap: 0.4rem;
 }
-
 
 /* Themeing */
 header {
-  background-color: oklch(98% 0 0deg);
-  border-bottom: 1px solid oklch(80% 0 0deg);
+  background-color: oklch(30% 0.03 275deg);
+  border-bottom: 1px solid oklch(50% 0.03 275deg);
   filter: drop-shadow(0 1.5rem 1rem oklch(100% 0 0deg));
 
   user-select: none;

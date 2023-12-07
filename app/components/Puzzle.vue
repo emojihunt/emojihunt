@@ -6,14 +6,14 @@ const props = defineProps<{
 
 <template>
   <span class="row stop">
-    <PuzzleListButtons :puzzle="puzzle" :focused="focused" />
+    <PuzzleButtons :puzzle="puzzle" :focused="focused" />
     <span class="data">
-      <PuzzleListCell :puzzle="puzzle" field="name" :hue="round.hue" :style="'thick'"
-        readonly :tabindex="tabIndex(focused, 3)" />
-      <PuzzleListStatus :puzzle="puzzle" :tabindex="tabIndex(focused, 4)" />
-      <PuzzleListCell :puzzle="puzzle" field="location" :style="'thin'"
+      <PuzzleCell :puzzle="puzzle" field="name" :style="'thick'" readonly
+        :tabindex="tabIndex(focused, 3)" />
+      <PuzzleStatus :puzzle="puzzle" :tabindex="tabIndex(focused, 4)" />
+      <PuzzleCell :puzzle="puzzle" field="location" :style="'thin'"
         :tabindex="tabIndex(focused, 5)" />
-      <PuzzleListCell :puzzle="puzzle" field="description" :style="'thin'"
+      <PuzzleCell :puzzle="puzzle" field="description" :style="'thin'"
         :tabindex="tabIndex(focused, 6)" />
     </span>
   </span>

@@ -2,7 +2,6 @@
 const props = defineProps<{
   puzzle: Puzzle;
   field: "name" | "location" | "description";
-  hue?: number;
   readonly?: boolean;
   style?: "thick" | "thin";
 }>();
@@ -89,7 +88,7 @@ div:hover {
 /* Custom Styles */
 .thick {
   font-weight: 430;
-  color: oklch(33% 0.16 calc(v-bind(hue) + 60));
+  color: oklch(25% 0.10 275deg);
 }
 
 .thin {

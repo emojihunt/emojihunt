@@ -74,15 +74,15 @@ const keydown = (e: KeyboardEvent) => {
 </script>
 
 <template>
-  <Navbar :rounds="Object.values(rounds)" :observer="observer" />
+  <MainHeader :rounds="Object.values(rounds)" :observer="observer" />
   <main @keydown="keydown">
     <div class="rule first"></div>
     <div class="rule"></div>
     <div class="rule"></div>
     <template v-for="id of Object.keys(puzzles)">
-      <PuzzleListHeader :round="rounds[id]" :timeline="timelineFromID(id)"
+      <RoundHeader :round="rounds[id]" :timeline="timelineFromID(id)"
         :next-timeline="nextTimelineFromID(id)" :observer="observer" />
-      <PuzzleListRow v-for="puzzle in puzzles[id]" :puzzle="puzzle" :round="rounds[id]"
+      <Puzzle v-for="puzzle in puzzles[id]" :puzzle="puzzle" :round="rounds[id]"
         :focused="focused" />
       <hr>
     </template>
@@ -107,7 +107,7 @@ main {
   margin-bottom: -100vh;
 
   margin-left: -0.33rem;
-  border-left: 1px solid oklch(96% 0.01 286deg);
+  border-left: 1px solid oklch(95% 0.03 275deg);
 
   z-index: 12;
 }
@@ -124,7 +124,7 @@ hr {
   left: -2rem;
   top: 0.5rem;
 
-  border-bottom: 1px solid oklch(96% 0.01 286deg);
+  border-bottom: 1px solid oklch(90% 0.03 275deg);
   z-index: -10;
 }
 

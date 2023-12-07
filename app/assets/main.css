@@ -60,10 +60,26 @@ hr {
   }
 }
 
+@keyframes color-in {
+
+  0% {
+    color: oklch(55% 0.03 275deg);
+  }
+
+  99%,
+  100% {
+    color: white;
+  }
+}
+
 .pill:nth-last-child(n+2 of .stuck) {
   visibility: hidden;
 }
 
-.pill:nth-last-child(n+2 of .stuck)+.titles {
+.pill:nth-last-child(n+3 of .stuck)+.titles {
   visibility: hidden;
+}
+
+.pill.stuck+.titles {
+  color: white;
 }

@@ -77,14 +77,14 @@ onMounted(() => {
   padding: 0 1.2rem;
   gap: 0.6rem;
 
-  color: oklch(48% 0.075 v-bind(hue));
+  color: oklch(51% 0.075 v-bind(hue));
   border-radius: 0.6rem;
-  border: 1.5px solid transparent;
-  background: linear-gradient(68deg, oklch(100% 0 0deg / 92%),
+  border: 2.5px solid transparent;
+  background: linear-gradient(68deg, oklch(100% 0 0deg / 90%),
       oklch(100% 0 0deg / 84%)) padding-box,
     linear-gradient(68deg,
-      oklch(75% 0.13 calc(v-bind(hue) - 15)),
-      oklch(60% 0.30 calc(v-bind(hue) + 75))) border-box;
+      oklch(90% 0.10 calc(v-bind(hue) - 15)),
+      oklch(65% 0.30 calc(v-bind(hue) + 75))) border-box;
   filter: drop-shadow(0 1px 2px oklch(70% 0.07 v-bind(hue) / 25%));
 }
 
@@ -103,7 +103,7 @@ onMounted(() => {
 .titles {
   font-size: 0.8rem;
   font-weight: 430;
-  color: oklch(55% 0 0deg);
+  color: oklch(55% 0.03 275deg);
 
   user-select: none;
 }
@@ -114,16 +114,23 @@ onMounted(() => {
     view-timeline: v-bind(timeline);
   }
 
+  /* FYI, if we use the `animation` shorthand propety, Nuxt may incorrectly
+     re-order it with other `animation-*` properties. */
   .pill.ready,
-  .titles.ready {
-    /* FYI, if we use the `animation` shorthand propety, Nuxt may incorrectly
-       re-order it with other `animation-*` properties. */
+  .titles.ready,
+  .titles.ready span {
     animation-name: fade-out;
     animation-timing-function: ease-in;
     animation-fill-mode: both;
     animation-range-start: cover calc(100vh - (6rem - 1.4rem) - 2.35rem - 6px);
     animation-range-end: cover calc(100vh - (6rem - 1.4rem) - 6px);
     animation-timeline: v-bind(nextTimeline);
+  }
+
+  .titles.ready span {
+    animation-name: color-in;
+    animation-timing-function: linear;
+    animation-timeline: view();
   }
 }
 

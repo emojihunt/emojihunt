@@ -32,7 +32,6 @@ const click = (e: MouseEvent) => {
 a {
   display: flex;
   flex-direction: column;
-  align-items: center;
 }
 
 span {
@@ -44,28 +43,26 @@ span {
 
 label {
   display: block;
-  width: 0.75rem;
+  width: 100%;
   height: 0.75rem;
-  margin: -0.33rem 0 0.2rem;
+  margin: -0.2rem 0 0.1rem;
   pointer-events: none;
 }
 
 
 /* Themeing */
 a {
-  opacity: 60%;
+  border: 1.5px solid transparent;
+  border-radius: 3px;
   text-decoration: none;
 }
 
 span {
-  border: 1.5px solid transparent;
-  border-radius: 0.33rem;
-
   text-align: center;
 }
 
 label {
-  color: oklch(60% 0 0deg);
+  color: oklch(90% 0.10 v-bind(hue));
   font-size: 0.6rem;
   text-align: center;
 
@@ -75,25 +72,7 @@ label {
 
 a:hover,
 a:focus-visible {
-  opacity: 100%;
-}
-
-a:hover:not(:focus-visible) span {
-  background-color: oklch(98% 0.06 v-bind(hue));
-  border-color: oklch(85% 0.10 v-bind(hue));
-  filter: drop-shadow(0 1px 2px oklch(95% 0 0deg));
-}
-
-a:hover:not(:focus-visible) label {
-  background-color: oklch(98% 0 0deg);
-}
-
-a:hover label,
-a:focus-visible label {
-  color: oklch(60% 0.20 v-bind(hue));
-}
-
-a:focus-visible {
-  background-color: oklch(98% 0.06 v-bind(hue));
+  border: 1.5px solid oklch(95% 0.10 v-bind(hue) / 90%);
+  background-color: oklch(95% 0.10 v-bind(hue) / 50%);
 }
 </style>
