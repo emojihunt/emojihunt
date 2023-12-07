@@ -78,10 +78,12 @@ const saveEdit = () => {
 /* Theming */
 div {
   font-size: 0.9rem;
-  line-height: 2em;
+  line-height: 1.5em;
+  padding: 0.25em 0.5em;
 }
 
-div:hover {
+div:hover,
+div:focus-visible {
   white-space: unset;
 }
 
