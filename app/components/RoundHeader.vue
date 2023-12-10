@@ -15,6 +15,7 @@ onMounted(() => {
     titles.value?.classList.add("ready");
   }
   props.observer?.observe(pill.value!);
+  props.observer?.observe(titles.value!);
 });
 </script>
 

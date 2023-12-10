@@ -72,14 +72,14 @@ hr {
   }
 }
 
-.pill:nth-last-child(n+2 of .stuck) {
+:nth-last-child(n+2 of .pill.stuck) {
   visibility: hidden;
 }
 
-.pill:nth-last-child(n+3 of .stuck)+.titles {
+:nth-last-child(n+2 of .pill.stuck)+.titles {
   visibility: hidden;
 }
 
-.pill.stuck+.titles {
-  color: white;
+.titles.stuck {
+  color: white !important;
 }

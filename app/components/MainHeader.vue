@@ -8,8 +8,8 @@ const props = defineProps<{
 // classes manually.
 const observerFixup = () => {
   if (props.observer) {
-    for (const pill of document.querySelectorAll(".pill")) {
-      if (pill.getBoundingClientRect().y < 75) {
+    for (const pill of document.querySelectorAll(".ready")) {
+      if (pill.getBoundingClientRect().y < 77) {
         pill.classList.add("stuck");
       } else {
         pill.classList.remove("stuck");

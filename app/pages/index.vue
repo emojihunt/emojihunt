@@ -49,7 +49,7 @@ const timelines = Object.keys(puzzles).map(timelineFromID);
 let observer: IntersectionObserver | undefined;
 if (import.meta.client && !CSS.supports("view-timeline", "--test")) {
   console.log("Falling back to IntersectionObserver...");
-  observer = useStickyIntersectionObserver(74);
+  observer = useStickyIntersectionObserver(76);
 }
 
 const [focused, tabKeydown] = useRovingTabIndex(7, 3);
