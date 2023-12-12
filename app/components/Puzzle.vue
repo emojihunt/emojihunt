@@ -8,13 +8,10 @@ const props = defineProps<{
   <span class="row stop">
     <PuzzleButtons :puzzle="puzzle" :focused="focused" />
     <span class="data">
-      <PuzzleCell :puzzle="puzzle" field="name" :style="'thick'" readonly
-        :tabindex="tabIndex(focused, 3)" />
+      <PuzzleCell :puzzle="puzzle" field="name" readonly :tabindex="tabIndex(focused, 3)" />
       <PuzzleStatus :puzzle="puzzle" :tabindex="tabIndex(focused, 4)" />
-      <PuzzleCell :puzzle="puzzle" field="location" :style="'thin'"
-        :tabindex="tabIndex(focused, 5)" />
-      <PuzzleCell :puzzle="puzzle" field="description" :style="'thin'"
-        :tabindex="tabIndex(focused, 6)" />
+      <PuzzleCell :puzzle="puzzle" field="location" :tabindex="tabIndex(focused, 5)" />
+      <PuzzleCell :puzzle="puzzle" field="description" :tabindex="tabIndex(focused, 6)" />
     </span>
   </span>
 </template>

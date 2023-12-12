@@ -1,10 +1,9 @@
 <script setup lang="ts">
 const props = defineProps<{
   puzzle: Puzzle;
-  field: "name" | "location" | "description";
+  field: "name" | "answer" | "location" | "description";
   tabindex: number;
   readonly?: boolean;
-  style?: "thick" | "thin";
 }>();
 
 const content = ref(props.puzzle[props.field].trim());
@@ -70,8 +69,8 @@ const saveEdit = () => {
 </script>
 
 <template>
-  <span ref="span" class="cell" :class="style" @click="click" @blur="blur"
-    @keydown="keydown" :contenteditable="editing ? 'plaintext-only' : 'false'"
+  <span ref="span" class="cell" :class="field" :readonly="readonly" @click="click"
+    @blur="blur" @keydown="keydown" :contenteditable="editing ? 'plaintext-only' : 'false'"
     :tabindex="tabindex" spellcheck="false">{{ content || (editing ? "" : "-") }}</span>
   <div class="container" v-if="pending">
     <Spinner />
@@ -104,13 +103,24 @@ span[contenteditable='plaintext-only'] {
   outline: auto;
 }
 
+span[readonly] {
+  cursor: default;
+}
+
 /* Custom Styles */
-.thick {
+.name {
   font-weight: 430;
   color: oklch(25% 0.10 275deg);
 }
 
-.thin {
+.answer {
+  font-size: 0.87rem;
+  font-family: 'IBM Plex Mono', monospace;
+  font-weight: 600;
+}
+
+.location,
+.description {
   font-weight: 300;
   font-size: 0.86rem;
 }
