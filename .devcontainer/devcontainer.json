@@ -12,5 +12,8 @@
 			]
 		}
 	},
+	"appPort": [
+		3000
+	],
 	"remoteUser": "vscode"
 }
