@@ -50,7 +50,7 @@ label {
 }
 
 
-/* Themeing */
+/* Theming */
 a {
   border: 1.5px solid transparent;
   border-radius: 3px;

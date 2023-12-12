@@ -72,7 +72,7 @@ onMounted(() => {
   padding: 0 0.30rem;
 }
 
-/* Themeing */
+/* Theming */
 .pill {
   font-size: 1.07rem;
   padding: 0 1.2rem;

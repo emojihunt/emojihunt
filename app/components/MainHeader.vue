@@ -52,7 +52,7 @@ nav {
   gap: 0.4rem;
 }
 
-/* Themeing */
+/* Theming */
 header {
   background-color: oklch(30% 0.03 275deg);
   border-bottom: 1px solid oklch(50% 0.03 275deg);

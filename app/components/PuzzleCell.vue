@@ -2,6 +2,7 @@
 const props = defineProps<{
   puzzle: Puzzle;
   field: "name" | "location" | "description";
+  tabindex: number;
   readonly?: boolean;
   style?: "thick" | "thin";
 }>();
@@ -9,82 +10,98 @@ const props = defineProps<{
 const content = ref(props.puzzle[props.field].trim());
 const editing = ref(false);
 const pending = ref(false);
-const div = ref<HTMLDivElement>();
+const span = ref<HTMLSpanElement>();
 
-const click = () => !props.readonly && !editing.value && beginEdit();
+const click = () => {
+  if (props.readonly) {
+    // no-op
+  } else if (editing.value) {
+    // no-op
+  } else {
+    editing.value = true;
+    setTimeout(() => span.value?.focus(), 0);
+  }
+};
 const blur = () => !props.readonly && editing.value && saveEdit();
-
 const keydown = (e: KeyboardEvent) => {
   if (props.readonly) {
     return;
-  } else if (e.key == "Enter") {
-    if (editing.value) {
-      saveEdit();
+  } else if (editing.value) {
+    switch (e.key) {
+      case "Enter":
+        saveEdit();
+        window.getSelection()?.removeAllRanges();
+        break;
+      case "Escape":
+        editing.value = false;
+        window.getSelection()?.removeAllRanges();
+        break;
     }
-    else {
-      beginEdit();
-
-      // For key press events, we need to manually move focus into the cell. Click
-      // events do this automatically.
-      const node = div.value!.childNodes[0];
-      const range = document.createRange();
-      range.setStart(node, 0);
-      range.setEnd(node, node.textContent?.length || 0);
-      const selection = window.getSelection();
-      selection?.removeAllRanges();
-      selection?.addRange(range);
+    e.stopPropagation(); // don't bubble, skip arrow-key handler
+  } else {
+    switch (e.key) {
+      // For key press events, we need to manually move focus into the cell.
+      case "Enter":
+        editing.value = true;
+        const node = span.value!.childNodes[0];
+        const range = document.createRange();
+        range.setStart(node, 0);
+        range.setEnd(node, node.textContent?.length || 0);
+        const selection = window.getSelection();
+        selection?.removeAllRanges();
+        selection?.addRange(range);
+        e.preventDefault();
+        break;
     }
-    e.preventDefault();
-  } else if (e.key == "Escape") {
-    if (editing.value) cancelEdit();
   }
-};
-
-const beginEdit = () => {
-  editing.value = true;
-  div.value!.focus();
-};
-
-const cancelEdit = () => {
-  editing.value = false;
-  div.value!.innerText = content.value || "-";
 };
 
 const saveEdit = () => {
-  let updated = div.value!.textContent?.trim() || "";
-  if (updated == "-") {
-    updated = "";
-  }
+  let updated = span.value!.textContent?.trim() || "";
+  if (updated == "-") updated = "";
   if (updated != content.value) {
     pending.value = true;
-    useAPI(`/puzzles/${props.puzzle.id}`, { [props.field]: content.value })
+    useAPI(`/puzzles/${props.puzzle.id}`, { [props.field]: updated })
       .then(() => { pending.value = false; });
   };
   editing.value = false;
   content.value = updated;
-  div.value!.innerText = content.value || "-";
 };
 </script>
 
 <template>
-  <div ref="div" class="cell" :class="style" @click="click" @blur="blur" @keydown="keydown"
-    :contenteditable="editing ? 'plaintext-only' : 'false'" spellcheck="false" tabindex="0">
-    {{ content || (editing ? "" : "-") }}
-    <Spinner v-if="pending" />
+  <span ref="span" class="cell" :class="style" @click="click" @blur="blur"
+    @keydown="keydown" :contenteditable="editing ? 'plaintext-only' : 'false'"
+    :tabindex="tabindex" spellcheck="false">{{ content || (editing ? "" : "-") }}</span>
+  <div class="container" v-if="pending">
+    <Spinner />
   </div>
 </template>
 
 <style scoped>
+/* Layout */
+.container {
+  position: absolute;
+  right: 1rem;
+  margin: 0.4rem 0;
+}
+
 /* Theming */
-div {
+span {
   font-size: 0.9rem;
   line-height: 1.5em;
   padding: 0.25em 0.5em;
 }
 
-div:hover,
-div:focus-visible {
+span:hover,
+span:focus,
+span[contenteditable='plaintext-only'] {
   white-space: unset;
+}
+
+span[contenteditable='plaintext-only'] {
+  background-color: oklch(95% 0.03 275deg);
+  outline: auto;
 }
 
 /* Custom Styles */

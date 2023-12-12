@@ -13,9 +13,6 @@
 .spinner {
   width: 1rem;
   height: 1rem;
-  margin-top: 0.25rem;
-  position: relative;
-  float: right;
 }
 
 .double-bounce1,

@@ -33,7 +33,7 @@ const props = defineProps<{
   grid-template-columns: subgrid;
 }
 
-/* Themeing */
+/* Theming */
 .data {
   border-top: 1px solid transparent;
   border-bottom: 1px solid transparent;
