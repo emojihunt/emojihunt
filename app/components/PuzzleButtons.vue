@@ -51,8 +51,8 @@ a {
 }
 
 a:hover {
-  box-shadow: inset 0 0 2px oklch(90% 0 0deg);
-  filter: drop-shadow(0 1px 1px oklch(80% 0 0deg));
+  box-shadow: inset 0 0 1px oklch(70% 0 0deg);
+  filter: drop-shadow(0 0 1px oklch(85% 0 0deg));
 }
 
 a[ok="false"] {
