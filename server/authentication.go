@@ -16,7 +16,7 @@ const (
 	OAuth2TokenURL  = "https://discord.com/api/v10/oauth2/token"
 
 	DevRedirectURI  = "http://localhost:3000/login"
-	ProdRedirectURI = "https://www.emojihunt.tech/login"
+	ProdRedirectURI = "https://www.emojihunt.org/login"
 
 	CookieName = "session"
 )
