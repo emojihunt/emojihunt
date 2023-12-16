@@ -6,7 +6,7 @@ const onSave = (b: boolean) => { saving.value = b; };
 </script>
 
 <template>
-  <div class="cell" :class="puzzle.answer ? 'solved' : ''">
+  <div class="cell" :class="puzzle.answer ? 'solved' : 'unsolved'">
     <PuzzleCellInner :puzzle="puzzle" field="answer" :tabindex="tabindex" @save="onSave"
       v-if="puzzle.answer" />
     <span class="icon" v-if="puzzle.answer" :title="puzzle.status">{{
@@ -50,6 +50,7 @@ const onSave = (b: boolean) => { saving.value = b; };
   font-size: 0.87rem;
   font-family: 'IBM Plex Mono', monospace;
   font-weight: 600;
+  text-transform: uppercase;
 }
 
 .cell:focus-within {
@@ -61,8 +62,11 @@ const onSave = (b: boolean) => { saving.value = b; };
   user-select: none;
 }
 
-.status {
+.unsolved {
   cursor: pointer;
+}
+
+.status {
   box-sizing: border-box;
   border: 1px solid transparent;
   border-radius: 1px;

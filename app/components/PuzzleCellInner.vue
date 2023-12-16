@@ -58,6 +58,13 @@ const keydown = (e: KeyboardEvent) => {
 const saveEdit = () => {
   let updated = span.value!.textContent?.trim() || "";
   if (updated == "-") updated = "";
+  if (props.field == "answer") {
+    updated = updated.toUpperCase();
+    if (!updated) {  // answer cannot be blank
+      editing.value = false;
+      return;
+    }
+  }
   if (updated != content.value) {
     emit("save", true);
     useAPI(`/puzzles/${props.puzzle.id}`, { [props.field]: updated })
