@@ -69,27 +69,40 @@ const saveEdit = () => {
 </script>
 
 <template>
-  <span ref="span" class="cell" :class="field" :readonly="readonly" @click="click"
-    @blur="blur" @keydown="keydown" :contenteditable="editing ? 'plaintext-only' : 'false'"
-    :tabindex="tabindex" spellcheck="false">{{ content || (editing ? "" : "-") }}</span>
-  <div class="container" v-if="pending">
-    <Spinner />
+  <div class="cell">
+    <span ref="span" :class="field" :readonly="readonly" @click="click" @blur="blur"
+      @keydown="keydown" :contenteditable="editing ? 'plaintext-only' : 'false'"
+      :tabindex="tabindex" spellcheck="false">{{ content || (editing ? "" : "-") }}</span>
+    <Spinner v-if="pending" />
   </div>
 </template>
 
 <style scoped>
 /* Layout */
-.container {
+.cell {
+  display: flex;
+  position: relative;
+  overflow: hidden;
+}
+
+span {
+  flex-grow: 1;
+  line-height: 1.5em;
+  padding: 0.25em 0.33rem;
+  overflow: hidden;
+}
+
+.spinner {
   position: absolute;
-  right: 1rem;
-  margin: 0.4rem 0;
+  right: 0.33rem;
+  top: calc(1em - 0.5rem - 2px);
 }
 
 /* Theming */
 span {
   font-size: 0.9rem;
-  line-height: 1.5em;
-  padding: 0.25em 0.5em;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 
 span:hover,
@@ -100,11 +113,18 @@ span[contenteditable='plaintext-only'] {
 
 span[contenteditable='plaintext-only'] {
   background-color: oklch(95% 0.03 275deg);
-  outline: auto;
 }
 
 span[readonly] {
   cursor: default;
+}
+
+span:focus {
+  outline: none;
+}
+
+.cell:focus-within {
+  outline: auto;
 }
 
 /* Custom Styles */

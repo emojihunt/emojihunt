@@ -35,13 +35,6 @@
   font-optical-sizing: auto;
 }
 
-.cell {
-  padding: 0 0.33rem;
-  overflow: hidden;
-  white-space: nowrap;
-  text-overflow: ellipsis;
-}
-
 .highlight {
   /* https://stackoverflow.com/a/64127605 */
   margin: 0 -0.4em;

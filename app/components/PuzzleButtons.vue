@@ -64,7 +64,6 @@ const discordURL = props.puzzle.discord_channel.length > 1 ?
             stroke-miterlimit="10" stroke-width="2" />
         </g>
       </svg>
-
     </NuxtLink>
     <NuxtLink :href="discordURL" :ok="!!discordURL" :tabindex="tabIndex(focused, 2)">
       <svg id="emoji" viewBox="0 0 72 72" xmlns="http://www.w3.org/2000/svg">
@@ -138,7 +137,7 @@ const discordURL = props.puzzle.discord_channel.length > 1 ?
 /* Layout */
 nav {
   display: flex;
-  gap: 0.45rem;
+  gap: 0.25rem;
   justify-content: center;
 }
 
@@ -147,7 +146,9 @@ a {
 }
 
 svg {
+  display: inline-block;
   height: 1.55rem;
+  width: 1.75rem;
   margin: 0.10rem 0;
   filter: opacity(70%);
 }
