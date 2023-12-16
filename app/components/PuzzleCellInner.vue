@@ -11,6 +11,20 @@ const content = ref(props.puzzle[props.field].trim());
 const editing = ref(false);
 const span = ref<HTMLSpanElement>();
 
+// Vue doesn't properly apply reactive updates because it can't track the
+// changing state of the contenteditable. Instead, do a static initial render
+// server-side and then manually manage the span by setting `innerText`.
+const initial = props.puzzle[props.field].trim() || "-";
+const updateSpan = () => {
+  let updated = content.value;
+  if (!editing.value) updated ||= "-";
+  if (!span.value) return;
+  if (span.value.innerText == updated) return;
+  span.value.innerText = updated;
+};
+onMounted(updateSpan);
+onUpdated(updateSpan);
+
 const click = () => {
   if (props.readonly) {
     // no-op
@@ -18,7 +32,8 @@ const click = () => {
     // no-op
   } else {
     editing.value = true;
-    setTimeout(() => span.value?.focus(), 0);
+    updateSpan();
+    span.value?.focus();
   }
 };
 const blur = () => !props.readonly && editing.value && saveEdit();
@@ -34,6 +49,7 @@ const keydown = (e: KeyboardEvent) => {
       case "Escape":
         editing.value = false;
         window.getSelection()?.removeAllRanges();
+        updateSpan();
         break;
     }
     e.stopPropagation(); // don't bubble, skip arrow-key handler
@@ -49,6 +65,7 @@ const keydown = (e: KeyboardEvent) => {
         const selection = window.getSelection();
         selection?.removeAllRanges();
         selection?.addRange(range);
+        updateSpan();
         e.preventDefault();
         break;
     }
@@ -62,6 +79,7 @@ const saveEdit = () => {
     updated = updated.toUpperCase();
     if (!updated) {  // answer cannot be blank
       editing.value = false;
+      updateSpan();
       return;
     }
   }
@@ -72,13 +90,14 @@ const saveEdit = () => {
   };
   editing.value = false;
   content.value = updated;
+  updateSpan();
 };
 </script>
 
 <template>
   <span ref="span" :readonly="readonly" @click="click" @blur="blur" @keydown="keydown"
     :contenteditable="editing ? 'plaintext-only' : 'false'" :tabindex="tabindex"
-    spellcheck="false">{{ content || (editing ? "" : "-") }}</span>
+    spellcheck="false">{{ initial }}</span>
 </template>
 
 <style scoped>

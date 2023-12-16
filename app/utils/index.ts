@@ -77,7 +77,7 @@ export const useRovingTabIndex = (limit: number, start: number = 0):
         }
         const parent = getStopParent(document.activeElement);
         // @ts-ignore
-        setTimeout(() => parent?.querySelector("[tabindex='0']")?.focus(), 0);
+        nextTick(() => parent?.querySelector("[tabindex='0']")?.focus());
         e.preventDefault();
     };
     return [state, keydown];
