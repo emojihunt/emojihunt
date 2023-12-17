@@ -12,10 +12,7 @@ const statuses = computed(() =>
 <template>
   <fieldset>
     <button v-for="status of statuses" @click="() => $emit('select', status)">
-      <span v-if="StatusEmoji(status)" class="emoji" :class="status">
-        {{ StatusEmoji(status) }}&#xfe0f;
-      </span>
-      {{ StatusLabel(status) }}
+      {{ StatusEmoji(status) }} {{ StatusLabel(status) }}
     </button>
   </fieldset>
 </template>
@@ -31,10 +28,6 @@ fieldset {
 fieldset button {
   padding: 0.1rem 0.4rem;
   margin: 0.15rem 0.1rem;
-}
-
-fieldset .emoji.Purchased {
-  padding-right: 1px;
 }
 
 /* Theming */
