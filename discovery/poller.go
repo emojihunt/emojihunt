@@ -103,14 +103,12 @@ type Poller struct {
 }
 
 const (
-	pollInterval        = 20 * time.Second
-	pollTimeout         = 90 * time.Second
-	warnErrorFrequency  = 10 * time.Minute
-	puzzleCreationPause = 10 * time.Second
-	roundCreationPause  = 30 * time.Second
-	newPuzzleLimit      = 30
-	newRoundLimit       = 5
-	websocketBurst      = 3
+	pollInterval       = 20 * time.Second
+	pollTimeout        = 90 * time.Second
+	roundCreationPause = 10 * time.Second
+	newPuzzleLimit     = 30
+	newRoundLimit      = 5
+	websocketBurst     = 3
 )
 
 var websocketRate = rate.Every(1 * time.Minute)
