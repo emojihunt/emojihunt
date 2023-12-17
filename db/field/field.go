@@ -14,6 +14,16 @@ const (
 
 const AlternateNotStarted = "Not Started"
 
+func (s Status) IsValid() bool {
+	switch s {
+	case StatusNotStarted, StatusWorking, StatusAbandoned,
+		StatusSolved, StatusBacksolved:
+		return true
+	default:
+		return false
+	}
+}
+
 func ParseTextStatus(textPart string) (Status, error) {
 	switch textPart {
 	case string(StatusNotStarted):

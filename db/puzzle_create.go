@@ -73,6 +73,8 @@ func (p RawPuzzle) Validate() error {
 		return ValidationError{"name", "is required"}
 	} else if p.Round == 0 {
 		return ValidationError{"round", "is required"}
+	} else if !p.Status.IsValid() {
+		return ValidationError{"status", "is invalid"}
 	} else if p.PuzzleURL == "" {
 		return ValidationError{"puzzle_url", "is required"}
 	} else if !p.Status.IsSolved() && p.Answer != "" {
