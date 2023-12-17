@@ -1,17 +1,17 @@
-type FocusInfo = { index: number; };
+export type FocusInfo = { index: number; };
 
-type Round = {
+export type Round = {
   id: number;
   name: string;
   emoji: string;
 };
 
-type Puzzle = {
+export type Puzzle = {
   id: number;
   name: string;
   answer: string;
   round: Round;
-  status: string;
+  status: Status;
   description: string;
   location: string;
   puzzle_url: string;
@@ -23,10 +23,32 @@ type Puzzle = {
   voice_room: string;
 };
 
-type RoundStats = Round & {
+export type RoundStats = Round & {
   anchor: string;
   complete: boolean;
   hue: number;
   solved: number;
   total: number;
+};
+
+export const enum Status {
+  NotStarted = "",
+  Working = "Working",
+  Abandoned = "Abandoned",
+  Solved = "Solved",
+  Backsolved = "Backsolved",
+  Purchased = "Purchased",
+}
+
+export const StatusLabel = (status: Status): string => status || "Not Started";
+
+export const StatusEmoji = (status: Status): string => {
+  switch (status) {
+    case Status.NotStarted: return "";
+    case Status.Working: return "✍️";
+    case Status.Abandoned: return "🗑️";
+    case Status.Solved: return "🏅";
+    case Status.Backsolved: return "🤦‍♀️";
+    case Status.Purchased: return "💸";
+  }
 };

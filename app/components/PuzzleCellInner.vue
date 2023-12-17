@@ -95,9 +95,9 @@ const saveEdit = () => {
 </script>
 
 <template>
-  <span ref="span" :readonly="readonly" @click="click" @blur="blur" @keydown="keydown"
-    :contenteditable="editing ? 'plaintext-only' : 'false'" :tabindex="tabindex"
-    spellcheck="false">{{ initial }}</span>
+  <span ref="span" class="inner" :readonly="readonly" @click="click" @blur="blur"
+    @keydown="keydown" :contenteditable="editing ? 'plaintext-only' : 'false'"
+    :tabindex="tabindex" spellcheck="false">{{ initial }}</span>
 </template>
 
 <style scoped>

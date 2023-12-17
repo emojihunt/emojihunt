@@ -47,10 +47,18 @@
       oklch(91% 0.25 100deg / 0%));
 }
 
-hr {
+hr,
+fieldset,
+button {
   margin: 0;
   padding: 0;
   border: none;
+  background: none;
+}
+
+button {
+  user-select: none;
+  cursor: pointer;
 }
 
 @keyframes fade-out {

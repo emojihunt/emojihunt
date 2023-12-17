@@ -7,13 +7,12 @@ const props = defineProps<{
 }>();
 
 const saving = ref(false);
-const onSave = (b: boolean) => { saving.value = b; };
 </script>
 
 <template>
   <div class="cell" :class="field">
     <PuzzleCellInner :puzzle="puzzle" :field="field" :tabindex="tabindex"
-      :readonly="readonly" @save="onSave" />
+      :readonly="readonly" @save="(v) => (saving = v)" />
     <Spinner v-if="saving" />
   </div>
 </template>
