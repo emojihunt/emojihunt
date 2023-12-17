@@ -6,6 +6,7 @@ const props = defineProps<{
   readonly?: boolean;
 }>();
 const emit = defineEmits<{ (e: 'save', b: boolean): void; }>();
+const store = usePuzzles();
 
 const content = ref(props.puzzle[props.field].trim());
 const editing = ref(false);
@@ -85,8 +86,10 @@ const saveEdit = () => {
   }
   if (updated != content.value) {
     emit("save", true);
-    useAPI(`/puzzles/${props.puzzle.id}`, { [props.field]: updated })
-      .then(() => emit("save", false));
+    const previous = props.puzzle[props.field];
+    store.updatePuzzle(props.puzzle, { [props.field]: updated })
+      .catch(() => (content.value = previous, updateSpan()))
+      .finally(() => emit("save", false));
   };
   editing.value = false;
   content.value = updated;

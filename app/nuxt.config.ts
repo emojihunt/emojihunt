@@ -13,6 +13,9 @@ export default defineNuxtConfig({
   nitro: {
     preset: "vercel-edge",
   },
+  modules: [
+    "@pinia/nuxt",
+  ],
   routeRules: {
     "/api/**": {
       proxy: prod ? "https://huntbot.fly.dev/**" : "http://localhost:8080/**",

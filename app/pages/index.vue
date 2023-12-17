@@ -1,51 +1,20 @@
 <script setup lang="ts">
 useHead({ title: "Puzzle Tracker" });
-const data = await useAPI<Puzzle[]>("/puzzles");
-
-// HACK: apply hard-coded colors to rounds for testing
-const hues: { [round: string]: number; } = {
-  "1": 241, "2": 178, "3": 80, "4": 45,
-  "5": 255, "6": 19, "7": 69, "8": 205,
-  "9": 28, "10": 24, "11": 141,
-};
-
-// Group puzzles by round
-const puzzles: { [round: string]: Puzzle[]; } = {};
-for (const puzzle of data.value) {
-  const id = puzzle.round.id;
-  puzzles[id] ||= [];
-  puzzles[id].push(puzzle);
-}
-
-// Compute round stats
-const rounds: { [round: string]: RoundStats; } = {};
-for (const id of Object.keys(puzzles)) {
-  const example = puzzles[id][0].round;
-  rounds[id] = {
-    anchor: example.name.trim().toLowerCase().replaceAll(" ", "-"),
-    complete: puzzles[id].filter((p => !p.answer)).length == 0,
-    hue: hues[id],
-    solved: puzzles[id].filter((p) => !!p.answer).length,
-    total: puzzles[id].length,
-
-    id: example.id,
-    name: example.name.trim(),
-    emoji: example.emoji,
-  };
-}
+const store = usePuzzles();
+await store.refresh();
 
 // Puzzle & Round Helpers
 const timelineFromID = (id: string) => `--round-${id}`;
 const nextTimelineFromID = (id: string): string | undefined => {
   const i = (parseInt(id) + 1).toString();
-  return puzzles[i] ? timelineFromID(i) : undefined;
+  return store.puzzlesByRound[i] ? timelineFromID(i) : undefined;
 };
 
 // It doesn't look great when the round headers stack up on top of one another.
 // We want each round header to disappear when it's covered by the next. Use CSS
 // scroll-linked animations if supported and fall back to IntersectionObserver
 // if not.
-const timelines = Object.keys(puzzles).map(timelineFromID);
+const timelines = Object.keys(store.puzzlesByRound).map(timelineFromID);
 let observer: IntersectionObserver | undefined;
 if (import.meta.client && !CSS.supports("view-timeline", "--test")) {
   console.log("Falling back to IntersectionObserver...");
@@ -80,16 +49,16 @@ const keydown = (e: KeyboardEvent) => {
 </script>
 
 <template>
-  <MainHeader :rounds="Object.values(rounds)" :observer="observer" />
+  <MainHeader :rounds="Object.values(store.roundStats)" :observer="observer" />
   <main @keydown="keydown">
     <div class="rule first"></div>
     <div class="rule"></div>
     <div class="rule"></div>
-    <template v-for="id of Object.keys(puzzles)">
-      <RoundHeader :round="rounds[id]" :timeline="timelineFromID(id)"
+    <template v-for="id of Object.keys(store.puzzlesByRound)">
+      <RoundHeader :round="store.roundStats[id]" :timeline="timelineFromID(id)"
         :next-timeline="nextTimelineFromID(id)" :observer="observer" />
-      <Puzzle v-for="puzzle in puzzles[id]" :puzzle="puzzle" :round="rounds[id]"
-        :focused="focused" />
+      <Puzzle v-for="puzzle in store.puzzlesByRound[id]" :puzzle="puzzle"
+        :round="store.roundStats[id]" :focused="focused" />
       <hr>
     </template>
   </main>
