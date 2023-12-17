@@ -47,7 +47,8 @@ export default defineStore("puzzles", {
     },
     async updatePuzzle(puzzle: Puzzle, data: Partial<Puzzle>) {
       await useAPI(`/puzzles/${puzzle.id}`, data);
-      this.puzzles[puzzle.id] = { ...data, ...this.puzzles[puzzle.id] };
+      this.puzzles[puzzle.id] = { ...this.puzzles[puzzle.id], ...data };
+      // TODO: rollback?
     },
   },
 });

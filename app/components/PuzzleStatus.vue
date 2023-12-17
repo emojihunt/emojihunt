@@ -1,15 +1,32 @@
 <script setup lang="ts">
-const props = defineProps<{ puzzle: Puzzle; tabindex: number; }>();
+import { Status } from "../utils/types";
 
+const props = defineProps<{ puzzle: Puzzle; tabindex: number; }>();
+const store = usePuzzles();
 const open = ref(false);
 const saving = ref(false);
+
+const onStatusSelect = (status: Status) => {
+  open.value = false;
+  if (!StatusNeedsAnswer(status)) {
+    saving.value = true;
+    store.updatePuzzle(props.puzzle, { status, answer: "" })
+      .finally(() => (saving.value = false));
+  } else if (props.puzzle.answer) {
+    saving.value = true;
+    store.updatePuzzle(props.puzzle, { status })
+      .finally(() => (saving.value = false));
+  } else {
+    // TODO...
+  }
+};
 </script>
 
 <template>
   <div class="cell">
     <div v-if="puzzle.answer" class="answer">
       <PuzzleCellInner :puzzle="puzzle" field="answer" :tabindex="tabindex"
-        @save="(v) => saving = v" />
+        @save="(v) => (saving = v)" />
       <button :title="puzzle.status" :tabindex="tabindex" @click="() => (open = !open)">
         {{ StatusEmoji(puzzle.status) }}
       </button>
@@ -22,7 +39,7 @@ const saving = ref(false);
       </span>
       <Spinner v-if="saving" />
     </button>
-    <PuzzleStatusSelector v-if="open" :puzzle="puzzle" />
+    <PuzzleStatusSelector v-if="open" :puzzle="puzzle" @select="onStatusSelect" />
   </div>
 </template>
 
@@ -38,7 +55,7 @@ const saving = ref(false);
 
 .answer {
   display: grid;
-  grid-template-columns: 5fr 1.75rem;
+  grid-template-columns: 5fr 1.5rem;
 }
 
 .answer button {

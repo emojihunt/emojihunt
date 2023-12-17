@@ -31,7 +31,7 @@ export type RoundStats = Round & {
   total: number;
 };
 
-export const enum Status {
+export enum Status {
   NotStarted = "",
   Working = "Working",
   Abandoned = "Abandoned",
@@ -50,5 +50,16 @@ export const StatusEmoji = (status: Status): string => {
     case Status.Solved: return "🏅";
     case Status.Backsolved: return "🤦‍♀️";
     case Status.Purchased: return "💸";
+  }
+};
+
+export const StatusNeedsAnswer = (status: Status): boolean => {
+  switch (status) {
+    case Status.NotStarted: return false;
+    case Status.Working: return false;
+    case Status.Abandoned: return false;
+    case Status.Solved: return true;
+    case Status.Backsolved: return true;
+    case Status.Purchased: return true;
   }
 };

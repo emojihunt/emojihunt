@@ -1,10 +1,17 @@
 <script setup lang="ts">
+import { Status } from "../utils/types";
+
 const props = defineProps<{ puzzle: Puzzle; }>();
+const emit = defineEmits<{ (e: "select", s: Status): void; }>();
+
+const statuses = computed(() =>
+  Object.values(Status).filter((s) => s != props.puzzle.status)
+);
 </script>
 
 <template>
   <fieldset>
-    <button v-for="status of Object.values(Status).filter((s) => s != puzzle.status)">
+    <button v-for="status of statuses" @click="() => $emit('select', status)">
       <span v-if="StatusEmoji(status)" class="emoji" :class="status">
         {{ StatusEmoji(status) }}&#xfe0f;
       </span>

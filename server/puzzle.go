@@ -14,7 +14,7 @@ type PuzzleParams struct {
 	Name           string       `form:"name"`
 	Answer         string       `form:"answer"`
 	Round          int64        `form:"round"`
-	Status         field.Status `form:"status"`
+	Status         field.Status `form:"status"` // TODO: validate!
 	Description    string       `form:"description"`
 	Location       string       `form:"location"`
 	PuzzleURL      string       `form:"puzzle_url"`
