@@ -47,12 +47,10 @@ func (b *HuntBot) Register() (*discordgo.ApplicationCommand, bool) {
 }
 
 func (b *HuntBot) Handle(ctx context.Context, input *discord.CommandInput) (string, error) {
-	if input.IC.ChannelID != b.discord.QMChannel.ID &&
-		input.IC.ChannelID != b.discord.TechChannel.ID {
+	if input.IC.ChannelID != b.discord.QMChannel.ID {
 		return fmt.Sprintf(
-			":tv: Please use `/huntbot` commands in the %s or %s channel.",
+			":tv: Please use `/huntbot` commands in the %s channel.",
 			b.discord.QMChannel.Mention(),
-			b.discord.TechChannel.Mention(),
 		), nil
 	}
 

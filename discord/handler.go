@@ -93,7 +93,7 @@ func (c *Client) handleCommand(
 			xerrors.Errorf("%s.Handle: %w", command.Name, err),
 		)
 		reply = fmt.Sprintf("🚨 Error! Please ping in %s for help.",
-			c.TechChannel.Mention())
+			c.QMChannel.Mention())
 	}
 
 	if command.Async {

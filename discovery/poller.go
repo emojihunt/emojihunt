@@ -8,7 +8,6 @@ import (
 	"log"
 	"net/http"
 	"net/url"
-	"strings"
 	"sync"
 	"time"
 
@@ -216,11 +215,12 @@ func (p *Poller) logAndMaybeWarn(memo string, err error) {
 	defer p.state.CommitAndUnlock()
 
 	log.Printf("discovery: %s: %v", memo, err)
-	if time.Since(p.state.DiscoveryLastWarn) >= warnErrorFrequency {
-		msg := fmt.Sprintf("```*** PUZZLE DISCOVERY %s ***\n\n%s```", strings.ToUpper(memo), spew.Sdump(err))
-		p.discord.ChannelSend(p.discord.TechChannel, msg)
-		p.state.DiscoveryLastWarn = time.Now()
-	}
+	// TODO:
+	// if time.Since(p.state.DiscoveryLastWarn) >= warnErrorFrequency {
+	// 	msg := fmt.Sprintf("```*** PUZZLE DISCOVERY %s ***\n\n%s```", strings.ToUpper(memo), spew.Sdump(err))
+	// 	p.discord.ChannelSend(p.discord.TechChannel, msg)
+	// 	p.state.DiscoveryLastWarn = time.Now()
+	// }
 }
 
 func (p *Poller) openWebsocket(ctx context.Context) (chan bool, error) {

@@ -77,8 +77,7 @@ func (d *Poller) handleNewPuzzles(ctx context.Context, newPuzzles []db.NewPuzzle
 	if len(newPuzzles) > newPuzzleLimit {
 		paused = true
 		msg += fmt.Sprintf(
-			"💥 Too many new puzzles! Puzzle creation paused, please contact #%s.\n",
-			d.discord.TechChannel.Name,
+			"💥 Too many new puzzles! Puzzle creation paused, please contact Tech.\n",
 		)
 	} else {
 		msg += "Reminder: use `/huntbot kill` to stop the bot.\n"
@@ -98,8 +97,7 @@ func (d *Poller) handleNewPuzzles(ctx context.Context, newPuzzles []db.NewPuzzle
 func (d *Poller) handleNewRounds(ctx context.Context, newRounds map[string][]state.DiscoveredPuzzle) error {
 	if len(newRounds) > newRoundLimit {
 		msg := fmt.Sprintf(
-			"```💥 Too many new rounds! Round creation paused, please contact #%s.\n```\n",
-			d.discord.TechChannel.Name,
+			"```💥 Too many new rounds! Round creation paused, please contact Tech.\n```\n",
 		)
 		_, err := d.discord.ChannelSend(d.discord.QMChannel, msg)
 		return err

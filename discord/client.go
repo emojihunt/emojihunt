@@ -18,7 +18,6 @@ type Config struct {
 	QMChannelID         string
 	HangingOutChannelID string
 	MoreEyesChannelID   string
-	TechChannelID       string
 }
 
 var DevConfig = Config{
@@ -27,7 +26,6 @@ var DevConfig = Config{
 	QMChannelID:         "1058092560926646282",
 	HangingOutChannelID: "1058090774488678532",
 	MoreEyesChannelID:   "1058092531688157266",
-	TechChannelID:       "1058092586398650448",
 }
 
 var ProdConfig = Config{
@@ -36,7 +34,6 @@ var ProdConfig = Config{
 	QMChannelID:         "795780814846689321",
 	HangingOutChannelID: "793599987694436377",
 	MoreEyesChannelID:   "793607709022748683",
-	TechChannelID:       "795033372979626004",
 }
 
 type Client struct {
@@ -49,7 +46,6 @@ type Client struct {
 	QMChannel         *discordgo.Channel // for puzzle maintenance
 	HangingOutChannel *discordgo.Channel // for solves, to celebrate
 	MoreEyesChannel   *discordgo.Channel // for verbose puzzle updates
-	TechChannel       *discordgo.Channel // for error messages
 
 	DefaultVoiceChannel *discordgo.Channel // for placeholder events
 
@@ -115,11 +111,6 @@ func Connect(ctx context.Context, prod bool, state *state.State) *Client {
 	if err != nil {
 		log.Panicf("failed to load qm channel %q: %s", config.QMChannelID, err)
 	}
-	techChannel, err := s.Channel(config.TechChannelID)
-	if err != nil {
-		log.Panicf("failed to load tech channel %q: %s",
-			config.TechChannelID, err)
-	}
 
 	var defaultVoiceChannel *discordgo.Channel
 	channels, err := s.GuildChannels(config.GuildID)
@@ -159,7 +150,6 @@ func Connect(ctx context.Context, prod bool, state *state.State) *Client {
 		HangingOutChannel:         hangingOutChannel,
 		MoreEyesChannel:           moreEyesChannel,
 		QMChannel:                 qmChannel,
-		TechChannel:               techChannel,
 		DefaultVoiceChannel:       defaultVoiceChannel,
 		QMRole:                    qmRole,
 		botsByCommand:             make(map[string]*botRegistration),
