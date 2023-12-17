@@ -5,9 +5,12 @@ const props = defineProps<{ puzzle: Puzzle; tabindex: number; }>();
 const store = usePuzzles();
 const open = ref(false);
 const saving = ref(false);
+const answering = ref<Status | null>(null);
+const entry = ref<HTMLDivElement>();
 
 const onStatusSelect = (status: Status) => {
   open.value = false;
+  answering.value = null;
   if (!StatusNeedsAnswer(status)) {
     saving.value = true;
     store.updatePuzzle(props.puzzle, { status, answer: "" })
@@ -17,7 +20,8 @@ const onStatusSelect = (status: Status) => {
     store.updatePuzzle(props.puzzle, { status })
       .finally(() => (saving.value = false));
   } else {
-    // TODO...
+    answering.value = status;
+    nextTick(() => entry.value?.querySelector("span")?.focus());
   }
 };
 </script>
@@ -32,13 +36,26 @@ const onStatusSelect = (status: Status) => {
       </button>
       <Spinner v-if="saving" />
     </div>
-    <button v-if="!puzzle.answer" class="status" :tabindex="tabindex"
+    <button v-if="!puzzle.answer && !answering" class="status" :tabindex="tabindex"
       @click="() => (open = !open)">
       <span class="highlight">
         {{ StatusEmoji(puzzle.status) }} {{ StatusLabel(puzzle.status) }}
       </span>
       <Spinner v-if="saving" />
     </button>
+
+    <template v-if="answering">
+      <div class="answer" ref="entry">
+        <PuzzleCellInner :puzzle="puzzle" field="answer" :tabindex="tabindex" editing
+          @save="(v) => (saving = v)" />
+        <button :title="answering" :tabindex="tabindex"
+          @click="() => (answering = null, open = true)">
+          {{ StatusEmoji(answering) }}
+        </button>
+      </div>
+      <div class="hint">🎉 Press Enter to record answer</div>
+    </template>
+
     <PuzzleStatusSelector v-if="open" :puzzle="puzzle" @select="onStatusSelect" />
   </div>
 </template>
@@ -79,6 +96,10 @@ const onStatusSelect = (status: Status) => {
   right: 1.75rem;
 }
 
+.hint {
+  margin: 0.2rem 0.2rem 0.1rem;
+}
+
 /* Theming */
 .cell {
   font-size: 0.87rem;
@@ -108,5 +129,11 @@ const onStatusSelect = (status: Status) => {
 .status {
   margin: 0 1px;
   outline: none;
+}
+
+.hint {
+  font-size: 0.76rem;
+  text-align: right;
+  color: oklch(55% 0 0deg);
 }
 </style>

@@ -4,12 +4,13 @@ const props = defineProps<{
   field: "name" | "answer" | "location" | "description";
   tabindex: number;
   readonly?: boolean;
+  editing?: boolean;
 }>();
 const emit = defineEmits<{ (e: 'save', b: boolean): void; }>();
 const store = usePuzzles();
 
 const content = ref(props.puzzle[props.field].trim());
-const editing = ref(false);
+const editing = ref(props.editing || false);
 const span = ref<HTMLSpanElement>();
 
 // Vue doesn't properly apply reactive updates because it can't track the
