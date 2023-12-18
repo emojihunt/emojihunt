@@ -25,7 +25,7 @@ export default defineStore("puzzles", {
         const example = this.puzzlesByRound[id][0].round;
         stats[id] = {
           anchor: example.name.trim().toLowerCase().replaceAll(" ", "-"),
-          complete: this.puzzlesByRound[id].filter((p => !p.answer)).length == 0,
+          complete: this.puzzlesByRound[id].filter((p => !p.answer)).length === 0,
           hue: hues[id],
           solved: this.puzzlesByRound[id].filter((p) => !!p.answer).length,
           total: this.puzzlesByRound[id].length,
@@ -46,9 +46,10 @@ export default defineStore("puzzles", {
       }
     },
     async updatePuzzle(puzzle: Puzzle, data: Partial<Puzzle>) {
-      await useAPI(`/puzzles/${puzzle.id}`, data);
-      this.puzzles[puzzle.id] = { ...this.puzzles[puzzle.id], ...data };
-      // TODO: rollback?
+      const previous = this.puzzles[puzzle.id];
+      this.puzzles[puzzle.id] = { ...previous, ...data };
+      await useAPI(`/puzzles/${puzzle.id}`, data)
+        .catch(() => this.puzzles[puzzle.id] = previous);
     },
   },
 });
