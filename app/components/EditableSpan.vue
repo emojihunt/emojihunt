@@ -2,8 +2,10 @@
 const props = defineProps<{
   value: string;
   readonly?: boolean;
+  sticky?: boolean;
   tabindex?: number;
 }>();
+
 const emit = defineEmits<{
   (event: "save", updated: string): void;
   (event: "cancel"): void;
@@ -52,7 +54,7 @@ const saveEdit = () => {
 const click = () => !props.readonly && !editing.value &&
   (editing.value = true, rerender(), span.value?.focus());
 
-const blur = () => !props.readonly && editing.value && saveEdit();
+const blur = () => !props.readonly && !props.sticky && editing.value && saveEdit();
 
 const keydown = (e: KeyboardEvent) => {
   if (props.readonly) {

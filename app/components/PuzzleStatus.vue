@@ -49,11 +49,11 @@ const cancel = () => answering.value && (answering.value = null, open.value = fa
 <template>
   <div class="cell">
     <div v-if="puzzle.answer || answering" class="answer">
-      <EditableSpan ref="input" :tabindex="tabindex" :value="puzzle.answer" @save="save"
-        @cancel="cancel" />
+      <EditableSpan ref="input" :value="puzzle.answer" :tabindex="tabindex"
+        :sticky="!!answering" @save="save" @cancel="cancel" />
       <button :title="answering || puzzle.status" :tabindex="tabindex"
         @click="() => answering ? (answering = null, open = true) : (open = !open)">
-        {{ StatusEmoji(puzzle.status) }}
+        {{ StatusEmoji(answering || puzzle.status) }}
       </button>
       <div v-if="answering" class="hint">🎉 Press Enter to record answer</div>
       <Spinner v-if="saving" />

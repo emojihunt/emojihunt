@@ -17,7 +17,7 @@ const save = (updated: string) => {
 
 <template>
   <div class="cell" :class="field">
-    <EditableSpan :readonly="readonly" :tabindex="tabindex" :value="puzzle[field]"
+    <EditableSpan :value="puzzle[field]" :readonly="readonly" :tabindex="tabindex"
       @save="save" />
     <Spinner v-if="saving" />
   </div>
