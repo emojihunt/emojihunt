@@ -14,16 +14,6 @@ const emit = defineEmits<{
 const editing = ref(false);
 const span = ref<HTMLSpanElement>();
 
-defineExpose({
-  focus(): void {
-    if (!editing.value) {
-      editing.value = true;
-      rerender();
-    }
-    nextTick(() => span.value?.focus());
-  },
-});
-
 // Vue doesn't properly apply reactive updates because it can't track the
 // changing state of the contenteditable. Instead, have Vue render the component
 // once and control all further updates manually.
@@ -37,7 +27,18 @@ const rerender = () => {
   span.value!.tabIndex = props.tabindex || 0;
 };
 onMounted(() => rerender());
-onUpdated(() => (editing.value = false, rerender()));
+watch([props], () => (editing.value = false, rerender()));
+
+defineExpose({
+  focus(): void {
+    if (!editing.value) {
+      editing.value = true;
+      rerender();
+    }
+    nextTick(() => span.value?.focus());
+    props.value && nextTick(() => highlightContents(span.value!));
+  },
+});
 
 const saveEdit = () => {
   let updated = span.value?.textContent?.trim() || "";
