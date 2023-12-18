@@ -60,6 +60,7 @@ func (b *PuzzleBot) Register() (*discordgo.ApplicationCommand, bool) {
 						Choices: []*discordgo.ApplicationCommandOptionChoice{
 							{Name: field.StatusSolved.Pretty(), Value: field.StatusSolved},
 							{Name: field.StatusBacksolved.Pretty(), Value: field.StatusBacksolved},
+							{Name: field.StatusPurchased.Pretty(), Value: field.StatusPurchased},
 						},
 					},
 					{
