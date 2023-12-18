@@ -23,7 +23,7 @@ const click = (e: MouseEvent) => {
   <a :href="`#${round.anchor}`" @click="click" :tabindex="selected ? 0 : -1"
     :aria-label="`To ${round.name}`">
     <span>{{ round.emoji }}&#xfe0f;</span>
-    <label v-if="round.complete">✔</label>
+    <label v-if="!round.complete">•</label>
   </a>
 </template>
 
