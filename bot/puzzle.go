@@ -29,7 +29,7 @@ func (b *PuzzleBot) Register() (*discordgo.ApplicationCommand, bool) {
 		Description: "Use in a puzzle channel to update puzzle information 🧩",
 		Options: []*discordgo.ApplicationCommandOption{
 			{
-				Name:        "status",
+				Name:        "progress",
 				Description: "Use in a puzzle channel when you start or stop work 🚧",
 				Type:        discordgo.ApplicationCommandOptionSubCommand,
 				Options: []*discordgo.ApplicationCommandOption{
@@ -59,7 +59,8 @@ func (b *PuzzleBot) Register() (*discordgo.ApplicationCommand, bool) {
 						Type:        discordgo.ApplicationCommandOptionString,
 						Choices: []*discordgo.ApplicationCommandOptionChoice{
 							{Name: field.StatusSolved.Pretty(), Value: field.StatusSolved},
-							{Name: field.StatusBacksolved.Pretty(), Value: field.StatusBacksolved},
+							// Discord can't display the gender modifier on this emoji
+							{Name: "🤦 Backsolved", Value: field.StatusBacksolved},
 							{Name: field.StatusPurchased.Pretty(), Value: field.StatusPurchased},
 						},
 					},
@@ -72,8 +73,8 @@ func (b *PuzzleBot) Register() (*discordgo.ApplicationCommand, bool) {
 				},
 			},
 			{
-				Name:        "description",
-				Description: "Use in a puzzle channel to add or update the description 📝",
+				Name:        "note",
+				Description: "Use in a puzzle channel to add or update the note 📝",
 				Type:        discordgo.ApplicationCommandOptionSubCommand,
 				Options: []*discordgo.ApplicationCommandOption{
 					{
