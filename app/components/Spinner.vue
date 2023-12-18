@@ -1,6 +1,6 @@
 <!--
   Copyright (c) 2020 Tobias Ahlin. MIT Licensed.
-  https://github.com/tobiasahlin/SpinKit
+  https://github.com/tobiasahlin/SpinKit (modified)
  -->
 <template>
   <div class="spinner">
@@ -13,6 +13,7 @@
 .spinner {
   width: 1rem;
   height: 1rem;
+  animation: sk-fade 500ms forwards ease-in;
 }
 
 .double-bounce1,
@@ -26,38 +27,32 @@
   top: 0;
   left: 0;
 
-  -webkit-animation: sk-bounce 2.0s infinite ease-in-out;
   animation: sk-bounce 2.0s infinite ease-in-out;
 }
 
 .double-bounce2 {
-  -webkit-animation-delay: -1.0s;
   animation-delay: -1.0s;
-}
-
-@-webkit-keyframes sk-bounce {
-
-  0%,
-  100% {
-    -webkit-transform: scale(0.0)
-  }
-
-  50% {
-    -webkit-transform: scale(1.0)
-  }
 }
 
 @keyframes sk-bounce {
 
   0%,
   100% {
-    transform: scale(0.0);
-    -webkit-transform: scale(0.0);
+    transform: scale(0%);
   }
 
   50% {
-    transform: scale(1.0);
-    -webkit-transform: scale(1.0);
+    transform: scale(100%);
+  }
+}
+
+@keyframes sk-fade {
+  0% {
+    opacity: 0%;
+  }
+
+  100% {
+    opacity: 100%;
   }
 }
 </style>
