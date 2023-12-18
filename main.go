@@ -13,7 +13,6 @@ import (
 	"github.com/emojihunt/emojihunt/bot"
 	"github.com/emojihunt/emojihunt/db"
 	"github.com/emojihunt/emojihunt/discord"
-	"github.com/emojihunt/emojihunt/discovery"
 	"github.com/emojihunt/emojihunt/drive"
 	"github.com/emojihunt/emojihunt/server"
 	"github.com/emojihunt/emojihunt/state"
@@ -27,7 +26,6 @@ func init() { flag.Parse() }
 
 func main() {
 	// Initialize Sentry
-	// TODO: set up context, error handling in all goroutines
 	dsn, ok := os.LookupEnv("SENTRY_DSN")
 	if !ok {
 		panic("SENTRY_DSN is required")
@@ -79,8 +77,6 @@ func main() {
 	log.Printf("starting syncer")
 	var syncer = syncer.New(db, discord, drive)
 	go syncer.RestorePlaceholderEvent()
-	// TODO: initialize discovery poller from database config
-	var dscvpoller *discovery.Poller
 
 	log.Printf("starting web server")
 	server.Start(ctx, *prod, db, discord)
@@ -89,7 +85,7 @@ func main() {
 	discord.RegisterBots(
 		bot.NewEmojiNameBot(),
 		bot.NewHuntYetBot(),
-		bot.NewHuntBot(ctx, db, discord, dscvpoller, syncer, state),
+		bot.NewHuntBot(ctx, db, discord, nil, syncer, state),
 		bot.NewPuzzleBot(db, discord, syncer),
 		bot.NewQMBot(discord),
 		bot.NewReminderBot(ctx, db, discord, state),

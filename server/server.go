@@ -87,7 +87,6 @@ func Start(ctx context.Context, prod bool, db *db.Client, discord *discord.Clien
 	pg.POST("", s.CreatePuzzle)
 	pg.POST("/:id", s.UpdatePuzzle)
 	pg.DELETE("/:id", s.DeletePuzzle)
-	// TODO: reimplement full-resync functionality
 
 	var rg = e.Group("/rounds", s.AuthenticationMiddleware)
 	rg.GET("", s.ListRounds)

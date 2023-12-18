@@ -128,16 +128,10 @@ func (s *Syncer) HandleStatusChange(
 
 	// Send notifications
 	if puzzle.Status.IsSolved() {
-		if puzzle.Answer != "" {
-			// Puzzle solved and answer entered! (Suppress puzzle channel
-			// notification if this is a bot request, since the bot will also
-			// respond in the puzzle channel.)
-			err = s.notifyPuzzleFullySolved(puzzle, botRequest)
-		} else {
-			// Puzzle marked as solved but answer needs to be entered in
-			// Airtable...
-			err = s.notifyPuzzleSolvedMissingAnswer(puzzle)
-		}
+		// Puzzle solved and answer entered! (Suppress puzzle channel
+		// notification if this is a bot request, since the bot will also
+		// respond in the puzzle channel.)
+		err = s.notifyPuzzleFullySolved(puzzle, botRequest)
 		if err != nil {
 			return nil, err
 		}

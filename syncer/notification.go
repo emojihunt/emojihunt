@@ -3,7 +3,6 @@ package syncer
 import (
 	"fmt"
 
-	"github.com/bwmarrin/discordgo"
 	"github.com/emojihunt/emojihunt/db"
 )
 
@@ -40,33 +39,5 @@ func (s *Syncer) notifyPuzzleFullySolved(puzzle *db.Puzzle, suppressSolveNotif b
 	msg := fmt.Sprintf("%s Puzzle <#%s> was **%s!** Answer: `%s`.",
 		puzzle.Round.Emoji, puzzle.DiscordChannel, puzzle.Status.SolvedVerb(), puzzle.Answer)
 	_, err := s.discord.ChannelSend(s.discord.HangingOutChannel, msg)
-	return err
-}
-
-// notifyPuzzleSolvedMissingAnswer sends messages to the puzzle channel and to
-// #qm asking for the answer to be entered into Airtable.
-func (s *Syncer) notifyPuzzleSolvedMissingAnswer(puzzle *db.Puzzle) error {
-	puzMsg := fmt.Sprintf(
-		"Puzzle %s! Please add the answer to Airtable.",
-		puzzle.Status.SolvedVerb(),
-	)
-	if err := s.discord.ChannelSendRawID(puzzle.DiscordChannel, puzMsg); err != nil {
-		return err
-	}
-
-	msg := fmt.Sprintf(
-		"**:woman_shrugging: Help!** Puzzle %q is marked as %s, but no answer was "+
-			"entered in Airtable.",
-		puzzle.Name, puzzle.Status.SolvedVerb(),
-	)
-	components := []discordgo.MessageComponent{
-		discordgo.Button{
-			Label: "Edit in Airtable",
-			Style: discordgo.LinkButton,
-			Emoji: discordgo.ComponentEmoji{Name: "📝"},
-			URL:   puzzle.EditURL(),
-		},
-	}
-	_, err := s.discord.ChannelSendComponents(s.discord.QMChannel, msg, components)
 	return err
 }

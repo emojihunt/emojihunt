@@ -44,10 +44,6 @@ func (p Puzzle) SpreadsheetURL() string {
 	return fmt.Sprintf("https://docs.google.com/spreadsheets/d/%s", p.SpreadsheetID)
 }
 
-func (p Puzzle) EditURL() string {
-	return "https://todo.emojihunt.tech/TODO"
-}
-
 func (p Puzzle) ShouldArchive() bool {
 	// We shouldn't archive the channel until the answer has been filled in on
 	// Airtable
