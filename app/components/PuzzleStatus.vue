@@ -3,12 +3,13 @@ import { Status } from "../utils/types";
 
 const props = defineProps<{ puzzle: Puzzle; tabindex: number; }>();
 const store = usePuzzles();
+
+const input = ref();
 const open = ref(false);
 const saving = ref(false);
 const answering = ref<Status | null>(null);
-const entry = ref<HTMLDivElement>();
 
-const onStatusSelect = (status: Status) => {
+const select = (status: Status) => {
   open.value = false;
   answering.value = null;
   if (!StatusNeedsAnswer(status)) {
@@ -21,19 +22,40 @@ const onStatusSelect = (status: Status) => {
       .finally(() => (saving.value = false));
   } else {
     answering.value = status;
-    nextTick(() => entry.value?.querySelector("span")?.focus());
+    nextTick(() => input.value.focus());
   }
 };
+
+const save = (answer: string) => {
+  if (!answer) return;  // cannot be blank
+  answer = answer.toUpperCase();
+  if (answering.value) {
+    // Answer with state change to "Solved", etc.
+    saving.value = true;
+    store.updatePuzzle(props.puzzle, { answer, status: answering.value })
+      .finally(() => (saving.value = false));
+    answering.value = null;
+  } else {
+    // Regular answer fixup
+    saving.value = true;
+    store.updatePuzzle(props.puzzle, { answer })
+      .finally(() => (saving.value = false));
+  }
+};
+
+const cancel = () => answering.value && (answering.value = null, open.value = false);
 </script>
 
 <template>
   <div class="cell">
-    <div v-if="puzzle.answer" class="answer">
-      <PuzzleCellInner :puzzle="puzzle" field="answer" :tabindex="tabindex"
-        @save="(v) => (saving = v)" />
-      <button :title="puzzle.status" :tabindex="tabindex" @click="() => (open = !open)">
+    <div v-if="puzzle.answer || answering" class="answer">
+      <EditableSpan ref="input" :tabindex="tabindex" :value="puzzle.answer" @save="save"
+        @cancel="cancel" />
+      <button :title="answering || puzzle.status" :tabindex="tabindex"
+        @click="() => answering ? (answering = null, open = true) : (open = !open)">
         {{ StatusEmoji(puzzle.status) }}
       </button>
+      <div v-if="answering" class="hint">🎉 Press Enter to record answer</div>
       <Spinner v-if="saving" />
     </div>
     <button v-if="!puzzle.answer && !answering" class="status" :tabindex="tabindex"
@@ -43,20 +65,7 @@ const onStatusSelect = (status: Status) => {
       </span>
       <Spinner v-if="saving" />
     </button>
-
-    <template v-if="answering">
-      <div class="answer" ref="entry">
-        <PuzzleCellInner :puzzle="puzzle" field="answer" :tabindex="tabindex" editing
-          @save="(v) => (saving = v)" />
-        <button :title="answering" :tabindex="tabindex"
-          @click="() => (answering = null, open = true)">
-          {{ StatusEmoji(answering) }}
-        </button>
-      </div>
-      <div class="hint">🎉 Press Enter to record answer</div>
-    </template>
-
-    <PuzzleStatusSelector v-if="open" :puzzle="puzzle" @select="onStatusSelect" />
+    <PuzzleStatusSelector v-if="open" :puzzle="puzzle" @select="select" />
   </div>
 </template>
 
@@ -97,7 +106,8 @@ const onStatusSelect = (status: Status) => {
 }
 
 .hint {
-  margin: 0.2rem 0.2rem 0.1rem;
+  grid-column: 1 / 3;
+  padding: 0.2rem 0.2rem 0.1rem;
 }
 
 /* Theming */
@@ -109,7 +119,7 @@ const onStatusSelect = (status: Status) => {
   outline: auto;
 }
 
-.answer .inner {
+.answer span {
   font-family: 'IBM Plex Mono', monospace;
   font-weight: 600;
   text-transform: uppercase;

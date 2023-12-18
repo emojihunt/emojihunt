@@ -5,14 +5,20 @@ const props = defineProps<{
   tabindex: number;
   readonly?: boolean;
 }>();
-
+const store = usePuzzles();
 const saving = ref(false);
+
+const save = (updated: string) => {
+  saving.value = true;
+  store.updatePuzzle(props.puzzle, { [props.field]: updated })
+    .finally(() => (saving.value = false));
+};
 </script>
 
 <template>
   <div class="cell" :class="field">
-    <PuzzleCellInner :puzzle="puzzle" :field="field" :tabindex="tabindex"
-      :readonly="readonly" @save="(v) => (saving = v)" />
+    <EditableSpan :readonly="readonly" :tabindex="tabindex" :value="puzzle[field]"
+      @save="save" />
     <Spinner v-if="saving" />
   </div>
 </template>
