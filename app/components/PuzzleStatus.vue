@@ -5,6 +5,8 @@ const props = defineProps<{ puzzle: Puzzle; tabindex: number; }>();
 const store = usePuzzles();
 
 const input = ref();
+const button = ref<HTMLButtonElement>();
+
 const open = ref(false);
 const saving = ref(false);
 const answering = ref<Status | null>(null);
@@ -16,6 +18,7 @@ const select = (status: Status) => {
     saving.value = true;
     store.updatePuzzle(props.puzzle, { status, answer: "" })
       .finally(() => (saving.value = false));
+    nextTick(() => button.value?.focus());
   } else if (props.puzzle.answer) {
     saving.value = true;
     store.updatePuzzle(props.puzzle, { status })
@@ -58,8 +61,8 @@ const cancel = () => answering.value && (answering.value = null, open.value = fa
       <div v-if="answering" class="hint">🎉 Press Enter to record answer</div>
       <Spinner v-if="saving" />
     </div>
-    <button v-if="!puzzle.answer && !answering" class="status" :tabindex="tabindex"
-      @click="() => (open = !open)">
+    <button v-if="!puzzle.answer && !answering" ref="button" class="status"
+      :tabindex="tabindex" @click="() => (open = !open)">
       <span class="highlight">
         {{ StatusEmoji(puzzle.status) }} {{ StatusLabel(puzzle.status) }}
       </span>
