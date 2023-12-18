@@ -1,5 +1,5 @@
 // https://nuxt.com/docs/api/configuration/nuxt-config
-const prod = import.meta.env.NODE_ENV == "production";
+const prod = import.meta.env.NODE_ENV === "production";
 export default defineNuxtConfig({
   appConfig: {
     clientID: prod ? "1058094051586490368" : "1058094051586490368",

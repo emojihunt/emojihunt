@@ -16,7 +16,7 @@ if ("url" in props.error && typeof props.error.url === "string") {
 </script>
 
 <template>
-  <Login v-if="error.statusCode == 401" :returnURL="returnURL" />
+  <Login v-if="error.statusCode === 401" :returnURL="returnURL" />
   <section v-else>
     <div class="center">
       <h1>

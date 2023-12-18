@@ -10,9 +10,9 @@ export default function (limit: number, start: number = 0):
 
   const state = reactive({ index: start });
   const keydown = (e: KeyboardEvent) => {
-    if (e.key == "ArrowRight") {
+    if (e.key === "ArrowRight") {
       if (state.index < limit - 1) state.index += 1;
-    } else if (e.key == "ArrowLeft") {
+    } else if (e.key === "ArrowLeft") {
       if (state.index > 0) state.index -= 1;
     } else {
       return;
@@ -38,4 +38,4 @@ export const getStopParent = (element: Element | null): Element | null => {
 };
 
 export const tabIndex = (focused: FocusInfo, target: number): number =>
-  focused.index == target ? 0 : -1;
+  focused.index === target ? 0 : -1;

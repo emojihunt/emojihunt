@@ -26,12 +26,12 @@ const keydown = (e: KeyboardEvent) => {
   let sibling;
 
   const row = getStopParent(document.activeElement);
-  if (e.key == "ArrowUp") {
+  if (e.key === "ArrowUp") {
     sibling = row?.previousElementSibling;
     while (sibling && !sibling.classList.contains("stop")) {
       sibling = sibling?.previousElementSibling;
     }
-  } else if (e.key == "ArrowDown") {
+  } else if (e.key === "ArrowDown") {
     sibling = row?.nextElementSibling;
     while (sibling && !sibling.classList.contains("stop")) {
       sibling = sibling?.nextElementSibling;

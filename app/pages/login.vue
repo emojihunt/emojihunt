@@ -53,7 +53,7 @@ if (result.status === "success") {
     <span v-else-if="result.status === 'invalid_code'">
       Invalid or duplicate login attempt.
     </span>
-    <span v-else-if="result.status == 'unknown_member'">
+    <span v-else-if="result.status === 'unknown_member'">
       <b>@{{ result.username }}</b> is not a member of the Discord server.
     </span>
   </Login>
