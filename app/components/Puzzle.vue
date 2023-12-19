@@ -8,7 +8,7 @@ const props = defineProps<{
   <span class="row stop">
     <PuzzleButtons :puzzle="puzzle" :focused="focused" />
     <span class="data">
-      <PuzzleCell :puzzle="puzzle" field="name" readonly :tabindex="tabIndex(focused, 3)" />
+      <PuzzleName :puzzle="puzzle" :round="round" :tabindex="tabIndex(focused, 3)" />
       <PuzzleStatus :puzzle="puzzle" :tabindex="tabIndex(focused, 4)" />
       <PuzzleCell :puzzle="puzzle" field="location" :tabindex="tabIndex(focused, 5)" />
       <PuzzleCell :puzzle="puzzle" field="note" :tabindex="tabIndex(focused, 6)" />

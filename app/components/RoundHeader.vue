@@ -5,7 +5,7 @@ const props = defineProps<{
   nextTimeline: string | undefined;
   observer: IntersectionObserver | undefined;
 }>();
-const hue = props.round.hue;
+const hue = computed(() => props.round.hue);
 
 const pill = ref<HTMLElement>();
 const titles = ref<HTMLElement>();

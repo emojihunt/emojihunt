@@ -3,7 +3,6 @@ const props = defineProps<{
   puzzle: Puzzle;
   field: "name" | "location" | "note";
   tabindex: number;
-  readonly?: boolean;
 }>();
 const store = usePuzzles();
 const saving = ref(false);
@@ -17,8 +16,7 @@ const save = (updated: string) => {
 
 <template>
   <div class="cell" :class="field">
-    <EditableSpan :value="puzzle[field]" :readonly="readonly" :tabindex="tabindex"
-      @save="save" />
+    <EditableSpan :value="puzzle[field]" :tabindex="tabindex" @save="save" />
     <Spinner v-if="saving" />
   </div>
 </template>
@@ -40,12 +38,6 @@ const save = (updated: string) => {
 /* Theming */
 .cell:focus-within {
   outline: auto;
-}
-
-.name {
-  font-weight: 430;
-  font-size: 0.9rem;
-  color: oklch(25% 0.10 275deg);
 }
 
 .location,

@@ -93,7 +93,7 @@ const cancel = () => answering.value && (answering.value = null, open.value = fa
 }
 
 .status {
-  line-height: 2em;
+  line-height: 1.8rem;
   padding: 0 0.33rem;
   text-align: left;
 }
