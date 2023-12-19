@@ -95,6 +95,8 @@ func Start(ctx context.Context, prod bool, db *db.Client, discord *discord.Clien
 	rg.POST("/:id", s.UpdateRound)
 	rg.DELETE("/:id", s.DeleteRound)
 
+	e.GET("/home", s.ListHome, s.AuthenticationMiddleware)
+
 	go func() {
 		err := e.Start(":8080")
 		if !errors.Is(err, http.ErrServerClosed) {
