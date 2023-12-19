@@ -28,8 +28,10 @@ func (c *Client) CreateRound(ctx context.Context, round Round) (Round, error) {
 		return Round{}, err
 	}
 	round, err := c.queries.CreateRound(ctx, CreateRoundParams{
-		Name:  round.Name,
-		Emoji: round.Emoji,
+		Name:    round.Name,
+		Emoji:   round.Emoji,
+		Hue:     round.Hue,
+		Special: round.Special,
 	})
 	if err != nil {
 		return Round{}, xerrors.Errorf("CreateRound: %w", err)
@@ -67,6 +69,8 @@ func (r Round) Validate() error {
 		// This is *almost* correct. We add a U+FE0F to force emoji
 		// presentation. https://github.com/rivo/uniseg/issues/27
 		return ValidationError{"emoji", "must have emoji presentation"}
+	} else if r.Hue < 0 || r.Hue >= 360 {
+		return ValidationError{"hue", "must be in range [0, 360)"}
 	}
 	return nil
 }

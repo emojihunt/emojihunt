@@ -77,11 +77,11 @@ func (s *Server) UpdatePuzzle(c echo.Context) error {
 		return err
 	}
 
-	puzzle2, err := s.db.LoadByID(c.Request().Context(), id.ID)
+	updated, err := s.db.LoadByID(c.Request().Context(), id.ID)
 	if err != nil {
 		return err
 	}
-	return c.JSON(http.StatusOK, puzzle2)
+	return c.JSON(http.StatusOK, updated)
 }
 
 func (s *Server) DeletePuzzle(c echo.Context) error {

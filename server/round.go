@@ -65,7 +65,12 @@ func (s *Server) UpdateRound(c echo.Context) error {
 	if err != nil {
 		return err
 	}
-	return c.JSON(http.StatusOK, round)
+
+	updated, err := s.db.GetRound(c.Request().Context(), id.ID)
+	if err != nil {
+		return err
+	}
+	return c.JSON(http.StatusOK, updated)
 }
 
 func (s *Server) DeleteRound(c echo.Context) error {
