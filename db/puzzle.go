@@ -16,7 +16,7 @@ type Puzzle struct {
 	Answer         string       `json:"answer"`
 	Round          Round        `json:"round"`
 	Status         field.Status `json:"status"`
-	Description    string       `json:"description"`
+	Note           string       `json:"note"`
 	Location       string       `json:"location"`
 	PuzzleURL      string       `json:"puzzle_url"`
 	SpreadsheetID  string       `json:"spreadsheet_id"`

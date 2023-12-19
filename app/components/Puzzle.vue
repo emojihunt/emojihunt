@@ -11,7 +11,7 @@ const props = defineProps<{
       <PuzzleCell :puzzle="puzzle" field="name" readonly :tabindex="tabIndex(focused, 3)" />
       <PuzzleStatus :puzzle="puzzle" :tabindex="tabIndex(focused, 4)" />
       <PuzzleCell :puzzle="puzzle" field="location" :tabindex="tabIndex(focused, 5)" />
-      <PuzzleCell :puzzle="puzzle" field="description" :tabindex="tabIndex(focused, 6)" />
+      <PuzzleCell :puzzle="puzzle" field="note" :tabindex="tabIndex(focused, 6)" />
     </span>
   </span>
 </template>

@@ -44,7 +44,7 @@ func (c *Client) CreatePuzzle(ctx context.Context, puzzle RawPuzzle) (*Puzzle, e
 		Answer:         puzzle.Answer,
 		Round:          puzzle.Round,
 		Status:         puzzle.Status,
-		Description:    puzzle.Description,
+		Note:           puzzle.Note,
 		Location:       puzzle.Location,
 		PuzzleURL:      puzzle.PuzzleURL,
 		SpreadsheetID:  puzzle.SpreadsheetID,

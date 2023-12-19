@@ -1,7 +1,7 @@
 <script setup lang="ts">
 const props = defineProps<{
   puzzle: Puzzle;
-  field: "name" | "location" | "description";
+  field: "name" | "location" | "note";
   tabindex: number;
   readonly?: boolean;
 }>();
@@ -49,7 +49,7 @@ const save = (updated: string) => {
 }
 
 .location,
-.description {
+.note {
   font-weight: 300;
   font-size: 0.86rem;
 }

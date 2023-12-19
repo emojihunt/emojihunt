@@ -70,14 +70,14 @@ func (c *Client) SetStatusAndAnswer(
 	return &converted, nil
 }
 
-func (c *Client) SetDescription(
-	ctx context.Context, puzzle *Puzzle, description string,
+func (c *Client) SetNote(
+	ctx context.Context, puzzle *Puzzle, note string,
 ) (*Puzzle, error) {
-	err := c.queries.UpdateDescription(ctx, UpdateDescriptionParams{
-		ID: puzzle.ID, Description: description,
+	err := c.queries.UpdateNote(ctx, UpdateNoteParams{
+		ID: puzzle.ID, Note: note,
 	})
 	if err != nil {
-		return nil, xerrors.Errorf("UpdateDescription: %w", err)
+		return nil, xerrors.Errorf("UpdateNote: %w", err)
 	}
 	record, err := c.queries.GetPuzzle(ctx, puzzle.ID)
 	if err != nil {

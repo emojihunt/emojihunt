@@ -55,10 +55,10 @@ func (s *Syncer) DiscordCreateUpdatePin(puzzle *db.Puzzle) error {
 		},
 	}
 
-	if puzzle.Description != "" {
+	if puzzle.Note != "" {
 		embed.Fields = append(embed.Fields, &discordgo.MessageEmbedField{
-			Name:   "Description",
-			Value:  puzzle.Description,
+			Name:   "Note",
+			Value:  puzzle.Note,
 			Inline: false,
 		})
 	}

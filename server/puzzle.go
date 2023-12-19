@@ -15,7 +15,7 @@ type PuzzleParams struct {
 	Answer         string       `form:"answer"`
 	Round          int64        `form:"round"`
 	Status         field.Status `form:"status"`
-	Description    string       `form:"description"`
+	Note           string       `form:"note"`
 	Location       string       `form:"location"`
 	PuzzleURL      string       `form:"puzzle_url"`
 	SpreadsheetID  string       `form:"spreadsheet_id"`

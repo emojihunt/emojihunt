@@ -114,7 +114,7 @@ func (b *PuzzleBot) Handle(ctx context.Context, input *discord.CommandInput) (st
 	var newStatus field.Status
 	var newAnswer string
 	switch input.Subcommand.Name {
-	case "status":
+	case "progress":
 		if statusOpt, ok := b.discord.OptionByName(input.Subcommand.Options, "to"); !ok {
 			return "", xerrors.Errorf("missing option: to")
 		} else if newStatus, err = field.ParseTextStatus(statusOpt.StringValue()); err != nil {
@@ -162,19 +162,19 @@ func (b *PuzzleBot) Handle(ctx context.Context, input *discord.CommandInput) (st
 		if _, err = b.syncer.HandleStatusChange(ctx, puzzle, true); err != nil {
 			return "", err
 		}
-	case "description":
-		var newDescription string
-		if descriptionOpt, ok := b.discord.OptionByName(input.Subcommand.Options, "is"); ok {
-			newDescription = descriptionOpt.StringValue()
-			reply = ":writing_hand: Updated puzzle description!"
+	case "note":
+		var newNote string
+		if noteOpt, ok := b.discord.OptionByName(input.Subcommand.Options, "is"); ok {
+			newNote = noteOpt.StringValue()
+			reply = ":writing_hand: Updated puzzle note!"
 		} else {
-			reply = ":cl: Cleared puzzle description."
+			reply = ":cl: Cleared puzzle note."
 		}
-		if puzzle.Description != "" {
-			reply += fmt.Sprintf(" Previous description was: ```\n%s\n```", puzzle.Description)
+		if puzzle.Note != "" {
+			reply += fmt.Sprintf(" Previous note was: ```\n%s\n```", puzzle.Note)
 		}
 
-		if puzzle, err = b.db.SetDescription(ctx, puzzle, newDescription); err != nil {
+		if puzzle, err = b.db.SetNote(ctx, puzzle, newNote); err != nil {
 			return "", err
 		}
 		if err = b.syncer.DiscordCreateUpdatePin(puzzle); err != nil {

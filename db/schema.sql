@@ -5,7 +5,7 @@ CREATE TABLE puzzles (
     round           INTEGER NOT NULL,
     status          TEXT    NOT NULL,
 
-    description     TEXT    NOT NULL,
+    note            TEXT    NOT NULL,
     location        TEXT    NOT NULL,
 
     puzzle_url      TEXT    NOT NULL,

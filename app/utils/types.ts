@@ -12,7 +12,7 @@ export type Puzzle = {
   answer: string;
   round: Round;
   status: Status;
-  description: string;
+  note: string;
   location: string;
   puzzle_url: string;
   spreadsheet_id: string;
