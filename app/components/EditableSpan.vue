@@ -18,7 +18,6 @@ const span = ref<HTMLSpanElement>();
 // changing state of the contenteditable. Instead, have Vue render the component
 // once and control all further updates manually.
 const rerender = () => {
-  // if (!span.value) cn;
   span.value!.contentEditable = editing.value ? "plaintext-only" : "false";
   const updated = props.value.trim() || (editing.value ? "" : "-");
   if (span.value!.innerText != updated) {
@@ -40,14 +39,21 @@ defineExpose({
   },
 });
 
-const saveEdit = () => {
+const saveEdit = (): boolean => {
   let updated = span.value?.textContent?.trim() || "";
   if (updated === "-") updated = "";
-  editing.value = false;
   if (updated != props.value.trim()) {
+    editing.value = false;
     emit("save", updated);
+    nextTick(() => rerender());
+    return true;
+  } else if (!props.sticky) {
+    editing.value = false;
+    nextTick(() => rerender());
+    return true;
+  } else {
+    return false;
   }
-  nextTick(() => rerender());
 };
 
 // With a click event, the browser automatically inserts the caret at the
@@ -63,8 +69,8 @@ const keydown = (e: KeyboardEvent) => {
   } else if (editing.value) {
     switch (e.key) {
       case "Enter":
-        saveEdit();
-        window.getSelection()?.removeAllRanges();
+        if (saveEdit()) window.getSelection()?.removeAllRanges();
+        else e.preventDefault();
         break;
       case "Escape":
         editing.value = false;
