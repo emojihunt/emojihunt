@@ -7,26 +7,13 @@ import (
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/emojihunt/emojihunt/discord"
-	"github.com/emojihunt/emojihunt/util"
+	"github.com/emojihunt/emojihunt/huntyet"
 )
 
-type HuntYetBot struct {
-	duration time.Duration
-	hunts    []time.Time
-}
+type HuntYetBot struct{}
 
 func NewHuntYetBot() discord.Bot {
-	return &HuntYetBot{
-		duration: 72 * time.Hour,
-		hunts: []time.Time{
-			// must be ordered oldest to newest!
-			time.Date(2021, 1, 15, 12, 0, 0, 0, util.BostonTime),
-			time.Date(2022, 1, 14, 12, 0, 0, 0, util.BostonTime),
-			time.Date(2023, 1, 13, 12, 0, 0, 0, util.BostonTime),
-			time.Date(2023, 1, 13, 12, 0, 0, 0, util.BostonTime),
-			time.Date(2024, 1, 12, 12, 0, 0, 0, util.BostonTime),
-		},
-	}
+	return &HuntYetBot{}
 }
 
 func (b *HuntYetBot) Register() (*discordgo.ApplicationCommand, bool) {
@@ -38,16 +25,14 @@ func (b *HuntYetBot) Register() (*discordgo.ApplicationCommand, bool) {
 
 func (b *HuntYetBot) Handle(ctx context.Context, input *discord.CommandInput) (string, error) {
 	var now = time.Now()
-	for _, start := range b.hunts {
-		end := start.Add(b.duration)
-		if now.Before(start) {
-			return fmt.Sprintf("No. You'll have to wait another %v.", b.formatDuration(start.Sub(now))), nil
-		} else if now.Before(end) {
-			return "Yes! HUNT HUNT HUNT!", nil
-		}
-		// else: this hunt has passed, check the next hunt
+	next, ok := huntyet.NextHunt(now)
+	if !ok {
+		return "Gosh, I'm not sure! @tech can update the bot.", nil
+	} else if next == nil {
+		return "Yes! HUNT HUNT HUNT!", nil
+	} else {
+		return fmt.Sprintf("No. You'll have to wait another %v.", b.formatDuration(next.Sub(now))), nil
 	}
-	return "Gosh, I'm not sure! @tech can update the bot.", nil
 }
 
 func (b *HuntYetBot) formatDuration(d time.Duration) string {
