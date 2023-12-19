@@ -47,9 +47,10 @@
       oklch(91% 0.25 100deg / 0%));
 }
 
-hr,
+button,
 fieldset,
-button {
+hr,
+svg {
   margin: 0;
   padding: 0;
   border: none;

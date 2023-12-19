@@ -12,6 +12,7 @@
   "devDependencies": {
     "@flydotio/dockerfile": "latest",
     "@nuxt/devtools": "latest",
+    "@nuxt/ui": "^2.11.1",
     "@pinia/nuxt": "^0.5.1",
     "nuxt": "^3.8.1",
     "vue": "^3.3.8",

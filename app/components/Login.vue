@@ -48,7 +48,7 @@ params.set("state", props.returnURL || "/");
 section {
   padding: 1rem;
   margin: 30vh auto;
-  max-width: 25rem;
+  max-width: 27rem;
   font-family: "Inter Variable Login", sans-serif;
 }
 
@@ -88,7 +88,8 @@ a:hover {
 a svg {
   width: auto;
   height: 2rem;
-  padding: 0.2rem 2rem 0;
+  padding: 0 2rem 0;
+  margin-bottom: -0.2rem;
 }
 
 a .vh {

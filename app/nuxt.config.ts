@@ -5,6 +5,9 @@ export default defineNuxtConfig({
     clientID: prod ? "1058094051586490368" : "1058094051586490368",
     discordGuild: prod ? "1058090773582721214" : "1058090773582721214",
   },
+  colorMode: {
+    preference: "light",
+  },
   css: [
     "assets/normalize.css",
     "assets/main.css",
@@ -14,6 +17,7 @@ export default defineNuxtConfig({
     preset: "vercel-edge",
   },
   modules: [
+    "@nuxt/ui",
     "@pinia/nuxt",
   ],
   routeRules: {

@@ -36,17 +36,21 @@ onMounted(() => {
 <style scoped>
 /* Layout */
 .spacer {
-  height: 2.8rem;
-  scroll-margin-block-start: calc(6rem - 1.4rem - 2.8rem);
+  height: 1.75rem;
+  scroll-margin-block-start: calc(6rem - 1.4rem);
+}
+
+.spacer:first-of-type {
+  display: none;
 }
 
 .pill {
   grid-column: 1 / 3;
-  width: 83%;
+  width: 92.5%;
   margin: 0 0 0.8rem;
   display: flex;
 
-  height: 2.25rem;
+  height: 2.5rem;
   line-height: 2.35rem;
 
   position: sticky;
