@@ -61,6 +61,17 @@ const keydown = (e: KeyboardEvent) => {
         :round="store.roundStats[id]" :focused="focused" />
       <hr>
     </template>
+    <div class="welcome" v-if="Object.values(store.roundStats).length === 0">
+      <NuxtLink href="https://www.isithuntyet.info" class="text">
+        ⏳&hairsp; <span>Is it Hunt yet?</span>
+      </NuxtLink>
+      <hr>
+    </div>
+    <fieldset>
+      <button>○ Add Round</button>
+      <button :disabled="!Object.values(store.roundStats).length">▢ Add Puzzle</button>
+      <button>◆ Admin</button>
+    </fieldset>
   </main>
 </template>
 
@@ -92,15 +103,60 @@ main {
 }
 
 hr {
-  width: 100vw;
-  height: 0;
+  grid-column: 1 / 6;
 
-  position: relative;
-  left: -2rem;
-  top: 0.5rem;
-
+  margin: 0 -0.5vw 0 -2vw;
   border-bottom: 1px solid oklch(90% 0.03 275deg);
-  z-index: -10;
+}
+
+.welcome {
+  grid-column: 1 / 6;
+  margin: 6rem 0 0 0;
+
+  display: grid;
+  grid-template-columns: subgrid;
+}
+
+.welcome a {
+  grid-column: 1 / 3;
+  padding: 0.5rem 0.25rem;
+}
+
+fieldset {
+  grid-column: 5;
+  display: flex;
+  gap: 0.25rem;
+
+  justify-content: end;
+  margin: 0.5rem 1rem;
+}
+
+button {
+  padding: 0.25rem;
+}
+
+/* Theming */
+.welcome a,
+button {
+  font-weight: 500;
+  font-size: 0.95rem;
+  color: oklch(50% 0.19 245deg);
+  text-decoration: none;
+}
+
+.welcome a:hover span,
+button:hover {
+  filter: brightness(60%);
+}
+
+button {
+  font-weight: 350;
+  font-size: 0.85rem;
+}
+
+button[disabled] {
+  filter: grayscale(100%) opacity(80%);
+  pointer-events: none;
 }
 
 /* Animation */
