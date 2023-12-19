@@ -21,20 +21,10 @@ type Puzzle struct {
 	PuzzleURL      string       `json:"puzzle_url"`
 	SpreadsheetID  string       `json:"spreadsheet_id"`
 	DiscordChannel string       `json:"discord_channel"`
-	OriginalURL    string       `json:"original_url"`
-	NameOverride   string       `json:"name_override"`
+	Meta           bool         `json:"meta"`
 	Archived       bool         `json:"archived"`
 	VoiceRoom      string       `json:"voice_room"`
 	Reminder       sql.NullTime `json:"reminder"`
-}
-
-func (p Puzzle) Title() string {
-	// Puzzle name for Discord channel, spreadsheet, etc. (may be an abbreviated
-	// version of the full name, specified by the QM)
-	if p.NameOverride != "" {
-		return p.NameOverride
-	}
-	return p.Name
 }
 
 func (p Puzzle) SpreadsheetURL() string {

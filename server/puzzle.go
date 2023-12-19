@@ -20,8 +20,7 @@ type PuzzleParams struct {
 	PuzzleURL      string       `form:"puzzle_url"`
 	SpreadsheetID  string       `form:"spreadsheet_id"`
 	DiscordChannel string       `form:"discord_channel"`
-	OriginalURL    string       `form:"original_url"`
-	NameOverride   string       `form:"name_override"`
+	Meta           bool         `form:"meta"`
 	Archived       bool         `form:"archived"`
 	VoiceRoom      string       `form:"voice_room"`
 	Reminder       sql.NullTime `form:"reminder"`

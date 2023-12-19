@@ -12,20 +12,22 @@ CREATE TABLE puzzles (
     spreadsheet_id  TEXT    NOT NULL,
     discord_channel TEXT    NOT NULL,
 
-    original_url    TEXT    NOT NULL,
-    name_override   TEXT    NOT NULL,
+    meta            BOOLEAN NOT NULL,
     archived        BOOLEAN NOT NULL,
 
     voice_room      TEXT    NOT NULL,
     reminder        DATETIME,
 
-    FOREIGN KEY (round) REFERENCES rounds(id)
+    FOREIGN KEY (round) REFERENCES rounds(id),
+    CONSTRAINT uc_name_rd   UNIQUE(name, round)
 );
 
 CREATE TABLE rounds (
     id              INTEGER PRIMARY KEY,
     name            TEXT    NOT NULL,
     emoji           TEXT    NOT NULL,
+    hue             INTEGER NOT NULL,
+    special         BOOLEAN NOT NULL,
 
     CONSTRAINT uc_name      UNIQUE(name),
     CONSTRAINT uc_emoji     UNIQUE(emoji)

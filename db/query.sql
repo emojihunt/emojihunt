@@ -2,7 +2,7 @@
 SELECT
     p.id, p.name, p.answer, sqlc.embed(rounds), p.status, p.note,
     p.location, p.puzzle_url, p.spreadsheet_id, p.discord_channel,
-    p.original_url, p.name_override, p.archived, p.voice_room, p.reminder
+    p.meta, p.archived, p.voice_room, p.reminder
 FROM puzzles AS p
 INNER JOIN rounds ON p.round = rounds.id
 WHERE p.id = ?;
@@ -12,7 +12,7 @@ WHERE p.id = ?;
 SELECT
     p.id, p.name, p.answer, sqlc.embed(rounds), p.status, p.note,
     p.location, p.puzzle_url, p.spreadsheet_id, p.discord_channel,
-    p.original_url, p.name_override, p.archived, p.voice_room, p.reminder
+    p.meta, p.archived, p.voice_room, p.reminder
 FROM puzzles AS p
 INNER JOIN rounds ON p.round = rounds.id
 WHERE p.discord_channel = ?;
@@ -25,14 +25,10 @@ WHERE id = ? LIMIT 1;
 SELECT
     p.id, p.name, p.answer, sqlc.embed(rounds), p.status, p.note,
     p.location, p.puzzle_url, p.spreadsheet_id, p.discord_channel,
-    p.original_url, p.name_override, p.archived, p.voice_room, p.reminder
+    p.meta, p.archived, p.voice_room, p.reminder
 FROM puzzles AS p
 INNER JOIN rounds ON p.round = rounds.id
 ORDER BY p.id;
-
--- name: ListPuzzleDiscoveryFragments :many
-SELECT id, name, puzzle_url, original_url FROM puzzles
-ORDER BY id;
 
 -- name: ListPuzzlesWithVoiceRoom :many
 SELECT id, name, voice_room FROM puzzles
@@ -47,9 +43,8 @@ ORDER BY reminder;
 -- name: CreatePuzzle :one
 INSERT INTO puzzles (
     name, answer, round, status, note, location, puzzle_url,
-    spreadsheet_id, discord_channel, original_url, name_override,
-    archived, voice_room
-) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id;
+    spreadsheet_id, discord_channel, meta, archived, voice_room
+) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id;
 
 -- name: DeletePuzzle :exec
 DELETE FROM puzzles
@@ -59,8 +54,7 @@ WHERE id = ?;
 UPDATE puzzles
 SET name = ?2, answer = ?3, round = ?4, status = ?5, note = ?6,
 location = ?7, puzzle_url = ?8, spreadsheet_id = ?9, discord_channel = ?10,
-original_url = ?11, name_override = ?12, archived = ?13, voice_room = ?14,
-reminder = ?15
+meta = ?11, archived = ?12, voice_room = ?13, reminder = ?14
 WHERE id = ?1;
 
 -- name: UpdateDiscordChannel :exec
@@ -93,8 +87,8 @@ WHERE id = ?1;
 
 
 -- name: CreateRound :one
-INSERT INTO rounds (name, emoji)
-VALUES (?, ?)
+INSERT INTO rounds (name, emoji, hue, special)
+VALUES (?, ?, ?, ?)
 RETURNING *;
 
 -- name: GetRound :one
@@ -103,7 +97,7 @@ WHERE id = ? LIMIT 1;
 
 -- name: UpdateRound :exec
 UPDATE rounds
-SET name = ?2, emoji = ?3
+SET name = ?2, emoji = ?3, hue = ?4, special = ?5
 WHERE id = ?1;
 
 -- name: DeleteRound :exec

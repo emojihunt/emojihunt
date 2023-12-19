@@ -8,9 +8,11 @@ import (
 )
 
 type RoundParams struct {
-	ID    int64  `param:"id"`
-	Name  string `form:"name"`
-	Emoji string `form:"emoji"`
+	ID      int64  `param:"id"`
+	Name    string `form:"name"`
+	Emoji   string `form:"emoji"`
+	Hue     int64  `form:"hue"`
+	Special bool   `form:"special"`
 }
 
 func (s *Server) ListRounds(c echo.Context) error {

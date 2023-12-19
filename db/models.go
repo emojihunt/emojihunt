@@ -21,17 +21,18 @@ type RawPuzzle struct {
 	PuzzleURL      string       `json:"puzzle_url"`
 	SpreadsheetID  string       `json:"spreadsheet_id"`
 	DiscordChannel string       `json:"discord_channel"`
-	OriginalURL    string       `json:"original_url"`
-	NameOverride   string       `json:"name_override"`
+	Meta           bool         `json:"meta"`
 	Archived       bool         `json:"archived"`
 	VoiceRoom      string       `json:"voice_room"`
 	Reminder       sql.NullTime `json:"reminder"`
 }
 
 type Round struct {
-	ID    int64  `json:"id"`
-	Name  string `json:"name"`
-	Emoji string `json:"emoji"`
+	ID      int64  `json:"id"`
+	Name    string `json:"name"`
+	Emoji   string `json:"emoji"`
+	Hue     int64  `json:"hue"`
+	Special bool   `json:"special"`
 }
 
 type State struct {

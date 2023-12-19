@@ -30,14 +30,13 @@ func (c *Client) ListPuzzleFragmentsAndRounds(ctx context.Context) (
 	map[string]bool, map[string]int64, error) {
 
 	var fragments = make(map[string]bool)
-	puzzles, err := c.queries.ListPuzzleDiscoveryFragments(ctx)
+	puzzles, err := c.queries.ListPuzzles(ctx)
 	if err != nil {
-		return nil, nil, xerrors.Errorf("ListPuzzleDiscoveryFragments: %w", err)
+		return nil, nil, xerrors.Errorf("ListPuzzles: %w", err)
 	}
 	for _, puzzle := range puzzles {
 		fragments[strings.ToUpper(puzzle.Name)] = true
 		fragments[strings.ToUpper(puzzle.PuzzleURL)] = true
-		fragments[strings.ToUpper(puzzle.OriginalURL)] = true
 	}
 
 	var rounds = make(map[string]int64)

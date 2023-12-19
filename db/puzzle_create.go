@@ -18,10 +18,9 @@ func (c *Client) AddPuzzles(ctx context.Context, puzzles []NewPuzzle) ([]Puzzle,
 	var created []Puzzle
 	for _, puzzle := range puzzles {
 		id, err := c.queries.CreatePuzzle(ctx, CreatePuzzleParams{
-			Name:        puzzle.Name,
-			Round:       puzzle.Round,
-			PuzzleURL:   puzzle.URL,
-			OriginalURL: puzzle.URL,
+			Name:      puzzle.Name,
+			Round:     puzzle.Round,
+			PuzzleURL: puzzle.URL,
 		})
 		if err != nil {
 			return created, xerrors.Errorf("CreatePuzzle: %w", err)
@@ -49,8 +48,7 @@ func (c *Client) CreatePuzzle(ctx context.Context, puzzle RawPuzzle) (*Puzzle, e
 		PuzzleURL:      puzzle.PuzzleURL,
 		SpreadsheetID:  puzzle.SpreadsheetID,
 		DiscordChannel: puzzle.DiscordChannel,
-		OriginalURL:    puzzle.OriginalURL,
-		NameOverride:   puzzle.NameOverride,
+		Meta:           puzzle.Meta,
 		Archived:       puzzle.Archived,
 		VoiceRoom:      puzzle.VoiceRoom,
 	})

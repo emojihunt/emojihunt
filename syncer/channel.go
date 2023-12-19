@@ -100,7 +100,7 @@ func (s *Syncer) discordUpdateChannel(puzzle *db.Puzzle) error {
 	// The Discord rate limit on channel renames is fairly restrictive (2 per 10
 	// minutes per channel), so finish renaming the channel asynchronously if we
 	// get rate-limited.
-	var title = puzzle.Title()
+	var title = puzzle.Name
 	if puzzle.Status.IsSolved() {
 		title = "✅ " + title
 	}

@@ -15,9 +15,8 @@ import (
 const createPuzzle = `-- name: CreatePuzzle :one
 INSERT INTO puzzles (
     name, answer, round, status, note, location, puzzle_url,
-    spreadsheet_id, discord_channel, original_url, name_override,
-    archived, voice_room
-) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id
+    spreadsheet_id, discord_channel, meta, archived, voice_room
+) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id
 `
 
 type CreatePuzzleParams struct {
@@ -30,8 +29,7 @@ type CreatePuzzleParams struct {
 	PuzzleURL      string       `json:"puzzle_url"`
 	SpreadsheetID  string       `json:"spreadsheet_id"`
 	DiscordChannel string       `json:"discord_channel"`
-	OriginalURL    string       `json:"original_url"`
-	NameOverride   string       `json:"name_override"`
+	Meta           bool         `json:"meta"`
 	Archived       bool         `json:"archived"`
 	VoiceRoom      string       `json:"voice_room"`
 }
@@ -47,8 +45,7 @@ func (q *Queries) CreatePuzzle(ctx context.Context, arg CreatePuzzleParams) (int
 		arg.PuzzleURL,
 		arg.SpreadsheetID,
 		arg.DiscordChannel,
-		arg.OriginalURL,
-		arg.NameOverride,
+		arg.Meta,
 		arg.Archived,
 		arg.VoiceRoom,
 	)
@@ -58,20 +55,33 @@ func (q *Queries) CreatePuzzle(ctx context.Context, arg CreatePuzzleParams) (int
 }
 
 const createRound = `-- name: CreateRound :one
-INSERT INTO rounds (name, emoji)
-VALUES (?, ?)
-RETURNING id, name, emoji
+INSERT INTO rounds (name, emoji, hue, special)
+VALUES (?, ?, ?, ?)
+RETURNING id, name, emoji, hue, special
 `
 
 type CreateRoundParams struct {
-	Name  string `json:"name"`
-	Emoji string `json:"emoji"`
+	Name    string `json:"name"`
+	Emoji   string `json:"emoji"`
+	Hue     int64  `json:"hue"`
+	Special bool   `json:"special"`
 }
 
 func (q *Queries) CreateRound(ctx context.Context, arg CreateRoundParams) (Round, error) {
-	row := q.db.QueryRowContext(ctx, createRound, arg.Name, arg.Emoji)
+	row := q.db.QueryRowContext(ctx, createRound,
+		arg.Name,
+		arg.Emoji,
+		arg.Hue,
+		arg.Special,
+	)
 	var i Round
-	err := row.Scan(&i.ID, &i.Name, &i.Emoji)
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.Emoji,
+		&i.Hue,
+		&i.Special,
+	)
 	return i, err
 }
 
@@ -97,9 +107,9 @@ func (q *Queries) DeleteRound(ctx context.Context, id int64) error {
 
 const getPuzzle = `-- name: GetPuzzle :one
 SELECT
-    p.id, p.name, p.answer, rounds.id, rounds.name, rounds.emoji, p.status, p.note,
+    p.id, p.name, p.answer, rounds.id, rounds.name, rounds.emoji, rounds.hue, rounds.special, p.status, p.note,
     p.location, p.puzzle_url, p.spreadsheet_id, p.discord_channel,
-    p.original_url, p.name_override, p.archived, p.voice_room, p.reminder
+    p.meta, p.archived, p.voice_room, p.reminder
 FROM puzzles AS p
 INNER JOIN rounds ON p.round = rounds.id
 WHERE p.id = ?
@@ -116,8 +126,7 @@ type GetPuzzleRow struct {
 	PuzzleURL      string       `json:"puzzle_url"`
 	SpreadsheetID  string       `json:"spreadsheet_id"`
 	DiscordChannel string       `json:"discord_channel"`
-	OriginalURL    string       `json:"original_url"`
-	NameOverride   string       `json:"name_override"`
+	Meta           bool         `json:"meta"`
 	Archived       bool         `json:"archived"`
 	VoiceRoom      string       `json:"voice_room"`
 	Reminder       sql.NullTime `json:"reminder"`
@@ -133,14 +142,15 @@ func (q *Queries) GetPuzzle(ctx context.Context, id int64) (GetPuzzleRow, error)
 		&i.Round.ID,
 		&i.Round.Name,
 		&i.Round.Emoji,
+		&i.Round.Hue,
+		&i.Round.Special,
 		&i.Status,
 		&i.Note,
 		&i.Location,
 		&i.PuzzleURL,
 		&i.SpreadsheetID,
 		&i.DiscordChannel,
-		&i.OriginalURL,
-		&i.NameOverride,
+		&i.Meta,
 		&i.Archived,
 		&i.VoiceRoom,
 		&i.Reminder,
@@ -151,9 +161,9 @@ func (q *Queries) GetPuzzle(ctx context.Context, id int64) (GetPuzzleRow, error)
 const getPuzzlesByDiscordChannel = `-- name: GetPuzzlesByDiscordChannel :many
 
 SELECT
-    p.id, p.name, p.answer, rounds.id, rounds.name, rounds.emoji, p.status, p.note,
+    p.id, p.name, p.answer, rounds.id, rounds.name, rounds.emoji, rounds.hue, rounds.special, p.status, p.note,
     p.location, p.puzzle_url, p.spreadsheet_id, p.discord_channel,
-    p.original_url, p.name_override, p.archived, p.voice_room, p.reminder
+    p.meta, p.archived, p.voice_room, p.reminder
 FROM puzzles AS p
 INNER JOIN rounds ON p.round = rounds.id
 WHERE p.discord_channel = ?
@@ -170,8 +180,7 @@ type GetPuzzlesByDiscordChannelRow struct {
 	PuzzleURL      string       `json:"puzzle_url"`
 	SpreadsheetID  string       `json:"spreadsheet_id"`
 	DiscordChannel string       `json:"discord_channel"`
-	OriginalURL    string       `json:"original_url"`
-	NameOverride   string       `json:"name_override"`
+	Meta           bool         `json:"meta"`
 	Archived       bool         `json:"archived"`
 	VoiceRoom      string       `json:"voice_room"`
 	Reminder       sql.NullTime `json:"reminder"`
@@ -193,14 +202,15 @@ func (q *Queries) GetPuzzlesByDiscordChannel(ctx context.Context, discordChannel
 			&i.Round.ID,
 			&i.Round.Name,
 			&i.Round.Emoji,
+			&i.Round.Hue,
+			&i.Round.Special,
 			&i.Status,
 			&i.Note,
 			&i.Location,
 			&i.PuzzleURL,
 			&i.SpreadsheetID,
 			&i.DiscordChannel,
-			&i.OriginalURL,
-			&i.NameOverride,
+			&i.Meta,
 			&i.Archived,
 			&i.VoiceRoom,
 			&i.Reminder,
@@ -219,7 +229,7 @@ func (q *Queries) GetPuzzlesByDiscordChannel(ctx context.Context, discordChannel
 }
 
 const getRawPuzzle = `-- name: GetRawPuzzle :one
-SELECT id, name, answer, round, status, note, location, puzzle_url, spreadsheet_id, discord_channel, original_url, name_override, archived, voice_room, reminder FROM puzzles
+SELECT id, name, answer, round, status, note, location, puzzle_url, spreadsheet_id, discord_channel, meta, archived, voice_room, reminder FROM puzzles
 WHERE id = ? LIMIT 1
 `
 
@@ -237,8 +247,7 @@ func (q *Queries) GetRawPuzzle(ctx context.Context, id int64) (RawPuzzle, error)
 		&i.PuzzleURL,
 		&i.SpreadsheetID,
 		&i.DiscordChannel,
-		&i.OriginalURL,
-		&i.NameOverride,
+		&i.Meta,
 		&i.Archived,
 		&i.VoiceRoom,
 		&i.Reminder,
@@ -247,14 +256,20 @@ func (q *Queries) GetRawPuzzle(ctx context.Context, id int64) (RawPuzzle, error)
 }
 
 const getRound = `-- name: GetRound :one
-SELECT id, name, emoji FROM rounds
+SELECT id, name, emoji, hue, special FROM rounds
 WHERE id = ? LIMIT 1
 `
 
 func (q *Queries) GetRound(ctx context.Context, id int64) (Round, error) {
 	row := q.db.QueryRowContext(ctx, getRound, id)
 	var i Round
-	err := row.Scan(&i.ID, &i.Name, &i.Emoji)
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.Emoji,
+		&i.Hue,
+		&i.Special,
+	)
 	return i, err
 }
 
@@ -286,51 +301,11 @@ func (q *Queries) GetState(ctx context.Context) ([]State, error) {
 	return items, nil
 }
 
-const listPuzzleDiscoveryFragments = `-- name: ListPuzzleDiscoveryFragments :many
-SELECT id, name, puzzle_url, original_url FROM puzzles
-ORDER BY id
-`
-
-type ListPuzzleDiscoveryFragmentsRow struct {
-	ID          int64  `json:"id"`
-	Name        string `json:"name"`
-	PuzzleURL   string `json:"puzzle_url"`
-	OriginalURL string `json:"original_url"`
-}
-
-func (q *Queries) ListPuzzleDiscoveryFragments(ctx context.Context) ([]ListPuzzleDiscoveryFragmentsRow, error) {
-	rows, err := q.db.QueryContext(ctx, listPuzzleDiscoveryFragments)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []ListPuzzleDiscoveryFragmentsRow
-	for rows.Next() {
-		var i ListPuzzleDiscoveryFragmentsRow
-		if err := rows.Scan(
-			&i.ID,
-			&i.Name,
-			&i.PuzzleURL,
-			&i.OriginalURL,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Close(); err != nil {
-		return nil, err
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
 const listPuzzles = `-- name: ListPuzzles :many
 SELECT
-    p.id, p.name, p.answer, rounds.id, rounds.name, rounds.emoji, p.status, p.note,
+    p.id, p.name, p.answer, rounds.id, rounds.name, rounds.emoji, rounds.hue, rounds.special, p.status, p.note,
     p.location, p.puzzle_url, p.spreadsheet_id, p.discord_channel,
-    p.original_url, p.name_override, p.archived, p.voice_room, p.reminder
+    p.meta, p.archived, p.voice_room, p.reminder
 FROM puzzles AS p
 INNER JOIN rounds ON p.round = rounds.id
 ORDER BY p.id
@@ -347,8 +322,7 @@ type ListPuzzlesRow struct {
 	PuzzleURL      string       `json:"puzzle_url"`
 	SpreadsheetID  string       `json:"spreadsheet_id"`
 	DiscordChannel string       `json:"discord_channel"`
-	OriginalURL    string       `json:"original_url"`
-	NameOverride   string       `json:"name_override"`
+	Meta           bool         `json:"meta"`
 	Archived       bool         `json:"archived"`
 	VoiceRoom      string       `json:"voice_room"`
 	Reminder       sql.NullTime `json:"reminder"`
@@ -370,14 +344,15 @@ func (q *Queries) ListPuzzles(ctx context.Context) ([]ListPuzzlesRow, error) {
 			&i.Round.ID,
 			&i.Round.Name,
 			&i.Round.Emoji,
+			&i.Round.Hue,
+			&i.Round.Special,
 			&i.Status,
 			&i.Note,
 			&i.Location,
 			&i.PuzzleURL,
 			&i.SpreadsheetID,
 			&i.DiscordChannel,
-			&i.OriginalURL,
-			&i.NameOverride,
+			&i.Meta,
 			&i.Archived,
 			&i.VoiceRoom,
 			&i.Reminder,
@@ -472,7 +447,7 @@ func (q *Queries) ListPuzzlesWithVoiceRoom(ctx context.Context) ([]ListPuzzlesWi
 }
 
 const listRounds = `-- name: ListRounds :many
-SELECT id, name, emoji FROM rounds
+SELECT id, name, emoji, hue, special FROM rounds
 ORDER BY id
 `
 
@@ -485,7 +460,13 @@ func (q *Queries) ListRounds(ctx context.Context) ([]Round, error) {
 	var items []Round
 	for rows.Next() {
 		var i Round
-		if err := rows.Scan(&i.ID, &i.Name, &i.Emoji); err != nil {
+		if err := rows.Scan(
+			&i.ID,
+			&i.Name,
+			&i.Emoji,
+			&i.Hue,
+			&i.Special,
+		); err != nil {
 			return nil, err
 		}
 		items = append(items, i)
@@ -563,8 +544,7 @@ const updatePuzzle = `-- name: UpdatePuzzle :exec
 UPDATE puzzles
 SET name = ?2, answer = ?3, round = ?4, status = ?5, note = ?6,
 location = ?7, puzzle_url = ?8, spreadsheet_id = ?9, discord_channel = ?10,
-original_url = ?11, name_override = ?12, archived = ?13, voice_room = ?14,
-reminder = ?15
+meta = ?11, archived = ?12, voice_room = ?13, reminder = ?14
 WHERE id = ?1
 `
 
@@ -579,8 +559,7 @@ type UpdatePuzzleParams struct {
 	PuzzleURL      string       `json:"puzzle_url"`
 	SpreadsheetID  string       `json:"spreadsheet_id"`
 	DiscordChannel string       `json:"discord_channel"`
-	OriginalURL    string       `json:"original_url"`
-	NameOverride   string       `json:"name_override"`
+	Meta           bool         `json:"meta"`
 	Archived       bool         `json:"archived"`
 	VoiceRoom      string       `json:"voice_room"`
 	Reminder       sql.NullTime `json:"reminder"`
@@ -598,8 +577,7 @@ func (q *Queries) UpdatePuzzle(ctx context.Context, arg UpdatePuzzleParams) erro
 		arg.PuzzleURL,
 		arg.SpreadsheetID,
 		arg.DiscordChannel,
-		arg.OriginalURL,
-		arg.NameOverride,
+		arg.Meta,
 		arg.Archived,
 		arg.VoiceRoom,
 		arg.Reminder,
@@ -609,18 +587,26 @@ func (q *Queries) UpdatePuzzle(ctx context.Context, arg UpdatePuzzleParams) erro
 
 const updateRound = `-- name: UpdateRound :exec
 UPDATE rounds
-SET name = ?2, emoji = ?3
+SET name = ?2, emoji = ?3, hue = ?4, special = ?5
 WHERE id = ?1
 `
 
 type UpdateRoundParams struct {
-	ID    int64  `json:"id"`
-	Name  string `json:"name"`
-	Emoji string `json:"emoji"`
+	ID      int64  `json:"id"`
+	Name    string `json:"name"`
+	Emoji   string `json:"emoji"`
+	Hue     int64  `json:"hue"`
+	Special bool   `json:"special"`
 }
 
 func (q *Queries) UpdateRound(ctx context.Context, arg UpdateRoundParams) error {
-	_, err := q.db.ExecContext(ctx, updateRound, arg.ID, arg.Name, arg.Emoji)
+	_, err := q.db.ExecContext(ctx, updateRound,
+		arg.ID,
+		arg.Name,
+		arg.Emoji,
+		arg.Hue,
+		arg.Special,
+	)
 	return err
 }
 
