@@ -1,6 +1,6 @@
 <script setup lang="ts">
 const props = defineProps<{
-  round: RoundStats,
+  round: AnnotatedRound,
   timeline: string;
   nextTimeline: string | undefined;
   observer: IntersectionObserver | undefined;
@@ -26,7 +26,7 @@ onMounted(() => {
     <div class="round">{{ round.name }}</div>
     <div class="progress">{{ round.solved }}/{{ round.total }} </div>
   </header>
-  <header class="titles" ref="titles">
+  <header class="titles" ref="titles" v-if="round.total">
     <span>Status &bull; Answer</span>
     <span>Location</span>
     <span>Note</span>

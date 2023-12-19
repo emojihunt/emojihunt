@@ -4,17 +4,15 @@ const store = usePuzzles();
 await store.refresh();
 
 // Puzzle & Round Helpers
-const timelineFromID = (id: string) => `--round-${id}`;
-const nextTimelineFromID = (id: string): string | undefined => {
-  const i = (parseInt(id) + 1).toString();
-  return store.puzzlesByRound[i] ? timelineFromID(i) : undefined;
-};
+const timelineFromID = (id: number) => `--round-${id}`;
+const nextTimelineFromID = (id: number): string | undefined =>
+  store.rounds[id + 1] ? timelineFromID(id + 1) : undefined;
 
 // It doesn't look great when the round headers stack up on top of one another.
 // We want each round header to disappear when it's covered by the next. Use CSS
 // scroll-linked animations if supported and fall back to IntersectionObserver
 // if not.
-const timelines = Object.keys(store.puzzlesByRound).map(timelineFromID);
+const timelines = store.rounds.map((_, i) => timelineFromID(i));
 let observer: IntersectionObserver | undefined;
 if (import.meta.client && !CSS.supports("view-timeline", "--test")) {
   console.log("Falling back to IntersectionObserver...");
@@ -49,19 +47,22 @@ const keydown = (e: KeyboardEvent) => {
 </script>
 
 <template>
-  <MainHeader :rounds="Object.values(store.roundStats)" :observer="observer" />
+  <MainHeader :rounds="store.rounds" :observer="observer" />
   <main @keydown="keydown">
     <div class="rule first"></div>
     <div class="rule"></div>
     <div class="rule"></div>
-    <template v-for="id of Object.keys(store.puzzlesByRound)">
-      <RoundHeader :round="store.roundStats[id]" :timeline="timelineFromID(id)"
-        :next-timeline="nextTimelineFromID(id)" :observer="observer" />
-      <Puzzle v-for="puzzle in store.puzzlesByRound[id]" :puzzle="puzzle"
-        :round="store.roundStats[id]" :focused="focused" />
+    <template v-for="[i, round] of store.rounds.entries()">
+      <RoundHeader :round="round" :timeline="timelineFromID(i)"
+        :next-timeline="nextTimelineFromID(i)" :observer="observer" />
+      <Puzzle v-for="puzzle in store.puzzles.get(round.id)" :puzzle="puzzle" :round="round"
+        :focused="focused" />
+      <div class="empty" v-if="!round.total">
+        🫙&hairsp; No Puzzles Yet...
+      </div>
       <hr>
     </template>
-    <div class="welcome" v-if="Object.values(store.roundStats).length === 0">
+    <div class="welcome" v-if="!store.rounds.length">
       <NuxtLink href="https://www.isithuntyet.info" class="text">
         ⏳&hairsp; <span>Is it Hunt yet?</span>
       </NuxtLink>
@@ -69,7 +70,7 @@ const keydown = (e: KeyboardEvent) => {
     </div>
     <fieldset>
       <button>○ Add Round</button>
-      <button :disabled="!Object.values(store.roundStats).length">▢ Add Puzzle</button>
+      <button :disabled="!store.rounds.length">▢ Add Puzzle</button>
       <button>◆ Admin</button>
     </fieldset>
   </main>
@@ -105,8 +106,13 @@ main {
 hr {
   grid-column: 1 / 6;
 
-  margin: 0 -0.5vw 0 -2vw;
+  margin: 0.5rem -0.5vw 0.5rem -2vw;
   border-bottom: 1px solid oklch(90% 0.03 275deg);
+}
+
+.empty {
+  grid-column: 1 / 3;
+  margin: 0 1.25rem;
 }
 
 .welcome {
@@ -128,7 +134,7 @@ fieldset {
   gap: 0.25rem;
 
   justify-content: end;
-  margin: 0.5rem 1rem;
+  margin: 0 1rem;
 }
 
 button {
@@ -136,6 +142,12 @@ button {
 }
 
 /* Theming */
+.empty {
+  font-size: 0.95rem;
+  opacity: 50%;
+  user-select: none;
+}
+
 .welcome a,
 button {
   font-weight: 500;

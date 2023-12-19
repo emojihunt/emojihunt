@@ -1,6 +1,6 @@
 <script setup lang="ts">
 const props = defineProps<{
-  round: RoundStats;
+  round: AnnotatedRound;
   selected: boolean;
   observerFixup: () => void;
 }>();

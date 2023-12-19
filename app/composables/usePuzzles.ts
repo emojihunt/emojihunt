@@ -1,55 +1,75 @@
 import { defineStore } from 'pinia';
 
-// HACK: apply hard-coded colors to rounds for testing
-const hues: { [round: string]: number; } = {
-  "1": 241, "2": 178, "3": 80, "4": 45,
-  "5": 255, "6": 19, "7": 69, "8": 205,
-  "9": 28, "10": 24, "11": 141,
-};
-
 export default defineStore("puzzles", {
-  state: () => ({ puzzles: {} as { [id: number]: Puzzle; } }),
+  state: () => ({
+    _rounds: {} as { [id: number]: Round; },
+    _puzzles: {} as { [id: number]: Puzzle; },
+    next_hunt: undefined as Date | undefined,
+  }),
   getters: {
-    puzzlesByRound(state): { [round: string]: Puzzle[]; } {
-      const grouped: { [round: string]: Puzzle[]; } = {};
-      for (const puzzle of Object.values(state.puzzles)) {
+    rounds(state): AnnotatedRound[] {
+      const rounds: AnnotatedRound[] = [];
+      for (const base of Object.values(state._rounds)) {
+        const puzzles = this.puzzles.get(base.id) || [];
+        rounds.push({
+          ...base,
+          anchor: base.name.trim().toLowerCase().replaceAll(" ", "-"),
+          complete: puzzles.filter((p => !p.answer)).length === 0,
+          solved: puzzles.filter((p) => !!p.answer).length,
+          total: puzzles.length,
+        });
+      }
+      rounds.sort((a, b) => {
+        if (a.special && !b.special) return 1;
+        else if (!a.special && b.special) return -1;
+        else return a.id - b.id;
+      });
+      return rounds;
+    },
+    puzzles(state): Map<number, Puzzle[]> {
+      const grouped = new Map<number, Puzzle[]>();
+      for (const puzzle of Object.values(state._puzzles)) {
         const id = puzzle.round.id;
-        grouped[id] ||= [];
-        grouped[id].push(puzzle);
+        if (!grouped.has(id)) {
+          grouped.set(id, []);
+        }
+        grouped.get(id)!.push(puzzle);
+      }
+      for (const [_, puzzles] of grouped) {
+        puzzles.sort((a, b) => {
+          if (a.meta && !b.meta) return 1;
+          else if (!a.meta && b.meta) return -1;
+          else return a.name.localeCompare(b.name);
+        });
       }
       return grouped;
-    },
-    roundStats(): { [round: string]: RoundStats; } {
-      const stats: { [round: string]: RoundStats; } = {};
-      for (const id of Object.keys(this.puzzlesByRound)) {
-        const example = this.puzzlesByRound[id][0].round;
-        stats[id] = {
-          anchor: example.name.trim().toLowerCase().replaceAll(" ", "-"),
-          complete: this.puzzlesByRound[id].filter((p => !p.answer)).length === 0,
-          hue: hues[id],
-          solved: this.puzzlesByRound[id].filter((p) => !!p.answer).length,
-          total: this.puzzlesByRound[id].length,
-
-          id: example.id,
-          name: example.name.trim(),
-          emoji: example.emoji,
-        };
-      }
-      return stats;
     },
   },
   actions: {
     async refresh() {
-      const data = await useAPI<Puzzle[]>("/puzzles");
-      for (const puzzle of data.value) {
-        this.puzzles[puzzle.id] = puzzle;
+      const data = await useAPI<any>("/home");
+      this._rounds = {};
+      for (const round of data.value.rounds || []) {
+        this._rounds[round.id] = round;
       }
+      this._puzzles = {};
+      for (const puzzle of data.value.puzzles || []) {
+        this._puzzles[puzzle.id] = puzzle;
+      }
+      this.next_hunt = data.value.next_hunt ?
+        new Date(data.value.next_hunt) : undefined;
+    },
+    async updateRound(round: Round, data: Partial<Round>) {
+      const previous = this._rounds[round.id];
+      this._rounds[round.id] = { ...previous, ...data };
+      await useAPI(`/rounds/${round.id}`, data)
+        .catch(() => this._rounds[round.id] = previous);
     },
     async updatePuzzle(puzzle: Puzzle, data: Partial<Puzzle>) {
-      const previous = this.puzzles[puzzle.id];
-      this.puzzles[puzzle.id] = { ...previous, ...data };
+      const previous = this._puzzles[puzzle.id];
+      this._puzzles[puzzle.id] = { ...previous, ...data };
       await useAPI(`/puzzles/${puzzle.id}`, data)
-        .catch(() => this.puzzles[puzzle.id] = previous);
+        .catch(() => this._puzzles[puzzle.id] = previous);
     },
   },
 });

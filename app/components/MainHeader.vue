@@ -1,6 +1,6 @@
 <script setup lang="ts">
 const props = defineProps<{
-  rounds: RoundStats[];
+  rounds: AnnotatedRound[];
   observer: IntersectionObserver | undefined;
 }>();
 

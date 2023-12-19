@@ -1,6 +1,6 @@
 <script setup lang="ts">
 const props = defineProps<{
-  puzzle: Puzzle; round: RoundStats; focused: FocusInfo;
+  puzzle: Puzzle; round: AnnotatedRound; focused: FocusInfo;
 }>();
 </script>
 

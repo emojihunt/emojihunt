@@ -1,9 +1,16 @@
-export type FocusInfo = { index: number; };
-
 export type Round = {
   id: number;
   name: string;
   emoji: string;
+  hue: number;
+  special: boolean;
+};
+
+export type AnnotatedRound = Round & {
+  anchor: string;
+  complete: boolean;
+  solved: number;
+  total: number;
 };
 
 export type Puzzle = {
@@ -17,18 +24,9 @@ export type Puzzle = {
   puzzle_url: string;
   spreadsheet_id: string;
   discord_channel: string;
-  original_url: string;
-  name_override: string;
+  meta: boolean;
   archived: boolean;
   voice_room: string;
-};
-
-export type RoundStats = Round & {
-  anchor: string;
-  complete: boolean;
-  hue: number;
-  solved: number;
-  total: number;
 };
 
 export enum Status {
@@ -63,3 +61,5 @@ export const StatusNeedsAnswer = (status: Status): boolean => {
     case Status.Purchased: return true;
   }
 };
+
+export type FocusInfo = { index: number; };
