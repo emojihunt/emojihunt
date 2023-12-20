@@ -59,6 +59,11 @@ export default defineStore("puzzles", {
       this.next_hunt = data.value.next_hunt ?
         new Date(data.value.next_hunt) : undefined;
     },
+    async addRound(data: Omit<Round, "id">) {
+      return useAPI(`/rounds`, data).then(
+        (r: any) => r.value && (this._rounds[r.value.id] = r.value),
+      );
+    },
     async updateRound(round: Round, data: Partial<Round>) {
       const previous = this._rounds[round.id];
       this._rounds[round.id] = { ...previous, ...data };

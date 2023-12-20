@@ -90,9 +90,13 @@ const cancel = () => answering.value && (answering.value = null, open.value = fa
   grid-template-columns: 5fr 1.5rem;
 }
 
-.answer button {
+.answer div {
   display: flex;
-  justify-content: center;
+}
+
+.answer button {
+  flex-grow: 1;
+  text-align: center;
 }
 
 .status {

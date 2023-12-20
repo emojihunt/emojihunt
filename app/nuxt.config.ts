@@ -12,7 +12,6 @@ export default defineNuxtConfig({
     "assets/normalize.css",
     "assets/main.css",
   ],
-  devtools: { enabled: true },
   nitro: {
     preset: "vercel-edge",
   },

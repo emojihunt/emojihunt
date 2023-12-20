@@ -44,6 +44,8 @@ const keydown = (e: KeyboardEvent) => {
     tabKeydown(e);
   }
 };
+
+const open = ref(false);
 </script>
 
 <template>
@@ -58,7 +60,7 @@ const keydown = (e: KeyboardEvent) => {
       <Puzzle v-for="puzzle in store.puzzles.get(round.id)" :puzzle="puzzle" :round="round"
         :focused="focused" />
       <div class="empty" v-if="!round.total">
-        🫙&hairsp; No Puzzles Yet...
+        🫙&hairsp; No Puzzles
       </div>
       <hr>
     </template>
@@ -69,10 +71,11 @@ const keydown = (e: KeyboardEvent) => {
       <hr>
     </div>
     <fieldset>
-      <button>○ Add Round</button>
+      <button @click="() => (open = true)">○ Add Round</button>
       <button :disabled="!store.rounds.length">▢ Add Puzzle</button>
       <button>◆ Admin</button>
     </fieldset>
+    <AddRoundModal :open="open" @close="() => (open = false)" />
   </main>
 </template>
 
@@ -112,7 +115,7 @@ hr {
 
 .empty {
   grid-column: 1 / 3;
-  margin: 0 1.25rem;
+  margin: 0 1.5rem;
 }
 
 .welcome {
@@ -131,7 +134,7 @@ hr {
 fieldset {
   grid-column: 5;
   display: flex;
-  gap: 0.25rem;
+  gap: 0.5rem;
 
   justify-content: flex-end;
   margin: 0 1rem;
@@ -143,7 +146,7 @@ button {
 
 /* Theming */
 .empty {
-  font-size: 0.95rem;
+  font-size: 0.9rem;
   opacity: 50%;
   user-select: none;
 }
@@ -152,7 +155,7 @@ button {
 button {
   font-weight: 500;
   font-size: 0.95rem;
-  color: oklch(50% 0.19 245deg);
+  color: oklch(60% 0.15 245deg);
   text-decoration: none;
 }
 

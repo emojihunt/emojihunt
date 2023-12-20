@@ -24,6 +24,7 @@ export default async function <T>(
       fatal: true,
       message: error.value.message,
       statusCode: error.value.statusCode,
+      data: error.value.data,
     });
   }
   return data as Ref<T>;
