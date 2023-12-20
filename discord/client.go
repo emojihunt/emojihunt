@@ -60,6 +60,7 @@ type Client struct {
 	scheduledEventsCache      map[string]*discordgo.GuildScheduledEvent
 	scheduledEventsLastUpdate time.Time
 	rateLimits                map[string]*time.Time // url -> retryAfter time
+	voiceRooms                map[string]*discordgo.Channel
 }
 
 func Connect(ctx context.Context, prod bool, state *state.State) *Client {
@@ -73,7 +74,8 @@ func Connect(ctx context.Context, prod bool, state *state.State) *Client {
 	if err != nil {
 		panic(err)
 	}
-	s.Identify.Intents = discordgo.IntentsGuildMessageReactions |
+	s.Identify.Intents = discordgo.IntentsGuilds |
+		discordgo.IntentsGuildMessageReactions |
 		discordgo.IntentsGuildScheduledEvents
 	state.Lock()
 	s.Identify.Presence.Status = computeBotStatus(state)
@@ -155,6 +157,7 @@ func Connect(ctx context.Context, prod bool, state *state.State) *Client {
 		botsByCommand:             make(map[string]*botRegistration),
 		scheduledEventsLastUpdate: time.Now().Add(-24 * time.Hour),
 		rateLimits:                make(map[string]*time.Time),
+		voiceRooms:                make(map[string]*discordgo.Channel),
 	}
 
 	// Register handlers. Remember to register the necessary intents above!
@@ -176,6 +179,13 @@ func Connect(ctx context.Context, prod bool, state *state.State) *Client {
 		}),
 	)
 	s.AddHandler(WrapHandler(ctx, "rate_limit", discord.handleRateLimit))
+
+	s.AddHandler(WrapHandler(ctx, "channel", discord.handleChannelCreate))
+	s.AddHandler(WrapHandler(ctx, "channel", discord.handleChannelUpdate))
+	s.AddHandler(WrapHandler(ctx, "channel", discord.handleChannelDelete))
+	if err := discord.refreshVoiceChannels(); err != nil {
+		log.Panicf("failed to refresh voice channels: %s", err)
+	}
 
 	return discord
 }

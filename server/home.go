@@ -18,9 +18,11 @@ func (s *Server) ListHome(c echo.Context) error {
 		return err
 	}
 	next, _ := huntyet.NextHunt(time.Now())
+	voiceRooms := s.discord.ListVoiceChannels()
 	return c.JSON(http.StatusOK, map[string]interface{}{
-		"puzzles":   puzzles,
-		"rounds":    rounds,
-		"next_hunt": next,
+		"puzzles":     puzzles,
+		"rounds":      rounds,
+		"next_hunt":   next,
+		"voice_rooms": voiceRooms,
 	})
 }
