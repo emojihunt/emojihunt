@@ -40,6 +40,13 @@ onMounted(() => {
 });
 
 const modal = ref<"round" | "puzzle" | null>(null);
+const round = ref();
+const puzzle = ref();
+const close = () => {
+  if (modal.value === "round") nextTick(() => round.value?.focus());
+  else nextTick(() => puzzle.value?.focus());
+  modal.value = null;
+};
 </script>
 
 <template>
@@ -55,14 +62,13 @@ const modal = ref<"round" | "puzzle" | null>(null);
     <hr>
   </section>
   <fieldset>
-    <button @click="() => (modal = 'round')" :disabled="!!display && !store.rounds.length">○
-      Add Round</button>
-    <button @click="() => (modal = 'puzzle')"
-      :disabled="!!display && !store.rounds.length">▢ Add
-      Puzzle</button>
+    <button ref="round" @click="() => (modal = 'round')"
+      :disabled="!!display && !store.rounds.length">○ Add Round</button>
+    <button ref="puzzle" @click="() => (modal = 'puzzle')"
+      :disabled="!!display && !store.rounds.length">▢ Add Puzzle</button>
     <button>◆ Admin</button>
   </fieldset>
-  <AddRoundPuzzleModal :open="!!modal" :kind="modal" @close="() => (modal = null)" />
+  <AddRoundPuzzleModal :open="!!modal" :kind="modal" @close="close" />
 </template>
 
 <style scoped>
