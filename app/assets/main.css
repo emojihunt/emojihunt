@@ -47,6 +47,10 @@
       oklch(91% 0.25 100deg / 0%));
 }
 
+.tooltip-lower div {
+  z-index: 13;
+}
+
 button,
 fieldset,
 hr,

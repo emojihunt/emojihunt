@@ -32,11 +32,19 @@ const [focused, keydown] = useRovingTabIndex(props.rounds.length);
         :selected="round.id === rounds[focused.index].id" />
     </nav>
   </header>
+  <hr>
 </template>
 
 <style scoped>
 /* Layout */
 header {
+  width: 100%;
+  height: 6rem;
+  position: fixed;
+  z-index: 15;
+}
+
+hr {
   width: 100%;
   height: 6rem;
   position: fixed;
@@ -55,9 +63,12 @@ nav {
 /* Theming */
 header {
   background-color: oklch(30% 0.03 275deg);
+  user-select: none;
+}
+
+hr {
+  background-color: white;
   border-bottom: 1px solid oklch(50% 0.03 275deg);
   filter: drop-shadow(0 1.5rem 1rem oklch(100% 0 0deg));
-
-  user-select: none;
 }
 </style>
