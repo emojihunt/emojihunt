@@ -100,12 +100,7 @@ func (c *Client) ListWithReminder(ctx context.Context) ([]ReminderPuzzle, error)
 
 	var reminderPuzzles ReminderPuzzles
 	for _, puzzle := range puzzles {
-		reminderPuzzles = append(reminderPuzzles, ReminderPuzzle{
-			ID:             puzzle.ID,
-			Name:           puzzle.Name,
-			DiscordChannel: puzzle.DiscordChannel,
-			Reminder:       puzzle.Reminder.Time,
-		})
+		reminderPuzzles = append(reminderPuzzles, ReminderPuzzle(puzzle))
 	}
 	return reminderPuzzles, nil
 }

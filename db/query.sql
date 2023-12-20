@@ -37,14 +37,15 @@ ORDER BY id;
 
 -- name: ListPuzzlesWithReminder :many
 SELECT id, name, discord_channel, reminder FROM puzzles
-WHERE reminder IS NOT NULL
+WHERE reminder > 0
 ORDER BY reminder;
 
 -- name: CreatePuzzle :one
 INSERT INTO puzzles (
     name, answer, round, status, note, location, puzzle_url,
-    spreadsheet_id, discord_channel, meta, archived, voice_room
-) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id;
+    spreadsheet_id, discord_channel, meta, archived, voice_room,
+    reminder
+) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id;
 
 -- name: DeletePuzzle :exec
 DELETE FROM puzzles

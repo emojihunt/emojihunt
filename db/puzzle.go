@@ -2,9 +2,9 @@ package db
 
 import (
 	"crypto/sha256"
-	"database/sql"
 	"encoding/binary"
 	"fmt"
+	"time"
 
 	"github.com/emojihunt/emojihunt/db/field"
 )
@@ -24,7 +24,7 @@ type Puzzle struct {
 	Meta           bool         `json:"meta"`
 	Archived       bool         `json:"archived"`
 	VoiceRoom      string       `json:"voice_room"`
-	Reminder       sql.NullTime `json:"reminder"`
+	Reminder       time.Time    `json:"reminder"`
 }
 
 func (p Puzzle) SpreadsheetURL() string {

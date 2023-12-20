@@ -1,8 +1,8 @@
 package server
 
 import (
-	"database/sql"
 	"net/http"
+	"time"
 
 	"github.com/emojihunt/emojihunt/db"
 	"github.com/emojihunt/emojihunt/db/field"
@@ -23,7 +23,7 @@ type PuzzleParams struct {
 	Meta           bool         `form:"meta"`
 	Archived       bool         `form:"archived"`
 	VoiceRoom      string       `form:"voice_room"`
-	Reminder       sql.NullTime `form:"reminder"`
+	Reminder       time.Time    `form:"reminder"`
 }
 
 func (s *Server) ListPuzzles(c echo.Context) error {

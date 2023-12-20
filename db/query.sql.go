@@ -7,7 +7,7 @@ package db
 
 import (
 	"context"
-	"database/sql"
+	"time"
 
 	"github.com/emojihunt/emojihunt/db/field"
 )
@@ -15,8 +15,9 @@ import (
 const createPuzzle = `-- name: CreatePuzzle :one
 INSERT INTO puzzles (
     name, answer, round, status, note, location, puzzle_url,
-    spreadsheet_id, discord_channel, meta, archived, voice_room
-) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id
+    spreadsheet_id, discord_channel, meta, archived, voice_room,
+    reminder
+) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id
 `
 
 type CreatePuzzleParams struct {
@@ -32,6 +33,7 @@ type CreatePuzzleParams struct {
 	Meta           bool         `json:"meta"`
 	Archived       bool         `json:"archived"`
 	VoiceRoom      string       `json:"voice_room"`
+	Reminder       time.Time    `json:"reminder"`
 }
 
 func (q *Queries) CreatePuzzle(ctx context.Context, arg CreatePuzzleParams) (int64, error) {
@@ -48,6 +50,7 @@ func (q *Queries) CreatePuzzle(ctx context.Context, arg CreatePuzzleParams) (int
 		arg.Meta,
 		arg.Archived,
 		arg.VoiceRoom,
+		arg.Reminder,
 	)
 	var id int64
 	err := row.Scan(&id)
@@ -129,7 +132,7 @@ type GetPuzzleRow struct {
 	Meta           bool         `json:"meta"`
 	Archived       bool         `json:"archived"`
 	VoiceRoom      string       `json:"voice_room"`
-	Reminder       sql.NullTime `json:"reminder"`
+	Reminder       time.Time    `json:"reminder"`
 }
 
 func (q *Queries) GetPuzzle(ctx context.Context, id int64) (GetPuzzleRow, error) {
@@ -183,7 +186,7 @@ type GetPuzzlesByDiscordChannelRow struct {
 	Meta           bool         `json:"meta"`
 	Archived       bool         `json:"archived"`
 	VoiceRoom      string       `json:"voice_room"`
-	Reminder       sql.NullTime `json:"reminder"`
+	Reminder       time.Time    `json:"reminder"`
 }
 
 func (q *Queries) GetPuzzlesByDiscordChannel(ctx context.Context, discordChannel string) ([]GetPuzzlesByDiscordChannelRow, error) {
@@ -325,7 +328,7 @@ type ListPuzzlesRow struct {
 	Meta           bool         `json:"meta"`
 	Archived       bool         `json:"archived"`
 	VoiceRoom      string       `json:"voice_room"`
-	Reminder       sql.NullTime `json:"reminder"`
+	Reminder       time.Time    `json:"reminder"`
 }
 
 func (q *Queries) ListPuzzles(ctx context.Context) ([]ListPuzzlesRow, error) {
@@ -372,15 +375,15 @@ func (q *Queries) ListPuzzles(ctx context.Context) ([]ListPuzzlesRow, error) {
 
 const listPuzzlesWithReminder = `-- name: ListPuzzlesWithReminder :many
 SELECT id, name, discord_channel, reminder FROM puzzles
-WHERE reminder IS NOT NULL
+WHERE reminder > 0
 ORDER BY reminder
 `
 
 type ListPuzzlesWithReminderRow struct {
-	ID             int64        `json:"id"`
-	Name           string       `json:"name"`
-	DiscordChannel string       `json:"discord_channel"`
-	Reminder       sql.NullTime `json:"reminder"`
+	ID             int64     `json:"id"`
+	Name           string    `json:"name"`
+	DiscordChannel string    `json:"discord_channel"`
+	Reminder       time.Time `json:"reminder"`
 }
 
 func (q *Queries) ListPuzzlesWithReminder(ctx context.Context) ([]ListPuzzlesWithReminderRow, error) {
@@ -562,7 +565,7 @@ type UpdatePuzzleParams struct {
 	Meta           bool         `json:"meta"`
 	Archived       bool         `json:"archived"`
 	VoiceRoom      string       `json:"voice_room"`
-	Reminder       sql.NullTime `json:"reminder"`
+	Reminder       time.Time    `json:"reminder"`
 }
 
 func (q *Queries) UpdatePuzzle(ctx context.Context, arg UpdatePuzzleParams) error {

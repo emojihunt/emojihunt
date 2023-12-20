@@ -16,7 +16,7 @@ CREATE TABLE puzzles (
     archived        BOOLEAN NOT NULL,
 
     voice_room      TEXT    NOT NULL,
-    reminder        DATETIME,
+    reminder        DATETIME    NOT NULL,
 
     FOREIGN KEY (round) REFERENCES rounds(id),
     CONSTRAINT uc_name_rd   UNIQUE(name, round)

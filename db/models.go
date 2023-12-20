@@ -5,7 +5,7 @@
 package db
 
 import (
-	"database/sql"
+	"time"
 
 	"github.com/emojihunt/emojihunt/db/field"
 )
@@ -24,7 +24,7 @@ type RawPuzzle struct {
 	Meta           bool         `json:"meta"`
 	Archived       bool         `json:"archived"`
 	VoiceRoom      string       `json:"voice_room"`
-	Reminder       sql.NullTime `json:"reminder"`
+	Reminder       time.Time    `json:"reminder"`
 }
 
 type Round struct {
