@@ -10,8 +10,9 @@ const props = defineProps<{
     <span class="data">
       <PuzzleName :puzzle="puzzle" :round="round" :tabindex="tabIndex(focused, 3)" />
       <PuzzleStatus :puzzle="puzzle" :tabindex="tabIndex(focused, 4)" />
-      <PuzzleCell :puzzle="puzzle" field="location" :tabindex="tabIndex(focused, 5)" />
-      <PuzzleCell :puzzle="puzzle" field="note" :tabindex="tabIndex(focused, 6)" />
+      <PuzzleNoteLocation :puzzle="puzzle" field="location"
+        :tabindex="tabIndex(focused, 5)" />
+      <PuzzleNoteLocation :puzzle="puzzle" field="note" :tabindex="tabIndex(focused, 6)" />
     </span>
   </span>
 </template>
