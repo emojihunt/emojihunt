@@ -58,7 +58,7 @@ const modal = ref<"round" | "puzzle" | null>(null);
     <button @click="() => (modal = 'round')" :disabled="!!display && !store.rounds.length">○
       Add Round</button>
     <button @click="() => (modal = 'puzzle')"
-      :disabled="!!display || !store.rounds.length">▢ Add
+      :disabled="!!display && !store.rounds.length">▢ Add
       Puzzle</button>
     <button>◆ Admin</button>
   </fieldset>

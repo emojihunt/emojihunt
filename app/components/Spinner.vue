@@ -3,7 +3,7 @@
   https://github.com/tobiasahlin/SpinKit (modified)
  -->
 <template>
-  <div class="spinner">
+  <div class="spinner" aria-label="Loading" role="status">
     <div class="double-bounce1"></div>
     <div class="double-bounce2"></div>
   </div>
@@ -11,8 +11,9 @@
 
 <style scoped>
 .spinner {
-  width: 1rem;
-  height: 1rem;
+  width: 1.25em;
+  height: 1.25em;
+  position: relative;
   animation: sk-fade 500ms forwards ease-in;
 }
 
@@ -26,7 +27,6 @@
   position: absolute;
   top: 0;
   left: 0;
-
   animation: sk-bounce 2.0s infinite ease-in-out;
 }
 

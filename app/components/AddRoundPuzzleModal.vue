@@ -10,22 +10,27 @@ const initial = () => ({
   round: store.rounds.length ? store.rounds[0] : undefined,
 });
 const data = reactive(initial());
+const saving = ref(false);
 
 let previous: string;
-const submit = () => {
+const submit = (e: SubmitEvent) => {
+  e.preventDefault();
+  saving.value = true;
   if (previous) toast.remove(previous);
-  const request = (props.kind === "round") ?
-    store.addRound({ ...data, special: false }) :
-    store.addPuzzle({ name: data.name, round: data.round!.id, puzzle_url: data.url });
-  request.then(() => close())
-    .catch((e) => (
-      previous = toast.add({
-        title: "Error",
-        color: "red",
-        description: e.data.message,
-        icon: "i-heroicons-exclamation-triangle",
-      }).id),
-    );
+  setTimeout(() => {
+    const request = (props.kind === "round") ?
+      store.addRound({ ...data, special: false }) :
+      store.addPuzzle({ name: data.name, round: data.round!.id, puzzle_url: data.url });
+    request.then(() => close())
+      .catch((e) => (
+        previous = toast.add({
+          title: "Error",
+          color: "red",
+          description: e.data.message,
+          icon: "i-heroicons-exclamation-triangle",
+        }).id),
+      ).finally(() => (saving.value = false));
+  }, 500);
 };
 const close = () => {
   if (previous) toast.remove(previous);
@@ -65,7 +70,10 @@ const hue = computed(() => props.kind === "round" ? data.hue : data.round?.hue);
         <UInput v-model="data.name" placeholder="Puzzle Name" />
         <UInput v-model="data.url" placeholder="Puzzle URL" />
       </template>
-      <UButton label="Add" type="submit" />
+      <UButton type="submit" :disabled="saving">
+        <Spinner v-if="saving" />
+        <span v-else>Add</span>
+      </UButton>
     </form>
   </Modal>
 </template>

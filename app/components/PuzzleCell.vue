@@ -17,7 +17,7 @@ const save = (updated: string) => {
 <template>
   <div class="cell" :class="field">
     <EditableSpan :value="puzzle[field]" :tabindex="tabindex" @save="save" />
-    <Spinner v-if="saving" />
+    <Spinner v-if="saving" class="spinner" />
   </div>
 </template>
 
@@ -30,9 +30,8 @@ const save = (updated: string) => {
 }
 
 .spinner {
-  position: absolute;
   right: 0.33rem;
-  top: calc(1em - 0.5rem);
+  top: calc((1.8rem - 1em) / 2);
 }
 
 /* Theming */
