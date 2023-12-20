@@ -2,9 +2,10 @@ import { defineStore } from 'pinia';
 
 export default defineStore("puzzles", {
   state: () => ({
-    _rounds: {} as { [id: number]: Round; },
-    _puzzles: {} as { [id: number]: Puzzle; },
+    _rounds: {} as Record<number, Round>,
+    _puzzles: {} as Record<number, Puzzle>,
     next_hunt: undefined as Date | undefined,
+    voice_rooms: {} as Record<string, string>
   }),
   getters: {
     rounds(state): AnnotatedRound[] {
@@ -59,6 +60,7 @@ export default defineStore("puzzles", {
       }
       this.next_hunt = data.value.next_hunt ?
         new Date(data.value.next_hunt) : undefined;
+      this.voice_rooms = data.value.voice_rooms;
     },
     async addRound(data: Omit<Round, "id">) {
       return useAPI(`/rounds`, data)

@@ -7,6 +7,24 @@ const props = defineProps<{
 const store = usePuzzles();
 const saving = ref(false);
 
+const tooltip = computed(() => {
+  if (props.field === "location") {
+    const id = props.puzzle.voice_room;
+    if (!id) return;
+    const channel = store.voice_rooms[id];
+    if (!channel) return;
+    // We expect the channel's emoji to go at the end
+    const p = channel.split(" ");
+    if ([...p[p.length - 1]].length == 1) {
+      return { emoji: p[p.length - 1], text: `in ${p.slice(0, p.length - 1).join(" ")}` };
+    } else {
+      return { emoji: "📻", text: `in ${channel}` };
+    }
+  } else {
+    return undefined;
+  }
+});
+
 const save = (updated: string) => {
   saving.value = true;
   store.updatePuzzle(props.puzzle, { [props.field]: updated })
@@ -16,9 +34,9 @@ const save = (updated: string) => {
 
 <template>
   <div class="cell" :class="field">
-    <UTooltip v-if="false" text="Placeholder" :open-delay="500"
+    <UTooltip v-if="tooltip" :text="tooltip.text" :open-delay="500"
       :popper="{ placement: 'right', offsetDistance: 0 }">
-      <span class="emoji">⏰</span>
+      <span class="emoji">{{ tooltip.emoji }}</span>
     </UTooltip>
     <EditableSpan :value="puzzle[field]" :tabindex="tabindex" @save="save" />
     <Spinner v-if="saving" class="spinner" />
