@@ -28,6 +28,7 @@ export type Puzzle = {
   meta: boolean;
   archived: boolean;
   voice_room: string;
+  reminder: string;
 };
 
 export enum Status {
