@@ -1,13 +1,13 @@
 <script setup lang="ts">
 const props = defineProps<{ kind: "round" | "puzzle" | null; open: boolean; }>();
 const emit = defineEmits<{ (event: "close"): void; }>();
-const state = usePuzzles();
+const store = usePuzzles();
 const toast = useToast();
 
 const modal = ref();
 const initial = () => ({
   emoji: "", name: "", hue: 274, url: "",
-  round: state.rounds.length ? state.rounds[0] : undefined,
+  round: store.rounds.length ? store.rounds[0] : undefined,
 });
 const data = reactive(initial());
 
@@ -15,8 +15,8 @@ let previous: string;
 const submit = () => {
   if (previous) toast.remove(previous);
   const request = (props.kind === "round") ?
-    state.addRound({ ...data, special: false }) :
-    state.addPuzzle({ name: data.name, round: data.round!.id, puzzle_url: data.url });
+    store.addRound({ ...data, special: false }) :
+    store.addPuzzle({ name: data.name, round: data.round!.id, puzzle_url: data.url });
   request.then(() => close())
     .catch((e) => (
       previous = toast.add({
@@ -43,20 +43,19 @@ const focus = () => nextTick(() =>
 );
 watch([props], () => props.open && focus());
 
-const hue = computed(() => props.kind === "round" ? data.hue : data.round!.hue);
+const hue = computed(() => props.kind === "round" ? data.hue : data.round?.hue);
 </script>
 
 <template>
   <Modal ref="modal" :open="open" @submit="submit">
-    <UForm :state="state" :class="kind"
-      @keydown="(e: KeyboardEvent) => e.key == 'Escape' && close()">
+    <form :class="kind" @keydown="(e: KeyboardEvent) => e.key == 'Escape' && close()">
       <template v-if="kind === 'round'">
         <UInput v-model="data.emoji" placeholder="🫥" />
         <UInput v-model="data.name" placeholder="Round Name" />
         <URange v-model="data.hue" :min=0 :max="359" class="hue" />
       </template>
-      <template v-if="kind === 'puzzle'">
-        <USelectMenu v-model="data.round" placeholder="Round" :options="state.rounds"
+      <template v-else>
+        <USelectMenu v-model="data.round" placeholder="Round" :options="store.rounds"
           option-attribute="displayName" :popper="{ arrow: false }" searchable
           @close="focus">
           <template #trailing>
@@ -67,7 +66,7 @@ const hue = computed(() => props.kind === "round" ? data.hue : data.round!.hue);
         <UInput v-model="data.url" placeholder="Puzzle URL" />
       </template>
       <UButton label="Add" type="submit" />
-    </UForm>
+    </form>
   </Modal>
 </template>
 

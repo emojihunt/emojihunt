@@ -4,6 +4,7 @@ export default defineNuxtConfig({
   appConfig: {
     clientID: prod ? "1058094051586490368" : "1058094051586490368",
     discordGuild: prod ? "1058090773582721214" : "1058090773582721214",
+    huntURL: "https://mitmh2024.com/",
   },
   colorMode: {
     preference: "light",

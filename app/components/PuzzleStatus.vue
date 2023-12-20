@@ -64,8 +64,8 @@ const cancel = () => answering.value && (answering.value = null, open.value = fa
       <div v-if="answering" class="hint">🎉 Press Enter to record answer</div>
       <Spinner v-if="saving" />
     </div>
-    <button v-if="!puzzle.answer && !answering" ref="button" class="status"
-      :tabindex="tabindex" @click="() => (open = !open)">
+    <button v-else ref="button" class="status" :tabindex="tabindex"
+      @click="() => (open = !open)">
       <span class="highlight">
         {{ StatusEmoji(puzzle.status) }} {{ StatusLabel(puzzle.status) }}
       </span>

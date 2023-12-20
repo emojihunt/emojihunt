@@ -44,8 +44,6 @@ const keydown = (e: KeyboardEvent) => {
     tabKeydown(e);
   }
 };
-
-const modal = ref<"round" | "puzzle" | null>(null);
 </script>
 
 <template>
@@ -64,19 +62,7 @@ const modal = ref<"round" | "puzzle" | null>(null);
       </div>
       <hr>
     </template>
-    <div class="welcome" v-if="!store.rounds.length">
-      <NuxtLink href="https://www.isithuntyet.info" class="text">
-        ⏳&hairsp; <span>Is it Hunt yet?</span>
-      </NuxtLink>
-      <hr>
-    </div>
-    <fieldset>
-      <button @click="() => (modal = 'round')">○ Add Round</button>
-      <button @click="() => (modal = 'puzzle')" :disabled="!store.rounds.length">▢ Add
-        Puzzle</button>
-      <button>◆ Admin</button>
-    </fieldset>
-    <AddRoundPuzzleModal :open="!!modal" :kind="modal" @close="() => (modal = null)" />
+    <WelcomeAndAdminBar />
   </main>
 </template>
 
@@ -119,60 +105,11 @@ hr {
   margin: 0 1.5rem;
 }
 
-.welcome {
-  grid-column: 1 / 6;
-  margin: 6rem 0 0 0;
-
-  display: grid;
-  grid-template-columns: subgrid;
-}
-
-.welcome a {
-  grid-column: 1 / 3;
-  padding: 0.5rem 0.25rem;
-}
-
-fieldset {
-  grid-column: 5;
-  display: flex;
-  gap: 0.5rem;
-
-  justify-content: flex-end;
-  margin: 0 1rem;
-}
-
-button {
-  padding: 0.25rem;
-}
-
 /* Theming */
 .empty {
   font-size: 0.9rem;
   opacity: 50%;
   user-select: none;
-}
-
-.welcome a,
-button {
-  font-weight: 500;
-  font-size: 0.95rem;
-  color: oklch(60% 0.15 245deg);
-  text-decoration: none;
-}
-
-.welcome a:hover span,
-button:hover {
-  filter: brightness(60%);
-}
-
-button {
-  font-weight: 350;
-  font-size: 0.85rem;
-}
-
-button[disabled] {
-  filter: grayscale(100%) opacity(80%);
-  pointer-events: none;
 }
 
 /* Animation */
