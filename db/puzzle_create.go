@@ -2,6 +2,7 @@ package db
 
 import (
 	"context"
+	"net/url"
 
 	"golang.org/x/xerrors"
 )
@@ -75,6 +76,10 @@ func (p RawPuzzle) Validate() error {
 		return ValidationError{"status", "is invalid"}
 	} else if p.PuzzleURL == "" {
 		return ValidationError{"puzzle_url", "is required"}
+	} else if u, err := url.Parse(p.PuzzleURL); err != nil {
+		return ValidationError{"puzzle_url", "is not a valid URL"}
+	} else if u.Scheme != "http" && u.Scheme != "https" {
+		return ValidationError{"puzzle_url", "is not a valid URL"}
 	} else if !p.Status.IsSolved() && p.Answer != "" {
 		return ValidationError{"status", "is unsolved but answer is not blank"}
 	} else if p.Status.IsSolved() && p.Answer == "" {
