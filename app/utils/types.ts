@@ -9,6 +9,7 @@ export type Round = {
 export type AnnotatedRound = Round & {
   anchor: string;
   complete: boolean;
+  displayName: string;
   solved: number;
   total: number;
 };

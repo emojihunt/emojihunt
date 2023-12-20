@@ -45,7 +45,7 @@ const keydown = (e: KeyboardEvent) => {
   }
 };
 
-const open = ref(false);
+const modal = ref<"round" | "puzzle" | null>(null);
 </script>
 
 <template>
@@ -71,11 +71,12 @@ const open = ref(false);
       <hr>
     </div>
     <fieldset>
-      <button @click="() => (open = true)">○ Add Round</button>
-      <button :disabled="!store.rounds.length">▢ Add Puzzle</button>
+      <button @click="() => (modal = 'round')">○ Add Round</button>
+      <button @click="() => (modal = 'puzzle')" :disabled="!store.rounds.length">▢ Add
+        Puzzle</button>
       <button>◆ Admin</button>
     </fieldset>
-    <AddRoundModal :open="open" @close="() => (open = false)" />
+    <AddRoundPuzzleModal :open="!!modal" :kind="modal" @close="() => (modal = null)" />
   </main>
 </template>
 

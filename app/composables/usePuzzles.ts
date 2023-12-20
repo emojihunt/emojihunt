@@ -15,6 +15,7 @@ export default defineStore("puzzles", {
           ...base,
           anchor: base.name.trim().toLowerCase().replaceAll(" ", "-"),
           complete: puzzles.filter((p => !p.answer)).length === 0,
+          displayName: `${base.emoji}\uFE0F ${base.name}`,
           solved: puzzles.filter((p) => !!p.answer).length,
           total: puzzles.length,
         });
@@ -60,15 +61,18 @@ export default defineStore("puzzles", {
         new Date(data.value.next_hunt) : undefined;
     },
     async addRound(data: Omit<Round, "id">) {
-      return useAPI(`/rounds`, data).then(
-        (r: any) => r.value && (this._rounds[r.value.id] = r.value),
-      );
+      return useAPI(`/rounds`, data)
+        .then((r: any) => r.value && (this._rounds[r.value.id] = r.value));
     },
     async updateRound(round: Round, data: Partial<Round>) {
       const previous = this._rounds[round.id];
       this._rounds[round.id] = { ...previous, ...data };
       await useAPI(`/rounds/${round.id}`, data)
         .catch(() => this._rounds[round.id] = previous);
+    },
+    async addPuzzle(data: { name: string; round: number; puzzle_url: string; }) {
+      return useAPI(`/puzzles`, data)
+        .then((r: any) => r.value && (this._puzzles[r.value.id] = r.value));
     },
     async updatePuzzle(puzzle: Puzzle, data: Partial<Puzzle>) {
       const previous = this._puzzles[puzzle.id];
