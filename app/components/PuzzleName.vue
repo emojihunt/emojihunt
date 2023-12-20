@@ -31,13 +31,13 @@ const hue = computed(() => props.round.hue);
 .meta {
   background:
     linear-gradient(68deg,
-      oklch(55% 0.28 calc(v-bind(hue) - 30)) 0%,
-      oklch(55% 0.28 calc(v-bind(hue) + 60)) 25%,
-      oklch(55% 0.28 calc(v-bind(hue) + 150)) 50%);
+      oklch(50% 0.24 calc(v-bind(hue))) 0%,
+      oklch(50% 0.24 calc(v-bind(hue) + 60)) 20%,
+      oklch(50% 0.24 calc(v-bind(hue) + 180)) 100%);
   background-clip: text;
   -webkit-background-clip: text;
   color: transparent;
-  font-weight: 600;
+  font-weight: 550;
 }
 
 .cell:focus-within {
