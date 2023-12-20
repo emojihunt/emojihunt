@@ -74,7 +74,7 @@ func (b *PuzzleBot) Register() (*discordgo.ApplicationCommand, bool) {
 			},
 			{
 				Name:        "note",
-				Description: "Use in a puzzle channel to add or update the note 📝",
+				Description: "Use in a puzzle channel to add or update the note 💵",
 				Type:        discordgo.ApplicationCommandOptionSubCommand,
 				Options: []*discordgo.ApplicationCommandOption{
 					{
