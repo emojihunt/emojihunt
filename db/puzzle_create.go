@@ -9,7 +9,7 @@ import (
 
 type NewPuzzle struct {
 	Name  string
-	Round int64
+	Round Round
 	URL   string
 }
 
@@ -20,7 +20,7 @@ func (c *Client) AddPuzzles(ctx context.Context, puzzles []NewPuzzle) ([]Puzzle,
 	for _, puzzle := range puzzles {
 		id, err := c.queries.CreatePuzzle(ctx, CreatePuzzleParams{
 			Name:      puzzle.Name,
-			Round:     puzzle.Round,
+			Round:     puzzle.Round.ID,
 			PuzzleURL: puzzle.URL,
 		})
 		if err != nil {

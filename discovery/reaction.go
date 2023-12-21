@@ -87,7 +87,7 @@ func (p *Poller) startOrCancelRoundCreation(name, messageID string) error {
 				if !ok {
 					err = xerrors.Errorf("round not found in state")
 				} else {
-					err = p.createRound(context.TODO(), name, roundInfo)
+					err = p.createRound(ctx, name, roundInfo)
 				}
 				if err != nil {
 					log.Printf("error creating round %q: %s", name, spew.Sdump(err))

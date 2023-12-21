@@ -21,6 +21,7 @@ type State struct {
 
 type NewRound struct {
 	MessageID string
+	Name      string
 	Puzzles   []DiscoveredPuzzle
 }
 

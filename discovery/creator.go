@@ -66,7 +66,7 @@ func (d *Poller) SyncPuzzles(ctx context.Context, puzzles []state.DiscoveredPuzz
 func (d *Poller) handleNewPuzzles(ctx context.Context, newPuzzles []db.NewPuzzle) error {
 	msg := "```\n*** 🧐 NEW PUZZLES ***\n\n"
 	for _, puzzle := range newPuzzles {
-		msg += fmt.Sprintf("%s %s\n%s\n\n", "TODO: puzzle.Round.Emoji", puzzle.Name, puzzle.URL)
+		msg += fmt.Sprintf("%s %s\n%s\n\n", puzzle.Round.Emoji, puzzle.Name, puzzle.URL)
 	}
 	msg += "Reminder: use `/huntbot kill` to stop the bot.\n```\n"
 	_, err := d.discord.ChannelSend(d.discord.QMChannel, msg)
@@ -99,6 +99,7 @@ func (d *Poller) handleNewRounds(ctx context.Context, newRounds map[string][]sta
 		} else {
 			d.state.DiscoveryNewRounds[name] = state.NewRound{
 				MessageID: id,
+				Name:      name,
 				Puzzles:   puzzles,
 			}
 		}
@@ -114,11 +115,6 @@ func (d *Poller) createPuzzles(ctx context.Context, newPuzzles []db.NewPuzzle) e
 	if err != nil {
 		return err
 	}
-
-	// TODO: handle this...
-	// if !newRound {
-	// 	time.Sleep(puzzleCreationPause)
-	// }
 
 	var errs []error
 	for _, puzzle := range created {
@@ -144,13 +140,22 @@ func (d *Poller) createRound(ctx context.Context, name string, roundInfo state.N
 		return xerrors.Errorf("no reaction for message")
 	}
 
-	var round = db.Round{ID: 0, Name: "TODO", Emoji: "TODO"}
+	if d.state.IsKilled() {
+		return xerrors.Errorf("huntbot is disabled")
+	}
+	round, err := d.db.CreateRound(ctx, db.Round{
+		Name:  roundInfo.Name,
+		Emoji: emoji,
+	})
+	if err != nil {
+		return err
+	}
 
 	var puzzles = make([]db.NewPuzzle, len(roundInfo.Puzzles))
 	for i, puzzle := range roundInfo.Puzzles {
 		puzzles[i] = db.NewPuzzle{
 			Name:  puzzle.Name,
-			Round: round.ID,
+			Round: round,
 			URL:   puzzle.URL,
 		}
 	}
