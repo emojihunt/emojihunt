@@ -58,6 +58,11 @@ func (b *QMBot) Handle(ctx context.Context, input *discord.CommandInput) (string
 	}
 }
 
+func (b *QMBot) HandleReaction(context.Context,
+	*discordgo.MessageReaction) error {
+	return nil
+}
+
 func (b *QMBot) HandleScheduledEvent(context.Context,
 	*discordgo.GuildScheduledEventUpdate) error {
 	return nil

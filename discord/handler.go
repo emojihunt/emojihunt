@@ -134,22 +134,17 @@ func (c *Client) handleScheduledEvent(
 
 // Reaction Handling
 
-func (c *Client) RegisterReactionHandler(
-	handler func(context.Context, *discordgo.MessageReaction) error,
-) {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-
-	c.reactionHandlers = append(c.reactionHandlers, &handler)
-}
-
 func (c *Client) handleReaction(
-	ctx context.Context, r *discordgo.MessageReaction,
+	ctx context.Context, e *discordgo.MessageReaction,
 ) error {
-	for _, handler := range c.reactionHandlers {
-		err := (*handler)(ctx, r)
+	hub := sentry.GetHubFromContext(ctx)
+	for _, bot := range c.botsByCommand {
+		hub.ConfigureScope(func(scope *sentry.Scope) {
+			scope.SetTag("task", fmt.Sprintf("bot.%s.reaction", bot.Name))
+		})
+		err := bot.HandleReaction(ctx, e)
 		if err != nil {
-			return xerrors.Errorf("reaction handler: %w", err)
+			return xerrors.Errorf("%s.HandleReaction: %w", bot.Name, err)
 		}
 	}
 	return nil

@@ -11,6 +11,7 @@ import (
 type Bot interface {
 	Register() (cmd *discordgo.ApplicationCommand, async bool)
 	Handle(context.Context, *CommandInput) (string, error)
+	HandleReaction(context.Context, *discordgo.MessageReaction) error
 	HandleScheduledEvent(context.Context, *discordgo.GuildScheduledEventUpdate) error
 }
 
@@ -37,11 +38,10 @@ func (i CommandInput) EditMessage(msg string) error {
 }
 
 type botRegistration struct {
-	Name                 string
-	ApplicationCommand   *discordgo.ApplicationCommand
-	Async                bool
-	Handle               func(context.Context, *CommandInput) (string, error)
-	HandleScheduledEvent func(context.Context, *discordgo.GuildScheduledEventUpdate) error
+	Name               string
+	ApplicationCommand *discordgo.ApplicationCommand
+	Async              bool
+	Bot
 }
 
 func (c *Client) RegisterBots(bots ...Bot) {
@@ -61,11 +61,10 @@ func (c *Client) RegisterBots(bots ...Bot) {
 		}
 		appCommands = append(appCommands, ac)
 		c.botsByCommand[ac.Name] = &botRegistration{
-			Name:                 ac.Name,
-			ApplicationCommand:   ac,
-			Async:                async,
-			Handle:               bot.Handle,
-			HandleScheduledEvent: bot.HandleScheduledEvent,
+			Name:               ac.Name,
+			ApplicationCommand: ac,
+			Async:              async,
+			Bot:                bot,
 		}
 	}
 

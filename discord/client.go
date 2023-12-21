@@ -38,22 +38,17 @@ var ProdConfig = Config{
 
 type Client struct {
 	main context.Context
+	s    *discordgo.Session
 
-	s           *discordgo.Session
-	Guild       *discordgo.Guild
-	Application *discordgo.Application
-
-	QMChannel         *discordgo.Channel // for puzzle maintenance
-	HangingOutChannel *discordgo.Channel // for solves, to celebrate
-	MoreEyesChannel   *discordgo.Channel // for verbose puzzle updates
-
+	Guild               *discordgo.Guild
+	Application         *discordgo.Application
+	QMChannel           *discordgo.Channel // for puzzle maintenance
+	HangingOutChannel   *discordgo.Channel // for solves, to celebrate
+	MoreEyesChannel     *discordgo.Channel // for verbose puzzle updates
 	DefaultVoiceChannel *discordgo.Channel // for placeholder events
+	QMRole              *discordgo.Role    // so QMs show up in the sidebar
 
-	QMRole *discordgo.Role // so QMs show up in the sidebar
-
-	// TODO: merge reactions into the Bot interface
-	botsByCommand    map[string]*botRegistration
-	reactionHandlers []*func(context.Context, *discordgo.MessageReaction) error
+	botsByCommand map[string]*botRegistration
 
 	mu                        sync.Mutex // hold while accessing everything below
 	commandsRegistered        bool

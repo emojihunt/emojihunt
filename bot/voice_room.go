@@ -97,6 +97,11 @@ func (b *VoiceRoomBot) Handle(ctx context.Context, input *discord.CommandInput) 
 	return reply, nil
 }
 
+func (b *VoiceRoomBot) HandleReaction(context.Context,
+	*discordgo.MessageReaction) error {
+	return nil
+}
+
 func (b *VoiceRoomBot) HandleScheduledEvent(
 	ctx context.Context, i *discordgo.GuildScheduledEventUpdate) error {
 

@@ -46,6 +46,11 @@ func (b *HuntYetBot) formatDuration(d time.Duration) string {
 	)
 }
 
+func (b *HuntYetBot) HandleReaction(context.Context,
+	*discordgo.MessageReaction) error {
+	return nil
+}
+
 func (b *HuntYetBot) HandleScheduledEvent(context.Context,
 	*discordgo.GuildScheduledEventUpdate) error {
 	return nil

@@ -149,6 +149,11 @@ func (b *ReminderBot) notify(ctx context.Context, since time.Time) (*time.Time, 
 	return &now, nil
 }
 
+func (b *ReminderBot) HandleReaction(context.Context,
+	*discordgo.MessageReaction) error {
+	return nil
+}
+
 func (b *ReminderBot) HandleScheduledEvent(context.Context,
 	*discordgo.GuildScheduledEventUpdate) error {
 	return nil

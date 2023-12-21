@@ -4,32 +4,12 @@ import (
 	"log"
 	"time"
 
-	"github.com/bwmarrin/discordgo"
 	"github.com/davecgh/go-spew/spew"
-	"github.com/emojihunt/emojihunt/discord"
 	"golang.org/x/net/context"
 	"golang.org/x/xerrors"
 )
 
-func (p *Poller) RegisterReactionHandler(dis *discord.Client) {
-	dis.RegisterReactionHandler(
-		func(ctx context.Context, r *discordgo.MessageReaction) error {
-			if p.state.IsKilled() {
-				return nil
-			}
-			roundName := p.isRoundNotification(r.MessageID)
-			if roundName == "" {
-				return nil
-			}
-
-			log.Printf("discord: handling reaction %s on message %q from user %s",
-				r.Emoji.Name, r.MessageID, r.UserID)
-			return p.startOrCancelRoundCreation(roundName, r.MessageID)
-		},
-	)
-}
-
-func (p *Poller) isRoundNotification(messageID string) string {
+func (p *Poller) IsRoundNotification(messageID string) string {
 	p.state.Lock()
 	defer p.state.Unlock()
 
@@ -41,7 +21,7 @@ func (p *Poller) isRoundNotification(messageID string) string {
 	return ""
 }
 
-func (p *Poller) startOrCancelRoundCreation(name, messageID string) error {
+func (p *Poller) StartOrCancelRoundCreation(name, messageID string) error {
 	p.mutex.Lock()
 	defer p.mutex.Unlock()
 
@@ -105,7 +85,7 @@ func (p *Poller) InitializeRoundCreation(ctx context.Context) {
 	defer p.state.CommitAndUnlock(ctx)
 
 	for name, round := range p.state.DiscoveryNewRounds {
-		err := p.startOrCancelRoundCreation(name, round.MessageID)
+		err := p.StartOrCancelRoundCreation(name, round.MessageID)
 		if err != nil {
 			// new-round notification has probably been deleted
 			log.Printf("error kicking off round creation for %q, resetting round (%s)",

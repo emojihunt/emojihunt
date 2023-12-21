@@ -3,6 +3,7 @@ package bot
 import (
 	"context"
 	"fmt"
+	"log"
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/emojihunt/emojihunt/db"
@@ -82,6 +83,21 @@ func (b *HuntBot) Handle(ctx context.Context, input *discord.CommandInput) (stri
 	default:
 		return "", xerrors.Errorf("unexpected /huntbot subcommand: %q", input.Subcommand.Name)
 	}
+}
+
+func (b *HuntBot) HandleReaction(ctx context.Context,
+	r *discordgo.MessageReaction) error {
+
+	if b.state.IsKilled() || b.discovery == nil {
+		return nil
+	}
+	roundName := b.discovery.IsRoundNotification(r.MessageID)
+	if roundName == "" {
+		return nil
+	}
+	log.Printf("handling reaction %s on %q from user %s",
+		r.Emoji.Name, r.MessageID, r.UserID)
+	return b.discovery.StartOrCancelRoundCreation(roundName, r.MessageID)
 }
 
 func (b *HuntBot) HandleScheduledEvent(context.Context,
