@@ -1,10 +1,11 @@
 <script setup lang="ts">
-const props = defineProps<{
+const props = withDefaults(defineProps<{
   value: string;
+  placeholder?: string;
   readonly?: boolean;
   sticky?: boolean;
   tabindex?: number;
-}>();
+}>(), { placeholder: "-" });
 
 const emit = defineEmits<{
   (event: "save", updated: string): void;
@@ -19,7 +20,13 @@ const span = ref<HTMLSpanElement>();
 // once and control all further updates manually.
 const rerender = () => {
   span.value!.contentEditable = editing.value ? "plaintext-only" : "false";
-  const updated = props.value.trim() || (editing.value ? "" : "-");
+  let updated = props.value.trim();
+  if (!editing.value && !updated) {
+    updated = props.placeholder;
+    span.value!.classList.add("placeholder");
+  } else {
+    span.value!.classList.remove("placeholder");
+  }
   if (span.value!.innerText != updated) {
     span.value!.innerText = updated;
   }
@@ -41,7 +48,7 @@ defineExpose({
 
 const saveEdit = (): boolean => {
   let updated = span.value?.textContent?.trim() || "";
-  if (updated === "-") updated = "";
+  if (updated === "-" || updated == props.placeholder) updated = "";
   if (updated != props.value.trim()) {
     editing.value = false;
     emit("save", updated);
@@ -95,15 +102,16 @@ const keydown = (e: KeyboardEvent) => {
 
 <template>
   <span v-once ref="span" :readonly="readonly" @click="click" @blur="blur"
-    @keydown="keydown" spellcheck="false">{{ value || "-" }}</span>
+    @keydown="keydown" spellcheck="false" :class="!value && 'placeholder'">{{ value ||
+      placeholder }}</span>
 </template>
 
 <style scoped>
 /* Layout */
 span {
   flex-grow: 1;
-  line-height: 1.35rem;
-  padding: 0.25em 0.33rem;
+  line-height: 1.25rem;
+  padding: 0.25rem 0.33rem;
   overflow: hidden;
 }
 
@@ -129,5 +137,9 @@ span[readonly] {
 
 span:focus {
   outline: none;
+}
+
+.placeholder {
+  color: oklch(60% 0 0deg);
 }
 </style>

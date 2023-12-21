@@ -16,9 +16,14 @@ const tooltip = computed(() => {
     // We expect the channel's emoji to go at the end
     const p = channel.split(" ");
     if ([...p[p.length - 1]].length == 1) {
-      return { emoji: p[p.length - 1], text: `in ${p.slice(0, p.length - 1).join(" ")}` };
+      const text = p.slice(0, p.length - 1).join(" ");
+      return {
+        emoji: p[p.length - 1],
+        placeholder: text,
+        text: `in ${text}`,
+      };
     } else {
-      return { emoji: "📻", text: `in ${channel}` };
+      return { emoji: "📻", placeholder: channel, text: `in ${channel}` };
     }
   } else {
     const reminder = props.puzzle.reminder;
@@ -48,7 +53,8 @@ const save = (updated: string) => {
       :popper="{ placement: 'right', offsetDistance: 0 }">
       <span class="emoji">{{ tooltip.emoji }}</span>
     </UTooltip>
-    <EditableSpan :value="puzzle[field]" :tabindex="tabindex" @save="save" />
+    <EditableSpan :value="puzzle[field]" :tabindex="tabindex" @save="save"
+      :placeholder="tooltip?.placeholder" />
     <Spinner v-if="saving" class="spinner" />
   </div>
 </template>
@@ -73,8 +79,8 @@ const save = (updated: string) => {
 
 /* Theming */
 .cell {
-  font-weight: 300;
-  font-size: 0.86rem;
+  font-weight: 400;
+  font-size: 0.8rem;
 }
 
 .cell:focus-within {
