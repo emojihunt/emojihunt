@@ -65,44 +65,18 @@ func (d *Poller) SyncPuzzles(ctx context.Context, puzzles []state.DiscoveredPuzz
 
 func (d *Poller) handleNewPuzzles(ctx context.Context, newPuzzles []db.NewPuzzle) error {
 	msg := "```\n*** 🧐 NEW PUZZLES ***\n\n"
-	for i, puzzle := range newPuzzles {
-		if i == newPuzzleLimit {
-			msg += fmt.Sprintf("(...and more, %d in total...)\n\n", len(newPuzzles))
-			break
-		}
+	for _, puzzle := range newPuzzles {
 		msg += fmt.Sprintf("%s %s\n%s\n\n", "TODO: puzzle.Round.Emoji", puzzle.Name, puzzle.URL)
 	}
-
-	var paused bool
-	if len(newPuzzles) > newPuzzleLimit {
-		paused = true
-		msg += fmt.Sprintf(
-			"💥 Too many new puzzles! Puzzle creation paused, please contact Tech.\n",
-		)
-	} else {
-		msg += "Reminder: use `/huntbot kill` to stop the bot.\n"
-	}
-	msg += "```\n"
-
+	msg += "Reminder: use `/huntbot kill` to stop the bot.\n```\n"
 	_, err := d.discord.ChannelSend(d.discord.QMChannel, msg)
 	if err != nil {
 		return err
-	} else if paused {
-		return nil
 	}
-
 	return d.createPuzzles(ctx, newPuzzles)
 }
 
 func (d *Poller) handleNewRounds(ctx context.Context, newRounds map[string][]state.DiscoveredPuzzle) error {
-	if len(newRounds) > newRoundLimit {
-		msg := fmt.Sprintf(
-			"```💥 Too many new rounds! Round creation paused, please contact Tech.\n```\n",
-		)
-		_, err := d.discord.ChannelSend(d.discord.QMChannel, msg)
-		return err
-	}
-
 	d.state.Lock()
 	defer d.state.CommitAndUnlock()
 
@@ -113,11 +87,7 @@ func (d *Poller) handleNewRounds(ctx context.Context, newRounds map[string][]sta
 		}
 
 		msg := fmt.Sprintf("```*** ❓ NEW ROUND: \"%s\" ***\n\n", name)
-		for i, puzzle := range puzzles {
-			if i == newPuzzleLimit {
-				msg += fmt.Sprintf("(...and more, %d in total...)\n\n", len(puzzles))
-				break
-			}
+		for _, puzzle := range puzzles {
 			msg += fmt.Sprintf("%s\n%s\n\n", puzzle.Name, puzzle.URL)
 		}
 		msg += "Reminder: use `/huntbot kill` to stop the bot.\n\n"

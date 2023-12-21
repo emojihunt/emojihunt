@@ -107,8 +107,6 @@ const (
 	pollInterval       = 20 * time.Second
 	pollTimeout        = 90 * time.Second
 	roundCreationPause = 10 * time.Second
-	newPuzzleLimit     = 30
-	newRoundLimit      = 5
 	websocketBurst     = 3
 )
 
