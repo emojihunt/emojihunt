@@ -87,7 +87,7 @@ func (s *Syncer) IdempotentCreateUpdate(ctx context.Context, puzzle *db.Puzzle) 
 	}
 
 	// 3. Update the spreadsheet and Discord channel with new information, if required
-	if puzzle.ShouldArchive() != puzzle.Archived {
+	if puzzle.Status.IsSolved() != puzzle.Archived {
 		var err error
 		puzzle, err = s.HandleStatusChange(ctx, puzzle, false)
 		if err != nil {

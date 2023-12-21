@@ -106,7 +106,7 @@ func (c *Client) SetLocation(
 
 func (c *Client) SetBotFields(ctx context.Context, puzzle *Puzzle) (*Puzzle, error) {
 	err := c.queries.UpdateArchived(ctx, UpdateArchivedParams{
-		ID: puzzle.ID, Archived: puzzle.ShouldArchive(),
+		ID: puzzle.ID, Archived: puzzle.Status.IsSolved(),
 	})
 	if err != nil {
 		return nil, xerrors.Errorf("UpdateArchived: %w", err)

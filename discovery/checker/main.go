@@ -22,15 +22,15 @@ func main() {
 	// Print results
 	currentRound := ""
 	for _, puzzle := range puzzles {
-		if puzzle.Round == "" {
+		if puzzle.RoundName == "" {
 			panic("blank round name")
 		}
-		if puzzle.Round != currentRound {
+		if puzzle.RoundName != currentRound {
 			if currentRound != "" {
 				fmt.Println()
 			}
-			fmt.Printf("Round: \"%s\"\n", puzzle.Round)
-			currentRound = puzzle.Round
+			fmt.Printf("Round: \"%s\"\n", puzzle.RoundName)
+			currentRound = puzzle.RoundName
 		}
 		if len(puzzle.Name) <= 32 {
 			fmt.Printf(" - %-32s  %s\n", puzzle.Name, puzzle.URL)

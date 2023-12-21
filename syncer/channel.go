@@ -47,12 +47,16 @@ func (s *Syncer) DiscordCreateUpdatePin(puzzle *db.Puzzle) error {
 				Value:  fmt.Sprintf("[Link](%s)", puzzle.PuzzleURL),
 				Inline: true,
 			},
-			{
-				Name:   "Sheet",
-				Value:  fmt.Sprintf("[Link](%s)", puzzle.SpreadsheetURL()),
-				Inline: true,
-			},
 		},
+	}
+
+	if puzzle.SpreadsheetID != "" {
+		embed.Fields = append(embed.Fields, &discordgo.MessageEmbedField{
+			Name: "Sheet",
+			Value: fmt.Sprintf("[Link](https://docs.google.com/spreadsheets/d/%s)",
+				puzzle.SpreadsheetID),
+			Inline: true,
+		})
 	}
 
 	if puzzle.Note != "" {
@@ -135,7 +139,7 @@ func (s *Syncer) discordGetOrCreateCategory(puzzle *db.Puzzle) (*discordgo.Chann
 	}
 
 	var targetName string
-	if puzzle.ShouldArchive() {
+	if puzzle.Status.IsSolved() {
 		targetName = solvedCategoryPrefix + puzzle.ArchiveCategory()
 	} else {
 		targetName = roundCategoryPrefix + puzzle.Round.Name

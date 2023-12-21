@@ -11,28 +11,16 @@ import (
 )
 
 type State struct {
-	DiscoveryNewRounds map[string]NewRound `json:"discovery_new_rounds"`
-	HuntbotDisabled    bool                `json:"huntbot_disabled"`
-	ReminderTimestamp  time.Time           `json:"reminder_timestamp"`
+	DiscoveryNewRounds map[string]db.DiscoveredRound `json:"discovery_new_rounds"`
+	HuntbotDisabled    bool                          `json:"huntbot_disabled"`
+	ReminderTimestamp  time.Time                     `json:"reminder_timestamp"`
 
 	mutex sync.Mutex `json:"-"`
 	db    *db.Client `json:"-"`
 }
 
-type NewRound struct {
-	MessageID string
-	Name      string
-	Puzzles   []DiscoveredPuzzle
-}
-
-type DiscoveredPuzzle struct {
-	Name  string
-	Round string
-	URL   string
-}
-
-func Load(ctx context.Context, db *db.Client) *State {
-	data, err := db.LoadState(ctx)
+func Load(ctx context.Context, client *db.Client) *State {
+	data, err := client.LoadState(ctx)
 	if err != nil {
 		log.Panicf("could not load state: %s", err)
 	}
@@ -41,9 +29,9 @@ func Load(ctx context.Context, db *db.Client) *State {
 		log.Panicf("could not unmarshal state: %s", err)
 	}
 	if state.DiscoveryNewRounds == nil {
-		state.DiscoveryNewRounds = make(map[string]NewRound)
+		state.DiscoveryNewRounds = make(map[string]db.DiscoveredRound)
 	}
-	state.db = db
+	state.db = client
 	return &state
 }
 

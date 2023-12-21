@@ -7,12 +7,6 @@ import (
 	"golang.org/x/xerrors"
 )
 
-type NewPuzzle struct {
-	Name  string
-	Round Round
-	URL   string
-}
-
 // AddPuzzles creates the given puzzles and returns the created records as a
 // list of Puzzle objects.
 func (c *Client) AddPuzzles(ctx context.Context, puzzles []NewPuzzle) ([]Puzzle, error) {

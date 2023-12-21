@@ -3,7 +3,6 @@ package db
 import (
 	"crypto/sha256"
 	"encoding/binary"
-	"fmt"
 	"time"
 
 	"github.com/emojihunt/emojihunt/db/field"
@@ -27,17 +26,22 @@ type Puzzle struct {
 	Reminder       time.Time    `json:"reminder"`
 }
 
-func (p Puzzle) SpreadsheetURL() string {
-	if p.SpreadsheetID == "" {
-		panic("called SpreadsheetURL() on a puzzle with no spreadsheet")
-	}
-	return fmt.Sprintf("https://docs.google.com/spreadsheets/d/%s", p.SpreadsheetID)
+type NewPuzzle struct {
+	Name  string
+	Round Round
+	URL   string
 }
 
-func (p Puzzle) ShouldArchive() bool {
-	// We shouldn't archive the channel until the answer has been filled in on
-	// Airtable
-	return p.Status.IsSolved() && p.Answer != ""
+type DiscoveredPuzzle struct {
+	Name      string
+	RoundName string
+	URL       string
+}
+
+type DiscoveredRound struct {
+	MessageID string
+	Name      string
+	Puzzles   []DiscoveredPuzzle
 }
 
 var categories = []string{"A", "B", "C"}

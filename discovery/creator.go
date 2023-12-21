@@ -8,12 +8,11 @@ import (
 
 	"github.com/davecgh/go-spew/spew"
 	"github.com/emojihunt/emojihunt/db"
-	"github.com/emojihunt/emojihunt/state"
 	"golang.org/x/xerrors"
 )
 
-func (d *Poller) SyncPuzzles(ctx context.Context, puzzles []state.DiscoveredPuzzle) error {
-	puzzleMap := make(map[string]state.DiscoveredPuzzle)
+func (d *Poller) SyncPuzzles(ctx context.Context, puzzles []db.DiscoveredPuzzle) error {
+	puzzleMap := make(map[string]db.DiscoveredPuzzle)
 	for _, puzzle := range puzzles {
 		puzzleMap[puzzle.URL] = puzzle
 	}
@@ -25,16 +24,16 @@ func (d *Poller) SyncPuzzles(ctx context.Context, puzzles []state.DiscoveredPuzz
 	}
 
 	var newPuzzles []db.NewPuzzle
-	newRounds := make(map[string][]state.DiscoveredPuzzle)
+	newRounds := make(map[string][]db.DiscoveredPuzzle)
 	for _, puzzle := range puzzleMap {
 		if fragments[strings.ToUpper(puzzle.URL)] ||
 			fragments[strings.ToUpper(puzzle.Name)] {
 			// skip if name or URL matches an existing puzzle
 			continue
 		}
-		if round, ok := rounds[puzzle.Round]; ok {
+		if round, ok := rounds[puzzle.RoundName]; ok {
 			log.Printf("discovery: preparing to add puzzle %q (%s) in round %q",
-				puzzle.Name, puzzle.URL, puzzle.Round)
+				puzzle.Name, puzzle.URL, puzzle.RoundName)
 			newPuzzles = append(newPuzzles, db.NewPuzzle{
 				Name:  puzzle.Name,
 				Round: round,
@@ -42,7 +41,7 @@ func (d *Poller) SyncPuzzles(ctx context.Context, puzzles []state.DiscoveredPuzz
 			})
 		} else {
 			// puzzle belongs to a new round
-			newRounds[puzzle.Round] = append(newRounds[puzzle.Round], puzzle)
+			newRounds[puzzle.RoundName] = append(newRounds[puzzle.RoundName], puzzle)
 		}
 	}
 
@@ -76,7 +75,7 @@ func (d *Poller) handleNewPuzzles(ctx context.Context, newPuzzles []db.NewPuzzle
 	return d.createPuzzles(ctx, newPuzzles)
 }
 
-func (d *Poller) handleNewRounds(ctx context.Context, newRounds map[string][]state.DiscoveredPuzzle) error {
+func (d *Poller) handleNewRounds(ctx context.Context, newRounds map[string][]db.DiscoveredPuzzle) error {
 	d.state.Lock()
 	defer d.state.CommitAndUnlock(ctx)
 
@@ -97,7 +96,7 @@ func (d *Poller) handleNewRounds(ctx context.Context, newRounds map[string][]sta
 		if err != nil {
 			errs = append(errs, err)
 		} else {
-			d.state.DiscoveryNewRounds[name] = state.NewRound{
+			d.state.DiscoveryNewRounds[name] = db.DiscoveredRound{
 				MessageID: id,
 				Name:      name,
 				Puzzles:   puzzles,
@@ -132,7 +131,7 @@ func (d *Poller) createPuzzles(ctx context.Context, newPuzzles []db.NewPuzzle) e
 	return nil
 }
 
-func (d *Poller) createRound(ctx context.Context, name string, roundInfo state.NewRound) error {
+func (d *Poller) createRound(ctx context.Context, name string, roundInfo db.DiscoveredRound) error {
 	emoji, err := d.getTopReaction(roundInfo.MessageID)
 	if err != nil {
 		return err
