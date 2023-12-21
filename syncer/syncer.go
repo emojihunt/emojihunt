@@ -5,7 +5,6 @@ import (
 	"log"
 	"sync"
 
-	"github.com/emojihunt/emojihunt/db"
 	"github.com/emojihunt/emojihunt/db/field"
 	"github.com/emojihunt/emojihunt/discord"
 	"github.com/emojihunt/emojihunt/drive"
@@ -26,7 +25,7 @@ func New(discord *discord.Client, drive *drive.Client, state *state.Client) *Syn
 	return &Syncer{
 		discord: discord,
 		drive:   drive,
-		state:   db,
+		state:   state,
 	}
 }
 
@@ -105,8 +104,8 @@ func (s *Syncer) IdempotentCreateUpdate(ctx context.Context, puzzle *state.Puzzl
 // the user in the puzzle channel, you can set `botRequest=true` to suppress
 // notifications to the puzzle channel.
 func (s *Syncer) HandleStatusChange(
-	ctx context.Context, puzzle *db.Puzzle, botRequest bool,
-) (*db.Puzzle, error) {
+	ctx context.Context, puzzle *state.Puzzle, botRequest bool,
+) (*state.Puzzle, error) {
 	log.Printf("syncer: handling status change for %q", puzzle.Name)
 	if puzzle.SpreadsheetID == "-" || puzzle.DiscordChannel == "-" {
 		return nil, xerrors.Errorf("puzzle is a placeholder puzzle, skipping")

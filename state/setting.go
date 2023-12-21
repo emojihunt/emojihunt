@@ -85,7 +85,9 @@ func (c *Client) writeSetting(ctx context.Context, key string, value interface{}
 	if err != nil {
 		return xerrors.Errorf("setting marshal: %w", err)
 	}
-	err = c.queries.UpdateSetting(ctx, db.UpdateSettingParams{key, data})
+	err = c.queries.UpdateSetting(ctx, db.UpdateSettingParams{
+		Key: key, Value: data,
+	})
 	if err != nil {
 		return xerrors.Errorf("UpdateSetting: %w", err)
 	}

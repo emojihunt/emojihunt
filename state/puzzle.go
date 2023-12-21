@@ -49,9 +49,9 @@ func (c *Client) ListPuzzles(ctx context.Context) ([]Puzzle, error) {
 	return puzzles, nil
 }
 
-func (c *Client) CreatePuzzle(ctx context.Context, puzzle db.RawPuzzle) (*Puzzle, error) {
+func (c *Client) CreatePuzzle(ctx context.Context, puzzle db.RawPuzzle) (Puzzle, error) {
 	if err := ValidatePuzzle(puzzle); err != nil {
-		return nil, err
+		return Puzzle{}, err
 	}
 	id, err := c.queries.CreatePuzzle(ctx, db.CreatePuzzleParams{
 		Name:           puzzle.Name,
@@ -68,7 +68,7 @@ func (c *Client) CreatePuzzle(ctx context.Context, puzzle db.RawPuzzle) (*Puzzle
 		VoiceRoom:      puzzle.VoiceRoom,
 	})
 	if err != nil {
-		return nil, xerrors.Errorf("CreatePuzzle: %w", err)
+		return Puzzle{}, xerrors.Errorf("CreatePuzzle: %w", err)
 	}
 	return c.GetPuzzle(ctx, id)
 }

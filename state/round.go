@@ -8,7 +8,7 @@ import (
 	"golang.org/x/xerrors"
 )
 
-func (r Round) Validate() error {
+func ValidateRound(r db.Round) error {
 	if r.Name == "" {
 		return ValidationError{"name", "is required"}
 	} else if r.Emoji == "" {
@@ -46,7 +46,7 @@ func (c *Client) ListRounds(ctx context.Context) ([]Round, error) {
 }
 
 func (c *Client) CreateRound(ctx context.Context, round Round) (Round, error) {
-	if err := round.Validate(); err != nil {
+	if err := ValidateRound(round); err != nil {
 		return Round{}, err
 	}
 	result, err := c.queries.CreateRound(ctx, db.CreateRoundParams{
@@ -62,7 +62,7 @@ func (c *Client) CreateRound(ctx context.Context, round Round) (Round, error) {
 }
 
 func (c *Client) UpdateRound(ctx context.Context, round Round) error {
-	if err := round.Validate(); err != nil {
+	if err := ValidateRound(round); err != nil {
 		return err
 	}
 	err := c.queries.UpdateRound(ctx, db.UpdateRoundParams(round))

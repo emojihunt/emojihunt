@@ -5,17 +5,11 @@ import (
 	"encoding/binary"
 	"time"
 
+	"github.com/emojihunt/emojihunt/db"
 	"github.com/emojihunt/emojihunt/db/field"
 )
 
-// Must match db.Round
-type Round struct {
-	ID      int64  `json:"id"`
-	Name    string `json:"name"`
-	Emoji   string `json:"emoji"`
-	Hue     int64  `json:"hue"`
-	Special bool   `json:"special"`
-}
+type Round = db.Round
 
 // Must match db.GetPuzzleRow and db.ListPuzzlesRow
 type Puzzle struct {
@@ -63,4 +57,23 @@ func (p Puzzle) ArchiveCategory() string {
 
 func (p Puzzle) HasReminder() bool {
 	return p.Reminder.Year() < 2000
+}
+
+func (p Puzzle) RawPuzzle() db.RawPuzzle {
+	return db.RawPuzzle{
+		ID:             p.ID,
+		Name:           p.Name,
+		Answer:         p.Answer,
+		Round:          p.Round.ID,
+		Status:         p.Status,
+		Note:           p.Note,
+		Location:       p.Location,
+		PuzzleURL:      p.PuzzleURL,
+		SpreadsheetID:  p.SpreadsheetID,
+		DiscordChannel: p.DiscordChannel,
+		Meta:           p.Meta,
+		Archived:       p.Archived,
+		VoiceRoom:      p.VoiceRoom,
+		Reminder:       p.Reminder,
+	}
 }

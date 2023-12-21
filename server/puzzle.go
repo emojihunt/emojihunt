@@ -39,7 +39,7 @@ func (s *Server) GetPuzzle(c echo.Context) error {
 	if err := c.Bind(&id); err != nil {
 		return err
 	}
-	puzzle, err := s.state.LoadByID(c.Request().Context(), id.ID)
+	puzzle, err := s.state.GetPuzzle(c.Request().Context(), id.ID)
 	if err != nil {
 		return err
 	}
@@ -63,12 +63,12 @@ func (s *Server) UpdatePuzzle(c echo.Context) error {
 	if err := c.Bind(&id); err != nil {
 		return err
 	}
-	puzzle, err := s.state.GetRawPuzzle(c.Request().Context(), id.ID)
+	puzzle, err := s.state.GetPuzzle(c.Request().Context(), id.ID)
 	if err != nil {
 		return err
 	}
 
-	var params = PuzzleParams(puzzle)
+	var params = PuzzleParams(puzzle.RawPuzzle())
 	if err := c.Bind(&params); err != nil {
 		return err
 	}
@@ -77,7 +77,7 @@ func (s *Server) UpdatePuzzle(c echo.Context) error {
 		return err
 	}
 
-	updated, err := s.state.LoadByID(c.Request().Context(), id.ID)
+	updated, err := s.state.GetPuzzle(c.Request().Context(), id.ID)
 	if err != nil {
 		return err
 	}
@@ -89,7 +89,7 @@ func (s *Server) DeletePuzzle(c echo.Context) error {
 	if err := c.Bind(&id); err != nil {
 		return err
 	}
-	puzzle, err := s.state.LoadByID(c.Request().Context(), id.ID)
+	puzzle, err := s.state.GetPuzzle(c.Request().Context(), id.ID)
 	if err != nil {
 		return err
 	}
