@@ -95,12 +95,13 @@ hr {
 }
 
 fieldset {
-  grid-column: 5;
+  grid-column: 1 / 6;
   display: flex;
   gap: 0.5rem;
 
   justify-content: flex-end;
   margin: 0 1rem;
+  padding-bottom: 18vh;
 }
 
 button {
