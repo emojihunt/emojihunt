@@ -3,7 +3,7 @@ package discovery
 import (
 	"time"
 
-	"github.com/emojihunt/emojihunt/db"
+	"github.com/emojihunt/emojihunt/state"
 	"github.com/getsentry/sentry-go"
 	"golang.org/x/net/context"
 )
@@ -19,7 +19,7 @@ func (p *Poller) RoundCreationWorker(ctx context.Context) {
 	ctx = sentry.SetHubOnContext(ctx, hub)
 	// *do* allow panics to bubble up to main()
 
-	rounds, err := p.db.DiscoveredRounds(ctx)
+	rounds, err := p.state.DiscoveredRounds(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -33,7 +33,7 @@ func (p *Poller) RoundCreationWorker(ctx context.Context) {
 				panic("channel closed")
 			}
 			rounds[v.Name] = v
-			if err := p.db.SetDiscoveredRounds(ctx, rounds); err != nil {
+			if err := p.state.SetDiscoveredRounds(ctx, rounds); err != nil {
 				panic(err)
 			}
 			continue
@@ -44,8 +44,8 @@ func (p *Poller) RoundCreationWorker(ctx context.Context) {
 		}
 
 		// Process any round(s) that have passed the timeout
-		if !p.db.IsDisabled(ctx) {
-			queue := make([]db.DiscoveredRound, 0)
+		if !p.state.IsDisabled(ctx) {
+			queue := make([]state.DiscoveredRound, 0)
 			for _, round := range rounds {
 				if wakeup.After(round.NotifiedAt.Add(roundCreationPause)) {
 					queue = append(queue, round)
@@ -65,7 +65,7 @@ func (p *Poller) RoundCreationWorker(ctx context.Context) {
 					break // only process one round at a time
 				}
 			}
-			if err := p.db.SetDiscoveredRounds(ctx, rounds); err != nil {
+			if err := p.state.SetDiscoveredRounds(ctx, rounds); err != nil {
 				panic(err)
 			}
 		}
@@ -89,10 +89,10 @@ func (p *Poller) getTopReaction(messageID string) (string, error) {
 	return emoji, nil
 }
 
-func (p *Poller) createRound(ctx context.Context, round db.DiscoveredRound,
+func (p *Poller) createRound(ctx context.Context, round state.DiscoveredRound,
 	emoji string) error {
 
-	created, err := p.db.CreateRound(ctx, db.Round{
+	created, err := p.state.CreateRound(ctx, state.Round{
 		Name:  round.Name,
 		Emoji: emoji,
 	})
@@ -100,9 +100,9 @@ func (p *Poller) createRound(ctx context.Context, round db.DiscoveredRound,
 		return err
 	}
 
-	var puzzles = make([]db.NewPuzzle, len(round.Puzzles))
+	var puzzles = make([]state.NewPuzzle, len(round.Puzzles))
 	for i, puzzle := range round.Puzzles {
-		puzzles[i] = db.NewPuzzle{
+		puzzles[i] = state.NewPuzzle{
 			Name:  puzzle.Name,
 			Round: created,
 			URL:   puzzle.URL,

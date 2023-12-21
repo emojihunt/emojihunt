@@ -3,11 +3,11 @@ package syncer
 import (
 	"fmt"
 
-	"github.com/emojihunt/emojihunt/db"
+	"github.com/emojihunt/emojihunt/state"
 )
 
 // notifyNewPuzzle sends the "New puzzle!" message to #more-eyes.
-func (s *Syncer) notifyNewPuzzle(puzzle *db.Puzzle) error {
+func (s *Syncer) notifyNewPuzzle(puzzle *state.Puzzle) error {
 	msg := fmt.Sprintf("%s **New puzzle!** <#%s>",
 		puzzle.Round.Emoji, puzzle.DiscordChannel)
 	_, err := s.discord.ChannelSend(s.discord.MoreEyesChannel, msg)
@@ -15,7 +15,7 @@ func (s *Syncer) notifyNewPuzzle(puzzle *db.Puzzle) error {
 }
 
 // notifyPuzzleWorking sends the "Work started on puzzle" message to #more-eyes.
-func (s *Syncer) notifyPuzzleWorking(puzzle *db.Puzzle) error {
+func (s *Syncer) notifyPuzzleWorking(puzzle *state.Puzzle) error {
 	msg := fmt.Sprintf("%s Work started on puzzle <#%s>",
 		puzzle.Round.Emoji, puzzle.DiscordChannel)
 	_, err := s.discord.ChannelSend(s.discord.MoreEyesChannel, msg)
@@ -25,7 +25,7 @@ func (s *Syncer) notifyPuzzleWorking(puzzle *db.Puzzle) error {
 // notifyPuzzleFullySolved sends the two "Puzzle solved!" (or "Puzzle
 // backsolved!") messages: one to the puzzle channel, and another to
 // #hanging-out.
-func (s *Syncer) notifyPuzzleFullySolved(puzzle *db.Puzzle, suppressSolveNotif bool) error {
+func (s *Syncer) notifyPuzzleFullySolved(puzzle *state.Puzzle, suppressSolveNotif bool) error {
 	if !suppressSolveNotif {
 		msg := fmt.Sprintf(
 			"Puzzle %s! The answer was `%v`. I'll archive this channel.",

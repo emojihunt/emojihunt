@@ -9,23 +9,24 @@ import (
 
 	"github.com/davecgh/go-spew/spew"
 	"github.com/emojihunt/emojihunt/db"
+	"github.com/emojihunt/emojihunt/state"
 	"golang.org/x/xerrors"
 )
 
-func (d *Poller) SyncPuzzles(ctx context.Context, puzzles []db.DiscoveredPuzzle) error {
-	puzzleMap := make(map[string]db.DiscoveredPuzzle)
+func (p *Poller) SyncPuzzles(ctx context.Context, puzzles []state.DiscoveredPuzzle) error {
+	puzzleMap := make(map[string]state.DiscoveredPuzzle)
 	for _, puzzle := range puzzles {
 		puzzleMap[puzzle.URL] = puzzle
 	}
 
 	// Filter out known puzzles; add remaining puzzles
-	fragments, rounds, err := d.db.ListPuzzleFragmentsAndRounds(ctx)
+	fragments, rounds, err := p.state.ListPuzzleFragmentsAndRounds(ctx)
 	if err != nil {
 		return err
 	}
 
-	var newPuzzles []db.NewPuzzle
-	newRounds := make(map[string][]db.DiscoveredPuzzle)
+	var newPuzzles []db.RawPuzzle
+	newRounds := make(map[string][]state.DiscoveredPuzzle)
 	for _, puzzle := range puzzleMap {
 		if fragments[strings.ToUpper(puzzle.URL)] ||
 			fragments[strings.ToUpper(puzzle.Name)] {
@@ -35,10 +36,10 @@ func (d *Poller) SyncPuzzles(ctx context.Context, puzzles []db.DiscoveredPuzzle)
 		if round, ok := rounds[puzzle.RoundName]; ok {
 			log.Printf("discovery: preparing to add puzzle %q (%s) in round %q",
 				puzzle.Name, puzzle.URL, puzzle.RoundName)
-			newPuzzles = append(newPuzzles, db.NewPuzzle{
-				Name:  puzzle.Name,
-				Round: round,
-				URL:   puzzle.URL,
+			newPuzzles = append(newPuzzles, db.RawPuzzle{
+				Name:      puzzle.Name,
+				Round:     round,
+				PuzzleURL: puzzle.URL,
 			})
 		} else {
 			// puzzle belongs to a new round
@@ -47,14 +48,14 @@ func (d *Poller) SyncPuzzles(ctx context.Context, puzzles []db.DiscoveredPuzzle)
 	}
 
 	if len(newPuzzles) > 0 {
-		err := d.handleNewPuzzles(ctx, newPuzzles)
+		err := p.handleNewPuzzles(ctx, newPuzzles)
 		if err != nil {
 			return err
 		}
 	}
 
 	if len(newRounds) > 0 {
-		err := d.handleNewRounds(ctx, newRounds)
+		err := p.handleNewRounds(ctx, newRounds)
 		if err != nil {
 			return err
 		}
@@ -63,21 +64,25 @@ func (d *Poller) SyncPuzzles(ctx context.Context, puzzles []db.DiscoveredPuzzle)
 	return nil
 }
 
-func (d *Poller) handleNewPuzzles(ctx context.Context, newPuzzles []db.NewPuzzle) error {
+func (p *Poller) handleNewPuzzles(ctx context.Context, newPuzzles []db.RawPuzzle) error {
 	msg := "```\n*** 🧐 NEW PUZZLES ***\n\n"
 	for _, puzzle := range newPuzzles {
-		msg += fmt.Sprintf("%s %s\n%s\n\n", puzzle.Round.Emoji, puzzle.Name, puzzle.URL)
+		round, err := p.state.GetRound(ctx, puzzle.Round)
+		if err != nil {
+			return err
+		}
+		msg += fmt.Sprintf("%s %s\n%s\n\n", round.Emoji, puzzle.Name, puzzle.PuzzleURL)
 	}
 	msg += "Reminder: use `/huntbot kill` to stop the bot.\n```\n"
-	_, err := d.discord.ChannelSend(d.discord.QMChannel, msg)
+	_, err := p.discord.ChannelSend(p.discord.QMChannel, msg)
 	if err != nil {
 		return err
 	}
-	return d.createPuzzles(ctx, newPuzzles)
+	return p.createPuzzles(ctx, newPuzzles)
 }
 
-func (d *Poller) handleNewRounds(ctx context.Context, newRounds map[string][]db.DiscoveredPuzzle) error {
-	previouslyDiscovered, err := d.db.DiscoveredRounds(ctx)
+func (p *Poller) handleNewRounds(ctx context.Context, newRounds map[string][]state.DiscoveredPuzzle) error {
+	previouslyDiscovered, err := p.state.DiscoveredRounds(ctx)
 	if err != nil {
 		return err
 	}
@@ -95,12 +100,12 @@ func (d *Poller) handleNewRounds(ctx context.Context, newRounds map[string][]db.
 		msg += "Reminder: use `/huntbot kill` to stop the bot.\n\n"
 		msg += ">> REACT TO PROPOSE AN EMOJI FOR THIS ROUND <<\n```\n"
 
-		id, err := d.discord.ChannelSend(d.discord.QMChannel, msg)
+		id, err := p.discord.ChannelSend(p.discord.QMChannel, msg)
 		if err != nil {
 			errs = append(errs, err)
 		} else {
 			// TODO
-			previouslyDiscovered[name] = db.DiscoveredRound{
+			previouslyDiscovered[name] = state.DiscoveredRound{
 				MessageID:  id,
 				Name:       name,
 				NotifiedAt: time.Now(),
@@ -114,24 +119,19 @@ func (d *Poller) handleNewRounds(ctx context.Context, newRounds map[string][]db.
 	return nil
 }
 
-func (d *Poller) createPuzzles(ctx context.Context, newPuzzles []db.NewPuzzle) error {
-	created, err := d.db.AddPuzzles(ctx, newPuzzles)
-	if err != nil {
-		return err
-	}
-
-	var errs []error
-	for _, puzzle := range created {
-		if d.db.IsDisabled(ctx) {
-			errs = append(errs, xerrors.Errorf("huntbot is disabled"))
-		} else {
-			if _, err := d.syncer.ForceUpdate(ctx, &puzzle); err != nil {
-				errs = append(errs, err)
-			}
+func (p *Poller) createPuzzles(ctx context.Context, newPuzzles []db.RawPuzzle) error {
+	for _, puzzle := range newPuzzles {
+		if p.state.IsDisabled(ctx) {
+			return xerrors.Errorf("huntbot is disabled")
 		}
-	}
-	if len(errs) > 0 {
-		return xerrors.Errorf("errors sending new puzzle notifications: %#v", spew.Sdump(errs))
+		created, err := p.state.CreatePuzzle(ctx, puzzle)
+		if err != nil {
+			return err
+		}
+		_, err = p.syncer.ForceUpdate(ctx, created)
+		if err != nil {
+			return err
+		}
 	}
 	return nil
 }

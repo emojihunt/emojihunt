@@ -16,7 +16,7 @@ type RoundParams struct {
 }
 
 func (s *Server) ListRounds(c echo.Context) error {
-	rounds, err := s.db.ListRounds(c.Request().Context())
+	rounds, err := s.state.ListRounds(c.Request().Context())
 	if err != nil {
 		return err
 	}
@@ -28,7 +28,7 @@ func (s *Server) GetRound(c echo.Context) error {
 	if err := c.Bind(&id); err != nil {
 		return err
 	}
-	round, err := s.db.GetRound(c.Request().Context(), id.ID)
+	round, err := s.state.GetRound(c.Request().Context(), id.ID)
 	if err != nil {
 		return err
 	}
@@ -40,7 +40,7 @@ func (s *Server) CreateRound(c echo.Context) error {
 	if err := c.Bind(&params); err != nil {
 		return err
 	}
-	round, err := s.db.CreateRound(c.Request().Context(), db.Round(params))
+	round, err := s.state.CreateRound(c.Request().Context(), db.Round(params))
 	if err != nil {
 		return err
 	}
@@ -52,7 +52,7 @@ func (s *Server) UpdateRound(c echo.Context) error {
 	if err := c.Bind(&id); err != nil {
 		return err
 	}
-	round, err := s.db.GetRound(c.Request().Context(), id.ID)
+	round, err := s.state.GetRound(c.Request().Context(), id.ID)
 	if err != nil {
 		return err
 	}
@@ -61,12 +61,12 @@ func (s *Server) UpdateRound(c echo.Context) error {
 	if err := c.Bind(&params); err != nil {
 		return err
 	}
-	err = s.db.UpdateRound(c.Request().Context(), db.Round(params))
+	err = s.state.UpdateRound(c.Request().Context(), db.Round(params))
 	if err != nil {
 		return err
 	}
 
-	updated, err := s.db.GetRound(c.Request().Context(), id.ID)
+	updated, err := s.state.GetRound(c.Request().Context(), id.ID)
 	if err != nil {
 		return err
 	}
@@ -78,11 +78,11 @@ func (s *Server) DeleteRound(c echo.Context) error {
 	if err := c.Bind(&id); err != nil {
 		return err
 	}
-	round, err := s.db.GetRound(c.Request().Context(), id.ID)
+	round, err := s.state.GetRound(c.Request().Context(), id.ID)
 	if err != nil {
 		return err
 	}
-	err = s.db.DeleteRound(c.Request().Context(), id.ID)
+	err = s.state.DeleteRound(c.Request().Context(), id.ID)
 	if err != nil {
 		return err
 	}

@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/bwmarrin/discordgo"
-	"github.com/emojihunt/emojihunt/db"
+	"github.com/emojihunt/emojihunt/state"
 )
 
 const (
@@ -23,7 +23,7 @@ const (
 //
 // This function is called by BasicUpdate. Other packages need to call it when
 // updating non-status fields, such as the voice room.
-func (s *Syncer) DiscordCreateUpdatePin(puzzle *db.Puzzle) error {
+func (s *Syncer) DiscordCreateUpdatePin(puzzle *state.Puzzle) error {
 	log.Printf("syncer: updating pin for %q", puzzle.Name)
 
 	embed := &discordgo.MessageEmbed{
@@ -88,7 +88,7 @@ func (s *Syncer) DiscordCreateUpdatePin(puzzle *db.Puzzle) error {
 // channel. Categories are either "Puzzles" (for open puzzles) or "Solved" (for
 // solved puzzles), and the puzzle name includes a check mark when the puzzle is
 // solved. It needs to be called when the puzzle status changes.
-func (s *Syncer) discordUpdateChannel(puzzle *db.Puzzle) error {
+func (s *Syncer) discordUpdateChannel(puzzle *state.Puzzle) error {
 	log.Printf("syncer: updating discord channel for %q", puzzle.Name)
 
 	// Move puzzle channel to the correct category
@@ -129,7 +129,7 @@ func (s *Syncer) discordUpdateChannel(puzzle *db.Puzzle) error {
 	}
 }
 
-func (s *Syncer) discordGetOrCreateCategory(puzzle *db.Puzzle) (*discordgo.Channel, error) {
+func (s *Syncer) discordGetOrCreateCategory(puzzle *state.Puzzle) (*discordgo.Channel, error) {
 	s.DiscordCategoryMutex.Lock()
 	defer s.DiscordCategoryMutex.Unlock()
 

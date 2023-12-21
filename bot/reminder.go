@@ -6,23 +6,24 @@ import (
 	"time"
 
 	"github.com/bwmarrin/discordgo"
-	"github.com/emojihunt/emojihunt/db"
 	"github.com/emojihunt/emojihunt/discord"
+	"github.com/emojihunt/emojihunt/state"
 	"github.com/emojihunt/emojihunt/util"
 	"github.com/getsentry/sentry-go"
 )
 
 type ReminderBot struct {
-	db      *db.Client
 	discord *discord.Client
+	state   *state.Client
 
 	intervals          []time.Duration
 	warnErrorFrequency time.Duration
 }
 
-func NewReminderBot(main context.Context, db *db.Client, discord *discord.Client) discord.Bot {
+func NewReminderBot(main context.Context, discord *discord.Client, state *state.Client) discord.Bot {
 	b := &ReminderBot{
-		db: db, discord: discord,
+		discord: discord,
+		state:   state,
 		intervals: []time.Duration{
 			-2 * time.Hour,
 			-1 * time.Hour,
@@ -42,9 +43,15 @@ func (b *ReminderBot) Register() (*discordgo.ApplicationCommand, bool) {
 }
 
 func (b *ReminderBot) Handle(ctx context.Context, input *discord.CommandInput) (string, error) {
-	puzzles, err := b.db.ListWithReminder(ctx)
+	results, err := b.state.ListPuzzles(ctx)
 	if err != nil {
 		return "", err
+	}
+	var puzzles = make([]state.Puzzle, 0)
+	for _, puzzle := range results {
+		if puzzle.HasReminder() {
+			puzzles = append(puzzles, puzzle)
+		}
 	}
 
 	if len(puzzles) < 1 {
@@ -82,12 +89,12 @@ func (b *ReminderBot) worker(main context.Context) {
 	// *do* allow panics to bubble up to main()
 
 	for {
-		if since, err := b.db.ReminderTimestamp(ctx); err != nil {
+		if since, err := b.state.ReminderTimestamp(ctx); err != nil {
 			sentry.GetHubFromContext(ctx).CaptureException(err)
 		} else if next, err := b.notify(ctx, since); err != nil {
 			sentry.GetHubFromContext(ctx).CaptureException(err)
 		} else {
-			b.db.SetReminderTimestamp(ctx, *next)
+			b.state.SetReminderTimestamp(ctx, *next)
 		}
 
 		// Wake up on the next(-ish) 1-minute boundary
@@ -106,12 +113,16 @@ func (b *ReminderBot) worker(main context.Context) {
 func (b *ReminderBot) notify(ctx context.Context, since time.Time) (*time.Time, error) {
 	now := time.Now()
 
-	puzzles, err := b.db.ListWithReminder(ctx)
+	puzzles, err := b.state.ListPuzzles(ctx)
 	if err != nil {
 		return nil, err
 	}
 
 	for _, puzzle := range puzzles {
+		if !puzzle.HasReminder() {
+			continue
+		}
+
 		var msg string
 		for _, delay := range b.intervals {
 			target := puzzle.Reminder.Add(delay)

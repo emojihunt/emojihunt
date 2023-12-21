@@ -12,8 +12,8 @@ import (
 
 	"github.com/andybalholm/cascadia"
 	"github.com/davecgh/go-spew/spew"
-	"github.com/emojihunt/emojihunt/db"
 	"github.com/emojihunt/emojihunt/discord"
+	"github.com/emojihunt/emojihunt/state"
 	"github.com/emojihunt/emojihunt/syncer"
 	"github.com/getsentry/sentry-go"
 	"golang.org/x/net/websocket"
@@ -89,10 +89,10 @@ type Poller struct {
 	wsToken string
 
 	main      context.Context
-	db        *db.Client
 	discord   *discord.Client
+	state     *state.Client
 	syncer    *syncer.Syncer
-	roundCh   chan db.DiscoveredRound
+	roundCh   chan state.DiscoveredRound
 	wsLimiter *rate.Limiter
 }
 
@@ -105,7 +105,7 @@ const (
 
 var websocketRate = rate.Every(1 * time.Minute)
 
-func New(main context.Context, dbc *db.Client, discord *discord.Client,
+func New(main context.Context, discord *discord.Client, st *state.Client,
 	syncer *syncer.Syncer, config *DiscoveryConfig) *Poller {
 
 	puzzlesURL, err := url.Parse(config.PuzzlesURL)
@@ -144,10 +144,10 @@ func New(main context.Context, dbc *db.Client, discord *discord.Client,
 		wsToken: config.WebsocketToken,
 
 		main:      main,
-		db:        dbc,
+		state:     st,
 		discord:   discord,
 		syncer:    syncer,
-		roundCh:   make(chan db.DiscoveredRound),
+		roundCh:   make(chan state.DiscoveredRound),
 		wsLimiter: rate.NewLimiter(websocketRate, websocketBurst),
 	}
 }
@@ -173,7 +173,7 @@ reconnect:
 		}
 
 		for {
-			if !p.db.IsDisabled(ctx) {
+			if !p.state.IsDisabled(ctx) {
 				ctx, cancel := context.WithTimeout(ctx, pollTimeout)
 				defer cancel()
 

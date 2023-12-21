@@ -6,21 +6,21 @@ import (
 	"strings"
 
 	"github.com/bwmarrin/discordgo"
-	"github.com/emojihunt/emojihunt/db"
 	"github.com/emojihunt/emojihunt/db/field"
 	"github.com/emojihunt/emojihunt/discord"
+	"github.com/emojihunt/emojihunt/state"
 	"github.com/emojihunt/emojihunt/syncer"
 	"golang.org/x/xerrors"
 )
 
 type PuzzleBot struct {
-	db      *db.Client
 	discord *discord.Client
+	state   *state.Client
 	syncer  *syncer.Syncer
 }
 
-func NewPuzzleBot(db *db.Client, discord *discord.Client, syncer *syncer.Syncer) discord.Bot {
-	return &PuzzleBot{db, discord, syncer}
+func NewPuzzleBot(discord *discord.Client, state *state.Client, syncer *syncer.Syncer) discord.Bot {
+	return &PuzzleBot{discord, state, syncer}
 }
 
 func (b *PuzzleBot) Register() (*discordgo.ApplicationCommand, bool) {
@@ -103,7 +103,7 @@ func (b *PuzzleBot) Register() (*discordgo.ApplicationCommand, bool) {
 }
 
 func (b *PuzzleBot) Handle(ctx context.Context, input *discord.CommandInput) (string, error) {
-	puzzle, err := b.db.LoadByDiscordChannel(ctx, input.IC.ChannelID)
+	puzzle, err := b.state.LoadByDiscordChannel(ctx, input.IC.ChannelID)
 	if err != nil {
 		return "", err
 	} else if puzzle == nil {
@@ -132,7 +132,7 @@ func (b *PuzzleBot) Handle(ctx context.Context, input *discord.CommandInput) (st
 				"Was that right?", newStatus.Pretty(), puzzle.Answer)
 		}
 
-		if puzzle, err = b.db.SetStatusAndAnswer(ctx, puzzle, newStatus, newAnswer); err != nil {
+		if puzzle, err = b.state.SetStatusAndAnswer(ctx, puzzle, newStatus, newAnswer); err != nil {
 			return "", err
 		}
 		if _, err = b.syncer.HandleStatusChange(ctx, puzzle, true); err != nil {
@@ -156,7 +156,7 @@ func (b *PuzzleBot) Handle(ctx context.Context, input *discord.CommandInput) (st
 			newStatus.SolvedNoun(), newAnswer,
 		)
 
-		if puzzle, err = b.db.SetStatusAndAnswer(ctx, puzzle, newStatus, newAnswer); err != nil {
+		if puzzle, err = b.state.SetStatusAndAnswer(ctx, puzzle, newStatus, newAnswer); err != nil {
 			return "", err
 		}
 		if _, err = b.syncer.HandleStatusChange(ctx, puzzle, true); err != nil {
@@ -174,7 +174,7 @@ func (b *PuzzleBot) Handle(ctx context.Context, input *discord.CommandInput) (st
 			reply += fmt.Sprintf(" Previous note was: ```\n%s\n```", puzzle.Note)
 		}
 
-		if puzzle, err = b.db.SetNote(ctx, puzzle, newNote); err != nil {
+		if puzzle, err = b.state.SetNote(ctx, puzzle, newNote); err != nil {
 			return "", err
 		}
 		if err = b.syncer.DiscordCreateUpdatePin(puzzle); err != nil {
@@ -192,7 +192,7 @@ func (b *PuzzleBot) Handle(ctx context.Context, input *discord.CommandInput) (st
 			reply += fmt.Sprintf(" Previous location was: ```\n%s\n```", puzzle.Location)
 		}
 
-		if puzzle, err = b.db.SetLocation(ctx, puzzle, newLocation); err != nil {
+		if puzzle, err = b.state.SetLocation(ctx, puzzle, newLocation); err != nil {
 			return "", err
 		}
 		if err = b.syncer.DiscordCreateUpdatePin(puzzle); err != nil {

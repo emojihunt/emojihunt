@@ -27,7 +27,7 @@ type PuzzleParams struct {
 }
 
 func (s *Server) ListPuzzles(c echo.Context) error {
-	puzzles, err := s.db.ListPuzzles(c.Request().Context())
+	puzzles, err := s.state.ListPuzzles(c.Request().Context())
 	if err != nil {
 		return err
 	}
@@ -39,7 +39,7 @@ func (s *Server) GetPuzzle(c echo.Context) error {
 	if err := c.Bind(&id); err != nil {
 		return err
 	}
-	puzzle, err := s.db.LoadByID(c.Request().Context(), id.ID)
+	puzzle, err := s.state.LoadByID(c.Request().Context(), id.ID)
 	if err != nil {
 		return err
 	}
@@ -51,7 +51,7 @@ func (s *Server) CreatePuzzle(c echo.Context) error {
 	if err := c.Bind(&params); err != nil {
 		return err
 	}
-	puzzle, err := s.db.CreatePuzzle(c.Request().Context(), db.RawPuzzle(params))
+	puzzle, err := s.state.CreatePuzzle(c.Request().Context(), db.RawPuzzle(params))
 	if err != nil {
 		return err
 	}
@@ -63,7 +63,7 @@ func (s *Server) UpdatePuzzle(c echo.Context) error {
 	if err := c.Bind(&id); err != nil {
 		return err
 	}
-	puzzle, err := s.db.GetRawPuzzle(c.Request().Context(), id.ID)
+	puzzle, err := s.state.GetRawPuzzle(c.Request().Context(), id.ID)
 	if err != nil {
 		return err
 	}
@@ -72,12 +72,12 @@ func (s *Server) UpdatePuzzle(c echo.Context) error {
 	if err := c.Bind(&params); err != nil {
 		return err
 	}
-	err = s.db.UpdatePuzzle(c.Request().Context(), db.RawPuzzle(params))
+	err = s.state.UpdatePuzzle(c.Request().Context(), db.RawPuzzle(params))
 	if err != nil {
 		return err
 	}
 
-	updated, err := s.db.LoadByID(c.Request().Context(), id.ID)
+	updated, err := s.state.LoadByID(c.Request().Context(), id.ID)
 	if err != nil {
 		return err
 	}
@@ -89,11 +89,11 @@ func (s *Server) DeletePuzzle(c echo.Context) error {
 	if err := c.Bind(&id); err != nil {
 		return err
 	}
-	puzzle, err := s.db.LoadByID(c.Request().Context(), id.ID)
+	puzzle, err := s.state.LoadByID(c.Request().Context(), id.ID)
 	if err != nil {
 		return err
 	}
-	err = s.db.DeletePuzzle(c.Request().Context(), id.ID)
+	err = s.state.DeletePuzzle(c.Request().Context(), id.ID)
 	if err != nil {
 		return err
 	}

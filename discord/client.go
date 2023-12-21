@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/bwmarrin/discordgo"
-	"github.com/emojihunt/emojihunt/db"
+	"github.com/emojihunt/emojihunt/state"
 	"golang.org/x/xerrors"
 )
 
@@ -37,9 +37,9 @@ var ProdConfig = Config{
 }
 
 type Client struct {
-	main context.Context
-	s    *discordgo.Session
-	db   *db.Client
+	main  context.Context
+	s     *discordgo.Session
+	state *state.Client
 
 	Guild               *discordgo.Guild
 	Application         *discordgo.Application
@@ -59,7 +59,7 @@ type Client struct {
 	voiceRooms                map[string]*discordgo.Channel
 }
 
-func Connect(ctx context.Context, prod bool, db *db.Client) *Client {
+func Connect(ctx context.Context, prod bool, state *state.Client) *Client {
 	// Initialize discordgo client
 	token, ok := os.LookupEnv("DISCORD_TOKEN")
 	if !ok {
@@ -71,7 +71,7 @@ func Connect(ctx context.Context, prod bool, db *db.Client) *Client {
 	}
 	s.Identify.Intents = discordgo.IntentsGuilds |
 		discordgo.IntentsGuildScheduledEvents
-	s.Identify.Presence.Status = computeBotStatus(ctx, db)
+	s.Identify.Presence.Status = computeBotStatus(ctx, state)
 	if err := s.Open(); err != nil {
 		log.Panicf("discordgo.Open: %s", err)
 	}
@@ -139,7 +139,7 @@ func Connect(ctx context.Context, prod bool, db *db.Client) *Client {
 	discord := &Client{
 		main:                      ctx,
 		s:                         s,
-		db:                        db,
+		state:                     state,
 		Guild:                     guild,
 		Application:               app,
 		HangingOutChannel:         hangingOutChannel,
@@ -175,12 +175,12 @@ func (c *Client) Close() error {
 // Update the bot's status (idle/active).
 func (c *Client) UpdateStatus(ctx context.Context) error {
 	return c.s.UpdateStatusComplex(discordgo.UpdateStatusData{
-		Status: computeBotStatus(ctx, c.db),
+		Status: computeBotStatus(ctx, c.state),
 	})
 }
 
-func computeBotStatus(ctx context.Context, db *db.Client) string {
-	if db.IsDisabled(ctx) {
+func computeBotStatus(ctx context.Context, state *state.Client) string {
+	if state.IsDisabled(ctx) {
 		return "dnd"
 	} else {
 		return "online"

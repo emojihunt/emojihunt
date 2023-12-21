@@ -1,4 +1,4 @@
-package db
+package state
 
 import (
 	"context"
@@ -9,17 +9,15 @@ import (
 
 	_ "embed"
 
+	"github.com/emojihunt/emojihunt/db"
 	"golang.org/x/xerrors"
 )
 
-//go:embed schema.sql
-var ddl string
-
 type Client struct {
-	queries *Queries
+	queries *db.Queries
 }
 
-func OpenDatabase(ctx context.Context, path string) *Client {
+func New(ctx context.Context, path string) *Client {
 	_, err := os.Stat(path)
 	shouldInitialize := errors.Is(err, os.ErrNotExist)
 
@@ -31,11 +29,11 @@ func OpenDatabase(ctx context.Context, path string) *Client {
 		panic(xerrors.Errorf("PingContext: %w", err))
 	}
 	if shouldInitialize {
-		if _, err := dbx.ExecContext(ctx, ddl); err != nil {
+		if _, err := dbx.ExecContext(ctx, db.DDL); err != nil {
 			panic(xerrors.Errorf("ExecContext(ctx, ddl): %w", err))
 		}
 	}
-	return &Client{New(dbx)}
+	return &Client{db.New(dbx)}
 }
 
 type ValidationError struct {

@@ -11,10 +11,10 @@ import (
 	_ "net/http/pprof"
 
 	"github.com/emojihunt/emojihunt/bot"
-	"github.com/emojihunt/emojihunt/db"
 	"github.com/emojihunt/emojihunt/discord"
 	"github.com/emojihunt/emojihunt/drive"
 	"github.com/emojihunt/emojihunt/server"
+	"github.com/emojihunt/emojihunt/state"
 	"github.com/emojihunt/emojihunt/syncer"
 	"github.com/getsentry/sentry-go"
 )
@@ -62,30 +62,30 @@ func main() {
 	go func() { <-ch; cancel() }()
 
 	// Open database connection
-	var db = db.OpenDatabase(ctx, "db.sqlite")
+	var state = state.New(ctx, "db.sqlite")
 
 	// Set up clients
-	var discord = discord.Connect(ctx, *prod, db)
+	var discord = discord.Connect(ctx, *prod, state)
 	defer discord.Close()
 	var drive = drive.NewClient(ctx, *prod)
 
 	// Start internal engines
 	log.Printf("starting syncer")
-	var syncer = syncer.New(db, discord, drive)
+	var syncer = syncer.New(discord, drive, state)
 	go syncer.RestorePlaceholderEvent()
 
 	log.Printf("starting web server")
-	server.Start(ctx, *prod, db, discord)
+	server.Start(ctx, *prod, discord, state)
 
 	log.Printf("starting discord bots")
 	discord.RegisterBots(
 		bot.NewEmojiNameBot(),
 		bot.NewHuntYetBot(),
-		bot.NewHuntBot(ctx, db, discord, nil, syncer),
-		bot.NewPuzzleBot(db, discord, syncer),
+		bot.NewHuntBot(ctx, discord, nil, state, syncer),
+		bot.NewPuzzleBot(discord, state, syncer),
 		bot.NewQMBot(discord),
-		bot.NewReminderBot(ctx, db, discord),
-		bot.NewVoiceRoomBot(ctx, db, discord, syncer),
+		bot.NewReminderBot(ctx, discord, state),
+		bot.NewVoiceRoomBot(ctx, discord, state, syncer),
 	)
 
 	log.Print("press ctrl+C to exit")

@@ -5,24 +5,24 @@ import (
 	"fmt"
 
 	"github.com/bwmarrin/discordgo"
-	"github.com/emojihunt/emojihunt/db"
 	"github.com/emojihunt/emojihunt/discord"
 	"github.com/emojihunt/emojihunt/discovery"
+	"github.com/emojihunt/emojihunt/state"
 	"github.com/emojihunt/emojihunt/syncer"
 	"golang.org/x/xerrors"
 )
 
 type HuntBot struct {
 	main      context.Context
-	db        *db.Client
 	discord   *discord.Client
 	discovery *discovery.Poller
+	state     *state.Client
 	syncer    *syncer.Syncer
 }
 
-func NewHuntBot(main context.Context, db *db.Client, discord *discord.Client,
-	discovery *discovery.Poller, syncer *syncer.Syncer) discord.Bot {
-	return &HuntBot{main, db, discord, discovery, syncer}
+func NewHuntBot(main context.Context, discord *discord.Client,
+	discovery *discovery.Poller, state *state.Client, syncer *syncer.Syncer) discord.Bot {
+	return &HuntBot{main, discord, discovery, state, syncer}
 }
 
 func (b *HuntBot) Register() (*discordgo.ApplicationCommand, bool) {
@@ -54,11 +54,11 @@ func (b *HuntBot) Handle(ctx context.Context, input *discord.CommandInput) (stri
 
 	var reply string
 	// TODO: there's a race condition here:
-	var wasKilled = b.db.IsDisabled(ctx)
+	var wasKilled = b.state.IsDisabled(ctx)
 	switch input.Subcommand.Name {
 	case "kill":
 		if !wasKilled {
-			b.db.DisableHuntbot(ctx, true)
+			b.state.DisableHuntbot(ctx, true)
 			reply = "Ok, I've disabled the bot for now.  Enable it with `/huntbot enable`."
 		} else {
 			reply = "The bot was already disabled. Enable it with `/huntbot enable`."
@@ -67,7 +67,7 @@ func (b *HuntBot) Handle(ctx context.Context, input *discord.CommandInput) (stri
 		return reply, nil
 	case "enable":
 		if !wasKilled {
-			b.db.DisableHuntbot(ctx, false)
+			b.state.DisableHuntbot(ctx, false)
 			reply = "Ok, I've enabled the bot for now. Disable it with `/huntbot kill`."
 		} else {
 			reply = "The bot was already enabled. Disable it with `/huntbot kill`."

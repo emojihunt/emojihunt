@@ -9,11 +9,11 @@ import (
 )
 
 func (s *Server) ListHome(c echo.Context) error {
-	puzzles, err := s.db.ListPuzzles(c.Request().Context())
+	puzzles, err := s.state.ListPuzzles(c.Request().Context())
 	if err != nil {
 		return err
 	}
-	rounds, err := s.db.ListRounds(c.Request().Context())
+	rounds, err := s.state.ListRounds(c.Request().Context())
 	if err != nil {
 		return err
 	}

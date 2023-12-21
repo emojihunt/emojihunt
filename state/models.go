@@ -1,4 +1,4 @@
-package db
+package state
 
 import (
 	"crypto/sha256"
@@ -8,7 +8,16 @@ import (
 	"github.com/emojihunt/emojihunt/db/field"
 )
 
-// Fields must match GetPuzzleRow and friends
+// Must match db.Round
+type Round struct {
+	ID      int64  `json:"id"`
+	Name    string `json:"name"`
+	Emoji   string `json:"emoji"`
+	Hue     int64  `json:"hue"`
+	Special bool   `json:"special"`
+}
+
+// Must match db.GetPuzzleRow and db.ListPuzzlesRow
 type Puzzle struct {
 	ID             int64        `json:"id"`
 	Name           string       `json:"name"`
@@ -24,12 +33,6 @@ type Puzzle struct {
 	Archived       bool         `json:"archived"`
 	VoiceRoom      string       `json:"voice_room"`
 	Reminder       time.Time    `json:"reminder"`
-}
-
-type NewPuzzle struct {
-	Name  string
-	Round Round
-	URL   string
 }
 
 type DiscoveredPuzzle struct {
@@ -56,4 +59,8 @@ func (p Puzzle) ArchiveCategory() string {
 	i := binary.BigEndian.Uint64(h.Sum(nil)[:8])
 
 	return categories[i%uint64(len(categories))]
+}
+
+func (p Puzzle) HasReminder() bool {
+	return p.Reminder.Year() < 2000
 }

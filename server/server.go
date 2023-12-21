@@ -11,8 +11,8 @@ import (
 	"os"
 	"strings"
 
-	"github.com/emojihunt/emojihunt/db"
 	"github.com/emojihunt/emojihunt/discord"
+	"github.com/emojihunt/emojihunt/state"
 	"github.com/getsentry/sentry-go"
 	"github.com/gorilla/securecookie"
 	"github.com/labstack/echo/v4"
@@ -21,9 +21,9 @@ import (
 )
 
 type Server struct {
-	db      *db.Client
 	discord *discord.Client
 	echo    *echo.Echo
+	state   *state.Client
 
 	// authentication and OAuth2 settings
 	cookie      *securecookie.SecureCookie
@@ -37,9 +37,9 @@ type IDParams struct {
 
 const sentryContextKey = "emojihunt.sentry"
 
-func Start(ctx context.Context, prod bool, db *db.Client, discord *discord.Client) {
+func Start(ctx context.Context, prod bool, discord *discord.Client, state *state.Client) {
 	var e = echo.New()
-	var s = &Server{db: db, discord: discord, echo: e}
+	var s = &Server{discord: discord, echo: e, state: state}
 
 	if raw, ok := os.LookupEnv("SERVER_SECRET"); !ok {
 		log.Panicf("SERVER_SECRET is required")
@@ -124,7 +124,7 @@ func (s *Server) SentryMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 }
 
 func (s *Server) ErrorHandler(err error, c echo.Context) {
-	var ve db.ValidationError
+	var ve state.ValidationError
 	var se sqlite3.Error
 	if _, ok := err.(*echo.HTTPError); ok {
 	} else if ok := errors.As(err, &ve); ok {

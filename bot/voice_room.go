@@ -8,21 +8,22 @@ import (
 	"github.com/bwmarrin/discordgo"
 	"github.com/emojihunt/emojihunt/db"
 	"github.com/emojihunt/emojihunt/discord"
+	"github.com/emojihunt/emojihunt/state"
 	"github.com/emojihunt/emojihunt/syncer"
 	"golang.org/x/xerrors"
 )
 
 type VoiceRoomBot struct {
 	main    context.Context
-	db      *db.Client
 	discord *discord.Client
+	state   *state.Client
 	syncer  *syncer.Syncer
 }
 
-func NewVoiceRoomBot(main context.Context, db *db.Client, discord *discord.Client,
-	syncer *syncer.Syncer) discord.Bot {
+func NewVoiceRoomBot(main context.Context, discord *discord.Client,
+	state *state.Client, syncer *syncer.Syncer) discord.Bot {
 
-	b := &VoiceRoomBot{main, db, discord, syncer}
+	b := &VoiceRoomBot{main, discord, state, syncer}
 	return b
 }
 
@@ -57,7 +58,7 @@ func (b *VoiceRoomBot) Register() (*discordgo.ApplicationCommand, bool) {
 }
 
 func (b *VoiceRoomBot) Handle(ctx context.Context, input *discord.CommandInput) (string, error) {
-	puzzle, err := b.db.LoadByDiscordChannel(ctx, input.IC.ChannelID)
+	puzzle, err := b.state.LoadByDiscordChannel(ctx, input.IC.ChannelID)
 	if err != nil {
 		return "", err
 	} else if puzzle == nil {
@@ -84,7 +85,7 @@ func (b *VoiceRoomBot) Handle(ctx context.Context, input *discord.CommandInput) 
 	}
 
 	// Sync the change!
-	if puzzle, err = b.db.SetVoiceRoom(ctx, puzzle, channel); err != nil {
+	if puzzle, err = b.state.SetVoiceRoom(ctx, puzzle, channel); err != nil {
 		return "", err
 	}
 	if err = b.syncer.DiscordCreateUpdatePin(puzzle); err != nil {
@@ -115,7 +116,7 @@ func (b *VoiceRoomBot) HandleScheduledEvent(
 	log.Printf("discord: processing scheduled event completion for %q", i.Name)
 
 	b.syncer.VoiceRoomMutex.Lock()
-	puzzles, err := b.db.ListWithVoiceRoom(ctx)
+	puzzles, err := b.state.ListWithVoiceRoom(ctx)
 	b.syncer.VoiceRoomMutex.Unlock()
 	if err != nil {
 		return err
@@ -133,7 +134,7 @@ func (b *VoiceRoomBot) HandleScheduledEvent(
 func (b *VoiceRoomBot) clearVoiceRoom(ctx context.Context, info *db.VoicePuzzle,
 	expectedVoiceRoom string) error {
 
-	puzzle, err := b.db.LoadByID(ctx, info.ID)
+	puzzle, err := b.state.LoadByID(ctx, info.ID)
 	if err != nil {
 		return err
 	}
@@ -145,7 +146,7 @@ func (b *VoiceRoomBot) clearVoiceRoom(ctx context.Context, info *db.VoicePuzzle,
 		return nil
 	}
 
-	puzzle, err = b.db.SetVoiceRoom(ctx, puzzle, nil)
+	puzzle, err = b.state.SetVoiceRoom(ctx, puzzle, nil)
 	if err != nil {
 		return err
 	}

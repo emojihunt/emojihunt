@@ -1,4 +1,4 @@
-package db
+package state
 
 import (
 	"context"
@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"time"
 
+	"github.com/emojihunt/emojihunt/db"
 	"golang.org/x/xerrors"
 )
 
@@ -84,7 +85,7 @@ func (c *Client) writeSetting(ctx context.Context, key string, value interface{}
 	if err != nil {
 		return xerrors.Errorf("setting marshal: %w", err)
 	}
-	err = c.queries.UpdateSetting(ctx, UpdateSettingParams{key, data})
+	err = c.queries.UpdateSetting(ctx, db.UpdateSettingParams{key, data})
 	if err != nil {
 		return xerrors.Errorf("UpdateSetting: %w", err)
 	}

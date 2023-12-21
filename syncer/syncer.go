@@ -9,11 +9,12 @@ import (
 	"github.com/emojihunt/emojihunt/db/field"
 	"github.com/emojihunt/emojihunt/discord"
 	"github.com/emojihunt/emojihunt/drive"
+	"github.com/emojihunt/emojihunt/state"
 	"golang.org/x/xerrors"
 )
 
 type Syncer struct {
-	db      *db.Client
+	state   *state.Client
 	discord *discord.Client
 	drive   *drive.Client
 
@@ -21,11 +22,11 @@ type Syncer struct {
 	DiscordCategoryMutex sync.Mutex
 }
 
-func New(db *db.Client, discord *discord.Client, drive *drive.Client) *Syncer {
+func New(discord *discord.Client, drive *drive.Client, state *state.Client) *Syncer {
 	return &Syncer{
-		db:      db,
 		discord: discord,
 		drive:   drive,
+		state:   db,
 	}
 }
 
@@ -33,7 +34,7 @@ func New(db *db.Client, discord *discord.Client, drive *drive.Client) *Syncer {
 // information in the database. When a puzzle is newly added, it creates the
 // spreadsheet and Discord channel and stores their IDs in the database. When a
 // puzzle's status is updated, it handles that also.
-func (s *Syncer) IdempotentCreateUpdate(ctx context.Context, puzzle *db.Puzzle) (*db.Puzzle, error) {
+func (s *Syncer) IdempotentCreateUpdate(ctx context.Context, puzzle *state.Puzzle) (*state.Puzzle, error) {
 	// 1. Create the spreadsheet, if required
 	if puzzle.SpreadsheetID == "" {
 		spreadsheet, err := s.drive.CreateSheet(ctx, puzzle.Name, puzzle.Round.Name)
@@ -41,7 +42,7 @@ func (s *Syncer) IdempotentCreateUpdate(ctx context.Context, puzzle *db.Puzzle) 
 			return nil, err
 		}
 
-		puzzle, err = s.db.SetSpreadsheetID(ctx, puzzle, spreadsheet)
+		puzzle, err = s.state.SetSpreadsheetID(ctx, puzzle, spreadsheet)
 		if err != nil {
 			return nil, err
 		}
@@ -65,7 +66,7 @@ func (s *Syncer) IdempotentCreateUpdate(ctx context.Context, puzzle *db.Puzzle) 
 			return nil, err
 		}
 
-		puzzle, err = s.db.SetDiscordChannel(ctx, puzzle, channel.ID)
+		puzzle, err = s.state.SetDiscordChannel(ctx, puzzle, channel.ID)
 		if err != nil {
 			return nil, err
 		}
@@ -120,7 +121,7 @@ func (s *Syncer) HandleStatusChange(
 	// Update bot status in Airtable, unless we're in a bot handler and this has
 	// already been done.
 	if !botRequest {
-		puzzle, err = s.db.SetBotFields(ctx, puzzle)
+		puzzle, err = s.state.SetBotFields(ctx, puzzle)
 		if err != nil {
 			return nil, err
 		}
@@ -140,7 +141,7 @@ func (s *Syncer) HandleStatusChange(
 		if puzzle.VoiceRoom != "" {
 			s.VoiceRoomMutex.Lock()
 			defer s.VoiceRoomMutex.Unlock()
-			puzzle, err = s.db.SetVoiceRoom(ctx, puzzle, nil)
+			puzzle, err = s.state.SetVoiceRoom(ctx, puzzle, nil)
 			if err != nil {
 				return nil, err
 			}
@@ -162,7 +163,7 @@ func (s *Syncer) HandleStatusChange(
 // ForceUpdate is a big hammer that will update Discord and Google Drive,
 // including overwriting the channel name, spreadsheet name, etc. It also
 // re-sends any status change notifications.
-func (s *Syncer) ForceUpdate(ctx context.Context, puzzle *db.Puzzle) (*db.Puzzle, error) {
+func (s *Syncer) ForceUpdate(ctx context.Context, puzzle *state.Puzzle) (*state.Puzzle, error) {
 	if puzzle.SpreadsheetID == "-" || puzzle.DiscordChannel == "-" {
 		return nil, xerrors.Errorf("puzzle is a placeholder puzzle, skipping")
 	}
@@ -179,7 +180,7 @@ func (s *Syncer) ForceUpdate(ctx context.Context, puzzle *db.Puzzle) (*db.Puzzle
 	}
 
 	// Update bot status in Airtable
-	puzzle, err = s.db.SetBotFields(ctx, puzzle)
+	puzzle, err = s.state.SetBotFields(ctx, puzzle)
 	if err != nil {
 		return nil, err
 	}
@@ -189,7 +190,7 @@ func (s *Syncer) ForceUpdate(ctx context.Context, puzzle *db.Puzzle) (*db.Puzzle
 // parallelHardUpdate updates the Discord pinned message, the Discord channel
 // name/category, and the Google spreadsheet name. It's called when the puzzle
 // status changes, and as part of ForceUpdate().
-func (s *Syncer) parallelHardUpdate(ctx context.Context, puzzle *db.Puzzle) error {
+func (s *Syncer) parallelHardUpdate(ctx context.Context, puzzle *state.Puzzle) error {
 	var wg sync.WaitGroup
 	var ch = make(chan error, 3)
 	wg.Add(3)
