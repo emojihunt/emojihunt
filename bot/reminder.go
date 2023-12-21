@@ -93,7 +93,7 @@ func (b *ReminderBot) worker(main context.Context) {
 		} else {
 			b.state.Lock()
 			b.state.ReminderTimestamp = *next
-			b.state.CommitAndUnlock()
+			b.state.CommitAndUnlock(ctx)
 		}
 
 		// Wake up on the next(-ish) 1-minute boundary

@@ -173,7 +173,7 @@ func (p *Poller) Poll(ctx context.Context) {
 	ctx = sentry.SetHubOnContext(ctx, hub)
 	// *do* allow panics to bubble up to main()
 
-	p.InitializeRoundCreation()
+	p.InitializeRoundCreation(ctx)
 
 reconnect:
 	for {

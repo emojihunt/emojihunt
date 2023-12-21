@@ -78,7 +78,7 @@ func (d *Poller) handleNewPuzzles(ctx context.Context, newPuzzles []db.NewPuzzle
 
 func (d *Poller) handleNewRounds(ctx context.Context, newRounds map[string][]state.DiscoveredPuzzle) error {
 	d.state.Lock()
-	defer d.state.CommitAndUnlock()
+	defer d.state.CommitAndUnlock(ctx)
 
 	var errs []error
 	for name, puzzles := range newRounds {

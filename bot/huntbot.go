@@ -55,7 +55,7 @@ func (b *HuntBot) Handle(ctx context.Context, input *discord.CommandInput) (stri
 	}
 
 	b.state.Lock()
-	defer b.state.CommitAndUnlock()
+	defer b.state.CommitAndUnlock(ctx)
 
 	var reply string
 	switch input.Subcommand.Name {
@@ -76,7 +76,7 @@ func (b *HuntBot) Handle(ctx context.Context, input *discord.CommandInput) (stri
 		} else {
 			reply = "The bot was already enabled. Disable it with `/huntbot kill`."
 		}
-		go b.discovery.InitializeRoundCreation()
+		go b.discovery.InitializeRoundCreation(ctx)
 		b.discord.UpdateStatus(b.state) // best-effort, ignore errors
 		return reply, nil
 	default:

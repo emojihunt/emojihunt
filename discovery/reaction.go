@@ -81,7 +81,7 @@ func (p *Poller) startOrCancelRoundCreation(name, messageID string) error {
 				p.state.Lock()
 				roundInfo, ok := p.state.DiscoveryNewRounds[name]
 				delete(p.state.DiscoveryNewRounds, name)
-				p.state.CommitAndUnlock()
+				p.state.CommitAndUnlock(ctx)
 
 				var err error
 				if !ok {
@@ -100,9 +100,9 @@ func (p *Poller) startOrCancelRoundCreation(name, messageID string) error {
 	return nil
 }
 
-func (p *Poller) InitializeRoundCreation() {
+func (p *Poller) InitializeRoundCreation(ctx context.Context) {
 	p.state.Lock()
-	defer p.state.CommitAndUnlock()
+	defer p.state.CommitAndUnlock(ctx)
 
 	for name, round := range p.state.DiscoveryNewRounds {
 		err := p.startOrCancelRoundCreation(name, round.MessageID)

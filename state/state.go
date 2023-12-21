@@ -55,14 +55,14 @@ func (s *State) Unlock() {
 	s.mutex.Unlock()
 }
 
-func (s *State) CommitAndUnlock() {
+func (s *State) CommitAndUnlock(ctx context.Context) {
 	defer s.mutex.Unlock()
 
 	data, err := json.MarshalIndent(&s, "", "  ")
 	if err != nil {
 		panic(err)
 	}
-	err = s.db.WriteState(context.TODO(), data)
+	err = s.db.WriteState(ctx, data)
 	if err != nil {
 		panic(err)
 	}
