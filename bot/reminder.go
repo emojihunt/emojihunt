@@ -3,15 +3,14 @@ package bot
 import (
 	"context"
 	"fmt"
-	"log"
 	"time"
 
 	"github.com/bwmarrin/discordgo"
-	"github.com/davecgh/go-spew/spew"
 	"github.com/emojihunt/emojihunt/db"
 	"github.com/emojihunt/emojihunt/discord"
 	"github.com/emojihunt/emojihunt/state"
 	"github.com/emojihunt/emojihunt/util"
+	"github.com/getsentry/sentry-go"
 )
 
 type ReminderBot struct {
@@ -33,7 +32,7 @@ func NewReminderBot(main context.Context, db *db.Client, discord *discord.Client
 		},
 		warnErrorFrequency: 10 * time.Minute,
 	}
-	go b.notificationLoop(main)
+	go b.worker(main)
 	return b
 }
 
@@ -70,51 +69,50 @@ func (b *ReminderBot) Handle(ctx context.Context, input *discord.CommandInput) (
 			suffix,
 		)
 	}
+	if len(msg) > 2000 {
+		msg = msg[:1994] + "\n[...]"
+	}
 	return msg, nil
 }
 
-func (b *ReminderBot) notificationLoop(main context.Context) {
+func (b *ReminderBot) worker(main context.Context) {
 	ctx, cancel := context.WithCancel(main)
-	defer cancel() // *do* allow panics to bubble up to main()
+	defer cancel()
+
+	hub := sentry.CurrentHub().Clone()
+	hub.ConfigureScope(func(scope *sentry.Scope) {
+		scope.SetTag("task", "reminders")
+	})
+	ctx = sentry.SetHubOnContext(ctx, hub)
+	// *do* allow panics to bubble up to main()
 
 	for {
 		b.state.Lock()
 		since := b.state.ReminderTimestamp
 		b.state.Unlock()
 
-		// TODO: separate, time-limited context?
-		next, err := b.processNotifications(ctx, since)
-		b.state.Lock()
-		if err != nil {
-			log.Printf("reminder: error: %s", spew.Sprint(err))
-			// TODO:
-			// if time.Since(b.state.ReminderWarnError).Truncate(time.Minute) >= b.warnErrorFrequency {
-			// 	msg := fmt.Sprintf("```*** ERROR PROCESSING REMINDERS ***\n\n%s\n```", spew.Sprint(err))
-			// 	_, err = b.discord.ChannelSend(b.discord.TechChannel, msg)
-			// 	if err != nil {
-			// 		log.Printf(
-			// 			"reminder: error notifying #%s of error: %s",
-			// 			b.discord.TechChannel.Name,
-			// 			spew.Sprint(err),
-			// 		)
-			// 	}
-			// 	b.state.ReminderWarnError = time.Now()
-			// }
+		if next, err := b.notify(ctx, since); err != nil {
+			sentry.GetHubFromContext(ctx).CaptureException(err)
 		} else {
+			b.state.Lock()
 			b.state.ReminderTimestamp = *next
+			b.state.CommitAndUnlock()
 		}
-		b.state.CommitAndUnlock()
 
-		// Wake up on next 1-minute boundary
+		// Wake up on the next(-ish) 1-minute boundary
 		wait := time.Until(time.Now().Add(time.Minute).Truncate(time.Minute))
 		if wait < 30*time.Second {
 			wait += 1 * time.Minute
 		}
-		time.Sleep(wait)
+		select {
+		case <-ctx.Done():
+			return
+		case <-time.After(wait):
+		}
 	}
 }
 
-func (b *ReminderBot) processNotifications(ctx context.Context, since time.Time) (*time.Time, error) {
+func (b *ReminderBot) notify(ctx context.Context, since time.Time) (*time.Time, error) {
 	now := time.Now()
 
 	puzzles, err := b.db.ListWithReminder(ctx)

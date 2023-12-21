@@ -11,11 +11,9 @@ import (
 )
 
 type State struct {
-	DiscoveryLastWarn  time.Time           `json:"discovery_last_warn"`
 	DiscoveryNewRounds map[string]NewRound `json:"discovery_new_rounds"`
 	HuntbotDisabled    bool                `json:"huntbot_disabled"`
 	ReminderTimestamp  time.Time           `json:"reminder_timestamp"`
-	ReminderWarnError  time.Time           `json:"reminder_warn_error"`
 
 	mutex sync.Mutex `json:"-"`
 	db    *db.Client `json:"-"`

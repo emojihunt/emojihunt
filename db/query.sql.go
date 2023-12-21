@@ -375,7 +375,7 @@ func (q *Queries) ListPuzzles(ctx context.Context) ([]ListPuzzlesRow, error) {
 
 const listPuzzlesWithReminder = `-- name: ListPuzzlesWithReminder :many
 SELECT id, name, discord_channel, reminder FROM puzzles
-WHERE reminder > 0
+WHERE reminder > "2020-01-01"
 ORDER BY reminder
 `
 

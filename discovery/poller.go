@@ -17,6 +17,7 @@ import (
 	"github.com/emojihunt/emojihunt/discord"
 	"github.com/emojihunt/emojihunt/state"
 	"github.com/emojihunt/emojihunt/syncer"
+	"github.com/getsentry/sentry-go"
 	"golang.org/x/net/websocket"
 	"golang.org/x/time/rate"
 )
@@ -165,7 +166,14 @@ func New(main context.Context, db *db.Client, discord *discord.Client,
 
 func (p *Poller) Poll(ctx context.Context) {
 	ctx, cancel := context.WithCancel(ctx)
-	defer cancel() // *do* allow panics to bubble up to main()
+	defer cancel()
+
+	hub := sentry.CurrentHub().Clone()
+	hub.ConfigureScope(func(scope *sentry.Scope) {
+		scope.SetTag("task", "discovery")
+	})
+	ctx = sentry.SetHubOnContext(ctx, hub)
+	// *do* allow panics to bubble up to main()
 
 	p.InitializeRoundCreation()
 
@@ -178,7 +186,14 @@ reconnect:
 
 		for {
 			if !p.state.IsKilled() {
-				p.poll(ctx)
+				ctx, cancel := context.WithTimeout(ctx, pollTimeout)
+				defer cancel()
+
+				if puzzles, err := p.Scrape(ctx); err != nil {
+					hub.CaptureException(err)
+				} else if err := p.SyncPuzzles(ctx, puzzles); err != nil {
+					hub.CaptureException(err)
+				}
 			}
 
 			select {
@@ -194,35 +209,10 @@ reconnect:
 	}
 }
 
-func (p *Poller) poll(ctx context.Context) {
-	ctx, cancel := context.WithTimeout(ctx, pollTimeout)
-	defer cancel()
-
-	puzzles, err := p.Scrape(ctx)
-	if err != nil {
-		p.logAndMaybeWarn("scraping error", err)
-	}
-
-	if err := p.SyncPuzzles(ctx, puzzles); err != nil {
-		p.logAndMaybeWarn("syncing error", err)
-	}
-}
-
-func (p *Poller) logAndMaybeWarn(memo string, err error) {
-	p.state.Lock()
-	defer p.state.CommitAndUnlock()
-
-	log.Printf("discovery: %s: %v", memo, err)
-	// TODO:
-	// if time.Since(p.state.DiscoveryLastWarn) >= warnErrorFrequency {
-	// 	msg := fmt.Sprintf("```*** PUZZLE DISCOVERY %s ***\n\n%s```", strings.ToUpper(memo), spew.Sdump(err))
-	// 	p.discord.ChannelSend(p.discord.TechChannel, msg)
-	// 	p.state.DiscoveryLastWarn = time.Now()
-	// }
-}
-
 func (p *Poller) openWebsocket(ctx context.Context) (chan bool, error) {
-	// TODO: should panics bubble up?
+	// Do *not* allow panics to bubble up to main. We'll fall back to periodic
+	// polling instead.
+	defer sentry.RecoverWithContext(ctx)
 
 	if p.wsURL == nil {
 		return nil, nil
