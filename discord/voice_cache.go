@@ -2,6 +2,7 @@ package discord
 
 import (
 	"context"
+	"log"
 
 	"github.com/bwmarrin/discordgo"
 )
@@ -23,6 +24,7 @@ func (c *Client) handleChannelCreate(ctx context.Context, r *discordgo.ChannelCr
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	c.voiceRooms[r.ID] = r.Channel
+	log.Printf("voice room added: %q", r.Channel.Name)
 	return nil
 }
 func (c *Client) handleChannelUpdate(ctx context.Context, r *discordgo.ChannelUpdate) error {
@@ -32,6 +34,7 @@ func (c *Client) handleChannelUpdate(ctx context.Context, r *discordgo.ChannelUp
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	c.voiceRooms[r.ID] = r.Channel
+	log.Printf("voice room renamed: %q", r.Channel.Name)
 	return nil
 }
 
@@ -42,6 +45,7 @@ func (c *Client) handleChannelDelete(ctx context.Context, r *discordgo.ChannelDe
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	delete(c.voiceRooms, r.ID)
+	log.Printf("voice room removed: %q", r.Channel.Name)
 	return nil
 }
 
