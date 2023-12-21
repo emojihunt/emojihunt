@@ -69,9 +69,6 @@ func (b *ReminderBot) Handle(ctx context.Context, input *discord.CommandInput) (
 			suffix,
 		)
 	}
-	if len(msg) > 2000 {
-		msg = msg[:1994] + "\n[...]"
-	}
 	return msg, nil
 }
 

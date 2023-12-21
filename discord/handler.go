@@ -95,6 +95,9 @@ func (c *Client) handleCommand(
 		reply = fmt.Sprintf("🚨 Error! Please ping in %s for help.",
 			c.QMChannel.Mention())
 	}
+	if len(reply) > 2000 {
+		reply = reply[:1994] + "\n[...]"
+	}
 
 	if command.Async {
 		err := input.EditMessage(reply)
