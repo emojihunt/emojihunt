@@ -276,32 +276,16 @@ func (q *Queries) GetRound(ctx context.Context, id int64) (Round, error) {
 	return i, err
 }
 
-const getState = `-- name: GetState :many
-SELECT id, data from state
-ORDER BY id
+const getSetting = `-- name: GetSetting :one
+SELECT value from settings
+WHERE key = ?
 `
 
-func (q *Queries) GetState(ctx context.Context) ([]State, error) {
-	rows, err := q.db.QueryContext(ctx, getState)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []State
-	for rows.Next() {
-		var i State
-		if err := rows.Scan(&i.ID, &i.Data); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Close(); err != nil {
-		return nil, err
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
+func (q *Queries) GetSetting(ctx context.Context, key interface{}) ([]byte, error) {
+	row := q.db.QueryRowContext(ctx, getSetting, key)
+	var value []byte
+	err := row.Scan(&value)
+	return value, err
 }
 
 const listPuzzles = `-- name: ListPuzzles :many
@@ -613,6 +597,21 @@ func (q *Queries) UpdateRound(ctx context.Context, arg UpdateRoundParams) error 
 	return err
 }
 
+const updateSetting = `-- name: UpdateSetting :exec
+INSERT OR REPLACE INTO settings (key, value)
+VALUES (?, ?)
+`
+
+type UpdateSettingParams struct {
+	Key   interface{} `json:"key"`
+	Value []byte      `json:"value"`
+}
+
+func (q *Queries) UpdateSetting(ctx context.Context, arg UpdateSettingParams) error {
+	_, err := q.db.ExecContext(ctx, updateSetting, arg.Key, arg.Value)
+	return err
+}
+
 const updateSpreadsheetID = `-- name: UpdateSpreadsheetID :exec
 UPDATE puzzles SET spreadsheet_id = ?2
 WHERE id = ?1
@@ -625,16 +624,6 @@ type UpdateSpreadsheetIDParams struct {
 
 func (q *Queries) UpdateSpreadsheetID(ctx context.Context, arg UpdateSpreadsheetIDParams) error {
 	_, err := q.db.ExecContext(ctx, updateSpreadsheetID, arg.ID, arg.SpreadsheetID)
-	return err
-}
-
-const updateState = `-- name: UpdateState :exec
-INSERT OR REPLACE INTO state (id, data)
-VALUES (1, ?)
-`
-
-func (q *Queries) UpdateState(ctx context.Context, data []byte) error {
-	_, err := q.db.ExecContext(ctx, updateState, data)
 	return err
 }
 

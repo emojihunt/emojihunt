@@ -15,7 +15,6 @@ import (
 	"github.com/emojihunt/emojihunt/discord"
 	"github.com/emojihunt/emojihunt/drive"
 	"github.com/emojihunt/emojihunt/server"
-	"github.com/emojihunt/emojihunt/state"
 	"github.com/emojihunt/emojihunt/syncer"
 	"github.com/getsentry/sentry-go"
 )
@@ -65,11 +64,8 @@ func main() {
 	// Open database connection
 	var db = db.OpenDatabase(ctx, "db.sqlite")
 
-	// Load state
-	var state = state.Load(ctx, db)
-
 	// Set up clients
-	var discord = discord.Connect(ctx, *prod, state)
+	var discord = discord.Connect(ctx, *prod, db)
 	defer discord.Close()
 	var drive = drive.NewClient(ctx, *prod)
 
@@ -85,10 +81,10 @@ func main() {
 	discord.RegisterBots(
 		bot.NewEmojiNameBot(),
 		bot.NewHuntYetBot(),
-		bot.NewHuntBot(ctx, db, discord, nil, syncer, state),
+		bot.NewHuntBot(ctx, db, discord, nil, syncer),
 		bot.NewPuzzleBot(db, discord, syncer),
 		bot.NewQMBot(discord),
-		bot.NewReminderBot(ctx, db, discord, state),
+		bot.NewReminderBot(ctx, db, discord),
 		bot.NewVoiceRoomBot(ctx, db, discord, syncer),
 	)
 

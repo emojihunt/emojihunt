@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"strings"
+	"time"
 
 	"github.com/davecgh/go-spew/spew"
 	"github.com/emojihunt/emojihunt/db"
@@ -76,12 +77,14 @@ func (d *Poller) handleNewPuzzles(ctx context.Context, newPuzzles []db.NewPuzzle
 }
 
 func (d *Poller) handleNewRounds(ctx context.Context, newRounds map[string][]db.DiscoveredPuzzle) error {
-	d.state.Lock()
-	defer d.state.CommitAndUnlock(ctx)
+	previouslyDiscovered, err := d.db.DiscoveredRounds(ctx)
+	if err != nil {
+		return err
+	}
 
 	var errs []error
 	for name, puzzles := range newRounds {
-		if _, ok := d.state.DiscoveryNewRounds[name]; ok {
+		if _, ok := previouslyDiscovered[name]; ok {
 			continue
 		}
 
@@ -96,10 +99,12 @@ func (d *Poller) handleNewRounds(ctx context.Context, newRounds map[string][]db.
 		if err != nil {
 			errs = append(errs, err)
 		} else {
-			d.state.DiscoveryNewRounds[name] = db.DiscoveredRound{
-				MessageID: id,
-				Name:      name,
-				Puzzles:   puzzles,
+			// TODO
+			previouslyDiscovered[name] = db.DiscoveredRound{
+				MessageID:  id,
+				Name:       name,
+				NotifiedAt: time.Now(),
+				Puzzles:    puzzles,
 			}
 		}
 	}
@@ -117,7 +122,7 @@ func (d *Poller) createPuzzles(ctx context.Context, newPuzzles []db.NewPuzzle) e
 
 	var errs []error
 	for _, puzzle := range created {
-		if d.state.IsKilled() {
+		if d.db.IsDisabled(ctx) {
 			errs = append(errs, xerrors.Errorf("huntbot is disabled"))
 		} else {
 			if _, err := d.syncer.ForceUpdate(ctx, &puzzle); err != nil {
@@ -129,34 +134,4 @@ func (d *Poller) createPuzzles(ctx context.Context, newPuzzles []db.NewPuzzle) e
 		return xerrors.Errorf("errors sending new puzzle notifications: %#v", spew.Sdump(errs))
 	}
 	return nil
-}
-
-func (d *Poller) createRound(ctx context.Context, name string, roundInfo db.DiscoveredRound) error {
-	emoji, err := d.getTopReaction(roundInfo.MessageID)
-	if err != nil {
-		return err
-	} else if emoji == "" {
-		return xerrors.Errorf("no reaction for message")
-	}
-
-	if d.state.IsKilled() {
-		return xerrors.Errorf("huntbot is disabled")
-	}
-	round, err := d.db.CreateRound(ctx, db.Round{
-		Name:  roundInfo.Name,
-		Emoji: emoji,
-	})
-	if err != nil {
-		return err
-	}
-
-	var puzzles = make([]db.NewPuzzle, len(roundInfo.Puzzles))
-	for i, puzzle := range roundInfo.Puzzles {
-		puzzles[i] = db.NewPuzzle{
-			Name:  puzzle.Name,
-			Round: round,
-			URL:   puzzle.URL,
-		}
-	}
-	return d.createPuzzles(ctx, puzzles)
 }

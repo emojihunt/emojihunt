@@ -205,11 +205,6 @@ func (b *PuzzleBot) Handle(ctx context.Context, input *discord.CommandInput) (st
 	return reply, nil
 }
 
-func (b *PuzzleBot) HandleReaction(context.Context,
-	*discordgo.MessageReaction) error {
-	return nil
-}
-
 func (b *PuzzleBot) HandleScheduledEvent(context.Context,
 	*discordgo.GuildScheduledEventUpdate) error {
 	return nil

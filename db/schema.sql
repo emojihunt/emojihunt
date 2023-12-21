@@ -33,7 +33,7 @@ CREATE TABLE rounds (
     CONSTRAINT uc_emoji     UNIQUE(emoji)
 );
 
-CREATE TABLE state (
-    id                      INTEGER PRIMARY KEY,
-    data                    BLOB
+CREATE TABLE settings (
+    key             STRING PRIMARY KEY,
+    value           BLOB
 );

@@ -39,9 +39,10 @@ type DiscoveredPuzzle struct {
 }
 
 type DiscoveredRound struct {
-	MessageID string
-	Name      string
-	Puzzles   []DiscoveredPuzzle
+	MessageID  string
+	Name       string
+	NotifiedAt time.Time
+	Puzzles    []DiscoveredPuzzle
 }
 
 var categories = []string{"A", "B", "C"}

@@ -8,14 +8,12 @@ import (
 	"log"
 	"net/http"
 	"net/url"
-	"sync"
 	"time"
 
 	"github.com/andybalholm/cascadia"
 	"github.com/davecgh/go-spew/spew"
 	"github.com/emojihunt/emojihunt/db"
 	"github.com/emojihunt/emojihunt/discord"
-	"github.com/emojihunt/emojihunt/state"
 	"github.com/emojihunt/emojihunt/syncer"
 	"github.com/getsentry/sentry-go"
 	"golang.org/x/net/websocket"
@@ -94,13 +92,8 @@ type Poller struct {
 	db        *db.Client
 	discord   *discord.Client
 	syncer    *syncer.Syncer
-	state     *state.State
+	roundCh   chan db.DiscoveredRound
 	wsLimiter *rate.Limiter
-
-	// Mutex mutex protects roundCreation and must be held when updating it (and
-	// while creating new rounds).
-	mutex         *sync.Mutex
-	roundCreation map[string]*context.CancelFunc
 }
 
 const (
@@ -112,8 +105,8 @@ const (
 
 var websocketRate = rate.Every(1 * time.Minute)
 
-func New(main context.Context, db *db.Client, discord *discord.Client,
-	syncer *syncer.Syncer, config *DiscoveryConfig, state *state.State) *Poller {
+func New(main context.Context, dbc *db.Client, discord *discord.Client,
+	syncer *syncer.Syncer, config *DiscoveryConfig) *Poller {
 
 	puzzlesURL, err := url.Parse(config.PuzzlesURL)
 	if err != nil {
@@ -151,14 +144,11 @@ func New(main context.Context, db *db.Client, discord *discord.Client,
 		wsToken: config.WebsocketToken,
 
 		main:      main,
-		db:        db,
+		db:        dbc,
 		discord:   discord,
 		syncer:    syncer,
-		state:     state,
+		roundCh:   make(chan db.DiscoveredRound),
 		wsLimiter: rate.NewLimiter(websocketRate, websocketBurst),
-
-		mutex:         &sync.Mutex{},
-		roundCreation: make(map[string]*context.CancelFunc),
 	}
 }
 
@@ -173,7 +163,7 @@ func (p *Poller) Poll(ctx context.Context) {
 	ctx = sentry.SetHubOnContext(ctx, hub)
 	// *do* allow panics to bubble up to main()
 
-	p.InitializeRoundCreation(ctx)
+	go p.RoundCreationWorker(ctx)
 
 reconnect:
 	for {
@@ -183,7 +173,7 @@ reconnect:
 		}
 
 		for {
-			if !p.state.IsKilled() {
+			if !p.db.IsDisabled(ctx) {
 				ctx, cancel := context.WithTimeout(ctx, pollTimeout)
 				defer cancel()
 

@@ -11,7 +11,6 @@ import (
 type Bot interface {
 	Register() (cmd *discordgo.ApplicationCommand, async bool)
 	Handle(context.Context, *CommandInput) (string, error)
-	HandleReaction(context.Context, *discordgo.MessageReaction) error
 	HandleScheduledEvent(context.Context, *discordgo.GuildScheduledEventUpdate) error
 }
 

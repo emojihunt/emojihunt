@@ -35,7 +35,7 @@ type Round struct {
 	Special bool   `json:"special"`
 }
 
-type State struct {
-	ID   int64  `json:"id"`
-	Data []byte `json:"data"`
+type Setting struct {
+	Key   interface{} `json:"key"`
+	Value []byte      `json:"value"`
 }

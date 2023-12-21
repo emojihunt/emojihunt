@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/bwmarrin/discordgo"
-	"github.com/emojihunt/emojihunt/state"
+	"github.com/emojihunt/emojihunt/db"
 	"golang.org/x/xerrors"
 )
 
@@ -39,6 +39,7 @@ var ProdConfig = Config{
 type Client struct {
 	main context.Context
 	s    *discordgo.Session
+	db   *db.Client
 
 	Guild               *discordgo.Guild
 	Application         *discordgo.Application
@@ -58,8 +59,7 @@ type Client struct {
 	voiceRooms                map[string]*discordgo.Channel
 }
 
-func Connect(ctx context.Context, prod bool, state *state.State) *Client {
-
+func Connect(ctx context.Context, prod bool, db *db.Client) *Client {
 	// Initialize discordgo client
 	token, ok := os.LookupEnv("DISCORD_TOKEN")
 	if !ok {
@@ -70,11 +70,8 @@ func Connect(ctx context.Context, prod bool, state *state.State) *Client {
 		panic(err)
 	}
 	s.Identify.Intents = discordgo.IntentsGuilds |
-		discordgo.IntentsGuildMessageReactions |
 		discordgo.IntentsGuildScheduledEvents
-	state.Lock()
-	s.Identify.Presence.Status = computeBotStatus(state)
-	state.Unlock()
+	s.Identify.Presence.Status = computeBotStatus(ctx, db)
 	if err := s.Open(); err != nil {
 		log.Panicf("discordgo.Open: %s", err)
 	}
@@ -142,6 +139,7 @@ func Connect(ctx context.Context, prod bool, state *state.State) *Client {
 	discord := &Client{
 		main:                      ctx,
 		s:                         s,
+		db:                        db,
 		Guild:                     guild,
 		Application:               app,
 		HangingOutChannel:         hangingOutChannel,
@@ -158,21 +156,6 @@ func Connect(ctx context.Context, prod bool, state *state.State) *Client {
 	// Register handlers. Remember to register the necessary intents above!
 	s.AddHandler(WrapHandler(ctx, "bot.unknown", discord.handleCommand))
 	s.AddHandler(WrapHandler(ctx, "bot.unknown", discord.handleScheduledEvent))
-	s.AddHandler(WrapHandler(ctx, "reaction",
-		func(ctx context.Context, r *discordgo.MessageReactionAdd) error {
-			return discord.handleReaction(ctx, r.MessageReaction)
-		}),
-	)
-	s.AddHandler(WrapHandler(ctx, "reaction",
-		func(ctx context.Context, r *discordgo.MessageReactionRemove) error {
-			return discord.handleReaction(ctx, r.MessageReaction)
-		}),
-	)
-	s.AddHandler(WrapHandler(ctx, "reaction",
-		func(ctx context.Context, r *discordgo.MessageReactionRemoveAll) error {
-			return discord.handleReaction(ctx, r.MessageReaction)
-		}),
-	)
 	s.AddHandler(WrapHandler(ctx, "rate_limit", discord.handleRateLimit))
 
 	s.AddHandler(WrapHandler(ctx, "channel", discord.handleChannelCreate))
@@ -189,16 +172,15 @@ func (c *Client) Close() error {
 	return c.s.Close()
 }
 
-// Update the bot's status (idle/active). The caller must hold the state lock.
-func (c *Client) UpdateStatus(state *state.State) error {
+// Update the bot's status (idle/active).
+func (c *Client) UpdateStatus(ctx context.Context) error {
 	return c.s.UpdateStatusComplex(discordgo.UpdateStatusData{
-		Status: computeBotStatus(state),
+		Status: computeBotStatus(ctx, c.db),
 	})
 }
 
-// Caller must hold the state lock
-func computeBotStatus(state *state.State) string {
-	if state.HuntbotDisabled {
+func computeBotStatus(ctx context.Context, db *db.Client) string {
+	if db.IsDisabled(ctx) {
 		return "dnd"
 	} else {
 		return "online"

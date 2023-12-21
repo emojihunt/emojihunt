@@ -49,11 +49,6 @@ func (b *EmojiNameBot) Handle(ctx context.Context, input *discord.CommandInput) 
 	), nil
 }
 
-func (b *EmojiNameBot) HandleReaction(context.Context,
-	*discordgo.MessageReaction) error {
-	return nil
-}
-
 func (b *EmojiNameBot) HandleScheduledEvent(context.Context,
 	*discordgo.GuildScheduledEventUpdate) error {
 	return nil

@@ -110,10 +110,10 @@ SELECT * FROM rounds
 ORDER BY id;
 
 
--- name: GetState :many
-SELECT * from state
-ORDER BY id;
+-- name: GetSetting :one
+SELECT value from settings
+WHERE key = ?;
 
--- name: UpdateState :exec
-INSERT OR REPLACE INTO state (id, data)
-VALUES (1, ?);
+-- name: UpdateSetting :exec
+INSERT OR REPLACE INTO settings (key, value)
+VALUES (?, ?);

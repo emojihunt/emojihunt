@@ -132,24 +132,6 @@ func (c *Client) handleScheduledEvent(
 	return nil
 }
 
-// Reaction Handling
-
-func (c *Client) handleReaction(
-	ctx context.Context, e *discordgo.MessageReaction,
-) error {
-	hub := sentry.GetHubFromContext(ctx)
-	for _, bot := range c.botsByCommand {
-		hub.ConfigureScope(func(scope *sentry.Scope) {
-			scope.SetTag("task", fmt.Sprintf("bot.%s.reaction", bot.Name))
-		})
-		err := bot.HandleReaction(ctx, e)
-		if err != nil {
-			return xerrors.Errorf("%s.HandleReaction: %w", bot.Name, err)
-		}
-	}
-	return nil
-}
-
 // Rate Limit Tracking
 
 func (c *Client) CheckRateLimit(url string) *time.Time {

@@ -8,7 +8,6 @@ import (
 	"github.com/bwmarrin/discordgo"
 	"github.com/emojihunt/emojihunt/db"
 	"github.com/emojihunt/emojihunt/discord"
-	"github.com/emojihunt/emojihunt/state"
 	"github.com/emojihunt/emojihunt/util"
 	"github.com/getsentry/sentry-go"
 )
@@ -16,15 +15,14 @@ import (
 type ReminderBot struct {
 	db      *db.Client
 	discord *discord.Client
-	state   *state.State
 
 	intervals          []time.Duration
 	warnErrorFrequency time.Duration
 }
 
-func NewReminderBot(main context.Context, db *db.Client, discord *discord.Client, state *state.State) discord.Bot {
+func NewReminderBot(main context.Context, db *db.Client, discord *discord.Client) discord.Bot {
 	b := &ReminderBot{
-		db: db, discord: discord, state: state,
+		db: db, discord: discord,
 		intervals: []time.Duration{
 			-2 * time.Hour,
 			-1 * time.Hour,
@@ -84,16 +82,12 @@ func (b *ReminderBot) worker(main context.Context) {
 	// *do* allow panics to bubble up to main()
 
 	for {
-		b.state.Lock()
-		since := b.state.ReminderTimestamp
-		b.state.Unlock()
-
-		if next, err := b.notify(ctx, since); err != nil {
+		if since, err := b.db.ReminderTimestamp(ctx); err != nil {
+			sentry.GetHubFromContext(ctx).CaptureException(err)
+		} else if next, err := b.notify(ctx, since); err != nil {
 			sentry.GetHubFromContext(ctx).CaptureException(err)
 		} else {
-			b.state.Lock()
-			b.state.ReminderTimestamp = *next
-			b.state.CommitAndUnlock(ctx)
+			b.db.SetReminderTimestamp(ctx, *next)
 		}
 
 		// Wake up on the next(-ish) 1-minute boundary
@@ -147,11 +141,6 @@ func (b *ReminderBot) notify(ctx context.Context, since time.Time) (*time.Time, 
 	}
 
 	return &now, nil
-}
-
-func (b *ReminderBot) HandleReaction(context.Context,
-	*discordgo.MessageReaction) error {
-	return nil
 }
 
 func (b *ReminderBot) HandleScheduledEvent(context.Context,
