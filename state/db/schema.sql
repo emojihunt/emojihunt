@@ -16,7 +16,8 @@ CREATE TABLE puzzles (
     voice_room      TEXT    NOT NULL,
     reminder        DATETIME    NOT NULL,
 
-    FOREIGN KEY (round) REFERENCES rounds(id)
+    FOREIGN KEY (round) REFERENCES rounds(id),
+    CONSTRAINT uc_name_rd   UNIQUE(name, round)
 );
 
 CREATE TABLE rounds (

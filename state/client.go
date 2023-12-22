@@ -16,7 +16,7 @@ import (
 
 type Client struct {
 	queries *db.Queries
-	mutex   sync.Mutex
+	mutex   sync.Mutex // used to serialize writes
 }
 
 func New(ctx context.Context, path string) *Client {

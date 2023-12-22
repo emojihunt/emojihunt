@@ -48,7 +48,7 @@ func (c *Client) GetPuzzleByChannel(ctx context.Context, channel string) (Puzzle
 func (c *Client) ListPuzzles(ctx context.Context) ([]Puzzle, error) {
 	results, err := c.queries.ListPuzzles(ctx)
 	if err != nil {
-		return nil, xerrors.Errorf("ListPuzzlesFull: %w", err)
+		return nil, xerrors.Errorf("ListPuzzles: %w", err)
 	}
 	var puzzles = make([]Puzzle, len(results))
 	for i, result := range results {
