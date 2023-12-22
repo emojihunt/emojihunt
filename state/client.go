@@ -15,6 +15,10 @@ import (
 )
 
 type Client struct {
+	DiscoveryChange chan bool
+	PuzzleChange    chan [2]*Puzzle
+	RoundChange     chan [2]*Round
+
 	queries *db.Queries
 	mutex   sync.Mutex // used to serialize writes
 }
@@ -35,7 +39,12 @@ func New(ctx context.Context, path string) *Client {
 			panic(xerrors.Errorf("ExecContext(ctx, ddl): %w", err))
 		}
 	}
-	return &Client{db.New(dbx), sync.Mutex{}}
+	return &Client{
+		DiscoveryChange: make(chan bool, 8),
+		PuzzleChange:    make(chan [2]*Puzzle, 32),
+		RoundChange:     make(chan [2]*Round, 8),
+		queries:         db.New(dbx),
+	}
 }
 
 type ValidationError struct {

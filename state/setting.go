@@ -31,11 +31,14 @@ func (c *Client) EnableDiscovery(ctx context.Context, enabled bool) bool {
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
 
-	var previous = c.IsEnabled(ctx)
+	if c.IsEnabled(ctx) == enabled {
+		return false
+	}
 	if err := c.writeSetting(ctx, enabledSetting, enabled); err != nil {
 		panic(err)
 	}
-	return previous != enabled
+	c.DiscoveryChange <- enabled
+	return true
 }
 
 func (c *Client) ReminderTimestamp(ctx context.Context) (time.Time, error) {

@@ -72,8 +72,7 @@ func main() {
 	// Start internal engines
 	var discovery = false
 	var sync = sync.New(discord, discovery, drive, state)
-	go sync.RestorePlaceholderEvent()
-	sync.TriggerDiscoveryEnabled(ctx)
+	go sync.Watch(ctx)
 
 	log.Printf("starting web server")
 	server.Start(ctx, *prod, discord, state)

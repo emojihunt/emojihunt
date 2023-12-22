@@ -9,21 +9,49 @@ import (
 	"github.com/emojihunt/emojihunt/drive"
 	"github.com/emojihunt/emojihunt/state"
 	"github.com/emojihunt/emojihunt/state/status"
+	"github.com/getsentry/sentry-go"
 )
 
 type Client struct {
-	state     *state.Client
 	discord   *discord.Client
 	discovery bool
 	drive     *drive.Client
+	state     *state.Client
 }
 
 func New(discord *discord.Client, discovery bool, drive *drive.Client, state *state.Client) *Client {
-	return &Client{
-		discord:   discord,
-		discovery: discovery,
-		drive:     drive,
-		state:     state,
+	return &Client{discord, discovery, drive, state}
+}
+
+func (c *Client) Watch(ctx context.Context) {
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+
+	hub := sentry.CurrentHub().Clone()
+	hub.ConfigureScope(func(scope *sentry.Scope) {
+		scope.SetTag("task", "sync")
+	})
+	ctx = sentry.SetHubOnContext(ctx, hub)
+	// *do* allow panics to bubble up to main()
+
+	// The bot's status is reset when we connect to Discord
+	c.TriggerDiscoveryEnabled(ctx)
+	c.RestorePlaceholderEvent()
+
+	for {
+		var err error
+		select {
+		case <-c.state.DiscoveryChange:
+			err = c.TriggerDiscoveryEnabled(ctx)
+		case delta := <-c.state.PuzzleChange:
+			err = c.TriggerPuzzle(ctx, delta[0], *delta[1])
+		case <-c.state.RoundChange: // TODO
+		case <-ctx.Done():
+			return
+		}
+		if err != nil {
+			sentry.GetHubFromContext(ctx).CaptureException(err)
+		}
 	}
 }
 

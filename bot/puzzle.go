@@ -12,7 +12,6 @@ import (
 	"github.com/emojihunt/emojihunt/discord"
 	"github.com/emojihunt/emojihunt/state"
 	"github.com/emojihunt/emojihunt/state/status"
-	"github.com/emojihunt/emojihunt/sync"
 	"golang.org/x/xerrors"
 )
 
@@ -265,8 +264,7 @@ func (b *PuzzleBot) Handle(ctx context.Context, input *discord.CommandInput) (st
 func (b *PuzzleBot) HandleScheduledEvent(ctx context.Context,
 	i *discordgo.GuildScheduledEventUpdate) error {
 
-	if i.Description != sync.VoiceRoomEventDescription ||
-		i.Status != discordgo.GuildScheduledEventStatusCompleted {
+	if i.Status != discordgo.GuildScheduledEventStatusCompleted {
 		return nil // ignore event
 	}
 
