@@ -13,7 +13,7 @@ const (
 	roundCategoryPrefix  = "Round: "
 	solvedCategoryPrefix = "Solved "
 	pinnedStatusHeader   = "Puzzle Information"
-	locationDefaultMsg   = "Use `/voice start` to assign a voice room"
+	locationDefaultMsg   = "Use `/puzzle voice` to assign a voice room"
 	embedColor           = 0x7C39ED
 )
 

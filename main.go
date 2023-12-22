@@ -85,7 +85,6 @@ func main() {
 		bot.NewPuzzleBot(discord, state, syncer),
 		bot.NewQMBot(discord),
 		bot.NewReminderBot(ctx, discord, state),
-		bot.NewVoiceRoomBot(ctx, discord, state, syncer),
 	)
 
 	log.Print("press ctrl+C to exit")

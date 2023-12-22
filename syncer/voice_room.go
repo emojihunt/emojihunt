@@ -13,7 +13,7 @@ import (
 )
 
 const (
-	VoiceRoomEventDescription = "🤖 Event managed by Huntbot. Use `/voice` to modify!"
+	VoiceRoomEventDescription = "🤖 Event managed by Huntbot"
 	VoiceRoomPlaceholderTitle = "🫥 Placeholder Event"
 
 	eventDelay = 7 * 24 * time.Hour

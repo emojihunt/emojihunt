@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"log"
 	"strings"
 
 	"github.com/bwmarrin/discordgo"
@@ -30,6 +31,34 @@ func (b *PuzzleBot) Register() (*discordgo.ApplicationCommand, bool) {
 		Name:        "puzzle",
 		Description: "Use in a puzzle channel to update puzzle information 🧩",
 		Options: []*discordgo.ApplicationCommandOption{
+			{
+				Name:        "voice",
+				Type:        discordgo.ApplicationCommandOptionSubCommandGroup,
+				Description: "Assign this puzzle to a voice room 📻",
+				Options: []*discordgo.ApplicationCommandOption{
+					{
+						Name:        "start",
+						Description: "Assign this puzzle to a voice room 🔔",
+						Type:        discordgo.ApplicationCommandOptionSubCommand,
+						Options: []*discordgo.ApplicationCommandOption{
+							{
+								Name:        "in",
+								Description: "Where are we going? 🗺️",
+								Required:    true,
+								Type:        discordgo.ApplicationCommandOptionChannel,
+								ChannelTypes: []discordgo.ChannelType{
+									discordgo.ChannelTypeGuildVoice,
+								},
+							},
+						},
+					},
+					{
+						Name:        "stop",
+						Description: "Remove this puzzle from its voice room 🔕",
+						Type:        discordgo.ApplicationCommandOptionSubCommand,
+					},
+				},
+			},
 			{
 				Name:        "progress",
 				Description: "Use in a puzzle channel when you start or stop work 🚧",
@@ -80,7 +109,7 @@ func (b *PuzzleBot) Register() (*discordgo.ApplicationCommand, bool) {
 				Type:        discordgo.ApplicationCommandOptionSubCommand,
 				Options: []*discordgo.ApplicationCommandOption{
 					{
-						Name:        "is",
+						Name:        "set",
 						Description: "What's the puzzle about?",
 						Required:    false,
 						Type:        discordgo.ApplicationCommandOptionString,
@@ -93,7 +122,7 @@ func (b *PuzzleBot) Register() (*discordgo.ApplicationCommand, bool) {
 				Type:        discordgo.ApplicationCommandOptionSubCommand,
 				Options: []*discordgo.ApplicationCommandOption{
 					{
-						Name:        "is",
+						Name:        "set",
 						Description: "What should the location be set to?",
 						Required:    false,
 						Type:        discordgo.ApplicationCommandOptionString,
@@ -116,6 +145,33 @@ func (b *PuzzleBot) Handle(ctx context.Context, input *discord.CommandInput) (st
 	var newStatus status.Status
 	var newAnswer string
 	switch input.Subcommand.Name {
+	case "voice":
+		var channel *discordgo.Channel
+		channelOpt, ok := b.discord.OptionByName(input.Subcommand.Options, "in")
+		if ok {
+			channel = b.discord.ChannelValue(channelOpt)
+			reply = fmt.Sprintf("Set the room for puzzle %q to %s", puzzle.Name, channel.Mention())
+		} else {
+			reply = fmt.Sprintf("Removed the room for puzzle %q", puzzle.Name)
+		}
+
+		b.syncer.VoiceRoomMutex.Lock()
+		defer b.syncer.VoiceRoomMutex.Unlock()
+		puzzle, err = b.state.UpdatePuzzle(ctx, puzzle.ID,
+			func(puzzle *state.RawPuzzle) error {
+				puzzle.VoiceRoom = channel.ID
+				return nil
+			},
+		)
+		if err != nil {
+			return "", err
+		}
+		if err = b.syncer.DiscordCreateUpdatePin(puzzle); err != nil {
+			return "", err
+		}
+		if err = b.syncer.SyncVoiceRooms(ctx); err != nil {
+			return "", err
+		}
 	case "progress":
 		if statusOpt, ok := b.discord.OptionByName(input.Subcommand.Options, "to"); !ok {
 			return "", xerrors.Errorf("missing option: to")
@@ -230,7 +286,25 @@ func (b *PuzzleBot) Handle(ctx context.Context, input *discord.CommandInput) (st
 	return reply, nil
 }
 
-func (b *PuzzleBot) HandleScheduledEvent(context.Context,
-	*discordgo.GuildScheduledEventUpdate) error {
-	return nil
+func (b *PuzzleBot) HandleScheduledEvent(ctx context.Context,
+	i *discordgo.GuildScheduledEventUpdate) error {
+
+	if i.Description != syncer.VoiceRoomEventDescription ||
+		i.Status != discordgo.GuildScheduledEventStatusCompleted {
+		return nil // ignore event
+	}
+
+	// We don't have to worry about double-processing puzzles because, even
+	// though Discord *does* deliver events caused by the bot's own actions,
+	// the bot uses *delete* to clean up events, while the Discord UI uses
+	// an *update* to the "Completed" status. We only listen for the update
+	// event, so we only see the human-triggered actions. (The bot does use
+	// updates to update the name and to start the event initally, but
+	// those events are filtered out by the condition above.)
+	log.Printf("discord: processing scheduled event completion for %q", i.Name)
+
+	b.syncer.VoiceRoomMutex.Lock()
+	defer b.syncer.VoiceRoomMutex.Unlock()
+
+	return b.state.ClearPuzzleVoiceRoom(ctx, i.ChannelID)
 }
