@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/davecgh/go-spew/spew"
-	"github.com/emojihunt/emojihunt/db"
 	"github.com/emojihunt/emojihunt/state"
 	"golang.org/x/xerrors"
 )
@@ -34,7 +33,7 @@ func (p *Poller) SyncPuzzles(ctx context.Context, puzzles []state.DiscoveredPuzz
 		roundsByName[strings.ToUpper(round.Name)] = round
 	}
 
-	var newPuzzles []db.RawPuzzle
+	var newPuzzles []state.RawPuzzle
 	newRounds := make(map[string][]state.DiscoveredPuzzle)
 	for _, puzzle := range puzzles {
 		if fragments[strings.ToUpper(puzzle.URL)] ||
@@ -45,7 +44,7 @@ func (p *Poller) SyncPuzzles(ctx context.Context, puzzles []state.DiscoveredPuzz
 		if round, ok := roundsByName[strings.ToUpper(puzzle.RoundName)]; ok {
 			log.Printf("discovery: preparing to add puzzle %q (%s) in round %q",
 				puzzle.Name, puzzle.URL, puzzle.RoundName)
-			newPuzzles = append(newPuzzles, db.RawPuzzle{
+			newPuzzles = append(newPuzzles, state.RawPuzzle{
 				Name:      puzzle.Name,
 				Round:     round.ID,
 				PuzzleURL: puzzle.URL,
@@ -73,7 +72,7 @@ func (p *Poller) SyncPuzzles(ctx context.Context, puzzles []state.DiscoveredPuzz
 	return nil
 }
 
-func (p *Poller) handleNewPuzzles(ctx context.Context, newPuzzles []db.RawPuzzle) error {
+func (p *Poller) handleNewPuzzles(ctx context.Context, newPuzzles []state.RawPuzzle) error {
 	msg := "```\n*** 🧐 NEW PUZZLES ***\n\n"
 	for _, puzzle := range newPuzzles {
 		round, err := p.state.GetRound(ctx, puzzle.Round)
@@ -128,7 +127,7 @@ func (p *Poller) handleNewRounds(ctx context.Context, newRounds map[string][]sta
 	return nil
 }
 
-func (p *Poller) createPuzzles(ctx context.Context, newPuzzles []db.RawPuzzle) error {
+func (p *Poller) createPuzzles(ctx context.Context, newPuzzles []state.RawPuzzle) error {
 	for _, puzzle := range newPuzzles {
 		if p.state.IsDisabled(ctx) {
 			return xerrors.Errorf("huntbot is disabled")

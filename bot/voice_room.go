@@ -8,7 +8,6 @@ import (
 	"log"
 
 	"github.com/bwmarrin/discordgo"
-	"github.com/emojihunt/emojihunt/db"
 	"github.com/emojihunt/emojihunt/discord"
 	"github.com/emojihunt/emojihunt/state"
 	"github.com/emojihunt/emojihunt/syncer"
@@ -88,7 +87,7 @@ func (b *VoiceRoomBot) Handle(ctx context.Context, input *discord.CommandInput) 
 
 	// Sync the change!
 	puzzle, err = b.state.UpdatePuzzle(ctx, puzzle.ID,
-		func(puzzle *db.RawPuzzle) error {
+		func(puzzle *state.RawPuzzle) error {
 			puzzle.VoiceRoom = channel.ID
 			return nil
 		},

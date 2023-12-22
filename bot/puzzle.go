@@ -8,10 +8,9 @@ import (
 	"strings"
 
 	"github.com/bwmarrin/discordgo"
-	"github.com/emojihunt/emojihunt/db"
-	"github.com/emojihunt/emojihunt/db/field"
 	"github.com/emojihunt/emojihunt/discord"
 	"github.com/emojihunt/emojihunt/state"
+	"github.com/emojihunt/emojihunt/state/status"
 	"github.com/emojihunt/emojihunt/syncer"
 	"golang.org/x/xerrors"
 )
@@ -43,9 +42,9 @@ func (b *PuzzleBot) Register() (*discordgo.ApplicationCommand, bool) {
 						Type:        discordgo.ApplicationCommandOptionString,
 						Choices: []*discordgo.ApplicationCommandOptionChoice{
 							// Values are displayed in the mouseover UI, FYI, so don't use "" for NotStarted
-							{Name: field.StatusNotStarted.Pretty(), Value: field.AlternateNotStarted},
-							{Name: field.StatusWorking.Pretty(), Value: field.StatusWorking},
-							{Name: field.StatusAbandoned.Pretty(), Value: field.StatusAbandoned},
+							{Name: status.NotStarted.Pretty(), Value: status.AlternateNotStarted},
+							{Name: status.Working.Pretty(), Value: status.Working},
+							{Name: status.Abandoned.Pretty(), Value: status.Abandoned},
 						},
 					},
 				},
@@ -61,10 +60,10 @@ func (b *PuzzleBot) Register() (*discordgo.ApplicationCommand, bool) {
 						Required:    true,
 						Type:        discordgo.ApplicationCommandOptionString,
 						Choices: []*discordgo.ApplicationCommandOptionChoice{
-							{Name: field.StatusSolved.Pretty(), Value: field.StatusSolved},
+							{Name: status.Solved.Pretty(), Value: status.Solved},
 							// Discord can't display the gender modifier on this emoji
-							{Name: "🤦 Backsolved", Value: field.StatusBacksolved},
-							{Name: field.StatusPurchased.Pretty(), Value: field.StatusPurchased},
+							{Name: "🤦 Backsolved", Value: status.Backsolved},
+							{Name: status.Purchased.Pretty(), Value: status.Purchased},
 						},
 					},
 					{
@@ -114,18 +113,18 @@ func (b *PuzzleBot) Handle(ctx context.Context, input *discord.CommandInput) (st
 	}
 
 	var reply string
-	var newStatus field.Status
+	var newStatus status.Status
 	var newAnswer string
 	switch input.Subcommand.Name {
 	case "progress":
 		if statusOpt, ok := b.discord.OptionByName(input.Subcommand.Options, "to"); !ok {
 			return "", xerrors.Errorf("missing option: to")
-		} else if newStatus, err = field.ParseTextStatus(statusOpt.StringValue()); err != nil {
+		} else if newStatus, err = status.ParseText(statusOpt.StringValue()); err != nil {
 			return "", err
 		}
 
 		puzzle, err = b.state.UpdatePuzzle(ctx, puzzle.ID,
-			func(puzzle *db.RawPuzzle) error {
+			func(puzzle *state.RawPuzzle) error {
 				if puzzle.Status == newStatus {
 					reply = fmt.Sprintf(":elephant: This puzzle already has status %s", newStatus.Pretty())
 				} else if puzzle.Answer == "" {
@@ -149,7 +148,7 @@ func (b *PuzzleBot) Handle(ctx context.Context, input *discord.CommandInput) (st
 	case "solved":
 		if statusOpt, ok := b.discord.OptionByName(input.Subcommand.Options, "as"); !ok {
 			return "", xerrors.Errorf("missing option: as")
-		} else if newStatus, err = field.ParseTextStatus(statusOpt.StringValue()); err != nil {
+		} else if newStatus, err = status.ParseText(statusOpt.StringValue()); err != nil {
 			return "", err
 		}
 
@@ -160,7 +159,7 @@ func (b *PuzzleBot) Handle(ctx context.Context, input *discord.CommandInput) (st
 		}
 
 		puzzle, err := b.state.UpdatePuzzle(ctx, puzzle.ID,
-			func(puzzle *db.RawPuzzle) error {
+			func(puzzle *state.RawPuzzle) error {
 				puzzle.Status = newStatus
 				puzzle.Answer = newAnswer
 				return nil
@@ -186,7 +185,7 @@ func (b *PuzzleBot) Handle(ctx context.Context, input *discord.CommandInput) (st
 		}
 
 		puzzle, err = b.state.UpdatePuzzle(ctx, puzzle.ID,
-			func(puzzle *db.RawPuzzle) error {
+			func(puzzle *state.RawPuzzle) error {
 				if puzzle.Note != "" {
 					reply += fmt.Sprintf(" Previous note was: ```\n%s\n```", puzzle.Note)
 				}
@@ -210,7 +209,7 @@ func (b *PuzzleBot) Handle(ctx context.Context, input *discord.CommandInput) (st
 		}
 
 		puzzle, err = b.state.UpdatePuzzle(ctx, puzzle.ID,
-			func(puzzle *db.RawPuzzle) error {
+			func(puzzle *state.RawPuzzle) error {
 				if puzzle.Location != "" {
 					reply += fmt.Sprintf(" Previous location was: ```\n%s\n```", puzzle.Location)
 				}
@@ -218,6 +217,9 @@ func (b *PuzzleBot) Handle(ctx context.Context, input *discord.CommandInput) (st
 				return nil
 			},
 		)
+		if err != nil {
+			return "", err
+		}
 		if err = b.syncer.DiscordCreateUpdatePin(puzzle); err != nil {
 			return "", err
 		}

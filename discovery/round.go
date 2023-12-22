@@ -3,7 +3,6 @@ package discovery
 import (
 	"time"
 
-	"github.com/emojihunt/emojihunt/db"
 	"github.com/emojihunt/emojihunt/state"
 	"github.com/getsentry/sentry-go"
 	"golang.org/x/net/context"
@@ -101,9 +100,9 @@ func (p *Poller) createRound(ctx context.Context, round state.DiscoveredRound,
 		return err
 	}
 
-	var puzzles = make([]db.RawPuzzle, len(round.Puzzles))
+	var puzzles = make([]state.RawPuzzle, len(round.Puzzles))
 	for i, puzzle := range round.Puzzles {
-		puzzles[i] = db.RawPuzzle{
+		puzzles[i] = state.RawPuzzle{
 			Name:      puzzle.Name,
 			Round:     created.ID,
 			PuzzleURL: puzzle.URL,

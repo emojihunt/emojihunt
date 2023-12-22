@@ -10,7 +10,7 @@ import (
 
 	_ "embed"
 
-	"github.com/emojihunt/emojihunt/db"
+	"github.com/emojihunt/emojihunt/state/db"
 	"golang.org/x/xerrors"
 )
 

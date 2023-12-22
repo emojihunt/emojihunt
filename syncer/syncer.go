@@ -5,11 +5,10 @@ import (
 	"log"
 	"sync"
 
-	"github.com/emojihunt/emojihunt/db"
-	"github.com/emojihunt/emojihunt/db/field"
 	"github.com/emojihunt/emojihunt/discord"
 	"github.com/emojihunt/emojihunt/drive"
 	"github.com/emojihunt/emojihunt/state"
+	"github.com/emojihunt/emojihunt/state/status"
 	"golang.org/x/xerrors"
 )
 
@@ -43,7 +42,7 @@ func (s *Syncer) IdempotentCreateUpdate(ctx context.Context, puzzle state.Puzzle
 		}
 
 		puzzle, err = s.state.UpdatePuzzle(ctx, puzzle.ID,
-			func(puzzle *db.RawPuzzle) error {
+			func(puzzle *state.RawPuzzle) error {
 				puzzle.SpreadsheetID = spreadsheet
 				return nil
 			},
@@ -72,7 +71,7 @@ func (s *Syncer) IdempotentCreateUpdate(ctx context.Context, puzzle state.Puzzle
 		}
 
 		puzzle, err = s.state.UpdatePuzzle(ctx, puzzle.ID,
-			func(puzzle *db.RawPuzzle) error {
+			func(puzzle *state.RawPuzzle) error {
 				puzzle.DiscordChannel = channel.ID
 				return nil
 			},
@@ -139,7 +138,7 @@ func (s *Syncer) HandleStatusChange(
 		// Also unset the voice room, if applicable
 		if puzzle.VoiceRoom != "" {
 			puzzle, err = s.state.UpdatePuzzle(ctx, puzzle.ID,
-				func(puzzle *db.RawPuzzle) error {
+				func(puzzle *state.RawPuzzle) error {
 					puzzle.VoiceRoom = ""
 					return nil
 				},
@@ -154,7 +153,7 @@ func (s *Syncer) HandleStatusChange(
 				return puzzle, err
 			}
 		}
-	} else if puzzle.Status == field.StatusWorking {
+	} else if puzzle.Status == status.Working {
 		if err = s.notifyPuzzleWorking(puzzle); err != nil {
 			return puzzle, err
 		}

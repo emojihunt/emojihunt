@@ -3,7 +3,7 @@ package state
 import (
 	"context"
 
-	"github.com/emojihunt/emojihunt/db"
+	"github.com/emojihunt/emojihunt/state/db"
 	"github.com/rivo/uniseg"
 	"golang.org/x/xerrors"
 )

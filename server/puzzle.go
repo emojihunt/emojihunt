@@ -4,25 +4,25 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/emojihunt/emojihunt/db"
-	"github.com/emojihunt/emojihunt/db/field"
+	"github.com/emojihunt/emojihunt/state"
+	"github.com/emojihunt/emojihunt/state/status"
 	"github.com/labstack/echo/v4"
 )
 
 type PuzzleParams struct {
-	ID             int64        `param:"id"`
-	Name           string       `form:"name"`
-	Answer         string       `form:"answer"`
-	Round          int64        `form:"round"`
-	Status         field.Status `form:"status"`
-	Note           string       `form:"note"`
-	Location       string       `form:"location"`
-	PuzzleURL      string       `form:"puzzle_url"`
-	SpreadsheetID  string       `form:"spreadsheet_id"`
-	DiscordChannel string       `form:"discord_channel"`
-	Meta           bool         `form:"meta"`
-	VoiceRoom      string       `form:"voice_room"`
-	Reminder       time.Time    `form:"reminder"`
+	ID             int64         `param:"id"`
+	Name           string        `form:"name"`
+	Answer         string        `form:"answer"`
+	Round          int64         `form:"round"`
+	Status         status.Status `form:"status"`
+	Note           string        `form:"note"`
+	Location       string        `form:"location"`
+	PuzzleURL      string        `form:"puzzle_url"`
+	SpreadsheetID  string        `form:"spreadsheet_id"`
+	DiscordChannel string        `form:"discord_channel"`
+	Meta           bool          `form:"meta"`
+	VoiceRoom      string        `form:"voice_room"`
+	Reminder       time.Time     `form:"reminder"`
 }
 
 func (s *Server) ListPuzzles(c echo.Context) error {
@@ -50,7 +50,7 @@ func (s *Server) CreatePuzzle(c echo.Context) error {
 	if err := c.Bind(&params); err != nil {
 		return err
 	}
-	puzzle, err := s.state.CreatePuzzle(c.Request().Context(), db.RawPuzzle(params))
+	puzzle, err := s.state.CreatePuzzle(c.Request().Context(), state.RawPuzzle(params))
 	if err != nil {
 		return err
 	}
@@ -64,7 +64,7 @@ func (s *Server) UpdatePuzzle(c echo.Context) error {
 	}
 
 	updated, err := s.state.UpdatePuzzle(c.Request().Context(), id.ID,
-		func(puzzle *db.RawPuzzle) error {
+		func(puzzle *state.RawPuzzle) error {
 			var params = (*PuzzleParams)(puzzle)
 			return c.Bind(params)
 		},

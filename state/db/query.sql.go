@@ -9,7 +9,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/emojihunt/emojihunt/db/field"
+	"github.com/emojihunt/emojihunt/state/status"
 )
 
 const clearPuzzleVoiceRoom = `-- name: ClearPuzzleVoiceRoom :exec
@@ -31,18 +31,18 @@ INSERT INTO puzzles (
 `
 
 type CreatePuzzleParams struct {
-	Name           string       `json:"name"`
-	Answer         string       `json:"answer"`
-	Round          int64        `json:"round"`
-	Status         field.Status `json:"status"`
-	Note           string       `json:"note"`
-	Location       string       `json:"location"`
-	PuzzleURL      string       `json:"puzzle_url"`
-	SpreadsheetID  string       `json:"spreadsheet_id"`
-	DiscordChannel string       `json:"discord_channel"`
-	Meta           bool         `json:"meta"`
-	VoiceRoom      string       `json:"voice_room"`
-	Reminder       time.Time    `json:"reminder"`
+	Name           string        `json:"name"`
+	Answer         string        `json:"answer"`
+	Round          int64         `json:"round"`
+	Status         status.Status `json:"status"`
+	Note           string        `json:"note"`
+	Location       string        `json:"location"`
+	PuzzleURL      string        `json:"puzzle_url"`
+	SpreadsheetID  string        `json:"spreadsheet_id"`
+	DiscordChannel string        `json:"discord_channel"`
+	Meta           bool          `json:"meta"`
+	VoiceRoom      string        `json:"voice_room"`
+	Reminder       time.Time     `json:"reminder"`
 }
 
 func (q *Queries) CreatePuzzle(ctx context.Context, arg CreatePuzzleParams) (int64, error) {
@@ -127,19 +127,19 @@ WHERE p.id = ?
 `
 
 type GetPuzzleRow struct {
-	ID             int64        `json:"id"`
-	Name           string       `json:"name"`
-	Answer         string       `json:"answer"`
-	Round          Round        `json:"round"`
-	Status         field.Status `json:"status"`
-	Note           string       `json:"note"`
-	Location       string       `json:"location"`
-	PuzzleURL      string       `json:"puzzle_url"`
-	SpreadsheetID  string       `json:"spreadsheet_id"`
-	DiscordChannel string       `json:"discord_channel"`
-	Meta           bool         `json:"meta"`
-	VoiceRoom      string       `json:"voice_room"`
-	Reminder       time.Time    `json:"reminder"`
+	ID             int64         `json:"id"`
+	Name           string        `json:"name"`
+	Answer         string        `json:"answer"`
+	Round          Round         `json:"round"`
+	Status         status.Status `json:"status"`
+	Note           string        `json:"note"`
+	Location       string        `json:"location"`
+	PuzzleURL      string        `json:"puzzle_url"`
+	SpreadsheetID  string        `json:"spreadsheet_id"`
+	DiscordChannel string        `json:"discord_channel"`
+	Meta           bool          `json:"meta"`
+	VoiceRoom      string        `json:"voice_room"`
+	Reminder       time.Time     `json:"reminder"`
 }
 
 func (q *Queries) GetPuzzle(ctx context.Context, id int64) (GetPuzzleRow, error) {
@@ -178,19 +178,19 @@ WHERE p.discord_channel = ?
 `
 
 type GetPuzzleByChannelRow struct {
-	ID             int64        `json:"id"`
-	Name           string       `json:"name"`
-	Answer         string       `json:"answer"`
-	Round          Round        `json:"round"`
-	Status         field.Status `json:"status"`
-	Note           string       `json:"note"`
-	Location       string       `json:"location"`
-	PuzzleURL      string       `json:"puzzle_url"`
-	SpreadsheetID  string       `json:"spreadsheet_id"`
-	DiscordChannel string       `json:"discord_channel"`
-	Meta           bool         `json:"meta"`
-	VoiceRoom      string       `json:"voice_room"`
-	Reminder       time.Time    `json:"reminder"`
+	ID             int64         `json:"id"`
+	Name           string        `json:"name"`
+	Answer         string        `json:"answer"`
+	Round          Round         `json:"round"`
+	Status         status.Status `json:"status"`
+	Note           string        `json:"note"`
+	Location       string        `json:"location"`
+	PuzzleURL      string        `json:"puzzle_url"`
+	SpreadsheetID  string        `json:"spreadsheet_id"`
+	DiscordChannel string        `json:"discord_channel"`
+	Meta           bool          `json:"meta"`
+	VoiceRoom      string        `json:"voice_room"`
+	Reminder       time.Time     `json:"reminder"`
 }
 
 func (q *Queries) GetPuzzleByChannel(ctx context.Context, discordChannel string) (GetPuzzleByChannelRow, error) {
@@ -259,19 +259,19 @@ ORDER BY p.id
 `
 
 type ListPuzzlesRow struct {
-	ID             int64        `json:"id"`
-	Name           string       `json:"name"`
-	Answer         string       `json:"answer"`
-	Round          Round        `json:"round"`
-	Status         field.Status `json:"status"`
-	Note           string       `json:"note"`
-	Location       string       `json:"location"`
-	PuzzleURL      string       `json:"puzzle_url"`
-	SpreadsheetID  string       `json:"spreadsheet_id"`
-	DiscordChannel string       `json:"discord_channel"`
-	Meta           bool         `json:"meta"`
-	VoiceRoom      string       `json:"voice_room"`
-	Reminder       time.Time    `json:"reminder"`
+	ID             int64         `json:"id"`
+	Name           string        `json:"name"`
+	Answer         string        `json:"answer"`
+	Round          Round         `json:"round"`
+	Status         status.Status `json:"status"`
+	Note           string        `json:"note"`
+	Location       string        `json:"location"`
+	PuzzleURL      string        `json:"puzzle_url"`
+	SpreadsheetID  string        `json:"spreadsheet_id"`
+	DiscordChannel string        `json:"discord_channel"`
+	Meta           bool          `json:"meta"`
+	VoiceRoom      string        `json:"voice_room"`
+	Reminder       time.Time     `json:"reminder"`
 }
 
 func (q *Queries) ListPuzzles(ctx context.Context) ([]ListPuzzlesRow, error) {
@@ -358,19 +358,19 @@ WHERE id = ?1
 `
 
 type UpdatePuzzleParams struct {
-	ID             int64        `json:"id"`
-	Name           string       `json:"name"`
-	Answer         string       `json:"answer"`
-	Round          int64        `json:"round"`
-	Status         field.Status `json:"status"`
-	Note           string       `json:"note"`
-	Location       string       `json:"location"`
-	PuzzleURL      string       `json:"puzzle_url"`
-	SpreadsheetID  string       `json:"spreadsheet_id"`
-	DiscordChannel string       `json:"discord_channel"`
-	Meta           bool         `json:"meta"`
-	VoiceRoom      string       `json:"voice_room"`
-	Reminder       time.Time    `json:"reminder"`
+	ID             int64         `json:"id"`
+	Name           string        `json:"name"`
+	Answer         string        `json:"answer"`
+	Round          int64         `json:"round"`
+	Status         status.Status `json:"status"`
+	Note           string        `json:"note"`
+	Location       string        `json:"location"`
+	PuzzleURL      string        `json:"puzzle_url"`
+	SpreadsheetID  string        `json:"spreadsheet_id"`
+	DiscordChannel string        `json:"discord_channel"`
+	Meta           bool          `json:"meta"`
+	VoiceRoom      string        `json:"voice_room"`
+	Reminder       time.Time     `json:"reminder"`
 }
 
 func (q *Queries) UpdatePuzzle(ctx context.Context, arg UpdatePuzzleParams) error {

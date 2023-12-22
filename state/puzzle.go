@@ -4,11 +4,11 @@ import (
 	"context"
 	"net/url"
 
-	"github.com/emojihunt/emojihunt/db"
+	"github.com/emojihunt/emojihunt/state/db"
 	"golang.org/x/xerrors"
 )
 
-func ValidatePuzzle(p db.RawPuzzle) error {
+func ValidatePuzzle(p RawPuzzle) error {
 	if p.Name == "" {
 		return ValidationError{"name", "is required"}
 	} else if p.Round == 0 {
@@ -57,7 +57,7 @@ func (c *Client) ListPuzzles(ctx context.Context) ([]Puzzle, error) {
 	return puzzles, nil
 }
 
-func (c *Client) CreatePuzzle(ctx context.Context, puzzle db.RawPuzzle) (Puzzle, error) {
+func (c *Client) CreatePuzzle(ctx context.Context, puzzle RawPuzzle) (Puzzle, error) {
 	if err := ValidatePuzzle(puzzle); err != nil {
 		return Puzzle{}, err
 	}
@@ -81,7 +81,7 @@ func (c *Client) CreatePuzzle(ctx context.Context, puzzle db.RawPuzzle) (Puzzle,
 }
 
 func (c *Client) UpdatePuzzle(ctx context.Context, id int64,
-	mutate func(puzzle *db.RawPuzzle) error) (Puzzle, error) {
+	mutate func(puzzle *RawPuzzle) error) (Puzzle, error) {
 
 	c.mu.Lock()
 	defer c.mu.Unlock()

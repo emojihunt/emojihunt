@@ -1,17 +1,15 @@
 version: "2"
 sql:
   - engine: "sqlite"
-    queries: "db/query.sql"
-    schema: "db/schema.sql"
+    queries: "state/db/query.sql"
+    schema: "state/db/schema.sql"
     gen:
       go:
         package: "db"
-        out: "db"
+        out: "state/db"
         rename:
-          puzzle: "RawPuzzle"
           puzzle_url: "PuzzleURL"
-          original_url: "OriginalURL"
         emit_json_tags: true
         overrides:
           - column: "puzzles.status"
-            go_type: "github.com/emojihunt/emojihunt/db/field.Status"
+            go_type: "github.com/emojihunt/emojihunt/state/status.Status"
