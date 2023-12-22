@@ -180,10 +180,10 @@ func (c *Client) UpdateStatus(ctx context.Context) error {
 }
 
 func computeBotStatus(ctx context.Context, state *state.Client) string {
-	if state.IsDisabled(ctx) {
-		return "dnd"
-	} else {
+	if state.IsEnabled(ctx) {
 		return "online"
+	} else {
+		return "dnd"
 	}
 }
 

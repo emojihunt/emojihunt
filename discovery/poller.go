@@ -173,7 +173,7 @@ reconnect:
 		}
 
 		for {
-			if !p.state.IsDisabled(ctx) {
+			if p.state.IsEnabled(ctx) {
 				ctx, cancel := context.WithTimeout(ctx, pollTimeout)
 				defer cancel()
 

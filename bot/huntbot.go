@@ -53,12 +53,9 @@ func (b *HuntBot) Handle(ctx context.Context, input *discord.CommandInput) (stri
 	}
 
 	var reply string
-	// TODO: there's a race condition here:
-	var wasKilled = b.state.IsDisabled(ctx)
 	switch input.Subcommand.Name {
 	case "kill":
-		if !wasKilled {
-			b.state.DisableHuntbot(ctx, true)
+		if b.state.EnableHuntbot(ctx, false) {
 			reply = "Ok, I've disabled the bot for now.  Enable it with `/huntbot enable`."
 		} else {
 			reply = "The bot was already disabled. Enable it with `/huntbot enable`."
@@ -66,8 +63,7 @@ func (b *HuntBot) Handle(ctx context.Context, input *discord.CommandInput) (stri
 		b.discord.UpdateStatus(ctx) // best-effort, ignore errors
 		return reply, nil
 	case "enable":
-		if !wasKilled {
-			b.state.DisableHuntbot(ctx, false)
+		if b.state.EnableHuntbot(ctx, false) {
 			reply = "Ok, I've enabled the bot for now. Disable it with `/huntbot kill`."
 		} else {
 			reply = "The bot was already enabled. Disable it with `/huntbot kill`."

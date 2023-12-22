@@ -129,7 +129,7 @@ func (p *Poller) handleNewRounds(ctx context.Context, newRounds map[string][]sta
 
 func (p *Poller) createPuzzles(ctx context.Context, newPuzzles []state.RawPuzzle) error {
 	for _, puzzle := range newPuzzles {
-		if p.state.IsDisabled(ctx) {
+		if !p.state.IsEnabled(ctx) {
 			return xerrors.Errorf("huntbot is disabled")
 		}
 		created, err := p.state.CreatePuzzle(ctx, puzzle)

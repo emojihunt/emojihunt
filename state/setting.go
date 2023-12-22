@@ -17,7 +17,7 @@ const (
 	discoveredRoundsSetting = "discovered_rounds"
 )
 
-func (c *Client) IsDisabled(ctx context.Context) bool {
+func (c *Client) IsEnabled(ctx context.Context) bool {
 	if raw, err := c.readSetting(ctx, enabledSetting); err != nil {
 		panic(err)
 	} else if v, ok := raw.(bool); !ok {
@@ -27,10 +27,15 @@ func (c *Client) IsDisabled(ctx context.Context) bool {
 	}
 }
 
-func (c *Client) DisableHuntbot(ctx context.Context, killed bool) {
-	if err := c.writeSetting(ctx, enabledSetting, killed); err != nil {
+func (c *Client) EnableHuntbot(ctx context.Context, enabled bool) bool {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	var previous = c.IsEnabled(ctx)
+	if err := c.writeSetting(ctx, enabledSetting, enabled); err != nil {
 		panic(err)
 	}
+	return previous != enabled
 }
 
 func (c *Client) ReminderTimestamp(ctx context.Context) (time.Time, error) {
