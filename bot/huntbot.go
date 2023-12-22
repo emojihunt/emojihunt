@@ -8,7 +8,7 @@ import (
 	"github.com/emojihunt/emojihunt/discord"
 	"github.com/emojihunt/emojihunt/discovery"
 	"github.com/emojihunt/emojihunt/state"
-	"github.com/emojihunt/emojihunt/syncer"
+	"github.com/emojihunt/emojihunt/sync"
 	"golang.org/x/xerrors"
 )
 
@@ -17,11 +17,11 @@ type HuntBot struct {
 	discord   *discord.Client
 	discovery *discovery.Poller
 	state     *state.Client
-	syncer    *syncer.Syncer
+	syncer    *sync.Client
 }
 
 func NewHuntBot(main context.Context, discord *discord.Client,
-	discovery *discovery.Poller, state *state.Client, syncer *syncer.Syncer) discord.Bot {
+	discovery *discovery.Poller, state *state.Client, syncer *sync.Client) discord.Bot {
 	return &HuntBot{main, discord, discovery, state, syncer}
 }
 

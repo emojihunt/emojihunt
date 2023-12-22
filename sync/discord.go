@@ -1,6 +1,8 @@
-package syncer
+package sync
 
 import (
+	"crypto/sha256"
+	"encoding/binary"
 	"fmt"
 	"log"
 	"time"
@@ -12,18 +14,16 @@ import (
 const (
 	roundCategoryPrefix  = "Round: "
 	solvedCategoryPrefix = "Solved "
+	solvedCategoryCount  = 3
 	pinnedStatusHeader   = "Puzzle Information"
 	locationDefaultMsg   = "Use `/puzzle voice` to assign a voice room"
 	embedColor           = 0x7C39ED
 )
 
-// DiscordCreateUpdatePin creates or updates the pinned message at the top of
-// the puzzle channel. This message contains information about the puzzle status
-// as well as links to the puzzle and the spreadsheet.
-//
-// This function is called by BasicUpdate. Other packages need to call it when
-// updating non-status fields, such as the voice room.
-func (s *Syncer) DiscordCreateUpdatePin(puzzle state.Puzzle) error {
+// UpdateDiscordPin creates or updates the pinned message at the top of the
+// puzzle channel. This message contains information about the puzzle status as
+// well as links to the puzzle and the spreadsheet.
+func (s *Client) UpdateDiscordPin(puzzle state.Puzzle) error {
 	log.Printf("syncer: updating pin for %q", puzzle.Name)
 
 	embed := &discordgo.MessageEmbed{
@@ -71,8 +71,13 @@ func (s *Syncer) DiscordCreateUpdatePin(puzzle state.Puzzle) error {
 		locationMsg := locationDefaultMsg
 		if puzzle.VoiceRoom != "" {
 			locationMsg = fmt.Sprintf("Join us in <#%s>!", puzzle.VoiceRoom)
-		} else if puzzle.Location != "" {
-			locationMsg = fmt.Sprintf("In-person in %s", puzzle.Location)
+		}
+		if puzzle.Location != locationDefaultMsg {
+			if locationMsg != "" {
+				locationMsg += fmt.Sprintf("Also in-person in %s.", puzzle.Location)
+			} else {
+				locationMsg = fmt.Sprintf("In-person in %s.", puzzle.Location)
+			}
 		}
 		embed.Fields = append(embed.Fields, &discordgo.MessageEmbedField{
 			Name:   "Location",
@@ -84,11 +89,11 @@ func (s *Syncer) DiscordCreateUpdatePin(puzzle state.Puzzle) error {
 	return s.discord.CreateUpdatePin(puzzle.DiscordChannel, pinnedStatusHeader, embed)
 }
 
-// discordUpdateChannel sets or updates the name and category of the puzzle
-// channel. Categories are either "Puzzles" (for open puzzles) or "Solved" (for
-// solved puzzles), and the puzzle name includes a check mark when the puzzle is
-// solved. It needs to be called when the puzzle status changes.
-func (s *Syncer) discordUpdateChannel(puzzle state.Puzzle) error {
+// UpdateDiscordChannel configures the name and category of the puzzle channel.
+// Categories are either in a round-specific category (if unsolved) or one of a
+// few "Solved" categories (for solved puzzles), and the channel name is
+// prefixed with a check mark when the puzzle is solved.
+func (s *Client) UpdateDiscordChannel(puzzle state.Puzzle) error {
 	log.Printf("syncer: updating discord channel for %q", puzzle.Name)
 
 	// Move puzzle channel to the correct category
@@ -129,7 +134,7 @@ func (s *Syncer) discordUpdateChannel(puzzle state.Puzzle) error {
 	}
 }
 
-func (s *Syncer) discordGetOrCreateCategory(puzzle state.Puzzle) (*discordgo.Channel, error) {
+func (s *Client) discordGetOrCreateCategory(puzzle state.Puzzle) (*discordgo.Channel, error) {
 	s.DiscordCategoryMutex.Lock()
 	defer s.DiscordCategoryMutex.Unlock()
 
@@ -140,7 +145,13 @@ func (s *Syncer) discordGetOrCreateCategory(puzzle state.Puzzle) (*discordgo.Cha
 
 	var targetName string
 	if puzzle.Status.IsSolved() {
-		targetName = solvedCategoryPrefix + puzzle.ArchiveCategory()
+		// Hash the Discord channel ID, since it's not totally random
+		h := sha256.New()
+		if _, err := h.Write([]byte(puzzle.DiscordChannel)); err != nil {
+			return nil, err
+		}
+		i := binary.BigEndian.Uint64(h.Sum(nil)[:8]) % solvedCategoryCount
+		targetName = solvedCategoryPrefix + string(rune(uint64('A')+i))
 	} else {
 		targetName = roundCategoryPrefix + puzzle.Round.Name
 	}

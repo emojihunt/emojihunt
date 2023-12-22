@@ -1,4 +1,4 @@
-package syncer
+package sync
 
 import (
 	"context"
@@ -12,7 +12,7 @@ import (
 	"golang.org/x/xerrors"
 )
 
-type Syncer struct {
+type Client struct {
 	state   *state.Client
 	discord *discord.Client
 	drive   *drive.Client
@@ -21,8 +21,8 @@ type Syncer struct {
 	DiscordCategoryMutex sync.Mutex
 }
 
-func New(discord *discord.Client, drive *drive.Client, state *state.Client) *Syncer {
-	return &Syncer{
+func New(discord *discord.Client, drive *drive.Client, state *state.Client) *Client {
+	return &Client{
 		discord: discord,
 		drive:   drive,
 		state:   state,
@@ -33,7 +33,7 @@ func New(discord *discord.Client, drive *drive.Client, state *state.Client) *Syn
 // information in the database. When a puzzle is newly added, it creates the
 // spreadsheet and Discord channel and stores their IDs in the database. When a
 // puzzle's status is updated, it handles that also.
-func (s *Syncer) IdempotentCreateUpdate(ctx context.Context, puzzle state.Puzzle) (state.Puzzle, error) {
+func (s *Client) IdempotentCreateUpdate(ctx context.Context, puzzle state.Puzzle) (state.Puzzle, error) {
 	// 1. Create the spreadsheet, if required
 	if puzzle.SpreadsheetID == "" {
 		spreadsheet, err := s.drive.CreateSheet(ctx, puzzle.Name, puzzle.Round.Name)
@@ -51,7 +51,7 @@ func (s *Syncer) IdempotentCreateUpdate(ctx context.Context, puzzle state.Puzzle
 			return puzzle, err
 		}
 
-		err = s.driveUpdateSpreadsheet(ctx, puzzle)
+		err = s.UpdateSpreadsheet(ctx, puzzle)
 		if err != nil {
 			return puzzle, err
 		}
@@ -80,18 +80,18 @@ func (s *Syncer) IdempotentCreateUpdate(ctx context.Context, puzzle state.Puzzle
 			return puzzle, err
 		}
 
-		err = s.DiscordCreateUpdatePin(puzzle)
+		err = s.UpdateDiscordPin(puzzle)
 		if err != nil {
 			return puzzle, err
 		}
 
-		if err := s.discordUpdateChannel(puzzle); err != nil {
+		if err := s.UpdateDiscordChannel(puzzle); err != nil {
 			return puzzle, err
 		}
 
 		// Treat Discord channel creation as the sentinel to also notify the
 		// team about the new puzzle.
-		if err := s.notifyNewPuzzle(puzzle); err != nil {
+		if err := s.NotifyNewPuzzle(puzzle); err != nil {
 			return puzzle, err
 		}
 	}
@@ -111,7 +111,7 @@ func (s *Syncer) IdempotentCreateUpdate(ctx context.Context, puzzle state.Puzzle
 // calling this from a slash command handler, and the is going to acknowledge
 // the user in the puzzle channel, you can set `botRequest=true` to suppress
 // notifications to the puzzle channel.
-func (s *Syncer) HandleStatusChange(
+func (s *Client) HandleStatusChange(
 	ctx context.Context, puzzle state.Puzzle, botRequest bool,
 ) (state.Puzzle, error) {
 	log.Printf("syncer: handling status change for %q", puzzle.Name)
@@ -130,7 +130,7 @@ func (s *Syncer) HandleStatusChange(
 		// Puzzle solved and answer entered! (Suppress puzzle channel
 		// notification if this is a bot request, since the bot will also
 		// respond in the puzzle channel.)
-		err = s.notifyPuzzleFullySolved(puzzle, botRequest)
+		err = s.NotifyPuzzleSolved(puzzle, botRequest)
 		if err != nil {
 			return puzzle, err
 		}
@@ -146,7 +146,7 @@ func (s *Syncer) HandleStatusChange(
 			if err != nil {
 				return puzzle, err
 			}
-			if err = s.DiscordCreateUpdatePin(puzzle); err != nil {
+			if err = s.UpdateDiscordPin(puzzle); err != nil {
 				return puzzle, err
 			}
 			if err = s.SyncVoiceRooms(ctx); err != nil {
@@ -154,7 +154,7 @@ func (s *Syncer) HandleStatusChange(
 			}
 		}
 	} else if puzzle.Status == status.Working {
-		if err = s.notifyPuzzleWorking(puzzle); err != nil {
+		if err = s.NotifyPuzzleWorking(puzzle); err != nil {
 			return puzzle, err
 		}
 	}
@@ -164,7 +164,7 @@ func (s *Syncer) HandleStatusChange(
 // ForceUpdate is a big hammer that will update Discord and Google Drive,
 // including overwriting the channel name, spreadsheet name, etc. It also
 // re-sends any status change notifications.
-func (s *Syncer) ForceUpdate(ctx context.Context, puzzle state.Puzzle) (state.Puzzle, error) {
+func (s *Client) ForceUpdate(ctx context.Context, puzzle state.Puzzle) (state.Puzzle, error) {
 	if puzzle.SpreadsheetID == "-" || puzzle.DiscordChannel == "-" {
 		return puzzle, xerrors.Errorf("puzzle is a placeholder puzzle, skipping")
 	}
@@ -185,13 +185,13 @@ func (s *Syncer) ForceUpdate(ctx context.Context, puzzle state.Puzzle) (state.Pu
 // parallelHardUpdate updates the Discord pinned message, the Discord channel
 // name/category, and the Google spreadsheet name. It's called when the puzzle
 // status changes, and as part of ForceUpdate().
-func (s *Syncer) parallelHardUpdate(ctx context.Context, puzzle state.Puzzle) error {
+func (s *Client) parallelHardUpdate(ctx context.Context, puzzle state.Puzzle) error {
 	var wg sync.WaitGroup
 	var ch = make(chan error, 3)
 	wg.Add(3)
-	go func() { ch <- s.DiscordCreateUpdatePin(puzzle); wg.Done() }()
-	go func() { ch <- s.discordUpdateChannel(puzzle); wg.Done() }()
-	go func() { ch <- s.driveUpdateSpreadsheet(ctx, puzzle); wg.Done() }()
+	go func() { ch <- s.UpdateDiscordPin(puzzle); wg.Done() }()
+	go func() { ch <- s.UpdateDiscordChannel(puzzle); wg.Done() }()
+	go func() { ch <- s.UpdateSpreadsheet(ctx, puzzle); wg.Done() }()
 	wg.Wait()
 	close(ch)
 	for err := range ch {

@@ -15,7 +15,7 @@ import (
 	"github.com/emojihunt/emojihunt/drive"
 	"github.com/emojihunt/emojihunt/server"
 	"github.com/emojihunt/emojihunt/state"
-	"github.com/emojihunt/emojihunt/syncer"
+	"github.com/emojihunt/emojihunt/sync"
 	"github.com/getsentry/sentry-go"
 )
 
@@ -71,7 +71,7 @@ func main() {
 
 	// Start internal engines
 	log.Printf("starting syncer")
-	var syncer = syncer.New(discord, drive, state)
+	var syncer = sync.New(discord, drive, state)
 	go syncer.RestorePlaceholderEvent()
 
 	log.Printf("starting web server")

@@ -12,17 +12,17 @@ import (
 	"github.com/emojihunt/emojihunt/discord"
 	"github.com/emojihunt/emojihunt/state"
 	"github.com/emojihunt/emojihunt/state/status"
-	"github.com/emojihunt/emojihunt/syncer"
+	"github.com/emojihunt/emojihunt/sync"
 	"golang.org/x/xerrors"
 )
 
 type PuzzleBot struct {
 	discord *discord.Client
 	state   *state.Client
-	syncer  *syncer.Syncer
+	syncer  *sync.Client
 }
 
-func NewPuzzleBot(discord *discord.Client, state *state.Client, syncer *syncer.Syncer) discord.Bot {
+func NewPuzzleBot(discord *discord.Client, state *state.Client, syncer *sync.Client) discord.Bot {
 	return &PuzzleBot{discord, state, syncer}
 }
 
@@ -166,7 +166,7 @@ func (b *PuzzleBot) Handle(ctx context.Context, input *discord.CommandInput) (st
 		if err != nil {
 			return "", err
 		}
-		if err = b.syncer.DiscordCreateUpdatePin(puzzle); err != nil {
+		if err = b.syncer.UpdateDiscordPin(puzzle); err != nil {
 			return "", err
 		}
 		if err = b.syncer.SyncVoiceRooms(ctx); err != nil {
@@ -233,7 +233,7 @@ func (b *PuzzleBot) Handle(ctx context.Context, input *discord.CommandInput) (st
 		)
 	case "note":
 		var newNote string
-		if noteOpt, ok := b.discord.OptionByName(input.Subcommand.Options, "is"); ok {
+		if noteOpt, ok := b.discord.OptionByName(input.Subcommand.Options, "set"); ok {
 			newNote = noteOpt.StringValue()
 			reply = ":writing_hand: Updated puzzle note!"
 		} else {
@@ -252,12 +252,12 @@ func (b *PuzzleBot) Handle(ctx context.Context, input *discord.CommandInput) (st
 		if err != nil {
 			return "", err
 		}
-		if err = b.syncer.DiscordCreateUpdatePin(puzzle); err != nil {
+		if err = b.syncer.UpdateDiscordPin(puzzle); err != nil {
 			return "", err
 		}
 	case "location":
 		var newLocation string
-		if locationOpt, ok := b.discord.OptionByName(input.Subcommand.Options, "is"); ok {
+		if locationOpt, ok := b.discord.OptionByName(input.Subcommand.Options, "set"); ok {
 			newLocation = locationOpt.StringValue()
 			reply = ":writing_hand: Updated puzzle location!"
 		} else {
@@ -276,7 +276,7 @@ func (b *PuzzleBot) Handle(ctx context.Context, input *discord.CommandInput) (st
 		if err != nil {
 			return "", err
 		}
-		if err = b.syncer.DiscordCreateUpdatePin(puzzle); err != nil {
+		if err = b.syncer.UpdateDiscordPin(puzzle); err != nil {
 			return "", err
 		}
 	default:
@@ -289,7 +289,7 @@ func (b *PuzzleBot) Handle(ctx context.Context, input *discord.CommandInput) (st
 func (b *PuzzleBot) HandleScheduledEvent(ctx context.Context,
 	i *discordgo.GuildScheduledEventUpdate) error {
 
-	if i.Description != syncer.VoiceRoomEventDescription ||
+	if i.Description != sync.VoiceRoomEventDescription ||
 		i.Status != discordgo.GuildScheduledEventStatusCompleted {
 		return nil // ignore event
 	}
@@ -301,7 +301,7 @@ func (b *PuzzleBot) HandleScheduledEvent(ctx context.Context,
 	// event, so we only see the human-triggered actions. (The bot does use
 	// updates to update the name and to start the event initally, but
 	// those events are filtered out by the condition above.)
-	log.Printf("discord: processing scheduled event completion for %q", i.Name)
+	log.Printf("scheduled event %q was ended", i.Name)
 
 	b.syncer.VoiceRoomMutex.Lock()
 	defer b.syncer.VoiceRoomMutex.Unlock()

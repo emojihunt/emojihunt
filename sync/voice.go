@@ -1,4 +1,4 @@
-package syncer
+package sync
 
 import (
 	"context"
@@ -23,7 +23,7 @@ const (
 // deleting events so that Discord matches the database state.
 //
 // The caller *must* acquire VoiceRoomMutex before calling this function.
-func (s *Syncer) SyncVoiceRooms(ctx context.Context) error {
+func (s *Client) SyncVoiceRooms(ctx context.Context) error {
 	log.Printf("syncer: syncing voice rooms")
 	events, err := s.discord.ListScheduledEvents()
 	if err != nil {
@@ -143,7 +143,7 @@ func (s *Syncer) SyncVoiceRooms(ctx context.Context) error {
 	return nil
 }
 
-func (s *Syncer) RestorePlaceholderEvent() {
+func (s *Client) RestorePlaceholderEvent() {
 	defer func() {
 		if err := recover(); err != nil {
 			log.Printf("RestorePlaceholderEvent: %v", err)

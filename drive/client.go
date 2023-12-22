@@ -92,8 +92,8 @@ func (c *Client) SetSheetTitle(ctx context.Context, sheetID, title string) error
 	return nil
 }
 
-func (c *Client) SetSheetFolder(ctx context.Context, sheetID, roundName string) error {
-	folderID, err := c.roundFolder(ctx, roundName)
+func (c *Client) SetSheetFolder(ctx context.Context, sheetID, folderName string) error {
+	folderID, err := c.roundFolder(ctx, folderName)
 	if err != nil {
 		return err
 	}
