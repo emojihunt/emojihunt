@@ -16,7 +16,7 @@ import (
 
 type Client struct {
 	queries *db.Queries
-	mu      sync.Mutex
+	mutex   sync.Mutex
 }
 
 func New(ctx context.Context, path string) *Client {

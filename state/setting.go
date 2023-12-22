@@ -28,8 +28,8 @@ func (c *Client) IsEnabled(ctx context.Context) bool {
 }
 
 func (c *Client) EnableDiscovery(ctx context.Context, enabled bool) bool {
-	c.mu.Lock()
-	defer c.mu.Unlock()
+	c.mutex.Lock()
+	defer c.mutex.Unlock()
 
 	var previous = c.IsEnabled(ctx)
 	if err := c.writeSetting(ctx, enabledSetting, enabled); err != nil {

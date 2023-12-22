@@ -12,8 +12,8 @@ import (
 // Voice Channel Cache
 
 func (c *Client) ListVoiceChannels() map[string]string {
-	c.mu.Lock()
-	defer c.mu.Unlock()
+	c.mutex.Lock()
+	defer c.mutex.Unlock()
 	var result = make(map[string]string)
 	for id, channel := range c.voiceRooms {
 		result[id] = channel.Name
@@ -25,8 +25,8 @@ func (c *Client) handleChannelCreate(ctx context.Context, r *discordgo.ChannelCr
 	if r.Channel.Type != discordgo.ChannelTypeGuildVoice {
 		return nil
 	}
-	c.mu.Lock()
-	defer c.mu.Unlock()
+	c.mutex.Lock()
+	defer c.mutex.Unlock()
 	c.voiceRooms[r.ID] = r.Channel
 	log.Printf("voice room added: %q", r.Channel.Name)
 	return nil
@@ -35,8 +35,8 @@ func (c *Client) handleChannelUpdate(ctx context.Context, r *discordgo.ChannelUp
 	if r.Channel.Type != discordgo.ChannelTypeGuildVoice {
 		return nil
 	}
-	c.mu.Lock()
-	defer c.mu.Unlock()
+	c.mutex.Lock()
+	defer c.mutex.Unlock()
 	c.voiceRooms[r.ID] = r.Channel
 	log.Printf("voice room renamed: %q", r.Channel.Name)
 	return nil
@@ -46,16 +46,16 @@ func (c *Client) handleChannelDelete(ctx context.Context, r *discordgo.ChannelDe
 	if r.Channel.Type != discordgo.ChannelTypeGuildVoice {
 		return nil
 	}
-	c.mu.Lock()
-	defer c.mu.Unlock()
+	c.mutex.Lock()
+	defer c.mutex.Unlock()
 	delete(c.voiceRooms, r.ID)
 	log.Printf("voice room removed: %q", r.Channel.Name)
 	return nil
 }
 
 func (c *Client) refreshVoiceChannels() error {
-	c.mu.Lock()
-	defer c.mu.Unlock()
+	c.mutex.Lock()
+	defer c.mutex.Unlock()
 	channels, err := c.s.GuildChannels(c.Guild.ID)
 	if err != nil {
 		return err
@@ -76,8 +76,8 @@ func (c *Client) GetScheduledEvent(id string) (*discordgo.GuildScheduledEvent, e
 }
 
 func (c *Client) ListScheduledEvents() (map[string]*discordgo.GuildScheduledEvent, error) {
-	c.mu.Lock()
-	defer c.mu.Unlock()
+	c.mutex.Lock()
+	defer c.mutex.Unlock()
 
 	// This endpoint is rate-limited to about one request per 10 seconds (why
 	// just this one? we don't know) so we save results to a cache.
@@ -102,8 +102,8 @@ func (c *Client) ListScheduledEvents() (map[string]*discordgo.GuildScheduledEven
 func (c *Client) CreateScheduledEvent(
 	params *discordgo.GuildScheduledEventParams,
 ) (*discordgo.GuildScheduledEvent, error) {
-	c.mu.Lock()
-	defer c.mu.Unlock()
+	c.mutex.Lock()
+	defer c.mutex.Unlock()
 
 	event, err := c.s.GuildScheduledEventCreate(c.Guild.ID, params)
 	if err != nil {
@@ -116,8 +116,8 @@ func (c *Client) CreateScheduledEvent(
 func (c *Client) UpdateScheduledEvent(
 	event *discordgo.GuildScheduledEvent, params *discordgo.GuildScheduledEventParams,
 ) (*discordgo.GuildScheduledEvent, error) {
-	c.mu.Lock()
-	defer c.mu.Unlock()
+	c.mutex.Lock()
+	defer c.mutex.Unlock()
 
 	var err error
 	event, err = c.s.GuildScheduledEventEdit(c.Guild.ID, event.ID, params)
@@ -129,8 +129,8 @@ func (c *Client) UpdateScheduledEvent(
 }
 
 func (c *Client) DeleteScheduledEvent(event *discordgo.GuildScheduledEvent) error {
-	c.mu.Lock()
-	defer c.mu.Unlock()
+	c.mutex.Lock()
+	defer c.mutex.Unlock()
 
 	err := c.s.GuildScheduledEventDelete(c.Guild.ID, event.ID)
 	if err != nil {

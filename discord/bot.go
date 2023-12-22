@@ -45,8 +45,8 @@ type botRegistration struct {
 }
 
 func (c *Client) RegisterBots(bots ...Bot) {
-	c.mu.Lock()
-	defer c.mu.Unlock()
+	c.mutex.Lock()
+	defer c.mutex.Unlock()
 	if c.commandsRegistered {
 		panic("RegisterBots() was called twice")
 	}

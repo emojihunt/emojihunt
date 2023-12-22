@@ -83,8 +83,8 @@ func (c *Client) CreatePuzzle(ctx context.Context, puzzle RawPuzzle) (Puzzle, er
 func (c *Client) UpdatePuzzle(ctx context.Context, id int64,
 	mutate func(puzzle *RawPuzzle) error) (Puzzle, error) {
 
-	c.mu.Lock()
-	defer c.mu.Unlock()
+	c.mutex.Lock()
+	defer c.mutex.Unlock()
 
 	original, err := c.GetPuzzle(ctx, id)
 	if err != nil {

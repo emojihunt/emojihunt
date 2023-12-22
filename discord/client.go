@@ -51,7 +51,7 @@ type Client struct {
 
 	botsByCommand map[string]*botRegistration
 
-	mu                        sync.Mutex // hold while accessing everything below
+	mutex                     sync.Mutex // hold while accessing everything below
 	commandsRegistered        bool
 	scheduledEventsCache      map[string]*discordgo.GuildScheduledEvent
 	scheduledEventsLastUpdate time.Time

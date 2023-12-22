@@ -20,16 +20,15 @@ var (
 )
 
 type Client struct {
+	sheets *sheets.Service
+	drive  *drive.Service
+
 	// ID of this year's root folder (e.g. "emoji hunt/2021")
 	rootFolderID string
 
-	// hold while accessing roundFolderIDs
-	mu sync.Mutex
-	// cache of round name to folder ID
-	roundFolderIDs map[string]string
-
-	sheets *sheets.Service
-	drive  *drive.Service
+	// hold while accessing everything below
+	mutex          sync.Mutex
+	roundFolderIDs map[string]string // cache of round name to folder ID
 }
 
 func NewClient(ctx context.Context, prod bool) *Client {
@@ -111,8 +110,8 @@ func (c *Client) SetSheetFolder(ctx context.Context, sheetID, folderName string)
 const folderMimeType = "application/vnd.google-apps.folder"
 
 func (c *Client) roundFolder(ctx context.Context, name string) (id string, err error) {
-	c.mu.Lock()
-	defer c.mu.Unlock()
+	c.mutex.Lock()
+	defer c.mutex.Unlock()
 
 	if id = c.roundFolderIDs[name]; id != "" {
 		return id, nil

@@ -151,8 +151,8 @@ func (c *Client) handleScheduledEvent(
 // Rate Limit Tracking
 
 func (c *Client) CheckRateLimit(url string) *time.Time {
-	c.mu.Lock()
-	defer c.mu.Unlock()
+	c.mutex.Lock()
+	defer c.mutex.Unlock()
 
 	limit := c.rateLimits[url]
 	if limit == nil || time.Now().After(*limit) {
@@ -172,8 +172,8 @@ func (c *Client) handleRateLimit(
 		return nil
 	}
 
-	c.mu.Lock()
-	defer c.mu.Unlock()
+	c.mutex.Lock()
+	defer c.mutex.Unlock()
 	expiry := time.Now().Add(r.TooManyRequests.RetryAfter)
 	c.rateLimits[r.URL] = &expiry
 

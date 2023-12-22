@@ -63,8 +63,8 @@ func (c *Client) CreateRound(ctx context.Context, round Round) (Round, error) {
 func (c *Client) UpdateRound(ctx context.Context, id int64,
 	mutate func(round *Round) error) (Round, error) {
 
-	c.mu.Lock()
-	defer c.mu.Unlock()
+	c.mutex.Lock()
+	defer c.mutex.Unlock()
 
 	raw, err := c.GetRound(ctx, id)
 	if err != nil {
