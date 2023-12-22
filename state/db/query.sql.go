@@ -255,7 +255,7 @@ SELECT
     p.meta, p.voice_room, p.reminder
 FROM puzzles AS p
 INNER JOIN rounds ON p.round = rounds.id
-ORDER BY p.id
+ORDER BY rounds.special, rounds.id, p.meta, p.name
 `
 
 type ListPuzzlesRow struct {
@@ -317,7 +317,7 @@ func (q *Queries) ListPuzzles(ctx context.Context) ([]ListPuzzlesRow, error) {
 
 const listRounds = `-- name: ListRounds :many
 SELECT id, name, emoji, hue, special FROM rounds
-ORDER BY id
+ORDER BY special, id
 `
 
 func (q *Queries) ListRounds(ctx context.Context) ([]Round, error) {

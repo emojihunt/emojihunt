@@ -2,15 +2,15 @@ import { defineStore } from 'pinia';
 
 export default defineStore("puzzles", {
   state: () => ({
-    _rounds: {} as Record<number, Round>,
-    _puzzles: {} as Record<number, Puzzle>,
+    _rounds: new Map<number, Round>(),
+    _puzzles: new Map<number, Puzzle>(),
     next_hunt: undefined as Date | undefined,
     voice_rooms: {} as Record<string, string>
   }),
   getters: {
     rounds(state): AnnotatedRound[] {
       const rounds: AnnotatedRound[] = [];
-      for (const base of Object.values(state._rounds)) {
+      for (const base of state._rounds.values()) {
         const puzzles = this.puzzles.get(base.id) || [];
         rounds.push({
           ...base,
@@ -21,28 +21,16 @@ export default defineStore("puzzles", {
           total: puzzles.length,
         });
       }
-      rounds.sort((a, b) => {
-        if (a.special && !b.special) return 1;
-        else if (!a.special && b.special) return -1;
-        else return a.id - b.id;
-      });
       return rounds;
     },
     puzzles(state): Map<number, Puzzle[]> {
       const grouped = new Map<number, Puzzle[]>();
-      for (const puzzle of Object.values(state._puzzles)) {
+      for (const puzzle of state._puzzles.values()) {
         const id = puzzle.round.id;
         if (!grouped.has(id)) {
           grouped.set(id, []);
         }
         grouped.get(id)!.push(puzzle);
-      }
-      for (const [_, puzzles] of grouped) {
-        puzzles.sort((a, b) => {
-          if (a.meta && !b.meta) return 1;
-          else if (!a.meta && b.meta) return -1;
-          else return a.name.localeCompare(b.name);
-        });
       }
       return grouped;
     },
@@ -50,37 +38,33 @@ export default defineStore("puzzles", {
   actions: {
     async refresh() {
       const data = await useAPI<any>("/home");
-      this._rounds = {};
-      for (const round of data.value.rounds || []) {
-        this._rounds[round.id] = round;
-      }
-      this._puzzles = {};
-      for (const puzzle of data.value.puzzles || []) {
-        this._puzzles[puzzle.id] = puzzle;
-      }
+      this._rounds.clear();
+      this._puzzles.clear();
+      (data.value.rounds || []).forEach((r: any) => this._rounds.set(r.id, r));
+      (data.value.puzzles || []).forEach((p: any) => this._puzzles.set(p.id, p));
       this.next_hunt = data.value.next_hunt ?
         new Date(data.value.next_hunt) : undefined;
       this.voice_rooms = data.value.voice_rooms;
     },
     async addRound(data: Omit<Round, "id">) {
       return useAPI(`/rounds`, data)
-        .then((r: any) => r.value && (this._rounds[r.value.id] = r.value));
+        .then((r: any) => r.value && this._rounds.set(r.value.id, r.value));
     },
-    async updateRound(round: Round, data: Partial<Round>) {
-      const previous = this._rounds[round.id];
-      this._rounds[round.id] = { ...previous, ...data };
+    async updateRound(round: Round, data: Omit<Partial<Round>, "id">) {
+      const previous = this._rounds.get(round.id)!;
+      this._rounds.set(round.id, { ...previous, ...data });
       await useAPI(`/rounds/${round.id}`, data)
-        .catch(() => this._rounds[round.id] = previous);
+        .catch(() => this._rounds.set(round.id, previous));
     },
     async addPuzzle(data: { name: string; round: number; puzzle_url: string; }) {
       return useAPI(`/puzzles`, data)
-        .then((r: any) => r.value && (this._puzzles[r.value.id] = r.value));
+        .then((r: any) => r.value && this._puzzles.set(r.value.id, r.value));
     },
-    async updatePuzzle(puzzle: Puzzle, data: Partial<Puzzle>) {
-      const previous = this._puzzles[puzzle.id];
-      this._puzzles[puzzle.id] = { ...previous, ...data };
+    async updatePuzzle(puzzle: Puzzle, data: Omit<Partial<Puzzle>, "id">) {
+      const previous = this._puzzles.get(puzzle.id)!;
+      this._puzzles.set(puzzle.id, { ...previous, ...data });
       await useAPI(`/puzzles/${puzzle.id}`, data)
-        .catch(() => this._puzzles[puzzle.id] = previous);
+        .catch(() => this._puzzles.set(puzzle.id, previous));
     },
   },
 });

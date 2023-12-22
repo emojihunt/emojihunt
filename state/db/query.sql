@@ -23,7 +23,7 @@ SELECT
     p.meta, p.voice_room, p.reminder
 FROM puzzles AS p
 INNER JOIN rounds ON p.round = rounds.id
-ORDER BY p.id;
+ORDER BY rounds.special, rounds.id, p.meta, p.name;
 
 -- name: CreatePuzzle :one
 INSERT INTO puzzles (
@@ -54,7 +54,7 @@ WHERE id = ? LIMIT 1;
 
 -- name: ListRounds :many
 SELECT * FROM rounds
-ORDER BY id;
+ORDER BY special, id;
 
 -- name: CreateRound :one
 INSERT INTO rounds (name, emoji, hue, special)

@@ -167,10 +167,6 @@ func (s *Client) HandleStatusChange(
 // including overwriting the channel name, spreadsheet name, etc. It also
 // re-sends any status change notifications.
 func (s *Client) ForceUpdate(ctx context.Context, puzzle state.Puzzle) (state.Puzzle, error) {
-	if puzzle.SpreadsheetID == "-" || puzzle.DiscordChannel == "-" {
-		return puzzle, xerrors.Errorf("puzzle is a placeholder puzzle, skipping")
-	}
-
 	var err error
 	puzzle, err = s.IdempotentCreateUpdate(ctx, puzzle)
 	if err != nil {
