@@ -7,8 +7,8 @@ import (
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/emojihunt/emojihunt/discord"
+	"github.com/emojihunt/emojihunt/huntyet"
 	"github.com/emojihunt/emojihunt/state"
-	"github.com/emojihunt/emojihunt/util"
 	"github.com/getsentry/sentry-go"
 )
 
@@ -70,7 +70,7 @@ func (b *ReminderBot) Handle(ctx context.Context, input *discord.CommandInput) (
 		msg += fmt.Sprintf(
 			" • %s @ %s ET%s\n",
 			puzzle.Name,
-			puzzle.Reminder.In(util.BostonTime).Format("Mon 3:04 PM"),
+			puzzle.Reminder.In(huntyet.BostonTime).Format("Mon 3:04 PM"),
 			suffix,
 		)
 	}
@@ -134,7 +134,7 @@ func (b *ReminderBot) notify(ctx context.Context, since time.Time) (*time.Time, 
 		if puzzle.Reminder.Before(now) && puzzle.Reminder.After(since) {
 			msg = fmt.Sprintf(":alarm_clock: It's time! Puzzle %q has a reminder set for "+
 				"now (%s ET)",
-				puzzle.Name, puzzle.Reminder.In(util.BostonTime).Format("Mon 3:04 PM"))
+				puzzle.Name, puzzle.Reminder.In(huntyet.BostonTime).Format("Mon 3:04 PM"))
 		}
 
 		if msg != "" {
