@@ -64,7 +64,6 @@ func (c *Client) DiscoveredRounds(ctx context.Context) (map[string]DiscoveredRou
 	}
 }
 
-// TODO: is this used in a concurrency-safe way?
 func (c *Client) SetDiscoveredRounds(ctx context.Context, rounds map[string]DiscoveredRound) error {
 	// Concurrency rule: this setting is only written from the discovery poller's
 	// round creation worker goroutine.

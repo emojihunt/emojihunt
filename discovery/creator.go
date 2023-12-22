@@ -112,7 +112,6 @@ func (p *Poller) handleNewRounds(ctx context.Context, newRounds map[string][]sta
 		if err != nil {
 			errs = append(errs, err)
 		} else {
-			// TODO
 			previouslyDiscovered[name] = state.DiscoveredRound{
 				MessageID:  id,
 				Name:       name,
