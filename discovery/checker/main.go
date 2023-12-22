@@ -13,7 +13,7 @@ import (
 // the given URL and print the puzzles that were found.
 func main() {
 	// Run discovery with stubbed-out discovery client
-	disc := discovery.New(context.Background(), nil, nil, nil, nil)
+	disc := discovery.New(context.Background(), nil, nil, nil)
 	puzzles, err := disc.Scrape(context.Background())
 	if err != nil {
 		panic(err)

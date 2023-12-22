@@ -19,11 +19,10 @@ import (
 type PuzzleBot struct {
 	discord *discord.Client
 	state   *state.Client
-	syncer  *sync.Client
 }
 
-func NewPuzzleBot(discord *discord.Client, state *state.Client, syncer *sync.Client) discord.Bot {
-	return &PuzzleBot{discord, state, syncer}
+func NewPuzzleBot(discord *discord.Client, state *state.Client) discord.Bot {
+	return &PuzzleBot{discord, state}
 }
 
 func (b *PuzzleBot) Register() (*discordgo.ApplicationCommand, bool) {
@@ -147,16 +146,12 @@ func (b *PuzzleBot) Handle(ctx context.Context, input *discord.CommandInput) (st
 	switch input.Subcommand {
 	case "voice":
 		var channel *discordgo.Channel
-
 		if channelOpt, ok := input.Options["in"]; !ok {
 			channel = b.discord.ChannelValue(channelOpt)
 			reply = fmt.Sprintf("Set the room for puzzle %q to %s", puzzle.Name, channel.Mention())
 		} else {
 			reply = fmt.Sprintf("Removed the room for puzzle %q", puzzle.Name)
 		}
-
-		b.syncer.VoiceRoomMutex.Lock()
-		defer b.syncer.VoiceRoomMutex.Unlock()
 		puzzle, err = b.state.UpdatePuzzle(ctx, puzzle.ID,
 			func(puzzle *state.RawPuzzle) error {
 				puzzle.VoiceRoom = channel.ID
@@ -164,12 +159,6 @@ func (b *PuzzleBot) Handle(ctx context.Context, input *discord.CommandInput) (st
 			},
 		)
 		if err != nil {
-			return "", err
-		}
-		if err = b.syncer.UpdateDiscordPin(puzzle); err != nil {
-			return "", err
-		}
-		if err = b.syncer.SyncVoiceRooms(ctx); err != nil {
 			return "", err
 		}
 	case "progress":
@@ -197,10 +186,6 @@ func (b *PuzzleBot) Handle(ctx context.Context, input *discord.CommandInput) (st
 		if err != nil {
 			return "", err
 		}
-		_, err = b.syncer.HandleStatusChange(ctx, puzzle, true)
-		if err != nil {
-			return "", err
-		}
 	case "solved":
 		if statusOpt, ok := input.Options["as"]; !ok {
 			return "", xerrors.Errorf("missing option: as")
@@ -214,7 +199,7 @@ func (b *PuzzleBot) Handle(ctx context.Context, input *discord.CommandInput) (st
 			newAnswer = strings.ToUpper(answerOpt.StringValue())
 		}
 
-		puzzle, err := b.state.UpdatePuzzle(ctx, puzzle.ID,
+		_, err := b.state.UpdatePuzzle(ctx, puzzle.ID,
 			func(puzzle *state.RawPuzzle) error {
 				puzzle.Status = newStatus
 				puzzle.Answer = newAnswer
@@ -222,9 +207,6 @@ func (b *PuzzleBot) Handle(ctx context.Context, input *discord.CommandInput) (st
 			},
 		)
 		if err != nil {
-			return "", err
-		}
-		if _, err = b.syncer.HandleStatusChange(ctx, puzzle, true); err != nil {
 			return "", err
 		}
 		reply = fmt.Sprintf(
@@ -252,9 +234,6 @@ func (b *PuzzleBot) Handle(ctx context.Context, input *discord.CommandInput) (st
 		if err != nil {
 			return "", err
 		}
-		if err = b.syncer.UpdateDiscordPin(puzzle); err != nil {
-			return "", err
-		}
 	case "location":
 		var newLocation string
 		if locationOpt, ok := input.Options["set"]; ok {
@@ -264,7 +243,7 @@ func (b *PuzzleBot) Handle(ctx context.Context, input *discord.CommandInput) (st
 			reply = ":cl: Cleared puzzle location."
 		}
 
-		puzzle, err = b.state.UpdatePuzzle(ctx, puzzle.ID,
+		_, err = b.state.UpdatePuzzle(ctx, puzzle.ID,
 			func(puzzle *state.RawPuzzle) error {
 				if puzzle.Location != "" {
 					reply += fmt.Sprintf(" Previous location was: ```\n%s\n```", puzzle.Location)
@@ -274,9 +253,6 @@ func (b *PuzzleBot) Handle(ctx context.Context, input *discord.CommandInput) (st
 			},
 		)
 		if err != nil {
-			return "", err
-		}
-		if err = b.syncer.UpdateDiscordPin(puzzle); err != nil {
 			return "", err
 		}
 	default:
@@ -302,9 +278,5 @@ func (b *PuzzleBot) HandleScheduledEvent(ctx context.Context,
 	// updates to update the name and to start the event initally, but
 	// those events are filtered out by the condition above.)
 	log.Printf("scheduled event %q was ended", i.Name)
-
-	b.syncer.VoiceRoomMutex.Lock()
-	defer b.syncer.VoiceRoomMutex.Unlock()
-
 	return b.state.ClearPuzzleVoiceRoom(ctx, i.ChannelID)
 }

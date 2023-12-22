@@ -7,18 +7,17 @@ import (
 	"github.com/bwmarrin/discordgo"
 	"github.com/emojihunt/emojihunt/discord"
 	"github.com/emojihunt/emojihunt/state"
-	"github.com/emojihunt/emojihunt/sync"
 	"golang.org/x/xerrors"
 )
 
 type QMBot struct {
-	discord *discord.Client
-	state   *state.Client
-	sync    *sync.Client
+	discord   *discord.Client
+	discovery bool
+	state     *state.Client
 }
 
-func NewQMBot(discord *discord.Client, state *state.Client, sync *sync.Client) discord.Bot {
-	return &QMBot{discord, state, sync}
+func NewQMBot(discord *discord.Client, discovery bool, state *state.Client) discord.Bot {
+	return &QMBot{discord, discovery, state}
 }
 
 func (b *QMBot) Register() (*discordgo.ApplicationCommand, bool) {
@@ -82,20 +81,18 @@ func (b *QMBot) Handle(ctx context.Context, input *discord.CommandInput) (string
 		}
 		return fmt.Sprintf("%s is no longer a QM", input.User.Mention()), nil
 	case "discovery.pause":
-		if !b.sync.Discovery {
+		if !b.discovery {
 			return "Puzzle discovery isn't configured.", nil
 		} else if b.state.EnableDiscovery(ctx, false) {
-			return "Ok, I've paused puzzle discovery. Re-enable it with `/qm discovery resume`.",
-				b.sync.UpdateBotStatus(ctx)
+			return "Ok, I've paused puzzle discovery. Re-enable it with `/qm discovery resume`.", nil
 		} else {
 			return "Discovery was already paused. Re-enable it with `/qm discovery resume`.", nil
 		}
 	case "discovery.resume":
-		if !b.sync.Discovery {
+		if !b.discovery {
 			return "Puzzle discovery isn't configured.", nil
 		} else if b.state.EnableDiscovery(ctx, true) {
-			return "Ok, I've resumed puzzle discovery. Pause it with `/qm discovery pause`.",
-				b.sync.UpdateBotStatus(ctx)
+			return "Ok, I've resumed puzzle discovery. Pause it with `/qm discovery pause`.", nil
 		} else {
 			return "Discovery was already enabled. Pause it with `/qm discovery pause`.", nil
 		}

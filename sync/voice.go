@@ -21,8 +21,6 @@ const (
 
 // SyncVoiceRooms synchronizes all Discord scheduled events, creating and
 // deleting events so that Discord matches the database state.
-//
-// The caller *must* acquire VoiceRoomMutex before calling this function.
 func (s *Client) SyncVoiceRooms(ctx context.Context) error {
 	log.Printf("syncer: syncing voice rooms")
 	events, err := s.discord.ListScheduledEvents()
@@ -138,22 +136,12 @@ func (s *Client) SyncVoiceRooms(ctx context.Context) error {
 		}
 	}
 
-	// Will block until the caller releases VoiceRoomMutex
-	go s.RestorePlaceholderEvent()
+	s.RestorePlaceholderEvent()
 	return nil
 }
 
-func (s *Client) RestorePlaceholderEvent() {
-	defer func() {
-		if err := recover(); err != nil {
-			log.Printf("RestorePlaceholderEvent: %v", err)
-		}
-	}()
-
-	s.VoiceRoomMutex.Lock()
-	defer s.VoiceRoomMutex.Unlock()
-
-	events, err := s.discord.ListScheduledEvents()
+func (c *Client) RestorePlaceholderEvent() {
+	events, err := c.discord.ListScheduledEvents()
 	if err != nil {
 		panic(err)
 	}
@@ -174,8 +162,8 @@ func (s *Client) RestorePlaceholderEvent() {
 	}
 
 	start := time.Now().Add(eventDelay)
-	_, err = s.discord.CreateScheduledEvent(&discordgo.GuildScheduledEventParams{
-		ChannelID:          s.discord.DefaultVoiceChannel.ID,
+	_, err = c.discord.CreateScheduledEvent(&discordgo.GuildScheduledEventParams{
+		ChannelID:          c.discord.DefaultVoiceChannel.ID,
 		Name:               VoiceRoomPlaceholderTitle,
 		PrivacyLevel:       discordgo.GuildScheduledEventPrivacyLevelGuildOnly,
 		ScheduledStartTime: &start,

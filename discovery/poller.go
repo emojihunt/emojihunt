@@ -14,7 +14,6 @@ import (
 	"github.com/davecgh/go-spew/spew"
 	"github.com/emojihunt/emojihunt/discord"
 	"github.com/emojihunt/emojihunt/state"
-	"github.com/emojihunt/emojihunt/sync"
 	"github.com/getsentry/sentry-go"
 	"golang.org/x/net/websocket"
 	"golang.org/x/time/rate"
@@ -91,7 +90,6 @@ type Poller struct {
 	main      context.Context
 	discord   *discord.Client
 	state     *state.Client
-	syncer    *sync.Client
 	roundCh   chan state.DiscoveredRound
 	wsLimiter *rate.Limiter
 }
@@ -106,7 +104,7 @@ const (
 var websocketRate = rate.Every(1 * time.Minute)
 
 func New(main context.Context, discord *discord.Client, st *state.Client,
-	syncer *sync.Client, config *DiscoveryConfig) *Poller {
+	config *DiscoveryConfig) *Poller {
 
 	puzzlesURL, err := url.Parse(config.PuzzlesURL)
 	if err != nil {
@@ -146,7 +144,6 @@ func New(main context.Context, discord *discord.Client, st *state.Client,
 		main:      main,
 		state:     st,
 		discord:   discord,
-		syncer:    syncer,
 		roundCh:   make(chan state.DiscoveredRound),
 		wsLimiter: rate.NewLimiter(websocketRate, websocketBurst),
 	}

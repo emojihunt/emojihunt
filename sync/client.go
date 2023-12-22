@@ -2,33 +2,48 @@ package sync
 
 import (
 	"context"
-	"log"
 	"sync"
 
+	"github.com/bwmarrin/discordgo"
 	"github.com/emojihunt/emojihunt/discord"
 	"github.com/emojihunt/emojihunt/drive"
 	"github.com/emojihunt/emojihunt/state"
 	"github.com/emojihunt/emojihunt/state/status"
-	"golang.org/x/xerrors"
 )
 
 type Client struct {
-	state   *state.Client
-	discord *discord.Client
-	drive   *drive.Client
-
-	Discovery            bool
-	VoiceRoomMutex       sync.Mutex
-	DiscordCategoryMutex sync.Mutex
+	state     *state.Client
+	discord   *discord.Client
+	discovery bool
+	drive     *drive.Client
 }
 
-func New(discord *discord.Client, drive *drive.Client, state *state.Client, discovery bool) *Client {
+func New(discord *discord.Client, discovery bool, drive *drive.Client, state *state.Client) *Client {
 	return &Client{
-		Discovery: discovery,
 		discord:   discord,
+		discovery: discovery,
 		drive:     drive,
 		state:     state,
 	}
+}
+
+func (c *Client) TriggerDiscoveryEnabled(ctx context.Context) error {
+	var data discordgo.UpdateStatusData
+	if !c.discovery {
+		data.Status = "idle"
+	} else if c.state.IsEnabled(ctx) {
+		data.Status = "online"
+	} else {
+		data.Status = "dnd"
+		data.Activities = []*discordgo.Activity{
+			{
+				Name:  "Huntbot",
+				Type:  discordgo.ActivityTypeCustom,
+				State: "puzzle discovery paused",
+			},
+		}
+	}
+	return c.discord.UpdateStatus(data)
 }
 
 func (c *Client) TriggerPuzzle(ctx context.Context, previous *state.Puzzle, puzzle state.Puzzle) error {
@@ -45,86 +60,82 @@ func (c *Client) TriggerPuzzle(ctx context.Context, previous *state.Puzzle, puzz
 			return err
 		}
 	}
+
 	if previous == nil {
-		if err := c.NotifyNewPuzzle(puzzle); err != nil {
+		err = c.UpdateDiscordChannel(NewDiscordChannelFields(puzzle))
+		if err != nil {
 			return err
 		}
-	}
-	// TODO: ...
-	return nil
-}
-
-// HandleStatusChange synchronizes Discord and sends notifications when the
-// puzzle status changes. It's called by IdempotentCreateUpdate. If you're
-// calling this from a slash command handler, and the is going to acknowledge
-// the user in the puzzle channel, you can set `botRequest=true` to suppress
-// notifications to the puzzle channel.
-func (s *Client) HandleStatusChange(
-	ctx context.Context, puzzle state.Puzzle, botRequest bool,
-) (state.Puzzle, error) {
-	log.Printf("syncer: handling status change for %q", puzzle.Name)
-	if puzzle.DiscordChannel == "" {
-		return puzzle, xerrors.Errorf("puzzle is a placeholder puzzle, skipping")
-	}
-
-	var err error
-	err = s.parallelHardUpdate(ctx, puzzle)
-	if err != nil {
-		return puzzle, err
-	}
-
-	// Send notifications
-	if puzzle.Status.IsSolved() {
-		// Puzzle solved and answer entered! (Suppress puzzle channel
-		// notification if this is a bot request, since the bot will also
-		// respond in the puzzle channel.)
-		err = s.NotifyPuzzleSolved(puzzle, botRequest)
+		err = c.UpdateDiscordPin(NewDiscordPinFields(puzzle))
 		if err != nil {
-			return puzzle, err
+			return err
 		}
+		err = c.UpdateSpreadsheet(ctx, NewSpreadsheetFields(puzzle))
+		if err != nil {
+			return err
+		}
+		return c.NotifyNewPuzzle(puzzle)
+	} else {
+		var wg sync.WaitGroup
+		var ch = make(chan error, 4)
 
-		// Also unset the voice room, if applicable
-		if puzzle.VoiceRoom != "" {
-			puzzle, err = s.state.UpdatePuzzle(ctx, puzzle.ID,
+		// On solve, unset voice room
+		if !previous.Status.IsSolved() && puzzle.Status.IsSolved() {
+			var sync bool
+			puzzle, err = c.state.UpdatePuzzle(ctx, puzzle.ID,
 				func(puzzle *state.RawPuzzle) error {
-					puzzle.VoiceRoom = ""
+					if puzzle.VoiceRoom != "" {
+						puzzle.VoiceRoom = ""
+						sync = true
+					}
 					return nil
 				},
 			)
 			if err != nil {
-				return puzzle, err
+				return err
 			}
-			if err = s.UpdateDiscordPin(puzzle); err != nil {
-				return puzzle, err
-			}
-			if err = s.SyncVoiceRooms(ctx); err != nil {
-				return puzzle, err
+			if sync {
+				wg.Add(1)
+				go func() { ch <- c.SyncVoiceRooms(ctx); wg.Done() }()
 			}
 		}
-	} else if puzzle.Status == status.Working {
-		if err = s.NotifyPuzzleWorking(puzzle); err != nil {
-			return puzzle, err
-		}
-	}
-	return puzzle, nil
-}
 
-// parallelHardUpdate updates the Discord pinned message, the Discord channel
-// name/category, and the Google spreadsheet name. It's called when the puzzle
-// status changes, and as part of ForceUpdate().
-func (s *Client) parallelHardUpdate(ctx context.Context, puzzle state.Puzzle) error {
-	var wg sync.WaitGroup
-	var ch = make(chan error, 3)
-	wg.Add(3)
-	go func() { ch <- s.UpdateDiscordPin(puzzle); wg.Done() }()
-	go func() { ch <- s.UpdateDiscordChannel(puzzle); wg.Done() }()
-	go func() { ch <- s.UpdateSpreadsheet(ctx, puzzle); wg.Done() }()
-	wg.Wait()
-	close(ch)
-	for err := range ch {
-		if err != nil {
-			return err
+		// Sync updates to the Discord channel name and category:
+		var c0, c1 = NewDiscordChannelFields(*previous), NewDiscordChannelFields(puzzle)
+		if puzzle.HasDiscordChannel() && c0 != c1 {
+			wg.Add(1)
+			go func() { ch <- c.UpdateDiscordChannel(c1); wg.Done() }()
+		}
+
+		// Sync updates to the Discord pinned message:
+		var p0, p1 = NewDiscordPinFields(*previous), NewDiscordPinFields(puzzle)
+		if puzzle.HasDiscordChannel() && p0 != p1 {
+			wg.Add(1)
+			go func() { ch <- c.UpdateDiscordPin(p1); wg.Done() }()
+		}
+
+		// Sync updates to the spreadsheet name and folder:
+		var s0, s1 = NewSpreadsheetFields(*previous), NewSpreadsheetFields(puzzle)
+		if puzzle.HasSpreadsheetID() && s0 != s1 {
+			wg.Add(1)
+			go func() { ch <- c.UpdateSpreadsheet(ctx, s1); wg.Done() }()
+		}
+
+		wg.Wait()
+		close(ch)
+		for err := range ch {
+			if err != nil {
+				return err
+			}
+		}
+
+		// Notify the puzzle channel and #more-eyes of significant status changes
+		if !previous.Status.IsSolved() && puzzle.Status.IsSolved() {
+			return c.NotifyPuzzleSolved(puzzle, false) // TODO: support `botRequest` field
+		} else if previous.Status == status.NotStarted && puzzle.Status == status.Working {
+			return c.NotifyPuzzleWorking(puzzle)
+		} else {
+			return nil
 		}
 	}
-	return nil
 }

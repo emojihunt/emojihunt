@@ -70,10 +70,10 @@ func main() {
 	var drive = drive.NewClient(ctx, *prod)
 
 	// Start internal engines
-	log.Printf("starting syncer")
-	var sync = sync.New(discord, drive, state, false)
+	var discovery = false
+	var sync = sync.New(discord, discovery, drive, state)
 	go sync.RestorePlaceholderEvent()
-	sync.UpdateBotStatus(ctx)
+	sync.TriggerDiscoveryEnabled(ctx)
 
 	log.Printf("starting web server")
 	server.Start(ctx, *prod, discord, state)
@@ -82,8 +82,8 @@ func main() {
 	discord.RegisterBots(
 		bot.NewEmojiNameBot(),
 		bot.NewHuntYetBot(),
-		bot.NewPuzzleBot(discord, state, sync),
-		bot.NewQMBot(discord, state, sync),
+		bot.NewPuzzleBot(discord, state),
+		bot.NewQMBot(discord, discovery, state),
 		bot.NewReminderBot(ctx, discord, state),
 	)
 
