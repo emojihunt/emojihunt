@@ -188,8 +188,8 @@ func computeBotStatus(ctx context.Context, state *state.Client) string {
 }
 
 func (c *Client) ChannelSend(ch *discordgo.Channel, msg string) (string, error) {
-	if len(msg) > 1950 {
-		msg = msg[:1950] + "... [truncated]"
+	if len(msg) > 2000 {
+		msg = msg[:1994] + "\n[...]"
 	}
 	sent, err := c.s.ChannelMessageSend(ch.ID, msg)
 	if err != nil {

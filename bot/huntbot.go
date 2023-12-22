@@ -56,15 +56,15 @@ func (b *HuntBot) Handle(ctx context.Context, input *discord.CommandInput) (stri
 	switch input.Subcommand.Name {
 	case "kill":
 		if b.state.EnableHuntbot(ctx, false) {
-			reply = "Ok, I've disabled the bot for now.  Enable it with `/huntbot enable`."
+			reply = "Ok, I've disabled puzzle autodiscovery.  Enable it with `/huntbot enable`."
 		} else {
 			reply = "The bot was already disabled. Enable it with `/huntbot enable`."
 		}
 		b.discord.UpdateStatus(ctx) // best-effort, ignore errors
 		return reply, nil
 	case "enable":
-		if b.state.EnableHuntbot(ctx, false) {
-			reply = "Ok, I've enabled the bot for now. Disable it with `/huntbot kill`."
+		if b.state.EnableHuntbot(ctx, true) {
+			reply = "Ok, I've enabled puzzle autodiscovery. Disable it with `/huntbot kill`."
 		} else {
 			reply = "The bot was already enabled. Disable it with `/huntbot kill`."
 		}
