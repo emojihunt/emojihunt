@@ -12,9 +12,9 @@ import (
 )
 
 const (
-	enabledSetting          = "huntbot_enabled"
-	reminderSetting         = "reminder_timestamp"
+	enabledSetting          = "discovery_enabled"
 	discoveredRoundsSetting = "discovered_rounds"
+	reminderSetting         = "reminder_timestamp"
 )
 
 func (c *Client) IsEnabled(ctx context.Context) bool {
@@ -27,7 +27,7 @@ func (c *Client) IsEnabled(ctx context.Context) bool {
 	}
 }
 
-func (c *Client) EnableHuntbot(ctx context.Context, enabled bool) bool {
+func (c *Client) EnableDiscovery(ctx context.Context, enabled bool) bool {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 

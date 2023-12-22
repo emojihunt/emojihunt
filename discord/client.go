@@ -71,7 +71,7 @@ func Connect(ctx context.Context, prod bool, state *state.Client) *Client {
 	}
 	s.Identify.Intents = discordgo.IntentsGuilds |
 		discordgo.IntentsGuildScheduledEvents
-	s.Identify.Presence.Status = computeBotStatus(ctx, state)
+	s.Identify.Presence.Status = "invisible"
 	if err := s.Open(); err != nil {
 		log.Panicf("discordgo.Open: %s", err)
 	}
@@ -172,19 +172,8 @@ func (c *Client) Close() error {
 	return c.s.Close()
 }
 
-// Update the bot's status (idle/active).
-func (c *Client) UpdateStatus(ctx context.Context) error {
-	return c.s.UpdateStatusComplex(discordgo.UpdateStatusData{
-		Status: computeBotStatus(ctx, c.state),
-	})
-}
-
-func computeBotStatus(ctx context.Context, state *state.Client) string {
-	if state.IsEnabled(ctx) {
-		return "online"
-	} else {
-		return "dnd"
-	}
+func (c *Client) UpdateStatus(data discordgo.UpdateStatusData) error {
+	return c.s.UpdateStatusComplex(data)
 }
 
 func (c *Client) ChannelSend(ch *discordgo.Channel, msg string) (string, error) {

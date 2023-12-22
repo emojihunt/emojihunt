@@ -17,15 +17,17 @@ type Client struct {
 	discord *discord.Client
 	drive   *drive.Client
 
+	Discovery            bool
 	VoiceRoomMutex       sync.Mutex
 	DiscordCategoryMutex sync.Mutex
 }
 
-func New(discord *discord.Client, drive *drive.Client, state *state.Client) *Client {
+func New(discord *discord.Client, drive *drive.Client, state *state.Client, discovery bool) *Client {
 	return &Client{
-		discord: discord,
-		drive:   drive,
-		state:   state,
+		Discovery: discovery,
+		discord:   discord,
+		drive:     drive,
+		state:     state,
 	}
 }
 

@@ -22,7 +22,8 @@ type CommandInput struct {
 	IC         *discordgo.InteractionCreate
 	User       *discordgo.User
 	Command    string
-	Subcommand *discordgo.ApplicationCommandInteractionDataOption
+	Subcommand string
+	Options    map[string]*discordgo.ApplicationCommandInteractionDataOption
 }
 
 func (i CommandInput) EditMessage(msg string) error {
@@ -72,19 +73,4 @@ func (c *Client) RegisterBots(bots ...Bot) {
 	if err != nil {
 		panic(err)
 	}
-}
-
-func (c *Client) OptionByName(
-	options []*discordgo.ApplicationCommandInteractionDataOption, name string,
-) (*discordgo.ApplicationCommandInteractionDataOption, bool) {
-	var result *discordgo.ApplicationCommandInteractionDataOption
-	for _, opt := range options {
-		if opt.Name == name {
-			result = opt
-		}
-	}
-	if result == nil {
-		return nil, false
-	}
-	return result, true
 }

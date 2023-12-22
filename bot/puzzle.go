@@ -144,11 +144,11 @@ func (b *PuzzleBot) Handle(ctx context.Context, input *discord.CommandInput) (st
 	var reply string
 	var newStatus status.Status
 	var newAnswer string
-	switch input.Subcommand.Name {
+	switch input.Subcommand {
 	case "voice":
 		var channel *discordgo.Channel
-		channelOpt, ok := b.discord.OptionByName(input.Subcommand.Options, "in")
-		if ok {
+
+		if channelOpt, ok := input.Options["in"]; !ok {
 			channel = b.discord.ChannelValue(channelOpt)
 			reply = fmt.Sprintf("Set the room for puzzle %q to %s", puzzle.Name, channel.Mention())
 		} else {
@@ -173,7 +173,7 @@ func (b *PuzzleBot) Handle(ctx context.Context, input *discord.CommandInput) (st
 			return "", err
 		}
 	case "progress":
-		if statusOpt, ok := b.discord.OptionByName(input.Subcommand.Options, "to"); !ok {
+		if statusOpt, ok := input.Options["to"]; !ok {
 			return "", xerrors.Errorf("missing option: to")
 		} else if newStatus, err = status.ParseText(statusOpt.StringValue()); err != nil {
 			return "", err
@@ -202,13 +202,13 @@ func (b *PuzzleBot) Handle(ctx context.Context, input *discord.CommandInput) (st
 			return "", err
 		}
 	case "solved":
-		if statusOpt, ok := b.discord.OptionByName(input.Subcommand.Options, "as"); !ok {
+		if statusOpt, ok := input.Options["as"]; !ok {
 			return "", xerrors.Errorf("missing option: as")
 		} else if newStatus, err = status.ParseText(statusOpt.StringValue()); err != nil {
 			return "", err
 		}
 
-		if answerOpt, ok := b.discord.OptionByName(input.Subcommand.Options, "answer"); !ok {
+		if answerOpt, ok := input.Options["answer"]; !ok {
 			return "", xerrors.Errorf("missing option: answer")
 		} else {
 			newAnswer = strings.ToUpper(answerOpt.StringValue())
@@ -233,7 +233,7 @@ func (b *PuzzleBot) Handle(ctx context.Context, input *discord.CommandInput) (st
 		)
 	case "note":
 		var newNote string
-		if noteOpt, ok := b.discord.OptionByName(input.Subcommand.Options, "set"); ok {
+		if noteOpt, ok := input.Options["set"]; ok {
 			newNote = noteOpt.StringValue()
 			reply = ":writing_hand: Updated puzzle note!"
 		} else {
@@ -257,7 +257,7 @@ func (b *PuzzleBot) Handle(ctx context.Context, input *discord.CommandInput) (st
 		}
 	case "location":
 		var newLocation string
-		if locationOpt, ok := b.discord.OptionByName(input.Subcommand.Options, "set"); ok {
+		if locationOpt, ok := input.Options["set"]; ok {
 			newLocation = locationOpt.StringValue()
 			reply = ":writing_hand: Updated puzzle location!"
 		} else {
@@ -280,7 +280,7 @@ func (b *PuzzleBot) Handle(ctx context.Context, input *discord.CommandInput) (st
 			return "", err
 		}
 	default:
-		return "", xerrors.Errorf("unexpected /puzzle subcommand: %q", input.Subcommand.Name)
+		return "", xerrors.Errorf("unexpected /puzzle subcommand: %q", input.Subcommand)
 	}
 
 	return reply, nil

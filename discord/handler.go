@@ -50,24 +50,40 @@ func (c *Client) handleCommand(
 		IC:      i,
 		User:    i.User,
 		Command: i.ApplicationCommandData().Name,
+		Options: make(map[string]*discordgo.ApplicationCommandInteractionDataOption),
 	}
 	if input.User == nil {
 		input.User = i.Member.User
 	}
 
-	for _, opt := range i.ApplicationCommandData().Options {
-		if opt.Type == discordgo.ApplicationCommandOptionSubCommand {
-			input.Subcommand = opt
+	var options = i.ApplicationCommandData().Options
+	for options != nil {
+		original := append([]*discordgo.ApplicationCommandInteractionDataOption(nil), options...)
+		options = nil
+		for _, opt := range original {
+			if opt.Type == discordgo.ApplicationCommandOptionSubCommand {
+				if input.Subcommand == "" {
+					input.Subcommand = opt.Name
+				} else {
+					input.Subcommand = fmt.Sprintf("%s.%s", input.Subcommand, opt.Name)
+				}
+			} else if opt.Type == discordgo.ApplicationCommandOptionSubCommandGroup {
+				input.Subcommand = opt.Name
+				options = opt.Options
+			} else {
+				input.Options[opt.Name] = opt
+			}
 		}
 	}
+
 	command, ok := c.botsByCommand[input.Command]
 	if !ok {
 		return xerrors.Errorf("unknown command %q", input.Command)
 	}
 
 	var task = fmt.Sprintf("bot.%s", input.Command)
-	if input.Subcommand != nil {
-		task = fmt.Sprintf("%s.%s", task, input.Subcommand.Name)
+	if input.Subcommand != "" {
+		task = fmt.Sprintf("%s.%s", task, input.Subcommand)
 	}
 	log.Printf("handling command %s from @%s", task, input.User.Username)
 	sentry.GetHubFromContext(ctx).ConfigureScope(func(scope *sentry.Scope) {
@@ -92,8 +108,8 @@ func (c *Client) handleCommand(
 		sentry.GetHubFromContext(ctx).CaptureException(
 			xerrors.Errorf("%s.Handle: %w", command.Name, err),
 		)
-		reply = fmt.Sprintf("🚨 Error! Please ping in %s for help.",
-			c.QMChannel.Mention())
+		reply = fmt.Sprintf("🚨 Error! Please ping in %s for help.\n```%s```",
+			c.QMChannel.Mention(), err.Error())
 	}
 	if len(reply) > 2000 {
 		reply = reply[:1994] + "\n[...]"

@@ -71,8 +71,9 @@ func main() {
 
 	// Start internal engines
 	log.Printf("starting syncer")
-	var syncer = sync.New(discord, drive, state)
-	go syncer.RestorePlaceholderEvent()
+	var sync = sync.New(discord, drive, state, false)
+	go sync.RestorePlaceholderEvent()
+	sync.UpdateBotStatus(ctx)
 
 	log.Printf("starting web server")
 	server.Start(ctx, *prod, discord, state)
@@ -81,9 +82,8 @@ func main() {
 	discord.RegisterBots(
 		bot.NewEmojiNameBot(),
 		bot.NewHuntYetBot(),
-		bot.NewHuntBot(ctx, discord, nil, state, syncer),
-		bot.NewPuzzleBot(discord, state, syncer),
-		bot.NewQMBot(discord),
+		bot.NewPuzzleBot(discord, state, sync),
+		bot.NewQMBot(discord, state, sync),
 		bot.NewReminderBot(ctx, discord, state),
 	)
 

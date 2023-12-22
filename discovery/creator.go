@@ -81,7 +81,7 @@ func (p *Poller) handleNewPuzzles(ctx context.Context, newPuzzles []state.RawPuz
 		}
 		msg += fmt.Sprintf("%s %s\n%s\n\n", round.Emoji, puzzle.Name, puzzle.PuzzleURL)
 	}
-	msg += "Reminder: use `/huntbot kill` to stop the bot.\n```\n"
+	msg += "Reminder: use `/qm discovery pause` to stop the bot.\n```\n"
 	_, err := p.discord.ChannelSend(p.discord.QMChannel, msg)
 	if err != nil {
 		return err
@@ -105,7 +105,7 @@ func (p *Poller) handleNewRounds(ctx context.Context, newRounds map[string][]sta
 		for _, puzzle := range puzzles {
 			msg += fmt.Sprintf("%s\n%s\n\n", puzzle.Name, puzzle.URL)
 		}
-		msg += "Reminder: use `/huntbot kill` to stop the bot.\n\n"
+		msg += "Reminder: use `/qm discovery pause` to stop the bot.\n\n"
 		msg += ">> REACT TO PROPOSE AN EMOJI FOR THIS ROUND <<\n```\n"
 
 		id, err := p.discord.ChannelSend(p.discord.QMChannel, msg)
@@ -129,7 +129,7 @@ func (p *Poller) handleNewRounds(ctx context.Context, newRounds map[string][]sta
 func (p *Poller) createPuzzles(ctx context.Context, newPuzzles []state.RawPuzzle) error {
 	for _, puzzle := range newPuzzles {
 		if !p.state.IsEnabled(ctx) {
-			return xerrors.Errorf("huntbot is disabled")
+			return xerrors.Errorf("puzzle discovery is paused")
 		}
 		created, err := p.state.CreatePuzzle(ctx, puzzle)
 		if err != nil {
