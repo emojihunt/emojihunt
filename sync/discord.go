@@ -1,6 +1,7 @@
 package sync
 
 import (
+	"context"
 	"crypto/sha256"
 	"encoding/binary"
 	"fmt"
@@ -9,6 +10,7 @@ import (
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/emojihunt/emojihunt/state"
+	"golang.org/x/xerrors"
 )
 
 const (
@@ -19,6 +21,90 @@ const (
 	locationDefaultMsg   = "Use `/puzzle voice` to assign a voice room"
 	embedColor           = 0x7C39ED
 )
+
+// CreateDiscordChannel creates a new Discord channel and saves it to the
+// database.
+func (c *Client) CreateDiscordChannel(ctx context.Context, puzzle state.Puzzle) (state.Puzzle, error) {
+	log.Printf("sync: creating discord channel for %q", puzzle.Name)
+	category, err := c.GetCreateDiscordCategory(puzzle)
+	if err != nil {
+		return state.Puzzle{}, err
+	}
+
+	channel, err := c.discord.CreateChannel(puzzle.Name, category)
+	if err != nil {
+		return state.Puzzle{}, err
+	}
+
+	// TODO: don't trigger an infinite loop
+	puzzle, err = c.state.UpdatePuzzle(ctx, puzzle.ID,
+		func(puzzle *state.RawPuzzle) error {
+			if puzzle.DiscordChannel != "" {
+				return xerrors.Errorf("created duplicate Discord channel")
+			}
+			puzzle.DiscordChannel = channel.ID
+			return nil
+		},
+	)
+	if err != nil {
+		return state.Puzzle{}, err
+	}
+
+	err = c.UpdateDiscordPin(puzzle)
+	if err != nil {
+		return state.Puzzle{}, err
+	}
+
+	if err := c.UpdateDiscordChannel(puzzle); err != nil {
+		return state.Puzzle{}, err
+	}
+	return puzzle, nil
+}
+
+// UpdateDiscordChannel configures the name and category of the puzzle channel.
+// Categories are either in a round-specific category (if unsolved) or one of a
+// few "Solved" categories (for solved puzzles), and the channel name is
+// prefixed with a check mark when the puzzle is solved.
+func (s *Client) UpdateDiscordChannel(puzzle state.Puzzle) error {
+	log.Printf("sync: updating discord channel for %q", puzzle.Name)
+
+	// Move puzzle channel to the correct category
+	category, err := s.GetCreateDiscordCategory(puzzle)
+	if err != nil {
+		return err
+	}
+	err = s.discord.SetChannelCategory(puzzle.DiscordChannel, category)
+	if err != nil {
+		return err
+	}
+
+	// The Discord rate limit on channel renames is fairly restrictive (2 per 10
+	// minutes per channel), so finish renaming the channel asynchronously if we
+	// get rate-limited.
+	var title = puzzle.Name
+	if puzzle.Status.IsSolved() {
+		title = "✅ " + title
+	}
+	ch := make(chan error)
+	go func() {
+		ch <- s.discord.SetChannelName(puzzle.DiscordChannel, title)
+	}()
+	select {
+	case err := <-ch:
+		return err
+	case <-time.After(5 * time.Second):
+		rateLimit := s.discord.CheckRateLimit(discordgo.EndpointChannel(puzzle.DiscordChannel))
+		if rateLimit == nil {
+			// No rate limiting detected; maybe the Discord request is just
+			// slow? Wait for it to finish.
+			return <-ch
+		}
+		// Being rate limited; goroutine will finish later.
+		msg := fmt.Sprintf(":snail: Hit Discord's rate limit on channel renaming. Channel will be "+
+			"renamed to %q in %s.", title, time.Until(*rateLimit).Round(time.Second))
+		return s.discord.ChannelSendRawID(puzzle.DiscordChannel, msg)
+	}
+}
 
 // UpdateDiscordPin creates or updates the pinned message at the top of the
 // puzzle channel. This message contains information about the puzzle status as
@@ -89,52 +175,9 @@ func (s *Client) UpdateDiscordPin(puzzle state.Puzzle) error {
 	return s.discord.CreateUpdatePin(puzzle.DiscordChannel, pinnedStatusHeader, embed)
 }
 
-// UpdateDiscordChannel configures the name and category of the puzzle channel.
-// Categories are either in a round-specific category (if unsolved) or one of a
-// few "Solved" categories (for solved puzzles), and the channel name is
-// prefixed with a check mark when the puzzle is solved.
-func (s *Client) UpdateDiscordChannel(puzzle state.Puzzle) error {
-	log.Printf("syncer: updating discord channel for %q", puzzle.Name)
-
-	// Move puzzle channel to the correct category
-	category, err := s.discordGetOrCreateCategory(puzzle)
-	if err != nil {
-		return err
-	}
-	err = s.discord.SetChannelCategory(puzzle.DiscordChannel, category)
-	if err != nil {
-		return err
-	}
-
-	// The Discord rate limit on channel renames is fairly restrictive (2 per 10
-	// minutes per channel), so finish renaming the channel asynchronously if we
-	// get rate-limited.
-	var title = puzzle.Name
-	if puzzle.Status.IsSolved() {
-		title = "✅ " + title
-	}
-	ch := make(chan error)
-	go func() {
-		ch <- s.discord.SetChannelName(puzzle.DiscordChannel, title)
-	}()
-	select {
-	case err := <-ch:
-		return err
-	case <-time.After(5 * time.Second):
-		rateLimit := s.discord.CheckRateLimit(discordgo.EndpointChannel(puzzle.DiscordChannel))
-		if rateLimit == nil {
-			// No rate limiting detected; maybe the Discord request is just
-			// slow? Wait for it to finish.
-			return <-ch
-		}
-		// Being rate limited; goroutine will finish later.
-		msg := fmt.Sprintf(":snail: Hit Discord's rate limit on channel renaming. Channel will be "+
-			"renamed to %q in %s.", title, time.Until(*rateLimit).Round(time.Second))
-		return s.discord.ChannelSendRawID(puzzle.DiscordChannel, msg)
-	}
-}
-
-func (s *Client) discordGetOrCreateCategory(puzzle state.Puzzle) (*discordgo.Channel, error) {
+// GetCreateDiscordCategory returns the appropriate Discord category for the
+// puzzle given its current state, creating it if it doesn't already exist.
+func (s *Client) GetCreateDiscordCategory(puzzle state.Puzzle) (*discordgo.Channel, error) {
 	s.DiscordCategoryMutex.Lock()
 	defer s.DiscordCategoryMutex.Unlock()
 

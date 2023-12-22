@@ -72,9 +72,9 @@ func (p *Poller) SyncPuzzles(ctx context.Context, puzzles []state.DiscoveredPuzz
 	return nil
 }
 
-func (p *Poller) handleNewPuzzles(ctx context.Context, newPuzzles []state.RawPuzzle) error {
+func (p *Poller) handleNewPuzzles(ctx context.Context, puzzles []state.RawPuzzle) error {
 	msg := "```\n*** 🧐 NEW PUZZLES ***\n\n"
-	for _, puzzle := range newPuzzles {
+	for _, puzzle := range puzzles {
 		round, err := p.state.GetRound(ctx, puzzle.Round)
 		if err != nil {
 			return err
@@ -86,17 +86,17 @@ func (p *Poller) handleNewPuzzles(ctx context.Context, newPuzzles []state.RawPuz
 	if err != nil {
 		return err
 	}
-	return p.createPuzzles(ctx, newPuzzles)
+	return p.createPuzzles(ctx, puzzles)
 }
 
-func (p *Poller) handleNewRounds(ctx context.Context, newRounds map[string][]state.DiscoveredPuzzle) error {
+func (p *Poller) handleNewRounds(ctx context.Context, rounds map[string][]state.DiscoveredPuzzle) error {
 	previouslyDiscovered, err := p.state.DiscoveredRounds(ctx)
 	if err != nil {
 		return err
 	}
 
 	var errs []error
-	for name, puzzles := range newRounds {
+	for name, puzzles := range rounds {
 		if _, ok := previouslyDiscovered[name]; ok {
 			continue
 		}
@@ -126,19 +126,16 @@ func (p *Poller) handleNewRounds(ctx context.Context, newRounds map[string][]sta
 	return nil
 }
 
-func (p *Poller) createPuzzles(ctx context.Context, newPuzzles []state.RawPuzzle) error {
-	for _, puzzle := range newPuzzles {
+func (p *Poller) createPuzzles(ctx context.Context, puzzles []state.RawPuzzle) error {
+	for _, puzzle := range puzzles {
 		if !p.state.IsEnabled(ctx) {
 			return xerrors.Errorf("puzzle discovery is paused")
 		}
-		created, err := p.state.CreatePuzzle(ctx, puzzle)
+		_, err := p.state.CreatePuzzle(ctx, puzzle)
 		if err != nil {
 			return err
 		}
-		_, err = p.syncer.ForceUpdate(ctx, created)
-		if err != nil {
-			return err
-		}
+		// TODO: block on spreadsheet and channel creation
 	}
 	return nil
 }

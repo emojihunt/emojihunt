@@ -31,81 +31,27 @@ func New(discord *discord.Client, drive *drive.Client, state *state.Client, disc
 	}
 }
 
-// IdempotentCreateUpdate synchronizes Discord and Google Drive with the puzzle
-// information in the database. When a puzzle is newly added, it creates the
-// spreadsheet and Discord channel and stores their IDs in the database. When a
-// puzzle's status is updated, it handles that also.
-func (s *Client) IdempotentCreateUpdate(ctx context.Context, puzzle state.Puzzle) (state.Puzzle, error) {
-	// 1. Create the spreadsheet, if required
-	if puzzle.SpreadsheetID == "" {
-		spreadsheet, err := s.drive.CreateSheet(ctx, puzzle.Name, puzzle.Round.Name)
-		if err != nil {
-			return puzzle, err
-		}
-
-		puzzle, err = s.state.UpdatePuzzle(ctx, puzzle.ID,
-			func(puzzle *state.RawPuzzle) error {
-				puzzle.SpreadsheetID = spreadsheet
-				return nil
-			},
-		)
-		if err != nil {
-			return puzzle, err
-		}
-
-		err = s.UpdateSpreadsheet(ctx, puzzle)
-		if err != nil {
-			return puzzle, err
-		}
-	}
-
-	// 2. Create the Discord channel, if required
-	if puzzle.DiscordChannel == "" {
-		log.Printf("Adding channel for new puzzle %q", puzzle.Name)
-		category, err := s.discordGetOrCreateCategory(puzzle)
-		if err != nil {
-			return puzzle, err
-		}
-
-		channel, err := s.discord.CreateChannel(puzzle.Name, category)
-		if err != nil {
-			return puzzle, err
-		}
-
-		puzzle, err = s.state.UpdatePuzzle(ctx, puzzle.ID,
-			func(puzzle *state.RawPuzzle) error {
-				puzzle.DiscordChannel = channel.ID
-				return nil
-			},
-		)
-		if err != nil {
-			return puzzle, err
-		}
-
-		err = s.UpdateDiscordPin(puzzle)
-		if err != nil {
-			return puzzle, err
-		}
-
-		if err := s.UpdateDiscordChannel(puzzle); err != nil {
-			return puzzle, err
-		}
-
-		// Treat Discord channel creation as the sentinel to also notify the
-		// team about the new puzzle.
-		if err := s.NotifyNewPuzzle(puzzle); err != nil {
-			return puzzle, err
-		}
-	}
-
-	// 3. Update the spreadsheet and Discord channel with new information
+func (c *Client) TriggerPuzzle(ctx context.Context, previous *state.Puzzle, puzzle state.Puzzle) error {
 	var err error
-	puzzle, err = s.HandleStatusChange(ctx, puzzle, false)
-	if err != nil {
-		return puzzle, err
+	if puzzle.SpreadsheetID == "" {
+		puzzle, err = c.CreateSpreadsheet(ctx, puzzle)
+		if err != nil {
+			return err
+		}
 	}
-
-	return puzzle, nil
+	if puzzle.DiscordChannel == "" {
+		puzzle, err = c.CreateDiscordChannel(ctx, puzzle)
+		if err != nil {
+			return err
+		}
+	}
+	if previous == nil {
+		if err := c.NotifyNewPuzzle(puzzle); err != nil {
+			return err
+		}
+	}
+	// TODO: ...
+	return nil
 }
 
 // HandleStatusChange synchronizes Discord and sends notifications when the
@@ -159,23 +105,6 @@ func (s *Client) HandleStatusChange(
 		if err = s.NotifyPuzzleWorking(puzzle); err != nil {
 			return puzzle, err
 		}
-	}
-	return puzzle, nil
-}
-
-// ForceUpdate is a big hammer that will update Discord and Google Drive,
-// including overwriting the channel name, spreadsheet name, etc. It also
-// re-sends any status change notifications.
-func (s *Client) ForceUpdate(ctx context.Context, puzzle state.Puzzle) (state.Puzzle, error) {
-	var err error
-	puzzle, err = s.IdempotentCreateUpdate(ctx, puzzle)
-	if err != nil {
-		return puzzle, err
-	}
-
-	err = s.parallelHardUpdate(ctx, puzzle)
-	if err != nil {
-		return puzzle, err
 	}
 	return puzzle, nil
 }
