@@ -14,31 +14,40 @@ import (
 )
 
 func (p *Poller) SyncPuzzles(ctx context.Context, puzzles []state.DiscoveredPuzzle) error {
-	puzzleMap := make(map[string]state.DiscoveredPuzzle)
-	for _, puzzle := range puzzles {
-		puzzleMap[puzzle.URL] = puzzle
-	}
-
 	// Filter out known puzzles; add remaining puzzles
-	fragments, rounds, err := p.state.ListPuzzleFragmentsAndRounds(ctx)
+	var fragments = make(map[string]bool)
+	existing, err := p.state.ListPuzzles(ctx)
 	if err != nil {
 		return err
+	}
+	for _, puzzle := range existing {
+		fragments[strings.ToUpper(puzzle.Name)] = true
+		fragments[strings.ToUpper(puzzle.PuzzleURL)] = true
+	}
+
+	var roundsByName = make(map[string]state.Round)
+	rounds, err := p.state.ListRounds(ctx)
+	if err != nil {
+		return err
+	}
+	for _, round := range rounds {
+		roundsByName[strings.ToUpper(round.Name)] = round
 	}
 
 	var newPuzzles []db.RawPuzzle
 	newRounds := make(map[string][]state.DiscoveredPuzzle)
-	for _, puzzle := range puzzleMap {
+	for _, puzzle := range puzzles {
 		if fragments[strings.ToUpper(puzzle.URL)] ||
 			fragments[strings.ToUpper(puzzle.Name)] {
 			// skip if name or URL matches an existing puzzle
 			continue
 		}
-		if round, ok := rounds[puzzle.RoundName]; ok {
+		if round, ok := roundsByName[strings.ToUpper(puzzle.RoundName)]; ok {
 			log.Printf("discovery: preparing to add puzzle %q (%s) in round %q",
 				puzzle.Name, puzzle.URL, puzzle.RoundName)
 			newPuzzles = append(newPuzzles, db.RawPuzzle{
 				Name:      puzzle.Name,
-				Round:     round,
+				Round:     round.ID,
 				PuzzleURL: puzzle.URL,
 			})
 		} else {

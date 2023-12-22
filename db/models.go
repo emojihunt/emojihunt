@@ -22,7 +22,6 @@ type RawPuzzle struct {
 	SpreadsheetID  string       `json:"spreadsheet_id"`
 	DiscordChannel string       `json:"discord_channel"`
 	Meta           bool         `json:"meta"`
-	Archived       bool         `json:"archived"`
 	VoiceRoom      string       `json:"voice_room"`
 	Reminder       time.Time    `json:"reminder"`
 }

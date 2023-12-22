@@ -2,10 +2,13 @@ package bot
 
 import (
 	"context"
+	"database/sql"
+	"errors"
 	"fmt"
 	"strings"
 
 	"github.com/bwmarrin/discordgo"
+	"github.com/emojihunt/emojihunt/db"
 	"github.com/emojihunt/emojihunt/db/field"
 	"github.com/emojihunt/emojihunt/discord"
 	"github.com/emojihunt/emojihunt/state"
@@ -103,11 +106,11 @@ func (b *PuzzleBot) Register() (*discordgo.ApplicationCommand, bool) {
 }
 
 func (b *PuzzleBot) Handle(ctx context.Context, input *discord.CommandInput) (string, error) {
-	puzzle, err := b.state.LoadByDiscordChannel(ctx, input.IC.ChannelID)
-	if err != nil {
-		return "", err
-	} else if puzzle == nil {
+	puzzle, err := b.state.GetPuzzleByChannel(ctx, input.IC.ChannelID)
+	if errors.Is(err, sql.ErrNoRows) {
 		return ":butterfly: I can't find a puzzle associated with this channel. Is this a puzzle channel?", nil
+	} else if err != nil {
+		return "", err
 	}
 
 	var reply string
@@ -121,21 +124,26 @@ func (b *PuzzleBot) Handle(ctx context.Context, input *discord.CommandInput) (st
 			return "", err
 		}
 
-		if puzzle.Status == newStatus {
-			return fmt.Sprintf(":elephant: This puzzle already has status %s", newStatus.Pretty()), nil
-		}
-
-		if puzzle.Answer == "" {
-			reply = fmt.Sprintf(":face_with_monocle: Updated puzzle status to %s!", newStatus.Pretty())
-		} else {
-			reply = fmt.Sprintf(":woozy_face: Updated puzzle status to %s and cleared answer `%s`. "+
-				"Was that right?", newStatus.Pretty(), puzzle.Answer)
-		}
-
-		if puzzle, err = b.state.SetStatusAndAnswer(ctx, puzzle, newStatus, newAnswer); err != nil {
+		puzzle, err = b.state.UpdatePuzzle(ctx, puzzle.ID,
+			func(puzzle *db.RawPuzzle) error {
+				if puzzle.Status == newStatus {
+					reply = fmt.Sprintf(":elephant: This puzzle already has status %s", newStatus.Pretty())
+				} else if puzzle.Answer == "" {
+					reply = fmt.Sprintf(":face_with_monocle: Updated puzzle status to %s!", newStatus.Pretty())
+				} else {
+					reply = fmt.Sprintf(":woozy_face: Updated puzzle status to %s and cleared answer `%s`. "+
+						"Was that right?", newStatus.Pretty(), puzzle.Answer)
+				}
+				puzzle.Status = newStatus
+				puzzle.Answer = ""
+				return nil
+			},
+		)
+		if err != nil {
 			return "", err
 		}
-		if _, err = b.syncer.HandleStatusChange(ctx, puzzle, true); err != nil {
+		_, err = b.syncer.HandleStatusChange(ctx, puzzle, true)
+		if err != nil {
 			return "", err
 		}
 	case "solved":
@@ -151,17 +159,23 @@ func (b *PuzzleBot) Handle(ctx context.Context, input *discord.CommandInput) (st
 			newAnswer = strings.ToUpper(answerOpt.StringValue())
 		}
 
-		reply = fmt.Sprintf(
-			"🎉 Congratulations on the %s! I'll record the answer `%s` and archive this channel.",
-			newStatus.SolvedNoun(), newAnswer,
+		puzzle, err := b.state.UpdatePuzzle(ctx, puzzle.ID,
+			func(puzzle *db.RawPuzzle) error {
+				puzzle.Status = newStatus
+				puzzle.Answer = newAnswer
+				return nil
+			},
 		)
-
-		if puzzle, err = b.state.SetStatusAndAnswer(ctx, puzzle, newStatus, newAnswer); err != nil {
+		if err != nil {
 			return "", err
 		}
 		if _, err = b.syncer.HandleStatusChange(ctx, puzzle, true); err != nil {
 			return "", err
 		}
+		reply = fmt.Sprintf(
+			"🎉 Congratulations on the %s! I'll record the answer `%s` and archive this channel.",
+			newStatus.SolvedExclamation(), newAnswer,
+		)
 	case "note":
 		var newNote string
 		if noteOpt, ok := b.discord.OptionByName(input.Subcommand.Options, "is"); ok {
@@ -170,11 +184,17 @@ func (b *PuzzleBot) Handle(ctx context.Context, input *discord.CommandInput) (st
 		} else {
 			reply = ":cl: Cleared puzzle note."
 		}
-		if puzzle.Note != "" {
-			reply += fmt.Sprintf(" Previous note was: ```\n%s\n```", puzzle.Note)
-		}
 
-		if puzzle, err = b.state.SetNote(ctx, puzzle, newNote); err != nil {
+		puzzle, err = b.state.UpdatePuzzle(ctx, puzzle.ID,
+			func(puzzle *db.RawPuzzle) error {
+				if puzzle.Note != "" {
+					reply += fmt.Sprintf(" Previous note was: ```\n%s\n```", puzzle.Note)
+				}
+				puzzle.Note = newNote
+				return nil
+			},
+		)
+		if err != nil {
 			return "", err
 		}
 		if err = b.syncer.DiscordCreateUpdatePin(puzzle); err != nil {
@@ -188,13 +208,16 @@ func (b *PuzzleBot) Handle(ctx context.Context, input *discord.CommandInput) (st
 		} else {
 			reply = ":cl: Cleared puzzle location."
 		}
-		if puzzle.Location != "" {
-			reply += fmt.Sprintf(" Previous location was: ```\n%s\n```", puzzle.Location)
-		}
 
-		if puzzle, err = b.state.SetLocation(ctx, puzzle, newLocation); err != nil {
-			return "", err
-		}
+		puzzle, err = b.state.UpdatePuzzle(ctx, puzzle.ID,
+			func(puzzle *db.RawPuzzle) error {
+				if puzzle.Location != "" {
+					reply += fmt.Sprintf(" Previous location was: ```\n%s\n```", puzzle.Location)
+				}
+				puzzle.Location = newLocation
+				return nil
+			},
+		)
 		if err = b.syncer.DiscordCreateUpdatePin(puzzle); err != nil {
 			return "", err
 		}

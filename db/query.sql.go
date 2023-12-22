@@ -12,12 +12,22 @@ import (
 	"github.com/emojihunt/emojihunt/db/field"
 )
 
+const clearPuzzleVoiceRoom = `-- name: ClearPuzzleVoiceRoom :exec
+UPDATE puzzles
+SET voice_room = ""
+WHERE voice_room = ?
+`
+
+func (q *Queries) ClearPuzzleVoiceRoom(ctx context.Context, voiceRoom string) error {
+	_, err := q.db.ExecContext(ctx, clearPuzzleVoiceRoom, voiceRoom)
+	return err
+}
+
 const createPuzzle = `-- name: CreatePuzzle :one
 INSERT INTO puzzles (
     name, answer, round, status, note, location, puzzle_url,
-    spreadsheet_id, discord_channel, meta, archived, voice_room,
-    reminder
-) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id
+    spreadsheet_id, discord_channel, meta, voice_room, reminder
+) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id
 `
 
 type CreatePuzzleParams struct {
@@ -31,7 +41,6 @@ type CreatePuzzleParams struct {
 	SpreadsheetID  string       `json:"spreadsheet_id"`
 	DiscordChannel string       `json:"discord_channel"`
 	Meta           bool         `json:"meta"`
-	Archived       bool         `json:"archived"`
 	VoiceRoom      string       `json:"voice_room"`
 	Reminder       time.Time    `json:"reminder"`
 }
@@ -48,7 +57,6 @@ func (q *Queries) CreatePuzzle(ctx context.Context, arg CreatePuzzleParams) (int
 		arg.SpreadsheetID,
 		arg.DiscordChannel,
 		arg.Meta,
-		arg.Archived,
 		arg.VoiceRoom,
 		arg.Reminder,
 	)
@@ -112,7 +120,7 @@ const getPuzzle = `-- name: GetPuzzle :one
 SELECT
     p.id, p.name, p.answer, rounds.id, rounds.name, rounds.emoji, rounds.hue, rounds.special, p.status, p.note,
     p.location, p.puzzle_url, p.spreadsheet_id, p.discord_channel,
-    p.meta, p.archived, p.voice_room, p.reminder
+    p.meta, p.voice_room, p.reminder
 FROM puzzles AS p
 INNER JOIN rounds ON p.round = rounds.id
 WHERE p.id = ?
@@ -130,7 +138,6 @@ type GetPuzzleRow struct {
 	SpreadsheetID  string       `json:"spreadsheet_id"`
 	DiscordChannel string       `json:"discord_channel"`
 	Meta           bool         `json:"meta"`
-	Archived       bool         `json:"archived"`
 	VoiceRoom      string       `json:"voice_room"`
 	Reminder       time.Time    `json:"reminder"`
 }
@@ -154,7 +161,57 @@ func (q *Queries) GetPuzzle(ctx context.Context, id int64) (GetPuzzleRow, error)
 		&i.SpreadsheetID,
 		&i.DiscordChannel,
 		&i.Meta,
-		&i.Archived,
+		&i.VoiceRoom,
+		&i.Reminder,
+	)
+	return i, err
+}
+
+const getPuzzleByChannel = `-- name: GetPuzzleByChannel :one
+SELECT
+    p.id, p.name, p.answer, rounds.id, rounds.name, rounds.emoji, rounds.hue, rounds.special, p.status, p.note,
+    p.location, p.puzzle_url, p.spreadsheet_id, p.discord_channel,
+    p.meta, p.voice_room, p.reminder
+FROM puzzles AS p
+INNER JOIN rounds ON p.round = rounds.id
+WHERE p.discord_channel = ?
+`
+
+type GetPuzzleByChannelRow struct {
+	ID             int64        `json:"id"`
+	Name           string       `json:"name"`
+	Answer         string       `json:"answer"`
+	Round          Round        `json:"round"`
+	Status         field.Status `json:"status"`
+	Note           string       `json:"note"`
+	Location       string       `json:"location"`
+	PuzzleURL      string       `json:"puzzle_url"`
+	SpreadsheetID  string       `json:"spreadsheet_id"`
+	DiscordChannel string       `json:"discord_channel"`
+	Meta           bool         `json:"meta"`
+	VoiceRoom      string       `json:"voice_room"`
+	Reminder       time.Time    `json:"reminder"`
+}
+
+func (q *Queries) GetPuzzleByChannel(ctx context.Context, discordChannel string) (GetPuzzleByChannelRow, error) {
+	row := q.db.QueryRowContext(ctx, getPuzzleByChannel, discordChannel)
+	var i GetPuzzleByChannelRow
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.Answer,
+		&i.Round.ID,
+		&i.Round.Name,
+		&i.Round.Emoji,
+		&i.Round.Hue,
+		&i.Round.Special,
+		&i.Status,
+		&i.Note,
+		&i.Location,
+		&i.PuzzleURL,
+		&i.SpreadsheetID,
+		&i.DiscordChannel,
+		&i.Meta,
 		&i.VoiceRoom,
 		&i.Reminder,
 	)
@@ -195,7 +252,7 @@ const listPuzzles = `-- name: ListPuzzles :many
 SELECT
     p.id, p.name, p.answer, rounds.id, rounds.name, rounds.emoji, rounds.hue, rounds.special, p.status, p.note,
     p.location, p.puzzle_url, p.spreadsheet_id, p.discord_channel,
-    p.meta, p.archived, p.voice_room, p.reminder
+    p.meta, p.voice_room, p.reminder
 FROM puzzles AS p
 INNER JOIN rounds ON p.round = rounds.id
 ORDER BY p.id
@@ -213,7 +270,6 @@ type ListPuzzlesRow struct {
 	SpreadsheetID  string       `json:"spreadsheet_id"`
 	DiscordChannel string       `json:"discord_channel"`
 	Meta           bool         `json:"meta"`
-	Archived       bool         `json:"archived"`
 	VoiceRoom      string       `json:"voice_room"`
 	Reminder       time.Time    `json:"reminder"`
 }
@@ -243,7 +299,6 @@ func (q *Queries) ListPuzzles(ctx context.Context) ([]ListPuzzlesRow, error) {
 			&i.SpreadsheetID,
 			&i.DiscordChannel,
 			&i.Meta,
-			&i.Archived,
 			&i.VoiceRoom,
 			&i.Reminder,
 		); err != nil {
@@ -298,7 +353,7 @@ const updatePuzzle = `-- name: UpdatePuzzle :exec
 UPDATE puzzles
 SET name = ?2, answer = ?3, round = ?4, status = ?5, note = ?6,
 location = ?7, puzzle_url = ?8, spreadsheet_id = ?9, discord_channel = ?10,
-meta = ?11, archived = ?12, voice_room = ?13, reminder = ?14
+meta = ?11, voice_room = ?12, reminder = ?13
 WHERE id = ?1
 `
 
@@ -314,7 +369,6 @@ type UpdatePuzzleParams struct {
 	SpreadsheetID  string       `json:"spreadsheet_id"`
 	DiscordChannel string       `json:"discord_channel"`
 	Meta           bool         `json:"meta"`
-	Archived       bool         `json:"archived"`
 	VoiceRoom      string       `json:"voice_room"`
 	Reminder       time.Time    `json:"reminder"`
 }
@@ -332,7 +386,6 @@ func (q *Queries) UpdatePuzzle(ctx context.Context, arg UpdatePuzzleParams) erro
 		arg.SpreadsheetID,
 		arg.DiscordChannel,
 		arg.Meta,
-		arg.Archived,
 		arg.VoiceRoom,
 		arg.Reminder,
 	)

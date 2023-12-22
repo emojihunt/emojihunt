@@ -2,6 +2,8 @@ package bot
 
 import (
 	"context"
+	"database/sql"
+	"errors"
 	"fmt"
 	"log"
 
@@ -58,11 +60,11 @@ func (b *VoiceRoomBot) Register() (*discordgo.ApplicationCommand, bool) {
 }
 
 func (b *VoiceRoomBot) Handle(ctx context.Context, input *discord.CommandInput) (string, error) {
-	puzzle, err := b.state.LoadByDiscordChannel(ctx, input.IC.ChannelID)
-	if err != nil {
-		return "", err
-	} else if puzzle == nil {
+	puzzle, err := b.state.GetPuzzleByChannel(ctx, input.IC.ChannelID)
+	if errors.Is(err, sql.ErrNoRows) {
 		return ":butterfly: I can't find a puzzle associated with this channel. Is this a puzzle channel?", nil
+	} else if err != nil {
+		return "", err
 	}
 
 	b.syncer.VoiceRoomMutex.Lock()
@@ -85,7 +87,13 @@ func (b *VoiceRoomBot) Handle(ctx context.Context, input *discord.CommandInput) 
 	}
 
 	// Sync the change!
-	if puzzle, err = b.state.SetVoiceRoom(ctx, puzzle, channel); err != nil {
+	puzzle, err = b.state.UpdatePuzzle(ctx, puzzle.ID,
+		func(puzzle *db.RawPuzzle) error {
+			puzzle.VoiceRoom = channel.ID
+			return nil
+		},
+	)
+	if err != nil {
 		return "", err
 	}
 	if err = b.syncer.DiscordCreateUpdatePin(puzzle); err != nil {
@@ -116,39 +124,7 @@ func (b *VoiceRoomBot) HandleScheduledEvent(
 	log.Printf("discord: processing scheduled event completion for %q", i.Name)
 
 	b.syncer.VoiceRoomMutex.Lock()
-	puzzles, err := b.state.ListWithVoiceRoom(ctx)
-	b.syncer.VoiceRoomMutex.Unlock()
-	if err != nil {
-		return err
-	}
+	defer b.syncer.VoiceRoomMutex.Unlock()
 
-	var final error
-	for _, info := range puzzles {
-		if err = b.clearVoiceRoom(ctx, &info, i.ChannelID); err != nil {
-			final = xerrors.Errorf("clearVoiceRoom: %w", err)
-		}
-	}
-	return final
-}
-
-func (b *VoiceRoomBot) clearVoiceRoom(ctx context.Context, info *db.VoicePuzzle,
-	expectedVoiceRoom string) error {
-
-	puzzle, err := b.state.LoadByID(ctx, info.ID)
-	if err != nil {
-		return err
-	}
-
-	if puzzle.VoiceRoom != expectedVoiceRoom {
-		// We've let go of VoiceRoomMutex (since we aren't allowed to
-		// acquire the puzzle lock when holding it), so we need to
-		// double-check that the puzzle hasn't changed.
-		return nil
-	}
-
-	puzzle, err = b.state.SetVoiceRoom(ctx, puzzle, nil)
-	if err != nil {
-		return err
-	}
-	return b.syncer.DiscordCreateUpdatePin(puzzle)
+	return b.state.ClearPuzzleVoiceRoom(ctx, i.ChannelID)
 }

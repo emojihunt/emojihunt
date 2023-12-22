@@ -24,7 +24,6 @@ type Puzzle struct {
 	SpreadsheetID  string       `json:"spreadsheet_id"`
 	DiscordChannel string       `json:"discord_channel"`
 	Meta           bool         `json:"meta"`
-	Archived       bool         `json:"archived"`
 	VoiceRoom      string       `json:"voice_room"`
 	Reminder       time.Time    `json:"reminder"`
 }
@@ -72,7 +71,6 @@ func (p Puzzle) RawPuzzle() db.RawPuzzle {
 		SpreadsheetID:  p.SpreadsheetID,
 		DiscordChannel: p.DiscordChannel,
 		Meta:           p.Meta,
-		Archived:       p.Archived,
 		VoiceRoom:      p.VoiceRoom,
 		Reminder:       p.Reminder,
 	}

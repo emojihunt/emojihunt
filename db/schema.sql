@@ -13,13 +13,12 @@ CREATE TABLE puzzles (
     discord_channel TEXT    NOT NULL,
 
     meta            BOOLEAN NOT NULL,
-    archived        BOOLEAN NOT NULL,
-
     voice_room      TEXT    NOT NULL,
     reminder        DATETIME    NOT NULL,
 
     FOREIGN KEY (round) REFERENCES rounds(id),
-    CONSTRAINT uc_name_rd   UNIQUE(name, round)
+    CONSTRAINT uc_name_rd   UNIQUE(name, round),
+    CONSTRAINT uc_discord   UNIQUE(discord_channel)
 );
 
 CREATE TABLE rounds (

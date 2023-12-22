@@ -8,7 +8,7 @@ import (
 	"golang.org/x/xerrors"
 )
 
-func ValidateRound(r db.Round) error {
+func ValidateRound(r Round) error {
 	if r.Name == "" {
 		return ValidationError{"name", "is required"}
 	} else if r.Emoji == "" {
@@ -60,16 +60,26 @@ func (c *Client) CreateRound(ctx context.Context, round Round) (Round, error) {
 	}
 	return Round(result), nil
 }
+func (c *Client) UpdateRound(ctx context.Context, id int64,
+	mutate func(round *Round) error) (Round, error) {
 
-func (c *Client) UpdateRound(ctx context.Context, round Round) error {
-	if err := ValidateRound(round); err != nil {
-		return err
-	}
-	err := c.queries.UpdateRound(ctx, db.UpdateRoundParams(round))
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	raw, err := c.GetRound(ctx, id)
 	if err != nil {
-		return xerrors.Errorf("UpdateRound: %w", err)
+		return Round{}, err
 	}
-	return nil
+	if err := mutate(&raw); err != nil {
+		return Round{}, err
+	} else if err := ValidateRound(raw); err != nil {
+		return Round{}, err
+	} else if raw.ID != id {
+		return Round{}, xerrors.Errorf("mutation must not change round ID")
+	} else if err := c.queries.UpdateRound(ctx, db.UpdateRoundParams(raw)); err != nil {
+		return Round{}, xerrors.Errorf("UpdateRound: %w", err)
+	}
+	return c.GetRound(ctx, id)
 }
 
 func (c *Client) DeleteRound(ctx context.Context, id int64) error {

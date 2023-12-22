@@ -47,7 +47,7 @@ func (b *ReminderBot) Handle(ctx context.Context, input *discord.CommandInput) (
 	if err != nil {
 		return "", err
 	}
-	var puzzles = make([]state.Puzzle, 0)
+	var puzzles []state.Puzzle
 	for _, puzzle := range results {
 		if puzzle.HasReminder() {
 			puzzles = append(puzzles, puzzle)
@@ -55,8 +55,8 @@ func (b *ReminderBot) Handle(ctx context.Context, input *discord.CommandInput) (
 	}
 
 	if len(puzzles) < 1 {
-		return ":zero: There are no puzzle reminders. Use the `Reminder` field in Airtable " +
-			"to set a reminder.", nil
+		return ":zero: There are no puzzle reminders. Use the `Reminder` field in " +
+			"the puzzle tracker to set a reminder.", nil
 	}
 
 	msg := ":calendar_spiral: Reminders:\n"

@@ -21,7 +21,6 @@ type PuzzleParams struct {
 	SpreadsheetID  string       `form:"spreadsheet_id"`
 	DiscordChannel string       `form:"discord_channel"`
 	Meta           bool         `form:"meta"`
-	Archived       bool         `form:"archived"`
 	VoiceRoom      string       `form:"voice_room"`
 	Reminder       time.Time    `form:"reminder"`
 }
@@ -63,21 +62,13 @@ func (s *Server) UpdatePuzzle(c echo.Context) error {
 	if err := c.Bind(&id); err != nil {
 		return err
 	}
-	puzzle, err := s.state.GetPuzzle(c.Request().Context(), id.ID)
-	if err != nil {
-		return err
-	}
 
-	var params = PuzzleParams(puzzle.RawPuzzle())
-	if err := c.Bind(&params); err != nil {
-		return err
-	}
-	err = s.state.UpdatePuzzle(c.Request().Context(), db.RawPuzzle(params))
-	if err != nil {
-		return err
-	}
-
-	updated, err := s.state.GetPuzzle(c.Request().Context(), id.ID)
+	updated, err := s.state.UpdatePuzzle(c.Request().Context(), id.ID,
+		func(puzzle *db.RawPuzzle) error {
+			var params = (*PuzzleParams)(puzzle)
+			return c.Bind(params)
+		},
+	)
 	if err != nil {
 		return err
 	}

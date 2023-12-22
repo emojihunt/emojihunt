@@ -3,7 +3,7 @@ package server
 import (
 	"net/http"
 
-	"github.com/emojihunt/emojihunt/db"
+	"github.com/emojihunt/emojihunt/state"
 	"github.com/labstack/echo/v4"
 )
 
@@ -40,7 +40,7 @@ func (s *Server) CreateRound(c echo.Context) error {
 	if err := c.Bind(&params); err != nil {
 		return err
 	}
-	round, err := s.state.CreateRound(c.Request().Context(), db.Round(params))
+	round, err := s.state.CreateRound(c.Request().Context(), state.Round(params))
 	if err != nil {
 		return err
 	}
@@ -52,21 +52,12 @@ func (s *Server) UpdateRound(c echo.Context) error {
 	if err := c.Bind(&id); err != nil {
 		return err
 	}
-	round, err := s.state.GetRound(c.Request().Context(), id.ID)
-	if err != nil {
-		return err
-	}
-
-	var params = RoundParams(round)
-	if err := c.Bind(&params); err != nil {
-		return err
-	}
-	err = s.state.UpdateRound(c.Request().Context(), db.Round(params))
-	if err != nil {
-		return err
-	}
-
-	updated, err := s.state.GetRound(c.Request().Context(), id.ID)
+	updated, err := s.state.UpdateRound(c.Request().Context(), id.ID,
+		func(round *state.Round) error {
+			var params = (*RoundParams)(round)
+			return c.Bind(&params)
+		},
+	)
 	if err != nil {
 		return err
 	}

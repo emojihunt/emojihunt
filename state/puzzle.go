@@ -37,6 +37,14 @@ func (c *Client) GetPuzzle(ctx context.Context, id int64) (Puzzle, error) {
 	return Puzzle(puzzle), nil
 }
 
+func (c *Client) GetPuzzleByChannel(ctx context.Context, channel string) (Puzzle, error) {
+	puzzle, err := c.queries.GetPuzzleByChannel(ctx, channel)
+	if err != nil {
+		return Puzzle{}, xerrors.Errorf("GetPuzzleByChannel: %w", err)
+	}
+	return Puzzle(puzzle), nil
+}
+
 func (c *Client) ListPuzzles(ctx context.Context) ([]Puzzle, error) {
 	results, err := c.queries.ListPuzzles(ctx)
 	if err != nil {
@@ -64,7 +72,6 @@ func (c *Client) CreatePuzzle(ctx context.Context, puzzle db.RawPuzzle) (Puzzle,
 		SpreadsheetID:  puzzle.SpreadsheetID,
 		DiscordChannel: puzzle.DiscordChannel,
 		Meta:           puzzle.Meta,
-		Archived:       puzzle.Archived,
 		VoiceRoom:      puzzle.VoiceRoom,
 	})
 	if err != nil {
@@ -73,15 +80,31 @@ func (c *Client) CreatePuzzle(ctx context.Context, puzzle db.RawPuzzle) (Puzzle,
 	return c.GetPuzzle(ctx, id)
 }
 
-func (c *Client) UpdatePuzzle(ctx context.Context, puzzle db.RawPuzzle) error {
-	if err := ValidatePuzzle(puzzle); err != nil {
-		return err
-	}
-	err := c.queries.UpdatePuzzle(ctx, db.UpdatePuzzleParams(puzzle))
+func (c *Client) UpdatePuzzle(ctx context.Context, id int64,
+	mutate func(puzzle *db.RawPuzzle) error) (Puzzle, error) {
+
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	original, err := c.GetPuzzle(ctx, id)
 	if err != nil {
-		return xerrors.Errorf("UpdatePuzzle: %w", err)
+		return Puzzle{}, err
 	}
-	return nil
+	var raw = original.RawPuzzle()
+	if err := mutate(&raw); err != nil {
+		return Puzzle{}, err
+	} else if err := ValidatePuzzle(raw); err != nil {
+		return Puzzle{}, err
+	} else if raw.ID != id {
+		return Puzzle{}, xerrors.Errorf("mutation must not change puzzle ID")
+	} else if err := c.queries.UpdatePuzzle(ctx, db.UpdatePuzzleParams(raw)); err != nil {
+		return Puzzle{}, xerrors.Errorf("UpdatePuzzle: %w", err)
+	}
+	return c.GetPuzzle(ctx, id)
+}
+
+func (c *Client) ClearPuzzleVoiceRoom(ctx context.Context, room string) error {
+	return c.queries.ClearPuzzleVoiceRoom(ctx, room)
 }
 
 func (c *Client) DeletePuzzle(ctx context.Context, id int64) error {

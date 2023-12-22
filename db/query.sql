@@ -2,16 +2,25 @@
 SELECT
     p.id, p.name, p.answer, sqlc.embed(rounds), p.status, p.note,
     p.location, p.puzzle_url, p.spreadsheet_id, p.discord_channel,
-    p.meta, p.archived, p.voice_room, p.reminder
+    p.meta, p.voice_room, p.reminder
 FROM puzzles AS p
 INNER JOIN rounds ON p.round = rounds.id
 WHERE p.id = ?;
+
+-- name: GetPuzzleByChannel :one
+SELECT
+    p.id, p.name, p.answer, sqlc.embed(rounds), p.status, p.note,
+    p.location, p.puzzle_url, p.spreadsheet_id, p.discord_channel,
+    p.meta, p.voice_room, p.reminder
+FROM puzzles AS p
+INNER JOIN rounds ON p.round = rounds.id
+WHERE p.discord_channel = ?;
 
 -- name: ListPuzzles :many
 SELECT
     p.id, p.name, p.answer, sqlc.embed(rounds), p.status, p.note,
     p.location, p.puzzle_url, p.spreadsheet_id, p.discord_channel,
-    p.meta, p.archived, p.voice_room, p.reminder
+    p.meta, p.voice_room, p.reminder
 FROM puzzles AS p
 INNER JOIN rounds ON p.round = rounds.id
 ORDER BY p.id;
@@ -19,16 +28,20 @@ ORDER BY p.id;
 -- name: CreatePuzzle :one
 INSERT INTO puzzles (
     name, answer, round, status, note, location, puzzle_url,
-    spreadsheet_id, discord_channel, meta, archived, voice_room,
-    reminder
-) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id;
+    spreadsheet_id, discord_channel, meta, voice_room, reminder
+) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id;
 
 -- name: UpdatePuzzle :exec
 UPDATE puzzles
 SET name = ?2, answer = ?3, round = ?4, status = ?5, note = ?6,
 location = ?7, puzzle_url = ?8, spreadsheet_id = ?9, discord_channel = ?10,
-meta = ?11, archived = ?12, voice_room = ?13, reminder = ?14
+meta = ?11, voice_room = ?12, reminder = ?13
 WHERE id = ?1;
+
+-- name: ClearPuzzleVoiceRoom :exec
+UPDATE puzzles
+SET voice_room = ""
+WHERE voice_room = ?;
 
 -- name: DeletePuzzle :exec
 DELETE FROM puzzles

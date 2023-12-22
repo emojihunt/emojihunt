@@ -26,7 +26,6 @@ export type Puzzle = {
   spreadsheet_id: string;
   discord_channel: string;
   meta: boolean;
-  archived: boolean;
   voice_room: string;
   reminder: string;
 };

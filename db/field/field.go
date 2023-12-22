@@ -82,15 +82,15 @@ func (s Status) SolvedVerb() string {
 	}
 }
 
-func (s Status) SolvedNoun() string {
+func (s Status) SolvedExclamation() string {
 	switch s {
 	case StatusSolved:
-		return "solve"
+		return "solve!"
 	case StatusBacksolved:
-		return "backsolve"
+		return "backsolve!!"
 	case StatusPurchased:
-		return "free answer"
+		return "free answer."
 	default:
-		panic("called SolvedNoun() on an unsolved puzzle")
+		panic("called SolvedExclamation() on an unsolved puzzle")
 	}
 }

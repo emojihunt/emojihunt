@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"sync"
 
 	_ "embed"
 
@@ -15,6 +16,7 @@ import (
 
 type Client struct {
 	queries *db.Queries
+	mu      sync.Mutex
 }
 
 func New(ctx context.Context, path string) *Client {
@@ -33,7 +35,7 @@ func New(ctx context.Context, path string) *Client {
 			panic(xerrors.Errorf("ExecContext(ctx, ddl): %w", err))
 		}
 	}
-	return &Client{db.New(dbx)}
+	return &Client{db.New(dbx), sync.Mutex{}}
 }
 
 type ValidationError struct {

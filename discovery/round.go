@@ -46,7 +46,7 @@ func (p *Poller) RoundCreationWorker(ctx context.Context) {
 
 		// Process any round(s) that have passed the timeout
 		if !p.state.IsDisabled(ctx) {
-			queue := make([]state.DiscoveredRound, 0)
+			var queue []state.DiscoveredRound
 			for _, round := range rounds {
 				if wakeup.After(round.NotifiedAt.Add(roundCreationPause)) {
 					queue = append(queue, round)

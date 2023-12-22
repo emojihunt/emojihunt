@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
+	"errors"
 	"time"
 
 	"github.com/emojihunt/emojihunt/db"
@@ -67,7 +68,7 @@ func (c *Client) SetDiscoveredRounds(ctx context.Context, rounds map[string]Disc
 
 func (c *Client) readSetting(ctx context.Context, key string) (interface{}, error) {
 	data, err := c.queries.GetSetting(ctx, key)
-	if err == sql.ErrNoRows {
+	if errors.Is(err, sql.ErrNoRows) {
 		return nil, nil
 	} else if err != nil {
 		return nil, xerrors.Errorf("GetSetting: %w", err)
