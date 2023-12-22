@@ -50,7 +50,7 @@ func (s *Client) UpdateDiscordPin(puzzle state.Puzzle) error {
 		},
 	}
 
-	if puzzle.SpreadsheetID != "" {
+	if puzzle.HasSpreadsheetID() {
 		embed.Fields = append(embed.Fields, &discordgo.MessageEmbedField{
 			Name: "Sheet",
 			Value: fmt.Sprintf("[Link](https://docs.google.com/spreadsheets/d/%s)",

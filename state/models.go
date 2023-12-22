@@ -14,19 +14,24 @@ type (
 
 // Must match db.GetPuzzleRow and db.ListPuzzlesRow
 type Puzzle struct {
-	ID             int64         `json:"id"`
-	Name           string        `json:"name"`
-	Answer         string        `json:"answer"`
-	Round          Round         `json:"round"`
-	Status         status.Status `json:"status"`
-	Note           string        `json:"note"`
-	Location       string        `json:"location"`
-	PuzzleURL      string        `json:"puzzle_url"`
-	SpreadsheetID  string        `json:"spreadsheet_id"`
-	DiscordChannel string        `json:"discord_channel"`
-	Meta           bool          `json:"meta"`
-	VoiceRoom      string        `json:"voice_room"`
-	Reminder       time.Time     `json:"reminder"`
+	ID        int64         `json:"id"`
+	Name      string        `json:"name"`
+	Answer    string        `json:"answer"`
+	Round     Round         `json:"round"`
+	Status    status.Status `json:"status"`
+	Note      string        `json:"note"`
+	Location  string        `json:"location"`
+	PuzzleURL string        `json:"puzzle_url"`
+
+	// For these two fields, a single hyphen ("-") means no spreadsheet/channel.
+	// The empty string ("") represents that the spreadsheet/channel has not yet
+	// been created.
+	SpreadsheetID  string `json:"spreadsheet_id"`
+	DiscordChannel string `json:"discord_channel"`
+
+	Meta      bool      `json:"meta"`
+	VoiceRoom string    `json:"voice_room"`
+	Reminder  time.Time `json:"reminder"`
 }
 
 type DiscoveredPuzzle struct {
@@ -40,6 +45,14 @@ type DiscoveredRound struct {
 	Name       string
 	NotifiedAt time.Time
 	Puzzles    []DiscoveredPuzzle
+}
+
+func (p Puzzle) HasSpreadsheetID() bool {
+	return p.SpreadsheetID != "" && p.SpreadsheetID != "-"
+}
+
+func (p Puzzle) HasDiscordChannel() bool {
+	return p.DiscordChannel != "" && p.DiscordChannel != "-"
 }
 
 func (p Puzzle) HasReminder() bool {
