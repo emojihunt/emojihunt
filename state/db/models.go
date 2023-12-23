@@ -31,6 +31,7 @@ type Round struct {
 	Name            string `json:"name"`
 	Emoji           string `json:"emoji"`
 	Hue             int64  `json:"hue"`
+	Sort            int64  `json:"sort"`
 	Special         bool   `json:"special"`
 	DriveFolder     string `json:"drive_folder"`
 	DiscordCategory string `json:"discord_category"`

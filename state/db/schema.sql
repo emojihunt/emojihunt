@@ -25,7 +25,10 @@ CREATE TABLE rounds (
     name            TEXT    NOT NULL,
     emoji           TEXT    NOT NULL,
     hue             INTEGER NOT NULL,
+
+    sort            INTEGER NOT NULL,
     special         BOOLEAN NOT NULL,
+
     drive_folder    TEXT    NOT NULL,
     discord_category TEXT   NOT NULL,
 

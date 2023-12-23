@@ -23,7 +23,7 @@ SELECT
     p.meta, p.voice_room, p.reminder
 FROM puzzles AS p
 INNER JOIN rounds ON p.round = rounds.id
-ORDER BY rounds.special, rounds.id, p.meta, p.name;
+ORDER BY rounds.special, rounds.sort, rounds.id, p.meta, p.name;
 
 -- name: CreatePuzzle :one
 INSERT INTO puzzles (
@@ -54,17 +54,17 @@ WHERE id = ? LIMIT 1;
 
 -- name: ListRounds :many
 SELECT * FROM rounds
-ORDER BY special, id;
+ORDER BY special, sort, id;
 
 -- name: CreateRound :one
-INSERT INTO rounds (name, emoji, hue, special, drive_folder, discord_category)
-VALUES (?, ?, ?, ?, ?, ?)
-RETURNING *;
+INSERT INTO rounds (
+    name, emoji, hue, sort, special, drive_folder, discord_category
+) VALUES (?, ?, ?, ?, ?, ?, ?) RETURNING *;
 
 -- name: UpdateRound :exec
 UPDATE rounds
-SET name = ?2, emoji = ?3, hue = ?4, special = ?5, drive_folder = ?6,
-    discord_category = ?7
+SET name = ?2, emoji = ?3, hue = ?4, sort = ?5, special = ?6,
+    drive_folder = ?7, discord_category = ?8
 WHERE id = ?1;
 
 -- name: DeleteRound :exec

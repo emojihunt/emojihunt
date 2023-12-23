@@ -12,6 +12,7 @@ type RoundParams struct {
 	Name            string `form:"name"`
 	Emoji           string `form:"emoji"`
 	Hue             int64  `form:"hue"`
+	Sort            int64  `form:"sort"`
 	Special         bool   `form:"special"`
 	DriveFolder     string `form:"drive_folder"`
 	DiscordCategory string `form:"discord_category"`

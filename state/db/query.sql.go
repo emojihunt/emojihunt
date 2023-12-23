@@ -66,15 +66,16 @@ func (q *Queries) CreatePuzzle(ctx context.Context, arg CreatePuzzleParams) (int
 }
 
 const createRound = `-- name: CreateRound :one
-INSERT INTO rounds (name, emoji, hue, special, drive_folder, discord_category)
-VALUES (?, ?, ?, ?, ?, ?)
-RETURNING id, name, emoji, hue, special, drive_folder, discord_category
+INSERT INTO rounds (
+    name, emoji, hue, sort, special, drive_folder, discord_category
+) VALUES (?, ?, ?, ?, ?, ?, ?) RETURNING id, name, emoji, hue, sort, special, drive_folder, discord_category
 `
 
 type CreateRoundParams struct {
 	Name            string `json:"name"`
 	Emoji           string `json:"emoji"`
 	Hue             int64  `json:"hue"`
+	Sort            int64  `json:"sort"`
 	Special         bool   `json:"special"`
 	DriveFolder     string `json:"drive_folder"`
 	DiscordCategory string `json:"discord_category"`
@@ -85,6 +86,7 @@ func (q *Queries) CreateRound(ctx context.Context, arg CreateRoundParams) (Round
 		arg.Name,
 		arg.Emoji,
 		arg.Hue,
+		arg.Sort,
 		arg.Special,
 		arg.DriveFolder,
 		arg.DiscordCategory,
@@ -95,6 +97,7 @@ func (q *Queries) CreateRound(ctx context.Context, arg CreateRoundParams) (Round
 		&i.Name,
 		&i.Emoji,
 		&i.Hue,
+		&i.Sort,
 		&i.Special,
 		&i.DriveFolder,
 		&i.DiscordCategory,
@@ -124,7 +127,7 @@ func (q *Queries) DeleteRound(ctx context.Context, id int64) error {
 
 const getPuzzle = `-- name: GetPuzzle :one
 SELECT
-    p.id, p.name, p.answer, rounds.id, rounds.name, rounds.emoji, rounds.hue, rounds.special, rounds.drive_folder, rounds.discord_category, p.status, p.note,
+    p.id, p.name, p.answer, rounds.id, rounds.name, rounds.emoji, rounds.hue, rounds.sort, rounds.special, rounds.drive_folder, rounds.discord_category, p.status, p.note,
     p.location, p.puzzle_url, p.spreadsheet_id, p.discord_channel,
     p.meta, p.voice_room, p.reminder
 FROM puzzles AS p
@@ -159,6 +162,7 @@ func (q *Queries) GetPuzzle(ctx context.Context, id int64) (GetPuzzleRow, error)
 		&i.Round.Name,
 		&i.Round.Emoji,
 		&i.Round.Hue,
+		&i.Round.Sort,
 		&i.Round.Special,
 		&i.Round.DriveFolder,
 		&i.Round.DiscordCategory,
@@ -177,7 +181,7 @@ func (q *Queries) GetPuzzle(ctx context.Context, id int64) (GetPuzzleRow, error)
 
 const getPuzzleByChannel = `-- name: GetPuzzleByChannel :one
 SELECT
-    p.id, p.name, p.answer, rounds.id, rounds.name, rounds.emoji, rounds.hue, rounds.special, rounds.drive_folder, rounds.discord_category, p.status, p.note,
+    p.id, p.name, p.answer, rounds.id, rounds.name, rounds.emoji, rounds.hue, rounds.sort, rounds.special, rounds.drive_folder, rounds.discord_category, p.status, p.note,
     p.location, p.puzzle_url, p.spreadsheet_id, p.discord_channel,
     p.meta, p.voice_room, p.reminder
 FROM puzzles AS p
@@ -212,6 +216,7 @@ func (q *Queries) GetPuzzleByChannel(ctx context.Context, discordChannel string)
 		&i.Round.Name,
 		&i.Round.Emoji,
 		&i.Round.Hue,
+		&i.Round.Sort,
 		&i.Round.Special,
 		&i.Round.DriveFolder,
 		&i.Round.DiscordCategory,
@@ -229,7 +234,7 @@ func (q *Queries) GetPuzzleByChannel(ctx context.Context, discordChannel string)
 }
 
 const getRound = `-- name: GetRound :one
-SELECT id, name, emoji, hue, special, drive_folder, discord_category FROM rounds
+SELECT id, name, emoji, hue, sort, special, drive_folder, discord_category FROM rounds
 WHERE id = ? LIMIT 1
 `
 
@@ -241,6 +246,7 @@ func (q *Queries) GetRound(ctx context.Context, id int64) (Round, error) {
 		&i.Name,
 		&i.Emoji,
 		&i.Hue,
+		&i.Sort,
 		&i.Special,
 		&i.DriveFolder,
 		&i.DiscordCategory,
@@ -262,12 +268,12 @@ func (q *Queries) GetSetting(ctx context.Context, key interface{}) ([]byte, erro
 
 const listPuzzles = `-- name: ListPuzzles :many
 SELECT
-    p.id, p.name, p.answer, rounds.id, rounds.name, rounds.emoji, rounds.hue, rounds.special, rounds.drive_folder, rounds.discord_category, p.status, p.note,
+    p.id, p.name, p.answer, rounds.id, rounds.name, rounds.emoji, rounds.hue, rounds.sort, rounds.special, rounds.drive_folder, rounds.discord_category, p.status, p.note,
     p.location, p.puzzle_url, p.spreadsheet_id, p.discord_channel,
     p.meta, p.voice_room, p.reminder
 FROM puzzles AS p
 INNER JOIN rounds ON p.round = rounds.id
-ORDER BY rounds.special, rounds.id, p.meta, p.name
+ORDER BY rounds.special, rounds.sort, rounds.id, p.meta, p.name
 `
 
 type ListPuzzlesRow struct {
@@ -303,6 +309,7 @@ func (q *Queries) ListPuzzles(ctx context.Context) ([]ListPuzzlesRow, error) {
 			&i.Round.Name,
 			&i.Round.Emoji,
 			&i.Round.Hue,
+			&i.Round.Sort,
 			&i.Round.Special,
 			&i.Round.DriveFolder,
 			&i.Round.DiscordCategory,
@@ -330,8 +337,8 @@ func (q *Queries) ListPuzzles(ctx context.Context) ([]ListPuzzlesRow, error) {
 }
 
 const listRounds = `-- name: ListRounds :many
-SELECT id, name, emoji, hue, special, drive_folder, discord_category FROM rounds
-ORDER BY special, id
+SELECT id, name, emoji, hue, sort, special, drive_folder, discord_category FROM rounds
+ORDER BY special, sort, id
 `
 
 func (q *Queries) ListRounds(ctx context.Context) ([]Round, error) {
@@ -348,6 +355,7 @@ func (q *Queries) ListRounds(ctx context.Context) ([]Round, error) {
 			&i.Name,
 			&i.Emoji,
 			&i.Hue,
+			&i.Sort,
 			&i.Special,
 			&i.DriveFolder,
 			&i.DiscordCategory,
@@ -410,8 +418,8 @@ func (q *Queries) UpdatePuzzle(ctx context.Context, arg UpdatePuzzleParams) erro
 
 const updateRound = `-- name: UpdateRound :exec
 UPDATE rounds
-SET name = ?2, emoji = ?3, hue = ?4, special = ?5, drive_folder = ?6,
-    discord_category = ?7
+SET name = ?2, emoji = ?3, hue = ?4, sort = ?5, special = ?6,
+    drive_folder = ?7, discord_category = ?8
 WHERE id = ?1
 `
 
@@ -420,6 +428,7 @@ type UpdateRoundParams struct {
 	Name            string `json:"name"`
 	Emoji           string `json:"emoji"`
 	Hue             int64  `json:"hue"`
+	Sort            int64  `json:"sort"`
 	Special         bool   `json:"special"`
 	DriveFolder     string `json:"drive_folder"`
 	DiscordCategory string `json:"discord_category"`
@@ -431,6 +440,7 @@ func (q *Queries) UpdateRound(ctx context.Context, arg UpdateRoundParams) error 
 		arg.Name,
 		arg.Emoji,
 		arg.Hue,
+		arg.Sort,
 		arg.Special,
 		arg.DriveFolder,
 		arg.DiscordCategory,
