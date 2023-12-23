@@ -74,7 +74,12 @@ func (c *Client) UpdateRoundAdvanced(
 	mutate func(round *Round) error,
 	sync bool,
 ) (Round, error) {
-
+	var change RoundChange
+	defer func() {
+		if (change != RoundChange{}) {
+			c.RoundChange <- change
+		}
+	}()
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
 	before, err := c.GetRound(ctx, id)
@@ -95,11 +100,17 @@ func (c *Client) UpdateRoundAdvanced(
 	if err != nil {
 		return Round{}, err
 	}
-	c.RoundChange <- RoundChange{&before, &after, sync}
+	change = RoundChange{&before, &after, sync}
 	return after, nil
 }
 
 func (c *Client) DeleteRound(ctx context.Context, id int64) error {
+	var change RoundChange
+	defer func() {
+		if (change != RoundChange{}) {
+			c.RoundChange <- change
+		}
+	}()
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
 	round, err := c.GetRound(ctx, id)
@@ -110,6 +121,6 @@ func (c *Client) DeleteRound(ctx context.Context, id int64) error {
 	if err != nil {
 		return xerrors.Errorf("DeleteRound: %w", err)
 	}
-	c.RoundChange <- RoundChange{&round, nil, true}
+	change = RoundChange{&round, nil, true}
 	return nil
 }

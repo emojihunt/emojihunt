@@ -15,6 +15,8 @@ import (
 )
 
 type Client struct {
+	// Important: to avoid deadlocks, do not send to this channel while holding
+	// the lock below.
 	DiscoveryChange chan bool
 	PuzzleChange    chan PuzzleChange
 	RoundChange     chan RoundChange
