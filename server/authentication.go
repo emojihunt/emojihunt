@@ -84,6 +84,7 @@ func (s *Server) Authenticate(c echo.Context) error {
 		Path:     "/",
 		Secure:   true,
 		HttpOnly: true,
+		SameSite: http.SameSiteLaxMode,
 	})
 
 	username := session.User.Username
