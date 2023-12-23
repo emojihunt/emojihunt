@@ -34,6 +34,18 @@ type Puzzle struct {
 	Reminder  time.Time `json:"reminder"`
 }
 
+type PuzzleChange struct {
+	Before *Puzzle
+	After  *Puzzle
+	Sync   bool
+}
+
+type RoundChange struct {
+	Before *Round
+	After  *Round
+	Sync   bool
+}
+
 type DiscoveredPuzzle struct {
 	Name      string
 	RoundName string

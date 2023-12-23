@@ -77,20 +77,33 @@ func (c *Client) CreatePuzzle(ctx context.Context, puzzle RawPuzzle) (Puzzle, er
 	if err != nil {
 		return Puzzle{}, xerrors.Errorf("CreatePuzzle: %w", err)
 	}
-	return c.GetPuzzle(ctx, id)
+	created, err := c.GetPuzzle(ctx, id)
+	if err != nil {
+		return Puzzle{}, err
+	}
+	c.PuzzleChange <- PuzzleChange{nil, &created, true}
+	return created, nil
 }
 
 func (c *Client) UpdatePuzzle(ctx context.Context, id int64,
 	mutate func(puzzle *RawPuzzle) error) (Puzzle, error) {
+	return c.UpdatePuzzleAdvanced(ctx, id, mutate, true)
+}
 
+func (c *Client) UpdatePuzzleAdvanced(
+	ctx context.Context,
+	id int64,
+	mutate func(puzzle *RawPuzzle) error,
+	sync bool,
+) (Puzzle, error) {
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
 
-	original, err := c.GetPuzzle(ctx, id)
+	before, err := c.GetPuzzle(ctx, id)
 	if err != nil {
 		return Puzzle{}, err
 	}
-	var raw = original.RawPuzzle()
+	var raw = before.RawPuzzle()
 	if err := mutate(&raw); err != nil {
 		return Puzzle{}, err
 	} else if err := ValidatePuzzle(raw); err != nil {
@@ -100,17 +113,31 @@ func (c *Client) UpdatePuzzle(ctx context.Context, id int64,
 	} else if err := c.queries.UpdatePuzzle(ctx, db.UpdatePuzzleParams(raw)); err != nil {
 		return Puzzle{}, xerrors.Errorf("UpdatePuzzle: %w", err)
 	}
-	return c.GetPuzzle(ctx, id)
+
+	after, err := c.GetPuzzle(ctx, id)
+	if err != nil {
+		return Puzzle{}, err
+	}
+	c.PuzzleChange <- PuzzleChange{&before, &after, sync}
+	return after, nil
 }
 
 func (c *Client) ClearPuzzleVoiceRoom(ctx context.Context, room string) error {
+	// TODO: emit sync events
 	return c.queries.ClearPuzzleVoiceRoom(ctx, room)
 }
 
 func (c *Client) DeletePuzzle(ctx context.Context, id int64) error {
-	err := c.queries.DeletePuzzle(ctx, id)
+	c.mutex.Lock()
+	defer c.mutex.Unlock()
+	puzzle, err := c.GetPuzzle(ctx, id)
+	if err != nil {
+		return err
+	}
+	err = c.queries.DeletePuzzle(ctx, id)
 	if err != nil {
 		return xerrors.Errorf("DeletePuzzle: %w", err)
 	}
+	c.PuzzleChange <- PuzzleChange{&puzzle, nil, true}
 	return nil
 }

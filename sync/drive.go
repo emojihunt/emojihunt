@@ -17,14 +17,14 @@ func (c *Client) CreateSpreadsheet(ctx context.Context, puzzle state.Puzzle) (st
 	}
 
 	// TODO: don't trigger an infinite loop
-	puzzle, err = c.state.UpdatePuzzle(ctx, puzzle.ID,
+	puzzle, err = c.state.UpdatePuzzleAdvanced(ctx, puzzle.ID,
 		func(puzzle *state.RawPuzzle) error {
 			if puzzle.SpreadsheetID != "" {
 				return xerrors.Errorf("created duplicate spreadsheet")
 			}
 			puzzle.SpreadsheetID = spreadsheet
 			return nil
-		},
+		}, false,
 	)
 	if err != nil {
 		return state.Puzzle{}, err

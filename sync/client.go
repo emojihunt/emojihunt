@@ -43,9 +43,10 @@ func (c *Client) Watch(ctx context.Context) {
 		select {
 		case <-c.state.DiscoveryChange:
 			err = c.TriggerDiscoveryEnabled(ctx)
-		case delta := <-c.state.PuzzleChange:
-			err = c.TriggerPuzzle(ctx, delta[0], *delta[1])
-		case <-c.state.RoundChange: // TODO
+		case change := <-c.state.PuzzleChange:
+			err = c.TriggerPuzzle(ctx, change)
+		case change := <-c.state.RoundChange:
+			err = c.TriggerRound(ctx, change)
 		case <-ctx.Done():
 			return
 		}
@@ -74,8 +75,19 @@ func (c *Client) TriggerDiscoveryEnabled(ctx context.Context) error {
 	return c.discord.UpdateStatus(data)
 }
 
-func (c *Client) TriggerPuzzle(ctx context.Context, previous *state.Puzzle, puzzle state.Puzzle) error {
+func (c *Client) TriggerPuzzle(ctx context.Context, change state.PuzzleChange) error {
+	if change.After == nil {
+		// Don't take any action when a puzzle is deleted. To avoid accidents, the
+		// channel and spreadsheet should be cleaned up manually.
+		return nil
+	} else if !change.Sync {
+		// To avoid infinite loops, don't take any action on changes made by
+		// TriggerPuzzle.
+		return nil
+	}
+
 	var err error
+	var puzzle = *change.After
 	if puzzle.SpreadsheetID == "" {
 		puzzle, err = c.CreateSpreadsheet(ctx, puzzle)
 		if err != nil {
@@ -89,7 +101,7 @@ func (c *Client) TriggerPuzzle(ctx context.Context, previous *state.Puzzle, puzz
 		}
 	}
 
-	if previous == nil {
+	if change.Before == nil {
 		err = c.UpdateDiscordChannel(NewDiscordChannelFields(puzzle))
 		if err != nil {
 			return err
@@ -108,7 +120,7 @@ func (c *Client) TriggerPuzzle(ctx context.Context, previous *state.Puzzle, puzz
 		var ch = make(chan error, 4)
 
 		// On solve, unset voice room
-		if !previous.Status.IsSolved() && puzzle.Status.IsSolved() {
+		if !change.Before.Status.IsSolved() && puzzle.Status.IsSolved() {
 			var sync bool
 			puzzle, err = c.state.UpdatePuzzle(ctx, puzzle.ID,
 				func(puzzle *state.RawPuzzle) error {
@@ -129,21 +141,21 @@ func (c *Client) TriggerPuzzle(ctx context.Context, previous *state.Puzzle, puzz
 		}
 
 		// Sync updates to the Discord channel name and category:
-		var c0, c1 = NewDiscordChannelFields(*previous), NewDiscordChannelFields(puzzle)
+		var c0, c1 = NewDiscordChannelFields(*change.Before), NewDiscordChannelFields(puzzle)
 		if puzzle.HasDiscordChannel() && c0 != c1 {
 			wg.Add(1)
 			go func() { ch <- c.UpdateDiscordChannel(c1); wg.Done() }()
 		}
 
 		// Sync updates to the Discord pinned message:
-		var p0, p1 = NewDiscordPinFields(*previous), NewDiscordPinFields(puzzle)
+		var p0, p1 = NewDiscordPinFields(*change.Before), NewDiscordPinFields(puzzle)
 		if puzzle.HasDiscordChannel() && p0 != p1 {
 			wg.Add(1)
 			go func() { ch <- c.UpdateDiscordPin(p1); wg.Done() }()
 		}
 
 		// Sync updates to the spreadsheet name and folder:
-		var s0, s1 = NewSpreadsheetFields(*previous), NewSpreadsheetFields(puzzle)
+		var s0, s1 = NewSpreadsheetFields(*change.Before), NewSpreadsheetFields(puzzle)
 		if puzzle.HasSpreadsheetID() && s0 != s1 {
 			wg.Add(1)
 			go func() { ch <- c.UpdateSpreadsheet(ctx, s1); wg.Done() }()
@@ -158,12 +170,17 @@ func (c *Client) TriggerPuzzle(ctx context.Context, previous *state.Puzzle, puzz
 		}
 
 		// Notify the puzzle channel and #more-eyes of significant status changes
-		if !previous.Status.IsSolved() && puzzle.Status.IsSolved() {
+		if !change.Before.Status.IsSolved() && puzzle.Status.IsSolved() {
 			return c.NotifyPuzzleSolved(puzzle, false) // TODO: support `botRequest` field
-		} else if previous.Status == status.NotStarted && puzzle.Status == status.Working {
+		} else if change.Before.Status == status.NotStarted && puzzle.Status == status.Working {
 			return c.NotifyPuzzleWorking(puzzle)
 		} else {
 			return nil
 		}
 	}
+}
+
+func (c *Client) TriggerRound(ctx context.Context, change state.RoundChange) error {
+	// TODO
+	return nil
 }

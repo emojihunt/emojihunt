@@ -58,18 +58,21 @@ func (c *Client) CreateRound(ctx context.Context, round Round) (Round, error) {
 	if err != nil {
 		return Round{}, xerrors.Errorf("CreateRound: %w", err)
 	}
-	return Round(result), nil
+	created := Round(result)
+	c.RoundChange <- RoundChange{nil, &created, true}
+	return created, nil
 }
+
 func (c *Client) UpdateRound(ctx context.Context, id int64,
 	mutate func(round *Round) error) (Round, error) {
 
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
-
-	raw, err := c.GetRound(ctx, id)
+	before, err := c.GetRound(ctx, id)
 	if err != nil {
 		return Round{}, err
 	}
+	var raw = before
 	if err := mutate(&raw); err != nil {
 		return Round{}, err
 	} else if err := ValidateRound(raw); err != nil {
@@ -79,13 +82,25 @@ func (c *Client) UpdateRound(ctx context.Context, id int64,
 	} else if err := c.queries.UpdateRound(ctx, db.UpdateRoundParams(raw)); err != nil {
 		return Round{}, xerrors.Errorf("UpdateRound: %w", err)
 	}
-	return c.GetRound(ctx, id)
+	after, err := c.GetRound(ctx, id)
+	if err != nil {
+		return Round{}, err
+	}
+	c.RoundChange <- RoundChange{&before, &after, true}
+	return after, nil
 }
 
 func (c *Client) DeleteRound(ctx context.Context, id int64) error {
-	err := c.queries.DeleteRound(ctx, id)
+	c.mutex.Lock()
+	defer c.mutex.Unlock()
+	round, err := c.GetRound(ctx, id)
+	if err != nil {
+		return err
+	}
+	err = c.queries.DeleteRound(ctx, id)
 	if err != nil {
 		return xerrors.Errorf("DeleteRound: %w", err)
 	}
+	c.RoundChange <- RoundChange{&round, nil, true}
 	return nil
 }

@@ -38,15 +38,14 @@ func (c *Client) CreateDiscordChannel(ctx context.Context, puzzle state.Puzzle) 
 		return state.Puzzle{}, err
 	}
 
-	// TODO: don't trigger an infinite loop
-	puzzle, err = c.state.UpdatePuzzle(ctx, puzzle.ID,
+	puzzle, err = c.state.UpdatePuzzleAdvanced(ctx, puzzle.ID,
 		func(puzzle *state.RawPuzzle) error {
 			if puzzle.DiscordChannel != "" {
 				return xerrors.Errorf("created duplicate Discord channel")
 			}
 			puzzle.DiscordChannel = channel.ID
 			return nil
-		},
+		}, false,
 	)
 	if err != nil {
 		return state.Puzzle{}, err
@@ -204,8 +203,8 @@ func (s *Client) UpdateDiscordPin(fields DiscordPinFields) error {
 		if fields.VoiceRoom != "" {
 			locationMsg = fmt.Sprintf("Join us in <#%s>!", fields.VoiceRoom)
 		}
-		if fields.Location != locationDefaultMsg {
-			if locationMsg != "" {
+		if fields.Location != "" {
+			if locationMsg != locationDefaultMsg {
 				locationMsg += fmt.Sprintf("Also in-person in %s.", fields.Location)
 			} else {
 				locationMsg = fmt.Sprintf("In-person in %s.", fields.Location)

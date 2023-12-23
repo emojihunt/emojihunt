@@ -16,8 +16,8 @@ import (
 
 type Client struct {
 	DiscoveryChange chan bool
-	PuzzleChange    chan [2]*Puzzle
-	RoundChange     chan [2]*Round
+	PuzzleChange    chan PuzzleChange
+	RoundChange     chan RoundChange
 
 	queries *db.Queries
 	mutex   sync.Mutex // used to serialize writes
@@ -41,8 +41,8 @@ func New(ctx context.Context, path string) *Client {
 	}
 	return &Client{
 		DiscoveryChange: make(chan bool, 8),
-		PuzzleChange:    make(chan [2]*Puzzle, 32),
-		RoundChange:     make(chan [2]*Round, 8),
+		PuzzleChange:    make(chan PuzzleChange, 32),
+		RoundChange:     make(chan RoundChange, 8),
 		queries:         db.New(dbx),
 	}
 }
