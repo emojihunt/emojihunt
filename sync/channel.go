@@ -9,8 +9,8 @@ import (
 	"time"
 
 	"github.com/bwmarrin/discordgo"
+	"github.com/emojihunt/emojihunt/discord"
 	"github.com/emojihunt/emojihunt/state"
-	"github.com/emojihunt/emojihunt/state/status"
 	"golang.org/x/xerrors"
 )
 
@@ -27,11 +27,23 @@ const (
 // Puzzle object.
 func (c *Client) CreateDiscordChannel(ctx context.Context, puzzle state.Puzzle) (state.Puzzle, error) {
 	log.Printf("sync: creating discord channel for %q", puzzle.Name)
-	channel, err := c.discord.CreateChannel(puzzle.Name, puzzle.Round.DiscordCategory)
+	var position int
+	puzzles, err := c.state.ListPuzzles(ctx)
 	if err != nil {
 		return puzzle, err
 	}
-	return c.state.UpdatePuzzleAdvanced(ctx, puzzle.ID,
+	for i, item := range puzzles {
+		if item.ID == puzzle.ID {
+			position = 512 + 2*i - 1
+		}
+	}
+
+	channel, err := c.discord.CreateChannel(puzzle.Name,
+		puzzle.Round.DiscordCategory, position)
+	if err != nil {
+		return puzzle, err
+	}
+	puzzle, err = c.state.UpdatePuzzleAdvanced(ctx, puzzle.ID,
 		func(puzzle *state.RawPuzzle) error {
 			if puzzle.DiscordChannel != "" {
 				return xerrors.Errorf("created duplicate Discord channel")
@@ -40,17 +52,44 @@ func (c *Client) CreateDiscordChannel(ctx context.Context, puzzle state.Puzzle) 
 			return nil
 		}, false,
 	)
+	if err != nil {
+		return puzzle, err
+	}
+
+	log.Printf("sync: sorting discord channels")
+	var order []discord.ChannelOrder
+	for i, puzzle := range puzzles {
+		if !puzzle.HasDiscordChannel() {
+			continue
+		}
+		order = append(order, discord.ChannelOrder{
+			ID: puzzle.DiscordChannel, Position: 512 + 2*i,
+		})
+	}
+	return puzzle, c.discord.SortChannels(order)
 }
 
 // CreateDiscordCategory creates a new Discord category and saves it to the
 // Round object.
 func (c *Client) CreateDiscordCategory(ctx context.Context, round state.Round) (state.Round, error) {
 	log.Printf("sync: creating discord category for %q", round.Name)
-	category, err := c.discord.CreateCategory(roundCategoryPrefix + round.Name)
+	var position int
+	rounds, err := c.state.ListRounds(ctx)
+	if err != nil {
+		return round, nil
+	}
+	for i, item := range rounds {
+		if item.ID == round.ID {
+			position = 64 + 2*i - 1
+		}
+	}
+
+	category, err := c.discord.CreateCategory(roundCategoryPrefix+round.Name,
+		position)
 	if err != nil {
 		return round, err
 	}
-	return c.state.UpdateRoundAdvanced(ctx, round.ID,
+	round, err = c.state.UpdateRoundAdvanced(ctx, round.ID,
 		func(round *state.Round) error {
 			if round.DiscordCategory != "" {
 				return xerrors.Errorf("created duplicate Discord category")
@@ -59,6 +98,26 @@ func (c *Client) CreateDiscordCategory(ctx context.Context, round state.Round) (
 			return nil
 		}, false,
 	)
+	if err != nil {
+		return round, err
+	}
+
+	log.Printf("sync: sorting discord categories")
+	var order []discord.ChannelOrder
+	for i, round := range rounds {
+		if round.HasDiscordCategory() {
+			// Use a high offset so manually-managed channels are listed first
+			order = append(order, discord.ChannelOrder{
+				ID: round.DiscordCategory, Position: 64 + 2*i,
+			})
+		}
+	}
+	for i, category := range c.solvedCategories {
+		order = append(order, discord.ChannelOrder{
+			ID: category, Position: 256 + i,
+		})
+	}
+	return round, c.discord.SortChannels(order)
 }
 
 func (c *Client) RestoreSolvedCategories() error {
@@ -72,7 +131,7 @@ func (c *Client) RestoreSolvedCategories() error {
 		if category, ok := categories[name]; ok {
 			solved = append(solved, category.ID)
 		} else {
-			category, err := c.discord.CreateCategory(name)
+			category, err := c.discord.CreateCategory(name, 256+i)
 			if err != nil {
 				return err
 			}
@@ -149,109 +208,4 @@ func (c *Client) UpdateDiscordChannel(fields DiscordChannelFields) error {
 			"renamed to %q in %s.", title, time.Until(*rateLimit).Round(time.Second))
 		return c.discord.ChannelSendRawID(fields.PuzzleChannel, msg)
 	}
-}
-
-type DiscordPinFields struct {
-	RoundName  string
-	RoundEmoji string
-
-	PuzzleName     string
-	Status         status.Status
-	Note           string
-	Location       string
-	PuzzleURL      string
-	SpreadsheetID  string
-	DiscordChannel string
-	VoiceRoom      string
-}
-
-func NewDiscordPinFields(puzzle state.Puzzle) DiscordPinFields {
-	var spreadsheet, channel string
-	if puzzle.HasSpreadsheetID() {
-		spreadsheet = puzzle.SpreadsheetID
-	}
-	if puzzle.HasDiscordChannel() {
-		channel = puzzle.DiscordChannel
-	}
-	return DiscordPinFields{
-		RoundName:      puzzle.Round.Name,
-		RoundEmoji:     puzzle.Round.Emoji,
-		PuzzleName:     puzzle.Name,
-		Status:         puzzle.Status,
-		Note:           puzzle.Note,
-		Location:       puzzle.Location,
-		PuzzleURL:      puzzle.PuzzleURL,
-		SpreadsheetID:  spreadsheet,
-		DiscordChannel: channel,
-		VoiceRoom:      puzzle.VoiceRoom,
-	}
-}
-
-// UpdateDiscordPin creates or updates the pinned message at the top of the
-// puzzle channel. This message contains information about the puzzle status as
-// well as links to the puzzle and the spreadsheet.
-func (c *Client) UpdateDiscordPin(fields DiscordPinFields) error {
-	log.Printf("sync: updating discord pin for %q", fields.PuzzleName)
-
-	embed := &discordgo.MessageEmbed{
-		Author: &discordgo.MessageEmbedAuthor{Name: pinnedStatusHeader},
-		Title:  fields.PuzzleName,
-		URL:    fields.PuzzleURL,
-		Color:  embedColor,
-		Fields: []*discordgo.MessageEmbedField{
-			{
-				Name:   "Round",
-				Value:  fmt.Sprintf("%s %s", fields.RoundEmoji, fields.RoundName),
-				Inline: false,
-			},
-			{
-				Name:   "Status",
-				Value:  fields.Status.Pretty(),
-				Inline: true,
-			},
-			{
-				Name:   "Puzzle",
-				Value:  fmt.Sprintf("[Link](%s)", fields.PuzzleURL),
-				Inline: true,
-			},
-		},
-	}
-
-	if fields.SpreadsheetID != "" {
-		embed.Fields = append(embed.Fields, &discordgo.MessageEmbedField{
-			Name: "Sheet",
-			Value: fmt.Sprintf("[Link](https://docs.google.com/spreadsheets/d/%s)",
-				fields.SpreadsheetID),
-			Inline: true,
-		})
-	}
-
-	if fields.Note != "" {
-		embed.Fields = append(embed.Fields, &discordgo.MessageEmbedField{
-			Name:   "Note",
-			Value:  fields.Note,
-			Inline: false,
-		})
-	}
-
-	if !fields.Status.IsSolved() {
-		locationMsg := locationDefaultMsg
-		if fields.VoiceRoom != "" {
-			locationMsg = fmt.Sprintf("Join us in <#%s>!", fields.VoiceRoom)
-		}
-		if fields.Location != "" {
-			if locationMsg != locationDefaultMsg {
-				locationMsg += fmt.Sprintf("Also in-person in %s.", fields.Location)
-			} else {
-				locationMsg = fmt.Sprintf("In-person in %s.", fields.Location)
-			}
-		}
-		embed.Fields = append(embed.Fields, &discordgo.MessageEmbedField{
-			Name:   "Location",
-			Value:  locationMsg,
-			Inline: false,
-		})
-	}
-
-	return c.discord.CreateUpdatePin(fields.DiscordChannel, pinnedStatusHeader, embed)
 }
