@@ -21,6 +21,15 @@ export default defineNuxtConfig({
     "@pinia/nuxt",
   ],
   routeRules: {
+    "**": {
+      headers: {
+        "X-Content-Type-Options": "nosniff",
+        "Referrer-Policy": "origin",
+        "Cross-Origin-Opener-Policy": "same-origin",
+        "Cross-Origin-Embedder-Policy": "require-corp",
+        "Cross-Origin-Resource-Policy": "same-site",
+      },
+    },
     "/api/**": {
       proxy: prod ? "https://huntbot.fly.dev/**" : "http://localhost:8080/**",
     },
