@@ -3,7 +3,10 @@ export type Round = {
   name: string;
   emoji: string;
   hue: number;
+  sort: number;
   special: boolean;
+  drive_folder: string;
+  discord_category: string;
 };
 
 export type AnnotatedRound = Round & {

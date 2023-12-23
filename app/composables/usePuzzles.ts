@@ -21,6 +21,11 @@ export default defineStore("puzzles", {
           total: puzzles.length,
         });
       }
+      rounds.sort((a, b) => {
+        if (a.special !== b.special) return a.special ? 1 : -1;
+        else if (a.sort !== b.sort) return a.sort - b.sort;
+        else return a.id - b.id;
+      });
       return rounds;
     },
     puzzles(state): Map<number, Puzzle[]> {
@@ -31,6 +36,12 @@ export default defineStore("puzzles", {
           grouped.set(id, []);
         }
         grouped.get(id)!.push(puzzle);
+      }
+      for (const [_, puzzles] of grouped) {
+        puzzles.sort((a, b) => {
+          if (a.meta !== b.meta) return a.meta ? 1 : -1;
+          else return a.name.localeCompare(b.name);
+        });
       }
       return grouped;
     },
