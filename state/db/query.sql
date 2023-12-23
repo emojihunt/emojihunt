@@ -57,13 +57,14 @@ SELECT * FROM rounds
 ORDER BY special, id;
 
 -- name: CreateRound :one
-INSERT INTO rounds (name, emoji, hue, special)
-VALUES (?, ?, ?, ?)
+INSERT INTO rounds (name, emoji, hue, special, drive_folder, discord_category)
+VALUES (?, ?, ?, ?, ?, ?)
 RETURNING *;
 
 -- name: UpdateRound :exec
 UPDATE rounds
-SET name = ?2, emoji = ?3, hue = ?4, special = ?5
+SET name = ?2, emoji = ?3, hue = ?4, special = ?5, drive_folder = ?6,
+    discord_category = ?7
 WHERE id = ?1;
 
 -- name: DeleteRound :exec

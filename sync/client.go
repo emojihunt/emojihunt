@@ -13,14 +13,15 @@ import (
 )
 
 type Client struct {
-	discord   *discord.Client
-	discovery bool
-	drive     *drive.Client
-	state     *state.Client
+	discord          *discord.Client
+	discovery        bool
+	drive            *drive.Client
+	state            *state.Client
+	solvedCategories []string
 }
 
 func New(discord *discord.Client, discovery bool, drive *drive.Client, state *state.Client) *Client {
-	return &Client{discord, discovery, drive, state}
+	return &Client{discord, discovery, drive, state, nil}
 }
 
 func (c *Client) Watch(ctx context.Context) {
@@ -35,8 +36,15 @@ func (c *Client) Watch(ctx context.Context) {
 	// *do* allow panics to bubble up to main()
 
 	// The bot's status is reset when we connect to Discord
-	c.TriggerDiscoveryEnabled(ctx)
-	c.RestorePlaceholderEvent()
+	if err := c.TriggerDiscoveryEnabled(ctx); err != nil {
+		panic(err)
+	}
+	if err := c.RestoreSolvedCategories(); err != nil {
+		panic(err)
+	}
+	if err := c.RestorePlaceholderEvent(); err != nil {
+		panic(err)
+	}
 
 	for {
 		var err error
@@ -102,17 +110,21 @@ func (c *Client) TriggerPuzzle(ctx context.Context, change state.PuzzleChange) e
 	}
 
 	if change.Before == nil {
-		err = c.UpdateDiscordChannel(NewDiscordChannelFields(puzzle))
-		if err != nil {
-			return err
+		if puzzle.HasDiscordChannel() {
+			err = c.UpdateDiscordChannel(NewDiscordChannelFields(puzzle))
+			if err != nil {
+				return err
+			}
+			err = c.UpdateDiscordPin(NewDiscordPinFields(puzzle))
+			if err != nil {
+				return err
+			}
 		}
-		err = c.UpdateDiscordPin(NewDiscordPinFields(puzzle))
-		if err != nil {
-			return err
-		}
-		err = c.UpdateSpreadsheet(ctx, NewSpreadsheetFields(puzzle))
-		if err != nil {
-			return err
+		if puzzle.HasSpreadsheetID() {
+			err = c.UpdateSpreadsheet(ctx, NewSpreadsheetFields(puzzle))
+			if err != nil {
+				return err
+			}
 		}
 		return c.NotifyNewPuzzle(puzzle)
 	} else {
@@ -181,6 +193,24 @@ func (c *Client) TriggerPuzzle(ctx context.Context, change state.PuzzleChange) e
 }
 
 func (c *Client) TriggerRound(ctx context.Context, change state.RoundChange) error {
-	// TODO
+	if change.After == nil || !change.Sync {
+		return nil
+	}
+
+	var err error
+	var round = *change.After
+	if round.DriveFolder == "" {
+		round, err = c.CreateDriveFolder(ctx, round)
+		if err != nil {
+			return err
+		}
+	}
+	if round.DiscordCategory == "" {
+		round, err = c.CreateDiscordCategory(ctx, round)
+		if err != nil {
+			return err
+		}
+	}
+	// TODO: ...
 	return nil
 }

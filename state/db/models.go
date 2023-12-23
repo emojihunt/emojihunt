@@ -27,11 +27,13 @@ type Puzzle struct {
 }
 
 type Round struct {
-	ID      int64  `json:"id"`
-	Name    string `json:"name"`
-	Emoji   string `json:"emoji"`
-	Hue     int64  `json:"hue"`
-	Special bool   `json:"special"`
+	ID              int64  `json:"id"`
+	Name            string `json:"name"`
+	Emoji           string `json:"emoji"`
+	Hue             int64  `json:"hue"`
+	Special         bool   `json:"special"`
+	DriveFolder     string `json:"drive_folder"`
+	DiscordCategory string `json:"discord_category"`
 }
 
 type Setting struct {

@@ -8,11 +8,13 @@ import (
 )
 
 type RoundParams struct {
-	ID      int64  `param:"id"`
-	Name    string `form:"name"`
-	Emoji   string `form:"emoji"`
-	Hue     int64  `form:"hue"`
-	Special bool   `form:"special"`
+	ID              int64  `param:"id"`
+	Name            string `form:"name"`
+	Emoji           string `form:"emoji"`
+	Hue             int64  `form:"hue"`
+	Special         bool   `form:"special"`
+	DriveFolder     string `form:"drive_folder"`
+	DiscordCategory string `form:"discord_category"`
 }
 
 func (s *Server) ListRounds(c echo.Context) error {

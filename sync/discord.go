@@ -24,21 +24,14 @@ const (
 )
 
 // CreateDiscordChannel creates a new Discord channel and saves it to the
-// database.
+// Puzzle object.
 func (c *Client) CreateDiscordChannel(ctx context.Context, puzzle state.Puzzle) (state.Puzzle, error) {
 	log.Printf("sync: creating discord channel for %q", puzzle.Name)
-	category, err := c.GetCreateDiscordCategory(
-		puzzle.DiscordChannel, puzzle.Round.Name, false)
+	channel, err := c.discord.CreateChannel(puzzle.Name, puzzle.Round.DiscordCategory)
 	if err != nil {
-		return state.Puzzle{}, err
+		return puzzle, err
 	}
-
-	channel, err := c.discord.CreateChannel(puzzle.Name, category)
-	if err != nil {
-		return state.Puzzle{}, err
-	}
-
-	puzzle, err = c.state.UpdatePuzzleAdvanced(ctx, puzzle.ID,
+	return c.state.UpdatePuzzleAdvanced(ctx, puzzle.ID,
 		func(puzzle *state.RawPuzzle) error {
 			if puzzle.DiscordChannel != "" {
 				return xerrors.Errorf("created duplicate Discord channel")
@@ -47,25 +40,64 @@ func (c *Client) CreateDiscordChannel(ctx context.Context, puzzle state.Puzzle) 
 			return nil
 		}, false,
 	)
+}
+
+// CreateDiscordCategory creates a new Discord category and saves it to the
+// Round object.
+func (c *Client) CreateDiscordCategory(ctx context.Context, round state.Round) (state.Round, error) {
+	log.Printf("sync: creating discord category for %q", round.Name)
+	category, err := c.discord.CreateCategory(roundCategoryPrefix + round.Name)
 	if err != nil {
-		return state.Puzzle{}, err
+		return round, err
 	}
-	return puzzle, nil
+	return c.state.UpdateRoundAdvanced(ctx, round.ID,
+		func(round *state.Round) error {
+			if round.DiscordCategory != "" {
+				return xerrors.Errorf("created duplicate Discord category")
+			}
+			round.DiscordCategory = category.ID
+			return nil
+		}, false,
+	)
+}
+
+func (c *Client) RestoreSolvedCategories() error {
+	categories, err := c.discord.GetChannelCategories()
+	if err != nil {
+		return err
+	}
+	var solved []string
+	for i := 0; i < solvedCategoryCount; i++ {
+		name := solvedCategoryPrefix + string(rune(int('A')+i))
+		if category, ok := categories[name]; ok {
+			solved = append(solved, category.ID)
+		} else {
+			category, err := c.discord.CreateCategory(name)
+			if err != nil {
+				return err
+			}
+			solved = append(solved, category.ID)
+		}
+	}
+	c.solvedCategories = solved
+	return nil
 }
 
 type DiscordChannelFields struct {
-	DiscordChannel string
-	PuzzleName     string
-	RoundName      string
-	IsSolved       bool
+	PuzzleName    string
+	PuzzleChannel string
+	RoundName     string
+	RoundCategory string
+	IsSolved      bool
 }
 
 func NewDiscordChannelFields(puzzle state.Puzzle) DiscordChannelFields {
 	return DiscordChannelFields{
-		DiscordChannel: puzzle.DiscordChannel,
-		PuzzleName:     puzzle.Name,
-		RoundName:      puzzle.Round.Name,
-		IsSolved:       puzzle.Status.IsSolved(),
+		PuzzleName:    puzzle.Name,
+		PuzzleChannel: puzzle.DiscordChannel,
+		RoundName:     puzzle.Round.Name,
+		RoundCategory: puzzle.Round.DiscordCategory,
+		IsSolved:      puzzle.Status.IsSolved(),
 	}
 }
 
@@ -77,12 +109,16 @@ func (c *Client) UpdateDiscordChannel(fields DiscordChannelFields) error {
 	log.Printf("sync: updating discord channel for %q", fields.PuzzleName)
 
 	// Move puzzle channel to the correct category
-	category, err := c.GetCreateDiscordCategory(
-		fields.DiscordChannel, fields.RoundName, fields.IsSolved)
-	if err != nil {
-		return err
+	var category = fields.RoundCategory
+	if fields.IsSolved {
+		h := sha256.New()
+		if _, err := h.Write([]byte(fields.PuzzleChannel)); err != nil {
+			return err
+		}
+		i := binary.BigEndian.Uint64(h.Sum(nil)[:8]) % solvedCategoryCount
+		category = c.solvedCategories[i]
 	}
-	err = c.discord.SetChannelCategory(fields.DiscordChannel, category)
+	err := c.discord.SetChannelCategory(fields.PuzzleChannel, category)
 	if err != nil {
 		return err
 	}
@@ -96,13 +132,13 @@ func (c *Client) UpdateDiscordChannel(fields DiscordChannelFields) error {
 	}
 	ch := make(chan error)
 	go func() {
-		ch <- c.discord.SetChannelName(fields.DiscordChannel, title)
+		ch <- c.discord.SetChannelName(fields.PuzzleChannel, title)
 	}()
 	select {
 	case err := <-ch:
 		return err
 	case <-time.After(5 * time.Second):
-		rateLimit := c.discord.CheckRateLimit(discordgo.EndpointChannel(fields.DiscordChannel))
+		rateLimit := c.discord.CheckRateLimit(discordgo.EndpointChannel(fields.PuzzleChannel))
 		if rateLimit == nil {
 			// No rate limiting detected; maybe the Discord request is just
 			// slow? Wait for it to finish.
@@ -111,7 +147,7 @@ func (c *Client) UpdateDiscordChannel(fields DiscordChannelFields) error {
 		// Being rate limited; goroutine will finish later.
 		msg := fmt.Sprintf(":snail: Hit Discord's rate limit on channel renaming. Channel will be "+
 			"renamed to %q in %s.", title, time.Until(*rateLimit).Round(time.Second))
-		return c.discord.ChannelSendRawID(fields.DiscordChannel, msg)
+		return c.discord.ChannelSendRawID(fields.PuzzleChannel, msg)
 	}
 }
 
@@ -154,7 +190,7 @@ func NewDiscordPinFields(puzzle state.Puzzle) DiscordPinFields {
 // UpdateDiscordPin creates or updates the pinned message at the top of the
 // puzzle channel. This message contains information about the puzzle status as
 // well as links to the puzzle and the spreadsheet.
-func (s *Client) UpdateDiscordPin(fields DiscordPinFields) error {
+func (c *Client) UpdateDiscordPin(fields DiscordPinFields) error {
 	log.Printf("sync: updating discord pin for %q", fields.PuzzleName)
 
 	embed := &discordgo.MessageEmbed{
@@ -217,36 +253,5 @@ func (s *Client) UpdateDiscordPin(fields DiscordPinFields) error {
 		})
 	}
 
-	return s.discord.CreateUpdatePin(fields.DiscordChannel, pinnedStatusHeader, embed)
-}
-
-// GetCreateDiscordCategory returns the appropriate Discord category for the
-// puzzle given its current state, creating it if it doesn't already exist.
-func (s *Client) GetCreateDiscordCategory(channel string, round string, solved bool) (*discordgo.Channel, error) {
-	categories, err := s.discord.GetChannelCategories()
-	if err != nil {
-		return nil, err
-	}
-
-	var targetName string
-	if solved {
-		// Hash the Discord channel ID, since it's not totally random
-		h := sha256.New()
-		if _, err := h.Write([]byte(channel)); err != nil {
-			return nil, err
-		}
-		i := binary.BigEndian.Uint64(h.Sum(nil)[:8]) % solvedCategoryCount
-		targetName = solvedCategoryPrefix + string(rune(uint64('A')+i))
-	} else {
-		targetName = roundCategoryPrefix + round
-	}
-
-	if item, ok := categories[targetName]; !ok {
-		// we need to create the category
-		log.Printf("sync: creating discord category %q", targetName)
-		return s.discord.CreateCategory(targetName)
-	} else {
-		// cateory already exists
-		return item, nil
-	}
+	return c.discord.CreateUpdatePin(fields.DiscordChannel, pinnedStatusHeader, embed)
 }

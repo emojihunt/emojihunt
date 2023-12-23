@@ -223,11 +223,11 @@ func (c *Client) GetMessage(ch *discordgo.Channel, messageID string) (*discordgo
 	return msg, nil
 }
 
-func (c *Client) CreateChannel(name string, category *discordgo.Channel) (*discordgo.Channel, error) {
+func (c *Client) CreateChannel(name string, category string) (*discordgo.Channel, error) {
 	ch, err := c.s.GuildChannelCreateComplex(c.Guild.ID, discordgo.GuildChannelCreateData{
 		Name:     name,
 		Type:     discordgo.ChannelTypeGuildText,
-		ParentID: category.ID,
+		ParentID: category,
 	})
 	if err != nil {
 		return nil, xerrors.Errorf("GuildChannelCreateComplex: %w", err)
@@ -265,25 +265,20 @@ func (c *Client) GetChannelCategories() (map[string]*discordgo.Channel, error) {
 }
 
 func (c *Client) CreateCategory(name string) (*discordgo.Channel, error) {
-	return c.s.GuildChannelCreate(c.Guild.ID, name, discordgo.ChannelTypeGuildCategory)
+	category, err := c.s.GuildChannelCreate(c.Guild.ID, name,
+		discordgo.ChannelTypeGuildCategory)
+	if err != nil {
+		return nil, xerrors.Errorf("GuildChannelCreate: %w", err)
+	}
+	return category, nil
 }
 
-func (c *Client) SetChannelCategory(chID string, category *discordgo.Channel) error {
-	ch, err := c.s.Channel(chID)
-	if err != nil {
-		return xerrors.Errorf("channel id %s not found", chID)
-	}
-
-	if ch.ParentID == category.ID {
-		return nil // no-op
-	}
-
-	_, err = c.s.ChannelEditComplex(chID, &discordgo.ChannelEdit{
-		ParentID:             category.ID,
-		PermissionOverwrites: category.PermissionOverwrites,
+func (c *Client) SetChannelCategory(channel string, category string) error {
+	_, err := c.s.ChannelEditComplex(channel, &discordgo.ChannelEdit{
+		ParentID: category,
 	})
 	if err != nil {
-		return xerrors.Errorf("error moving channel to category %q: %w", category.Name, err)
+		return xerrors.Errorf("error moving channel to category %s: %w", category, err)
 	}
 	return nil
 }

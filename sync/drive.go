@@ -8,16 +8,16 @@ import (
 	"golang.org/x/xerrors"
 )
 
-// CreateSpreadsheet creates a new spreadsheet and saves it to the database.
+// CreateSpreadsheet creates a new Google Sheets spreadsheet and saves it to the
+// Puzzle object.
 func (c *Client) CreateSpreadsheet(ctx context.Context, puzzle state.Puzzle) (state.Puzzle, error) {
 	log.Printf("sync: creating spreadsheet for %q", puzzle.Name)
-	spreadsheet, err := c.drive.CreateSheet(ctx, puzzle.Name, puzzle.Round.Name)
+	spreadsheet, err := c.drive.CreateSheet(ctx, puzzle.Name)
 	if err != nil {
 		return state.Puzzle{}, err
 	}
 
-	// TODO: don't trigger an infinite loop
-	puzzle, err = c.state.UpdatePuzzleAdvanced(ctx, puzzle.ID,
+	return c.state.UpdatePuzzleAdvanced(ctx, puzzle.ID,
 		func(puzzle *state.RawPuzzle) error {
 			if puzzle.SpreadsheetID != "" {
 				return xerrors.Errorf("created duplicate spreadsheet")
@@ -26,25 +26,42 @@ func (c *Client) CreateSpreadsheet(ctx context.Context, puzzle state.Puzzle) (st
 			return nil
 		}, false,
 	)
+}
+
+// CreateDriveFolder creates a new Google Drive folder and saves it to the Round
+// object.
+func (c *Client) CreateDriveFolder(ctx context.Context, round state.Round) (state.Round, error) {
+	log.Printf("sync: creating drive folder for %q", round.Name)
+	folder, err := c.drive.CreateFolder(ctx, round.Name)
 	if err != nil {
-		return state.Puzzle{}, err
+		return state.Round{}, err
 	}
-	return puzzle, nil
+	return c.state.UpdateRoundAdvanced(ctx, round.ID,
+		func(round *state.Round) error {
+			if round.DriveFolder != "" {
+				return xerrors.Errorf("created duplicate Google Drive folder")
+			}
+			round.DriveFolder = folder
+			return nil
+		}, false,
+	)
 }
 
 type SpreadsheetFields struct {
-	SpreadsheetID string
-	PuzzleName    string
-	RoundName     string
-	IsSolved      bool
+	PuzzleName       string
+	SpreadsheetID    string
+	RoundName        string
+	RoundDriveFolder string
+	IsSolved         bool
 }
 
 func NewSpreadsheetFields(puzzle state.Puzzle) SpreadsheetFields {
 	return SpreadsheetFields{
-		SpreadsheetID: puzzle.SpreadsheetID,
-		PuzzleName:    puzzle.Name,
-		RoundName:     puzzle.Round.Name,
-		IsSolved:      puzzle.Status.IsSolved(),
+		SpreadsheetID:    puzzle.SpreadsheetID,
+		PuzzleName:       puzzle.Name,
+		RoundName:        puzzle.Round.Name,
+		RoundDriveFolder: puzzle.Round.DriveFolder,
+		IsSolved:         puzzle.Status.IsSolved(),
 	}
 }
 
@@ -61,5 +78,5 @@ func (c *Client) UpdateSpreadsheet(ctx context.Context, fields SpreadsheetFields
 	if err != nil {
 		return err
 	}
-	return c.drive.SetSheetFolder(ctx, fields.SpreadsheetID, fields.RoundName)
+	return c.drive.SetSheetFolder(ctx, fields.SpreadsheetID, fields.RoundDriveFolder)
 }

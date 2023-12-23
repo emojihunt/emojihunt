@@ -3,10 +3,8 @@ package drive
 import (
 	"context"
 	"encoding/base64"
-	"fmt"
 	"log"
 	"os"
-	"sync"
 
 	"golang.org/x/xerrors"
 	"google.golang.org/api/drive/v3"
@@ -14,21 +12,17 @@ import (
 	"google.golang.org/api/sheets/v4"
 )
 
-var (
-	DevRootFolderID  = "1KNcBa-GjA9Uz8LJ5OYs_zfWRvFRDVu1d"
+const (
+	DevRootFolderID = "1KNcBa-GjA9Uz8LJ5OYs_zfWRvFRDVu1d"
+
+	// ID of this year's root folder (e.g. the "emoji hunt/2023" folder)
 	ProdRootFolderID = "1gg7CZmoteIjLrk2ifHcc8FSG5HVo2vpt"
 )
 
 type Client struct {
-	sheets *sheets.Service
-	drive  *drive.Service
-
-	// ID of this year's root folder (e.g. "emoji hunt/2021")
+	drive        *drive.Service
+	sheets       *sheets.Service
 	rootFolderID string
-
-	// hold while accessing everything below
-	mutex          sync.Mutex
-	roundFolderIDs map[string]string // cache of round name to folder ID
 }
 
 func NewClient(ctx context.Context, prod bool) *Client {
@@ -55,14 +49,13 @@ func NewClient(ctx context.Context, prod bool) *Client {
 		rootFolderID = ProdRootFolderID
 	}
 	return &Client{
-		rootFolderID:   rootFolderID,
-		roundFolderIDs: make(map[string]string),
-		sheets:         sheetsService,
-		drive:          driveService,
+		drive:        driveService,
+		sheets:       sheetsService,
+		rootFolderID: rootFolderID,
 	}
 }
 
-func (c *Client) CreateSheet(ctx context.Context, name, roundName string) (id string, err error) {
+func (c *Client) CreateSheet(ctx context.Context, name string) (id string, err error) {
 	sheet, err := c.sheets.Spreadsheets.Create(&sheets.Spreadsheet{}).Context(ctx).Do()
 	if err != nil {
 		return "", xerrors.Errorf("sheets.Create (%q): %w", name, err)
@@ -91,12 +84,20 @@ func (c *Client) SetSheetTitle(ctx context.Context, sheetID, title string) error
 	return nil
 }
 
-func (c *Client) SetSheetFolder(ctx context.Context, sheetID, folderName string) error {
-	folderID, err := c.roundFolder(ctx, folderName)
+func (c *Client) CreateFolder(ctx context.Context, name string) (id string, err error) {
+	file, err := c.drive.Files.Create(&drive.File{
+		Name:     name,
+		MimeType: "application/vnd.google-apps.folder",
+		Parents:  []string{c.rootFolderID},
+	}).Context(ctx).Do()
 	if err != nil {
-		return err
+		return "", xerrors.Errorf("drive.Files.Create (%s): %w", name, err)
 	}
-	_, err = c.drive.Files.Update(sheetID, nil).
+	return file.Id, nil
+}
+
+func (c *Client) SetSheetFolder(ctx context.Context, sheetID, folderID string) error {
+	_, err := c.drive.Files.Update(sheetID, nil).
 		EnforceSingleParent(true).
 		AddParents(folderID).
 		Context(ctx).
@@ -105,42 +106,4 @@ func (c *Client) SetSheetFolder(ctx context.Context, sheetID, folderName string)
 		return xerrors.Errorf("drive.AddParents (%s): %w", sheetID, err)
 	}
 	return nil
-}
-
-const folderMimeType = "application/vnd.google-apps.folder"
-
-func (c *Client) roundFolder(ctx context.Context, name string) (id string, err error) {
-	c.mutex.Lock()
-	defer c.mutex.Unlock()
-
-	if id = c.roundFolderIDs[name]; id != "" {
-		return id, nil
-	}
-
-	query := fmt.Sprintf("mimeType='%s' and '%s' in parents and name = '%s'", folderMimeType, c.rootFolderID, name)
-	list, err := c.drive.Files.List().Q(query).Context(ctx).Do()
-	if err != nil {
-		return "", xerrors.Errorf("drive.Query (%q): %w", name, err)
-	}
-
-	var file *drive.File
-	switch len(list.Files) {
-	case 0:
-		file = &drive.File{
-			Name:     name,
-			MimeType: folderMimeType,
-			Parents:  []string{c.rootFolderID},
-		}
-		file, err = c.drive.Files.Create(file).Context(ctx).Do()
-		if err != nil {
-			return "", xerrors.Errorf("drive.Create (%q): %w", name, err)
-		}
-	case 1:
-		file = list.Files[0]
-	default:
-		return "", xerrors.Errorf("found multiple folders for round %q", name)
-	}
-
-	c.roundFolderIDs[name] = file.Id
-	return file.Id, nil
 }

@@ -140,10 +140,10 @@ func (s *Client) SyncVoiceRooms(ctx context.Context) error {
 	return nil
 }
 
-func (c *Client) RestorePlaceholderEvent() {
+func (c *Client) RestorePlaceholderEvent() error {
 	events, err := c.discord.ListScheduledEvents()
 	if err != nil {
-		panic(err)
+		return err
 	}
 
 	var placeholderEvents []*discordgo.GuildScheduledEvent
@@ -158,7 +158,7 @@ func (c *Client) RestorePlaceholderEvent() {
 		}
 	}
 	if len(placeholderEvents) > 0 {
-		return
+		return nil
 	}
 
 	start := time.Now().Add(eventDelay)
@@ -170,7 +170,5 @@ func (c *Client) RestorePlaceholderEvent() {
 		Description:        VoiceRoomEventDescription,
 		EntityType:         discordgo.GuildScheduledEventEntityTypeVoice,
 	})
-	if err != nil {
-		panic(err)
-	}
+	return err
 }
