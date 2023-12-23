@@ -68,9 +68,11 @@ func (c *Client) RegisterBots(bots ...Bot) {
 		}
 	}
 
-	// Send list of registrations to Discord
-	_, err := c.s.ApplicationCommandBulkOverwrite(c.s.State.User.ID, c.Guild.ID, appCommands)
-	if err != nil {
-		panic(err)
-	}
+	// Send list of registrations to Discord (may be rate-limited)
+	go func() {
+		_, err := c.s.ApplicationCommandBulkOverwrite(c.s.State.User.ID, c.Guild.ID, appCommands)
+		if err != nil {
+			panic(err)
+		}
+	}()
 }
