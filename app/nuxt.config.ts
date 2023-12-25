@@ -12,6 +12,7 @@ export default defineNuxtConfig({
   css: [
     "assets/normalize.css",
     "assets/main.css",
+    "assets/emojimart.css",
   ],
   nitro: {
     preset: "vercel-edge",

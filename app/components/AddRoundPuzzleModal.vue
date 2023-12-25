@@ -1,4 +1,9 @@
 <script setup lang="ts">
+import emojifile from "emoji-mart-vue-fast/data/all.json";
+import { Picker, EmojiIndex } from "emoji-mart-vue-fast/src";
+
+const index = new EmojiIndex(emojifile, { recent: [] });
+
 const props = defineProps<{ kind: "round" | "puzzle" | null; open: boolean; }>();
 const emit = defineEmits<{ (event: "close"): void; }>();
 const store = usePuzzles();
@@ -19,7 +24,7 @@ const submit = (e: SubmitEvent) => {
   if (previous) toast.remove(previous);
   setTimeout(() => {
     const request = (props.kind === "round") ?
-      store.addRound({ ...data, special: false }) :
+      store.addRound({ name: data.name, emoji: data.emoji, hue: data.hue }) :
       store.addPuzzle({ name: data.name, round: data.round!.id, puzzle_url: data.url });
     request.then(() => close())
       .catch((e) => (
@@ -41,9 +46,14 @@ const close = () => {
   emit("close");
 };
 
+const emoji = (e: any) => {
+  if (data.emoji === e.native) data.emoji = "";
+  else data.emoji = e.native;
+  modal.value?.contents.querySelector(".name input")?.focus();
+};
 const focus = () => nextTick(() =>
   modal.value?.contents?.querySelector(
-    props.kind === "round" ? "input" : "button"
+    props.kind === "round" ? ".emoji-mart input" : "button"
   )?.focus(),
 );
 watch([props], () => props.open && focus());
@@ -55,8 +65,8 @@ const hue = computed(() => props.kind === "round" ? data.hue : data.round?.hue);
   <Modal ref="modal" :open="open" @submit="submit">
     <form :class="kind" @keydown="(e: KeyboardEvent) => e.key == 'Escape' && close()">
       <template v-if="kind === 'round'">
-        <UInput v-model="data.emoji" placeholder="🫥" />
-        <UInput v-model="data.name" placeholder="Round Name" />
+        <UInput v-model="data.emoji" placeholder="🫥" readonly="readonly" />
+        <UInput v-model="data.name" placeholder="Round Name" class="name" />
         <URange v-model="data.hue" :min=0 :max="359" class="hue" />
       </template>
       <template v-else>
@@ -74,6 +84,8 @@ const hue = computed(() => props.kind === "round" ? data.hue : data.round?.hue);
         <Spinner v-if="saving" />
         <span v-else>Add</span>
       </UButton>
+      <Picker v-if="kind === 'round'" :data="index" autofocus native :showPreview="false"
+        :showCategories="false" :emojiSize="16" emojiTooltip @select="emoji" />
     </form>
   </Modal>
 </template>
@@ -111,6 +123,10 @@ button {
   grid-column: 3;
 }
 
+.emoji-mart {
+  grid-column: 1 / 4;
+}
+
 /* Theming */
 form button,
 .hue :deep(span) {
@@ -132,5 +148,9 @@ form :deep(button):focus {
 
 .hue :deep(input) {
   color: oklch(71% 0.18 v-bind(hue));
+}
+
+:deep(.emoji-mart-category-label) {
+  color: oklch(60% 0.18 v-bind(hue));
 }
 </style>

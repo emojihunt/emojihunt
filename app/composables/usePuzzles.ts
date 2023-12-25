@@ -57,7 +57,7 @@ export default defineStore("puzzles", {
         new Date(data.value.next_hunt) : undefined;
       this.voice_rooms = data.value.voice_rooms;
     },
-    async addRound(data: Omit<Round, "id">) {
+    async addRound(data: { name: string; emoji: string; hue: number; }) {
       return useAPI(`/rounds`, data)
         .then((r: any) => r.value && this._rounds.set(r.value.id, r.value));
     },
