@@ -182,14 +182,15 @@ func (c *Client) TriggerPuzzle(ctx context.Context, change state.PuzzleChange) e
 		}
 
 		// Notify the puzzle channel and #more-eyes of significant status changes
-		if !change.Before.Status.IsSolved() && puzzle.Status.IsSolved() {
-			return c.NotifyPuzzleSolved(puzzle, false) // TODO: support `botRequest` field
-		} else if change.Before.Status == status.NotStarted && puzzle.Status == status.Working {
-			return c.NotifyPuzzleWorking(puzzle)
-		} else {
-			return nil
+		if puzzle.HasDiscordChannel() {
+			if !change.Before.Status.IsSolved() && puzzle.Status.IsSolved() {
+				return c.NotifyPuzzleSolved(puzzle, false) // TODO: support `botRequest` field
+			} else if change.Before.Status == status.NotStarted && puzzle.Status == status.Working {
+				return c.NotifyPuzzleWorking(puzzle)
+			}
 		}
 	}
+	return nil
 }
 
 func (c *Client) TriggerRound(ctx context.Context, change state.RoundChange) error {
