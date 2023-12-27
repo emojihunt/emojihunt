@@ -58,7 +58,7 @@ func (s *Server) UpdateRound(c echo.Context) error {
 	updated, err := s.state.UpdateRound(c.Request().Context(), id.ID,
 		func(round *state.Round) error {
 			var params = (*RoundParams)(round)
-			return c.Bind(&params)
+			return c.Bind(params)
 		},
 	)
 	if err != nil {
