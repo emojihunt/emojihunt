@@ -8,37 +8,39 @@ import (
 )
 
 // NotifyNewPuzzle sends the "New puzzle!" message to #more-eyes.
-func (s *Client) NotifyNewPuzzle(puzzle state.Puzzle) error {
+func (c *Client) NotifyNewPuzzle(puzzle state.Puzzle) error {
 	log.Printf("sync: notifying for new puzzle %q", puzzle.Name)
 	msg := fmt.Sprintf("%s **New puzzle!** <#%s>",
 		puzzle.Round.Emoji, puzzle.DiscordChannel)
-	_, err := s.discord.ChannelSend(s.discord.MoreEyesChannel, msg)
+	_, err := c.discord.ChannelSend(c.discord.MoreEyesChannel, msg)
 	return err
 }
 
 // NotifyPuzzleWorking sends the "Work started on puzzle" message to #more-eyes.
-func (s *Client) NotifyPuzzleWorking(puzzle state.Puzzle) error {
+func (c *Client) NotifyPuzzleWorking(puzzle state.Puzzle) error {
 	log.Printf("sync: notifying for working puzzle %q", puzzle.Name)
 	msg := fmt.Sprintf("%s Work started on puzzle <#%s>",
 		puzzle.Round.Emoji, puzzle.DiscordChannel)
-	_, err := s.discord.ChannelSend(s.discord.MoreEyesChannel, msg)
+	_, err := c.discord.ChannelSend(c.discord.MoreEyesChannel, msg)
 	return err
 }
 
-// NotifyPuzzleSolved sends the two "Puzzle solved!" (or "Puzzle backsolved!")
-// messages: one to the puzzle channel, and another to #hanging-out.
-func (s *Client) NotifyPuzzleSolved(puzzle state.Puzzle) error {
-	log.Printf("sync: notifying for solved puzzle %q", puzzle.Name)
-	if puzzle.DiscordChannel != "" {
-		msg := fmt.Sprintf(
-			"Puzzle %s! The answer was `%v`. I'll archive this channel.",
-			puzzle.Status.SolvedVerb(), puzzle.Answer,
-		)
-		if err := s.discord.ChannelSendRawID(puzzle.DiscordChannel, msg); err != nil {
-			return err
-		}
-	}
+// NotifySolveInPuzzleChannel sends the "Puzzle solved!" (or "...backsolved!",
+// etc.) message to the puzzle channel.
+func (c *Client) NotifySolveInPuzzleChannel(puzzle state.Puzzle) error {
+	log.Printf("sync: notifying for solved puzzle %q in puzzle channel", puzzle.Name)
+	msg := fmt.Sprintf(
+		"Puzzle %s! The answer was `%v`. I'll archive this channel.",
+		puzzle.Status.SolvedVerb(), puzzle.Answer,
+	)
+	return c.discord.ChannelSendRawID(puzzle.DiscordChannel, msg)
+}
 
+// NotifySolveInHangingOut sends the same message as above to #hanging-out.
+// Unlike all of the other methods in this file, it does *not* require a puzzle
+// channel to exist.
+func (s *Client) NotifySolveInHangingOut(puzzle state.Puzzle) error {
+	log.Printf("sync: notifying for solved puzzle %q in #hanging-out", puzzle.Name)
 	var mention = fmt.Sprintf("<#%s>", puzzle.DiscordChannel)
 	if puzzle.DiscordChannel == "" {
 		mention = fmt.Sprintf("%q", puzzle.Name)

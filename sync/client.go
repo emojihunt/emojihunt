@@ -140,7 +140,18 @@ func (c *Client) TriggerPuzzle(ctx context.Context, change state.PuzzleChange) (
 			return c.NotifyNewPuzzle(puzzle)
 		}
 	} else if !change.Before.Status.IsSolved() && puzzle.Status.IsSolved() {
-		return c.NotifyPuzzleSolved(puzzle)
+		// If the change was triggered by a bot, the bot's response will be visible
+		// in the puzzle channel so there's no need to send a solve notification
+		// there.
+		if !change.Bot {
+			err = c.NotifySolveInPuzzleChannel(puzzle)
+			if err != nil {
+				return err
+			}
+		}
+		// Always notify on solve, even if the puzzle doesn't have a Discord
+		// channel.
+		return c.NotifySolveInHangingOut(puzzle)
 	} else if change.Before.Status == status.NotStarted && puzzle.Status == status.Working {
 		if puzzle.DiscordChannel != "" {
 			return c.NotifyPuzzleWorking(puzzle)
