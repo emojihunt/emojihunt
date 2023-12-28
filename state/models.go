@@ -32,6 +32,9 @@ type Puzzle struct {
 type PuzzleChange struct {
 	Before *Puzzle
 	After  *Puzzle
+
+	// Whether or not the change was triggered from a bot command.
+	Bot bool
 }
 
 type RoundChange struct {

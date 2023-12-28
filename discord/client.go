@@ -261,10 +261,6 @@ func (c *Client) SetChannelName(chID, name string) error {
 	return nil
 }
 
-func (c *Client) ChannelValue(chOpt *discordgo.ApplicationCommandInteractionDataOption) *discordgo.Channel {
-	return chOpt.ChannelValue(c.s)
-}
-
 func (c *Client) GetChannel(id string) (*discordgo.Channel, error) {
 	channel, err := c.s.Channel(id)
 	if err != nil {

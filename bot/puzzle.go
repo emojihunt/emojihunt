@@ -132,133 +132,92 @@ func (b *PuzzleBot) Register() (*discordgo.ApplicationCommand, bool) {
 }
 
 func (b *PuzzleBot) Handle(ctx context.Context, input *discord.CommandInput) (string, error) {
-	puzzle, err := b.state.GetPuzzleByChannel(ctx, input.IC.ChannelID)
+	var reply string
+	_, err := b.state.UpdatePuzzleByDiscordChannel(ctx, input.IC.ChannelID,
+		func(puzzle *state.RawPuzzle) error {
+			// Reminder: we're holding the global database lock, so don't make any
+			// blocking calls in here!
+			switch input.Subcommand {
+			case "voice.start":
+				if opt, ok := input.Options["in"]; !ok {
+					return xerrors.Errorf("missing option: in")
+				} else {
+					puzzle.VoiceRoom = opt.Value.(string)
+					reply = fmt.Sprintf("Set puzzle voice room to <#%s>", puzzle.VoiceRoom)
+				}
+			case "voice.stop":
+				puzzle.VoiceRoom = ""
+				reply = "Cleared puzzle voice room"
+			case "progress":
+				if opt, ok := input.Options["to"]; !ok {
+					return xerrors.Errorf("missing option: to")
+				} else if status, err := status.ParseText(opt.StringValue()); err != nil {
+					return err
+				} else {
+					if puzzle.Status == status {
+						reply = fmt.Sprintf(":elephant: This puzzle already has status %s", status.Pretty())
+					} else if puzzle.Answer == "" {
+						reply = fmt.Sprintf(":face_with_monocle: Updated puzzle status to %s!", status.Pretty())
+					} else {
+						reply = fmt.Sprintf(":woozy_face: Updated puzzle status to %s and cleared answer `%s`. "+
+							"Was that right?", status.Pretty(), puzzle.Answer)
+					}
+					puzzle.Status = status
+					puzzle.Answer = ""
+				}
+			case "solved":
+				if opt, ok := input.Options["as"]; !ok {
+					return xerrors.Errorf("missing option: as")
+				} else if status, err := status.ParseText(opt.StringValue()); err != nil {
+					return err
+				} else if opt, ok := input.Options["answer"]; !ok {
+					return xerrors.Errorf("missing option: answer")
+				} else {
+					puzzle.Status = status
+					puzzle.Answer = strings.ToUpper(opt.StringValue())
+					puzzle.VoiceRoom = ""
+					reply = fmt.Sprintf(
+						"🎉 Congratulations on the %s! I'll record the answer `%s` and archive this channel.",
+						puzzle.Status.SolvedExclamation(), puzzle.Answer,
+					)
+				}
+			case "note":
+				var note string
+				if opt, ok := input.Options["set"]; ok {
+					note = opt.StringValue()
+					reply = ":writing_hand: Updated puzzle note!"
+				} else {
+					reply = ":cl: Cleared puzzle note."
+				}
+
+				if puzzle.Note != "" {
+					reply += fmt.Sprintf(" Previous note was: ```\n%s\n```", puzzle.Note)
+				}
+				puzzle.Note = note
+			case "location":
+				var location string
+				if opt, ok := input.Options["set"]; ok {
+					location = opt.StringValue()
+					reply = ":writing_hand: Updated puzzle location!"
+				} else {
+					reply = ":cl: Cleared puzzle location."
+				}
+
+				if puzzle.Location != "" {
+					reply += fmt.Sprintf(" Previous location was: ```\n%s\n```", puzzle.Location)
+				}
+				puzzle.Location = location
+			default:
+				return xerrors.Errorf("unexpected /puzzle subcommand: %q", input.Subcommand)
+			}
+			return nil
+		},
+	)
 	if errors.Is(err, sql.ErrNoRows) {
 		return ":butterfly: I can't find a puzzle associated with this channel. Is this a puzzle channel?", nil
 	} else if err != nil {
 		return "", err
 	}
-
-	var reply string
-	var newStatus status.Status
-	var newAnswer string
-	switch input.Subcommand {
-	case "voice":
-		var channel *discordgo.Channel
-		if channelOpt, ok := input.Options["in"]; !ok {
-			channel = b.discord.ChannelValue(channelOpt)
-			reply = fmt.Sprintf("Set the room for puzzle %q to %s", puzzle.Name, channel.Mention())
-		} else {
-			reply = fmt.Sprintf("Removed the room for puzzle %q", puzzle.Name)
-		}
-		puzzle, err = b.state.UpdatePuzzle(ctx, puzzle.ID,
-			func(puzzle *state.RawPuzzle) error {
-				puzzle.VoiceRoom = channel.ID
-				return nil
-			},
-		)
-		if err != nil {
-			return "", err
-		}
-	case "progress":
-		if statusOpt, ok := input.Options["to"]; !ok {
-			return "", xerrors.Errorf("missing option: to")
-		} else if newStatus, err = status.ParseText(statusOpt.StringValue()); err != nil {
-			return "", err
-		}
-
-		puzzle, err = b.state.UpdatePuzzle(ctx, puzzle.ID,
-			func(puzzle *state.RawPuzzle) error {
-				if puzzle.Status == newStatus {
-					reply = fmt.Sprintf(":elephant: This puzzle already has status %s", newStatus.Pretty())
-				} else if puzzle.Answer == "" {
-					reply = fmt.Sprintf(":face_with_monocle: Updated puzzle status to %s!", newStatus.Pretty())
-				} else {
-					reply = fmt.Sprintf(":woozy_face: Updated puzzle status to %s and cleared answer `%s`. "+
-						"Was that right?", newStatus.Pretty(), puzzle.Answer)
-				}
-				puzzle.Status = newStatus
-				puzzle.Answer = ""
-				return nil
-			},
-		)
-		if err != nil {
-			return "", err
-		}
-	case "solved":
-		if statusOpt, ok := input.Options["as"]; !ok {
-			return "", xerrors.Errorf("missing option: as")
-		} else if newStatus, err = status.ParseText(statusOpt.StringValue()); err != nil {
-			return "", err
-		}
-
-		if answerOpt, ok := input.Options["answer"]; !ok {
-			return "", xerrors.Errorf("missing option: answer")
-		} else {
-			newAnswer = strings.ToUpper(answerOpt.StringValue())
-		}
-
-		_, err := b.state.UpdatePuzzle(ctx, puzzle.ID,
-			func(puzzle *state.RawPuzzle) error {
-				puzzle.Status = newStatus
-				puzzle.Answer = newAnswer
-				puzzle.VoiceRoom = ""
-				return nil
-			},
-		)
-		if err != nil {
-			return "", err
-		}
-		reply = fmt.Sprintf(
-			"🎉 Congratulations on the %s! I'll record the answer `%s` and archive this channel.",
-			newStatus.SolvedExclamation(), newAnswer,
-		)
-	case "note":
-		var newNote string
-		if noteOpt, ok := input.Options["set"]; ok {
-			newNote = noteOpt.StringValue()
-			reply = ":writing_hand: Updated puzzle note!"
-		} else {
-			reply = ":cl: Cleared puzzle note."
-		}
-
-		puzzle, err = b.state.UpdatePuzzle(ctx, puzzle.ID,
-			func(puzzle *state.RawPuzzle) error {
-				if puzzle.Note != "" {
-					reply += fmt.Sprintf(" Previous note was: ```\n%s\n```", puzzle.Note)
-				}
-				puzzle.Note = newNote
-				return nil
-			},
-		)
-		if err != nil {
-			return "", err
-		}
-	case "location":
-		var newLocation string
-		if locationOpt, ok := input.Options["set"]; ok {
-			newLocation = locationOpt.StringValue()
-			reply = ":writing_hand: Updated puzzle location!"
-		} else {
-			reply = ":cl: Cleared puzzle location."
-		}
-
-		_, err = b.state.UpdatePuzzle(ctx, puzzle.ID,
-			func(puzzle *state.RawPuzzle) error {
-				if puzzle.Location != "" {
-					reply += fmt.Sprintf(" Previous location was: ```\n%s\n```", puzzle.Location)
-				}
-				puzzle.Location = newLocation
-				return nil
-			},
-		)
-		if err != nil {
-			return "", err
-		}
-	default:
-		return "", xerrors.Errorf("unexpected /puzzle subcommand: %q", input.Subcommand)
-	}
-
 	return reply, nil
 }
 
