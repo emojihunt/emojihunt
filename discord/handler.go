@@ -67,6 +67,7 @@ func (c *Client) handleCommand(
 				} else {
 					input.Subcommand = fmt.Sprintf("%s.%s", input.Subcommand, opt.Name)
 				}
+				options = opt.Options
 			} else if opt.Type == discordgo.ApplicationCommandOptionSubCommandGroup {
 				input.Subcommand = opt.Name
 				options = opt.Options
