@@ -39,7 +39,7 @@ func (c *Client) NotifySolveInPuzzleChannel(puzzle state.Puzzle) error {
 // NotifySolveInHangingOut sends the same message as above to #hanging-out.
 // Unlike all of the other methods in this file, it does *not* require a puzzle
 // channel to exist.
-func (s *Client) NotifySolveInHangingOut(puzzle state.Puzzle) error {
+func (c *Client) NotifySolveInHangingOut(puzzle state.Puzzle) error {
 	log.Printf("sync: notifying for solved puzzle %q in #hanging-out", puzzle.Name)
 	var mention = fmt.Sprintf("<#%s>", puzzle.DiscordChannel)
 	if puzzle.DiscordChannel == "" {
@@ -47,6 +47,6 @@ func (s *Client) NotifySolveInHangingOut(puzzle state.Puzzle) error {
 	}
 	msg := fmt.Sprintf("%s Puzzle %s was **%s!** Answer: `%s`.",
 		puzzle.Round.Emoji, mention, puzzle.Status.SolvedVerb(), puzzle.Answer)
-	_, err := s.discord.ChannelSend(s.discord.HangingOutChannel, msg)
+	_, err := c.discord.ChannelSend(c.discord.HangingOutChannel, msg)
 	return err
 }

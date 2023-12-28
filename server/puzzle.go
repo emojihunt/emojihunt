@@ -60,7 +60,7 @@ func (s *Server) CreatePuzzle(c echo.Context) error {
 	}
 
 	// Run validations before handling sheet and channel creation
-	if err = state.ValidatePuzzle(raw); err != nil {
+	if err = s.state.ValidatePuzzle(ctx, raw); err != nil {
 		return err
 	}
 	if raw.SpreadsheetID == "+" {

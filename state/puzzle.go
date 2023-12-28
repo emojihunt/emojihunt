@@ -2,13 +2,15 @@ package state
 
 import (
 	"context"
+	"database/sql"
+	"errors"
 	"net/url"
 
 	"github.com/emojihunt/emojihunt/state/db"
 	"golang.org/x/xerrors"
 )
 
-func ValidatePuzzle(p RawPuzzle) error {
+func (c *Client) ValidatePuzzle(ctx context.Context, p RawPuzzle) error {
 	if p.Name == "" {
 		return ValidationError{"name", "is required"}
 	} else if p.Round == 0 {
@@ -25,6 +27,15 @@ func ValidatePuzzle(p RawPuzzle) error {
 		return ValidationError{"status", "is unsolved but answer is not blank"}
 	} else if p.Status.IsSolved() && p.Answer == "" {
 		return ValidationError{"status", "is solved but answer is blank"}
+	}
+
+	if p.DiscordChannel != "" {
+		puzzle, err := c.queries.GetPuzzleByChannel(ctx, p.DiscordChannel)
+		if err == nil && puzzle.ID != p.ID {
+			return ValidationError{"discord_channel", "is not unique"}
+		} else if err != nil && !errors.Is(err, sql.ErrNoRows) {
+			return ValidationError{"discord_channel", "is not unique"}
+		}
 	}
 	return nil
 }
@@ -72,7 +83,7 @@ func (c *Client) ListPuzzlesByRound(ctx context.Context, round int64) ([]Puzzle,
 func (c *Client) CreatePuzzle(ctx context.Context, puzzle RawPuzzle) (Puzzle, error) {
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
-	if err := ValidatePuzzle(puzzle); err != nil {
+	if err := c.ValidatePuzzle(ctx, puzzle); err != nil {
 		return Puzzle{}, err
 	}
 	id, err := c.queries.CreatePuzzle(ctx, db.CreatePuzzleParams{
@@ -111,7 +122,7 @@ func (c *Client) UpdatePuzzle(ctx context.Context, id int64,
 	var raw = before.RawPuzzle()
 	if err := mutate(&raw); err != nil {
 		return Puzzle{}, err
-	} else if err := ValidatePuzzle(raw); err != nil {
+	} else if err := c.ValidatePuzzle(ctx, raw); err != nil {
 		return Puzzle{}, err
 	} else if raw.ID != id {
 		return Puzzle{}, xerrors.Errorf("mutation must not change puzzle ID")
@@ -139,7 +150,7 @@ func (c *Client) UpdatePuzzleByDiscordChannel(ctx context.Context, channel strin
 	var raw = before.RawPuzzle()
 	if err := mutate(&raw); err != nil {
 		return Puzzle{}, err
-	} else if err := ValidatePuzzle(raw); err != nil {
+	} else if err := c.ValidatePuzzle(ctx, raw); err != nil {
 		return Puzzle{}, err
 	} else if raw.ID != before.ID {
 		return Puzzle{}, xerrors.Errorf("mutation must not change puzzle ID")
