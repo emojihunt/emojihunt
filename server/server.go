@@ -71,9 +71,13 @@ func Start(ctx context.Context, prod bool, discord *discord.Client, state *state
 	e.HTTPErrorHandler = s.ErrorHandler
 
 	e.GET("/", func(c echo.Context) error {
-		return c.JSON(http.StatusOK, map[string]string{
+		return c.JSON(http.StatusOK, map[string]interface{}{
 			"instance": os.Getenv("FLY_MACHINE_VERSION"),
 			"status":   "healthy",
+			"sync_queues": map[string]interface{}{
+				"puzzle": len(s.state.PuzzleChange),
+				"round":  len(s.state.RoundChange),
+			},
 		})
 	})
 	e.GET("/robots.txt", func(c echo.Context) error {
