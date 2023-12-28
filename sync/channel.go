@@ -59,7 +59,8 @@ func (c *Client) CreateDiscordChannel(ctx context.Context, puzzle state.Puzzle) 
 	log.Printf("sync: sorting discord channels")
 	var order []discord.ChannelOrder
 	for i, puzzle := range puzzles {
-		if !puzzle.HasDiscordChannel() {
+		if !puzzle.HasDiscordChannel() || puzzle.Status.IsSolved() {
+			// Ignore solved puzzles to reduce size of sort request
 			continue
 		}
 		order = append(order, discord.ChannelOrder{
