@@ -128,6 +128,8 @@ func (p *Poller) handleNewRounds(ctx context.Context, rounds map[string][]state.
 
 func (p *Poller) createPuzzles(ctx context.Context, puzzles []state.RawPuzzle) error {
 	for _, puzzle := range puzzles {
+		// Pause briefly to allow QMs time to cancel...
+		time.Sleep(1 * time.Second)
 		if !p.state.IsEnabled(ctx) {
 			return xerrors.Errorf("puzzle discovery is paused")
 		}
@@ -135,7 +137,6 @@ func (p *Poller) createPuzzles(ctx context.Context, puzzles []state.RawPuzzle) e
 		if err != nil {
 			return err
 		}
-		// TODO: block on spreadsheet and channel creation
 	}
 	return nil
 }
