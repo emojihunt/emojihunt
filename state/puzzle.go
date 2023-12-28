@@ -83,21 +83,12 @@ func (c *Client) CreatePuzzle(ctx context.Context, puzzle RawPuzzle) (Puzzle, er
 	if err != nil {
 		return Puzzle{}, err
 	}
-	c.PuzzleChange <- PuzzleChange{nil, &created, true}
+	c.PuzzleChange <- PuzzleChange{nil, &created}
 	return created, nil
 }
 
 func (c *Client) UpdatePuzzle(ctx context.Context, id int64,
 	mutate func(puzzle *RawPuzzle) error) (Puzzle, error) {
-	return c.UpdatePuzzleAdvanced(ctx, id, mutate, true)
-}
-
-func (c *Client) UpdatePuzzleAdvanced(
-	ctx context.Context,
-	id int64,
-	mutate func(puzzle *RawPuzzle) error,
-	sync bool,
-) (Puzzle, error) {
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
 
@@ -120,7 +111,7 @@ func (c *Client) UpdatePuzzleAdvanced(
 	if err != nil {
 		return Puzzle{}, err
 	}
-	c.PuzzleChange <- PuzzleChange{&before, &after, sync}
+	c.PuzzleChange <- PuzzleChange{&before, &after}
 	return after, nil
 }
 
@@ -139,7 +130,7 @@ func (c *Client) ClearPuzzleVoiceRoom(ctx context.Context, room string) error {
 	for _, row := range rows {
 		var before, after = Puzzle(row), Puzzle(row)
 		after.VoiceRoom = ""
-		c.PuzzleChange <- PuzzleChange{&before, &after, true}
+		c.PuzzleChange <- PuzzleChange{&before, &after}
 	}
 	return nil
 }
@@ -155,6 +146,6 @@ func (c *Client) DeletePuzzle(ctx context.Context, id int64) error {
 	if err != nil {
 		return xerrors.Errorf("DeletePuzzle: %w", err)
 	}
-	c.PuzzleChange <- PuzzleChange{&puzzle, nil, true}
+	c.PuzzleChange <- PuzzleChange{&puzzle, nil}
 	return nil
 }

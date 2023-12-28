@@ -13,6 +13,7 @@ import (
 
 	"github.com/emojihunt/emojihunt/discord"
 	"github.com/emojihunt/emojihunt/state"
+	"github.com/emojihunt/emojihunt/sync"
 	"github.com/getsentry/sentry-go"
 	"github.com/gorilla/securecookie"
 	"github.com/labstack/echo/v4"
@@ -24,6 +25,7 @@ type Server struct {
 	discord *discord.Client
 	echo    *echo.Echo
 	state   *state.Client
+	sync    *sync.Client
 
 	// authentication and OAuth2 settings
 	cookie      *securecookie.SecureCookie
@@ -37,9 +39,10 @@ type IDParams struct {
 
 const sentryContextKey = "emojihunt.sentry"
 
-func Start(ctx context.Context, prod bool, discord *discord.Client, state *state.Client) {
+func Start(ctx context.Context, prod bool, discord *discord.Client,
+	state *state.Client, sync *sync.Client) {
 	var e = echo.New()
-	var s = &Server{discord: discord, echo: e, state: state}
+	var s = &Server{discord: discord, echo: e, state: state, sync: sync}
 
 	if raw, ok := os.LookupEnv("SERVER_SECRET"); !ok {
 		log.Panicf("SERVER_SECRET is required")

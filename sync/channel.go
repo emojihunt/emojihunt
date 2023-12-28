@@ -9,9 +9,7 @@ import (
 	"time"
 
 	"github.com/bwmarrin/discordgo"
-	"github.com/emojihunt/emojihunt/discord"
 	"github.com/emojihunt/emojihunt/state"
-	"golang.org/x/xerrors"
 )
 
 const (
@@ -23,102 +21,27 @@ const (
 	embedColor           = 0x7C39ED
 )
 
-// CreateDiscordChannel creates a new Discord channel and saves it to the
-// Puzzle object.
-func (c *Client) CreateDiscordChannel(ctx context.Context, puzzle state.Puzzle) (state.Puzzle, error) {
+// CreateDiscordChannel creates a new Discord channel and returns its ID. To
+// avoid the channel appearing in the wrong position, we create it in a "Solved"
+// category and will it to the proper category and position later.
+func (c *Client) CreateDiscordChannel(ctx context.Context, puzzle state.RawPuzzle) (string, error) {
 	log.Printf("sync: creating discord channel for %q", puzzle.Name)
-	var position int
-	puzzles, err := c.state.ListPuzzles(ctx)
+	channel, err := c.discord.CreateChannel(puzzle.Name, c.solvedCategories[0])
 	if err != nil {
-		return puzzle, err
+		return "", err
 	}
-	for i, item := range puzzles {
-		if item.ID == puzzle.ID {
-			position = 512 + 2*i - 1
-		}
-	}
-
-	channel, err := c.discord.CreateChannel(puzzle.Name,
-		puzzle.Round.DiscordCategory, position)
-	if err != nil {
-		return puzzle, err
-	}
-	puzzle, err = c.state.UpdatePuzzleAdvanced(ctx, puzzle.ID,
-		func(puzzle *state.RawPuzzle) error {
-			if puzzle.DiscordChannel != "" {
-				return xerrors.Errorf("created duplicate Discord channel")
-			}
-			puzzle.DiscordChannel = channel.ID
-			return nil
-		}, false,
-	)
-	if err != nil {
-		return puzzle, err
-	}
-
-	log.Printf("sync: sorting discord channels")
-	var order []discord.ChannelOrder
-	for i, puzzle := range puzzles {
-		if !puzzle.HasDiscordChannel() || puzzle.Status.IsSolved() {
-			// Ignore solved puzzles to reduce size of sort request
-			continue
-		}
-		order = append(order, discord.ChannelOrder{
-			ID: puzzle.DiscordChannel, Position: 512 + 2*i,
-		})
-	}
-	return puzzle, c.discord.SortChannels(order)
+	return channel.ID, nil
 }
 
-// CreateDiscordCategory creates a new Discord category and saves it to the
-// Round object.
-func (c *Client) CreateDiscordCategory(ctx context.Context, round state.Round) (state.Round, error) {
+// CreateDiscordCategory creates a new Discord category and returns its ID.
+func (c *Client) CreateDiscordCategory(ctx context.Context, round state.Round) (string, error) {
 	log.Printf("sync: creating discord category for %q", round.Name)
-	var position int
-	rounds, err := c.state.ListRounds(ctx)
-	if err != nil {
-		return round, nil
-	}
-	for i, item := range rounds {
-		if item.ID == round.ID {
-			position = 64 + 2*i - 1
-		}
-	}
 
-	category, err := c.discord.CreateCategory(roundCategoryPrefix+round.Name,
-		position)
+	category, err := c.discord.CreateCategory(roundCategoryPrefix + round.Name)
 	if err != nil {
-		return round, err
+		return "", err
 	}
-	round, err = c.state.UpdateRoundAdvanced(ctx, round.ID,
-		func(round *state.Round) error {
-			if round.DiscordCategory != "" {
-				return xerrors.Errorf("created duplicate Discord category")
-			}
-			round.DiscordCategory = category.ID
-			return nil
-		}, false,
-	)
-	if err != nil {
-		return round, err
-	}
-
-	log.Printf("sync: sorting discord categories")
-	var order []discord.ChannelOrder
-	for i, round := range rounds {
-		if round.HasDiscordCategory() {
-			// Use a high offset so manually-managed channels are listed first
-			order = append(order, discord.ChannelOrder{
-				ID: round.DiscordCategory, Position: 64 + 2*i,
-			})
-		}
-	}
-	for i, category := range c.solvedCategories {
-		order = append(order, discord.ChannelOrder{
-			ID: category, Position: 256 + i,
-		})
-	}
-	return round, c.discord.SortChannels(order)
+	return category.ID, nil
 }
 
 func (c *Client) RestoreSolvedCategories() error {
@@ -133,7 +56,7 @@ func (c *Client) RestoreSolvedCategories() error {
 			solved = append(solved, category.ID)
 		} else {
 			log.Printf("sync: restoring category %q", name)
-			category, err := c.discord.CreateCategory(name, 256+i)
+			category, err := c.discord.CreateCategory(name)
 			if err != nil {
 				return err
 			}

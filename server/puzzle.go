@@ -46,11 +46,33 @@ func (s *Server) GetPuzzle(c echo.Context) error {
 }
 
 func (s *Server) CreatePuzzle(c echo.Context) error {
+	var err error
+	var ctx = c.Request().Context()
+
 	var params PuzzleParams
-	if err := c.Bind(&params); err != nil {
+	if err = c.Bind(&params); err != nil {
 		return err
 	}
-	puzzle, err := s.state.CreatePuzzle(c.Request().Context(), state.RawPuzzle(params))
+	var raw = state.RawPuzzle(params)
+
+	// Run validations before handling sheet and channel creation
+	if err = state.ValidatePuzzle(raw); err != nil {
+		return err
+	}
+	if raw.SpreadsheetID == "+" {
+		raw.SpreadsheetID, err = s.sync.CreateSpreadsheet(ctx, raw)
+		if err != nil {
+			return err
+		}
+	}
+	if raw.DiscordChannel == "+" {
+		raw.DiscordChannel, err = s.sync.CreateDiscordChannel(ctx, raw)
+		if err != nil {
+			return err
+		}
+	}
+
+	puzzle, err := s.state.CreatePuzzle(ctx, raw)
 	if err != nil {
 		return err
 	}

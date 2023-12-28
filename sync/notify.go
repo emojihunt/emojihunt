@@ -25,12 +25,11 @@ func (s *Client) NotifyPuzzleWorking(puzzle state.Puzzle) error {
 	return err
 }
 
-// NotifyPuzzleSolved sends the two "Puzzle solved!" (or "Puzzle
-// backsolved!") messages: one to the puzzle channel, and another to
-// #hanging-out.
+// NotifyPuzzleSolved sends the two "Puzzle solved!" (or "Puzzle backsolved!")
+// messages: one to the puzzle channel, and another to #hanging-out.
 func (s *Client) NotifyPuzzleSolved(puzzle state.Puzzle, suppressSolveNotif bool) error {
 	log.Printf("sync: notifying for solved puzzle %q (%v)", puzzle.Name, suppressSolveNotif)
-	if !suppressSolveNotif {
+	if !suppressSolveNotif && puzzle.DiscordChannel != "" {
 		msg := fmt.Sprintf(
 			"Puzzle %s! The answer was `%v`. I'll archive this channel.",
 			puzzle.Status.SolvedVerb(), puzzle.Answer,
@@ -40,8 +39,12 @@ func (s *Client) NotifyPuzzleSolved(puzzle state.Puzzle, suppressSolveNotif bool
 		}
 	}
 
-	msg := fmt.Sprintf("%s Puzzle <#%s> was **%s!** Answer: `%s`.",
-		puzzle.Round.Emoji, puzzle.DiscordChannel, puzzle.Status.SolvedVerb(), puzzle.Answer)
+	var mention = fmt.Sprintf("<#%s>", puzzle.DiscordChannel)
+	if puzzle.DiscordChannel == "" {
+		mention = fmt.Sprintf("%q", puzzle.Name)
+	}
+	msg := fmt.Sprintf("%s Puzzle %s was **%s!** Answer: `%s`.",
+		puzzle.Round.Emoji, mention, puzzle.Status.SolvedVerb(), puzzle.Answer)
 	_, err := s.discord.ChannelSend(s.discord.HangingOutChannel, msg)
 	return err
 }

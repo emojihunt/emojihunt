@@ -232,12 +232,11 @@ func (c *Client) GetMessage(ch *discordgo.Channel, messageID string) (*discordgo
 	return msg, nil
 }
 
-func (c *Client) CreateChannel(name string, category string, position int) (*discordgo.Channel, error) {
+func (c *Client) CreateChannel(name string, category string) (*discordgo.Channel, error) {
 	ch, err := c.s.GuildChannelCreateComplex(c.Guild.ID, discordgo.GuildChannelCreateData{
 		Name:     name,
 		Type:     discordgo.ChannelTypeGuildText,
 		ParentID: category,
-		Position: position,
 	})
 	if err != nil {
 		return nil, xerrors.Errorf("CreateChannel: %w", err)
@@ -289,12 +288,11 @@ func (c *Client) GetChannelCategories() (map[string]*discordgo.Channel, error) {
 	return categories, nil
 }
 
-func (c *Client) CreateCategory(name string, position int) (*discordgo.Channel, error) {
+func (c *Client) CreateCategory(name string) (*discordgo.Channel, error) {
 	category, err := c.s.GuildChannelCreateComplex(c.Guild.ID,
 		discordgo.GuildChannelCreateData{
-			Name:     name,
-			Type:     discordgo.ChannelTypeGuildCategory,
-			Position: position,
+			Name: name,
+			Type: discordgo.ChannelTypeGuildCategory,
 		},
 	)
 	if err != nil {

@@ -24,13 +24,6 @@ type DiscordPinFields struct {
 }
 
 func NewDiscordPinFields(puzzle state.Puzzle) DiscordPinFields {
-	var spreadsheet, channel string
-	if puzzle.HasSpreadsheetID() {
-		spreadsheet = puzzle.SpreadsheetID
-	}
-	if puzzle.HasDiscordChannel() {
-		channel = puzzle.DiscordChannel
-	}
 	return DiscordPinFields{
 		RoundName:      puzzle.Round.Name,
 		RoundEmoji:     puzzle.Round.Emoji,
@@ -39,8 +32,8 @@ func NewDiscordPinFields(puzzle state.Puzzle) DiscordPinFields {
 		Note:           puzzle.Note,
 		Location:       puzzle.Location,
 		PuzzleURL:      puzzle.PuzzleURL,
-		SpreadsheetID:  spreadsheet,
-		DiscordChannel: channel,
+		SpreadsheetID:  puzzle.SpreadsheetID,
+		DiscordChannel: puzzle.DiscordChannel,
 		VoiceRoom:      puzzle.VoiceRoom,
 	}
 }

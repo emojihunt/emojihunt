@@ -59,21 +59,12 @@ func (c *Client) CreateRound(ctx context.Context, round Round) (Round, error) {
 		return Round{}, xerrors.Errorf("CreateRound: %w", err)
 	}
 	created := Round(result)
-	c.RoundChange <- RoundChange{nil, &created, true}
+	c.RoundChange <- RoundChange{nil, &created}
 	return created, nil
 }
 
 func (c *Client) UpdateRound(ctx context.Context, id int64,
 	mutate func(round *Round) error) (Round, error) {
-	return c.UpdateRoundAdvanced(ctx, id, mutate, true)
-}
-
-func (c *Client) UpdateRoundAdvanced(
-	ctx context.Context,
-	id int64,
-	mutate func(round *Round) error,
-	sync bool,
-) (Round, error) {
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
 	before, err := c.GetRound(ctx, id)
@@ -94,7 +85,7 @@ func (c *Client) UpdateRoundAdvanced(
 	if err != nil {
 		return Round{}, err
 	}
-	c.RoundChange <- RoundChange{&before, &after, sync}
+	c.RoundChange <- RoundChange{&before, &after}
 	return after, nil
 }
 
@@ -109,6 +100,6 @@ func (c *Client) DeleteRound(ctx context.Context, id int64) error {
 	if err != nil {
 		return xerrors.Errorf("DeleteRound: %w", err)
 	}
-	c.RoundChange <- RoundChange{&round, nil, true}
+	c.RoundChange <- RoundChange{&round, nil}
 	return nil
 }

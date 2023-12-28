@@ -5,46 +5,18 @@ import (
 	"log"
 
 	"github.com/emojihunt/emojihunt/state"
-	"golang.org/x/xerrors"
 )
 
-// CreateSpreadsheet creates a new Google Sheets spreadsheet and saves it to the
-// Puzzle object.
-func (c *Client) CreateSpreadsheet(ctx context.Context, puzzle state.Puzzle) (state.Puzzle, error) {
+// CreateSpreadsheet creates a new Google Sheets spreadsheet and returns its ID.
+func (c *Client) CreateSpreadsheet(ctx context.Context, puzzle state.RawPuzzle) (string, error) {
 	log.Printf("sync: creating spreadsheet for %q", puzzle.Name)
-	spreadsheet, err := c.drive.CreateSheet(ctx, puzzle.Name)
-	if err != nil {
-		return state.Puzzle{}, err
-	}
-
-	return c.state.UpdatePuzzleAdvanced(ctx, puzzle.ID,
-		func(puzzle *state.RawPuzzle) error {
-			if puzzle.SpreadsheetID != "" {
-				return xerrors.Errorf("created duplicate spreadsheet")
-			}
-			puzzle.SpreadsheetID = spreadsheet
-			return nil
-		}, false,
-	)
+	return c.drive.CreateSheet(ctx, puzzle.Name)
 }
 
-// CreateDriveFolder creates a new Google Drive folder and saves it to the Round
-// object.
-func (c *Client) CreateDriveFolder(ctx context.Context, round state.Round) (state.Round, error) {
+// CreateDriveFolder creates a new Google Drive folder and returns its ID.
+func (c *Client) CreateDriveFolder(ctx context.Context, round state.Round) (string, error) {
 	log.Printf("sync: creating drive folder for %q", round.Name)
-	folder, err := c.drive.CreateFolder(ctx, round.Name)
-	if err != nil {
-		return state.Round{}, err
-	}
-	return c.state.UpdateRoundAdvanced(ctx, round.ID,
-		func(round *state.Round) error {
-			if round.DriveFolder != "" {
-				return xerrors.Errorf("created duplicate Google Drive folder")
-			}
-			round.DriveFolder = folder
-			return nil
-		}, false,
-	)
+	return c.drive.CreateFolder(ctx, round.Name)
 }
 
 type SpreadsheetFields struct {
