@@ -176,6 +176,39 @@ func (c *Client) TriggerRound(ctx context.Context, change state.RoundChange) err
 	if change.After == nil {
 		return nil
 	}
-	// TODO
+
+	var wg sync.WaitGroup
+	var ch = make(chan error, 4)
+	var round = *change.After
+
+	// Maybe sync updates to the Discord category name
+	var c0 DiscordCategoryFields
+	if change.Before != nil {
+		c0 = NewDiscordCategoryFields(*change.Before)
+	}
+	var c1 = NewDiscordCategoryFields(round)
+	if round.DiscordCategory != "" && c0 != c1 {
+		wg.Add(1)
+		go func() { ch <- c.UpdateDiscordCategory(c1); wg.Done() }()
+	}
+
+	// Maybe sync updates to the Google Drive folder name
+	var d0 DriveFolderFields
+	if change.Before != nil {
+		d0 = NewDriveFolderFields(*change.Before)
+	}
+	var d1 = NewDriveFolderFields(round)
+	if round.DriveFolder != "" && d0 != d1 {
+		wg.Add(1)
+		go func() { ch <- c.UpdateDriveFolder(ctx, d1); wg.Done() }()
+	}
+
+	wg.Wait()
+	close(ch)
+	for err := range ch {
+		if err != nil {
+			return err
+		}
+	}
 	return nil
 }

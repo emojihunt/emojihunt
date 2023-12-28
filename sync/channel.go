@@ -132,3 +132,45 @@ func (c *Client) UpdateDiscordChannel(fields DiscordChannelFields) error {
 		return c.discord.ChannelSendRawID(fields.PuzzleChannel, msg)
 	}
 }
+
+type DiscordCategoryFields struct {
+	RoundName     string
+	RoundCategory string
+}
+
+func NewDiscordCategoryFields(round state.Round) DiscordCategoryFields {
+	return DiscordCategoryFields{
+		RoundName:     round.Name,
+		RoundCategory: round.DiscordCategory,
+	}
+}
+
+// UpdateDiscordCategory configures the name of the round category.
+func (c *Client) UpdateDiscordCategory(fields DiscordCategoryFields) error {
+	log.Printf("sync: updating discord category for %q", fields.RoundName)
+
+	// The Discord rate limit on channel renames is fairly restrictive (2 per 10
+	// minutes per channel), so finish renaming the category asynchronously if we
+	// get rate-limited.
+	var name = roundCategoryPrefix + fields.RoundName
+	ch := make(chan error)
+	go func() {
+		ch <- c.discord.SetChannelName(fields.RoundCategory, name)
+	}()
+	select {
+	case err := <-ch:
+		return err
+	case <-time.After(5 * time.Second):
+		rateLimit := c.discord.CheckRateLimit(discordgo.EndpointChannel(fields.RoundCategory))
+		if rateLimit == nil {
+			// No rate limiting detected; maybe the Discord request is just
+			// slow? Wait for it to finish.
+			return <-ch
+		}
+		// Being rate limited; goroutine will finish later.
+		msg := fmt.Sprintf(":snail: Hit Discord's rate limit on category renaming. Category will be "+
+			"renamed to %q in %s.", name, time.Until(*rateLimit).Round(time.Second))
+		_, err := c.discord.ChannelSend(c.discord.QMChannel, msg)
+		return err
+	}
+}

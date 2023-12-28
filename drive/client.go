@@ -107,3 +107,17 @@ func (c *Client) SetSheetFolder(ctx context.Context, sheetID, folderID string) e
 	}
 	return nil
 }
+
+func (c *Client) SetFolderName(ctx context.Context, folderID, name string) error {
+	_, err := c.drive.Files.Update(folderID, &drive.File{
+		Name:     name,
+		MimeType: "application/vnd.google-apps.folder",
+	}).EnforceSingleParent(true).
+		AddParents(c.rootFolderID).
+		Context(ctx).
+		Do()
+	if err != nil {
+		return xerrors.Errorf("drive.Files.Update (%s): %w", folderID, err)
+	}
+	return nil
+}
