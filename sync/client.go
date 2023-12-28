@@ -16,15 +16,14 @@ type Client struct {
 	discord          *discord.Client
 	discovery        bool
 	drive            *drive.Client
-	state            *state.Client
 	solvedCategories []string
 }
 
-func New(discord *discord.Client, discovery bool, drive *drive.Client, state *state.Client) *Client {
-	return &Client{discord, discovery, drive, state, nil}
+func New(discord *discord.Client, discovery bool, drive *drive.Client) *Client {
+	return &Client{discord, discovery, drive, nil}
 }
 
-func (c *Client) Watch(ctx context.Context) {
+func (c *Client) Watch(ctx context.Context, state *state.Client) {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
@@ -36,7 +35,7 @@ func (c *Client) Watch(ctx context.Context) {
 	// *do* allow panics to bubble up to main()
 
 	// The bot's status is reset when we connect to Discord
-	if err := c.TriggerDiscoveryEnabled(ctx, c.state.IsEnabled(ctx)); err != nil {
+	if err := c.TriggerDiscoveryEnabled(ctx, state.IsEnabled(ctx)); err != nil {
 		panic(err)
 	}
 	if err := c.RestoreSolvedCategories(); err != nil {
@@ -49,11 +48,11 @@ func (c *Client) Watch(ctx context.Context) {
 	for {
 		var err error
 		select {
-		case enabled := <-c.state.DiscoveryChange:
+		case enabled := <-state.DiscoveryChange:
 			err = c.TriggerDiscoveryEnabled(ctx, enabled)
-		case change := <-c.state.PuzzleChange:
+		case change := <-state.PuzzleChange:
 			err = c.TriggerPuzzle(ctx, change)
-		case change := <-c.state.RoundChange:
+		case change := <-state.RoundChange:
 			err = c.TriggerRound(ctx, change)
 		case <-ctx.Done():
 			return
@@ -115,27 +114,6 @@ func (c *Client) TriggerPuzzle(ctx context.Context, change state.PuzzleChange) (
 	} else {
 		var wg sync.WaitGroup
 		var ch = make(chan error, 4)
-
-		// On solve, unset voice room
-		if !change.Before.Status.IsSolved() && puzzle.Status.IsSolved() {
-			var sync bool
-			puzzle, err = c.state.UpdatePuzzle(ctx, puzzle.ID,
-				func(puzzle *state.RawPuzzle) error {
-					if puzzle.VoiceRoom != "" {
-						puzzle.VoiceRoom = ""
-						sync = true
-					}
-					return nil
-				},
-			)
-			if err != nil {
-				return err
-			}
-			if sync {
-				wg.Add(1)
-				go func() { ch <- c.SyncVoiceRooms(ctx); wg.Done() }()
-			}
-		}
 
 		// Sync updates to the Discord channel name and category:
 		var c0, c1 = NewDiscordChannelFields(*change.Before), NewDiscordChannelFields(puzzle)

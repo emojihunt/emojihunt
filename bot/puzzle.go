@@ -202,6 +202,7 @@ func (b *PuzzleBot) Handle(ctx context.Context, input *discord.CommandInput) (st
 			func(puzzle *state.RawPuzzle) error {
 				puzzle.Status = newStatus
 				puzzle.Answer = newAnswer
+				puzzle.VoiceRoom = ""
 				return nil
 			},
 		)

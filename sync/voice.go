@@ -21,13 +21,9 @@ const (
 
 // SyncVoiceRooms synchronizes all Discord scheduled events, creating and
 // deleting events so that Discord matches the database state.
-func (s *Client) SyncVoiceRooms(ctx context.Context) error {
+func (s *Client) SyncVoiceRooms(ctx context.Context, puzzles []state.Puzzle) error {
 	log.Printf("syncer: syncing voice rooms")
 	events, err := s.discord.ListScheduledEvents()
-	if err != nil {
-		return err
-	}
-	puzzles, err := s.state.ListPuzzles(ctx)
 	if err != nil {
 		return err
 	}
