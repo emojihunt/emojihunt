@@ -89,68 +89,61 @@ func (c *Client) TriggerPuzzle(ctx context.Context, change state.PuzzleChange) (
 		return nil
 	}
 
+	var wg sync.WaitGroup
+	var ch = make(chan error, 4)
 	var puzzle = *change.After
+
+	// Maybe sync updates to the Discord channel name and category
+	var c0 DiscordChannelFields
+	if change.Before != nil {
+		c0 = NewDiscordChannelFields(*change.Before)
+	}
+	var c1 = NewDiscordChannelFields(puzzle)
+	if puzzle.DiscordChannel != "" && c0 != c1 {
+		wg.Add(1)
+		go func() { ch <- c.UpdateDiscordChannel(c1); wg.Done() }()
+	}
+
+	// Maybe sync updates to the Discord pinned message
+	var p0 DiscordPinFields
+	if change.Before != nil {
+		p0 = NewDiscordPinFields(*change.Before)
+	}
+	var p1 = NewDiscordPinFields(puzzle)
+	if puzzle.DiscordChannel != "" && p0 != p1 {
+		wg.Add(1)
+		go func() { ch <- c.UpdateDiscordPin(p1); wg.Done() }()
+	}
+
+	// Maybe sync updates to the spreadsheet name and folder
+	var s0 SpreadsheetFields
+	if change.Before != nil {
+		s0 = NewSpreadsheetFields(*change.Before)
+	}
+	var s1 = NewSpreadsheetFields(puzzle)
+	if puzzle.SpreadsheetID != "" && s0 != s1 {
+		wg.Add(1)
+		go func() { ch <- c.UpdateSpreadsheet(ctx, s1); wg.Done() }()
+	}
+
+	wg.Wait()
+	close(ch)
+	for err := range ch {
+		if err != nil {
+			return err
+		}
+	}
+
+	// Notify the puzzle channel and #more-eyes of significant status changes
 	if change.Before == nil {
-		if puzzle.DiscordChannel != "" {
-			err = c.UpdateDiscordChannel(NewDiscordChannelFields(puzzle))
-			if err != nil {
-				return err
-			}
-			err = c.UpdateDiscordPin(NewDiscordPinFields(puzzle))
-			if err != nil {
-				return err
-			}
-		}
-		if puzzle.SpreadsheetID != "" {
-			err = c.UpdateSpreadsheet(ctx, NewSpreadsheetFields(puzzle))
-			if err != nil {
-				return err
-			}
-		}
 		if puzzle.DiscordChannel != "" {
 			return c.NotifyNewPuzzle(puzzle)
 		}
-		return nil
-	} else {
-		var wg sync.WaitGroup
-		var ch = make(chan error, 4)
-
-		// Sync updates to the Discord channel name and category:
-		var c0, c1 = NewDiscordChannelFields(*change.Before), NewDiscordChannelFields(puzzle)
-		if puzzle.DiscordChannel != "" && c0 != c1 {
-			wg.Add(1)
-			go func() { ch <- c.UpdateDiscordChannel(c1); wg.Done() }()
-		}
-
-		// Sync updates to the Discord pinned message:
-		var p0, p1 = NewDiscordPinFields(*change.Before), NewDiscordPinFields(puzzle)
-		if puzzle.DiscordChannel != "" && p0 != p1 {
-			wg.Add(1)
-			go func() { ch <- c.UpdateDiscordPin(p1); wg.Done() }()
-		}
-
-		// Sync updates to the spreadsheet name and folder:
-		var s0, s1 = NewSpreadsheetFields(*change.Before), NewSpreadsheetFields(puzzle)
-		if puzzle.SpreadsheetID != "" && s0 != s1 {
-			wg.Add(1)
-			go func() { ch <- c.UpdateSpreadsheet(ctx, s1); wg.Done() }()
-		}
-
-		wg.Wait()
-		close(ch)
-		for err := range ch {
-			if err != nil {
-				return err
-			}
-		}
-
-		// Notify the puzzle channel and #more-eyes of significant status changes
-		if !change.Before.Status.IsSolved() && puzzle.Status.IsSolved() {
-			return c.NotifyPuzzleSolved(puzzle, false) // TODO: support `botRequest` field
-		} else if change.Before.Status == status.NotStarted && puzzle.Status == status.Working {
-			if puzzle.DiscordChannel != "" {
-				return c.NotifyPuzzleWorking(puzzle)
-			}
+	} else if !change.Before.Status.IsSolved() && puzzle.Status.IsSolved() {
+		return c.NotifyPuzzleSolved(puzzle)
+	} else if change.Before.Status == status.NotStarted && puzzle.Status == status.Working {
+		if puzzle.DiscordChannel != "" {
+			return c.NotifyPuzzleWorking(puzzle)
 		}
 	}
 	return nil

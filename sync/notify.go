@@ -27,9 +27,9 @@ func (s *Client) NotifyPuzzleWorking(puzzle state.Puzzle) error {
 
 // NotifyPuzzleSolved sends the two "Puzzle solved!" (or "Puzzle backsolved!")
 // messages: one to the puzzle channel, and another to #hanging-out.
-func (s *Client) NotifyPuzzleSolved(puzzle state.Puzzle, suppressSolveNotif bool) error {
-	log.Printf("sync: notifying for solved puzzle %q (%v)", puzzle.Name, suppressSolveNotif)
-	if !suppressSolveNotif && puzzle.DiscordChannel != "" {
+func (s *Client) NotifyPuzzleSolved(puzzle state.Puzzle) error {
+	log.Printf("sync: notifying for solved puzzle %q", puzzle.Name)
+	if puzzle.DiscordChannel != "" {
 		msg := fmt.Sprintf(
 			"Puzzle %s! The answer was `%v`. I'll archive this channel.",
 			puzzle.Status.SolvedVerb(), puzzle.Answer,
