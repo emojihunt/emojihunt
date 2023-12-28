@@ -34,6 +34,16 @@ FROM puzzles AS p
 INNER JOIN rounds ON p.round = rounds.id
 ORDER BY rounds.special, rounds.sort, rounds.id, p.meta, p.name;
 
+-- name: ListPuzzlesByRound :many
+SELECT
+    p.id, p.name, p.answer, sqlc.embed(rounds), p.status, p.note,
+    p.location, p.puzzle_url, p.spreadsheet_id, p.discord_channel,
+    p.meta, p.voice_room, p.reminder
+FROM puzzles AS p
+INNER JOIN rounds ON p.round = rounds.id
+WHERE p.round = ?
+ORDER BY rounds.special, rounds.sort, rounds.id, p.meta, p.name;
+
 -- name: CreatePuzzle :one
 INSERT INTO puzzles (
     name, answer, round, status, note, location, puzzle_url,

@@ -57,6 +57,18 @@ func (c *Client) ListPuzzles(ctx context.Context) ([]Puzzle, error) {
 	return puzzles, nil
 }
 
+func (c *Client) ListPuzzlesByRound(ctx context.Context, round int64) ([]Puzzle, error) {
+	results, err := c.queries.ListPuzzlesByRound(ctx, round)
+	if err != nil {
+		return nil, xerrors.Errorf("ListPuzzlesByRound: %w", err)
+	}
+	var puzzles = make([]Puzzle, len(results))
+	for i, result := range results {
+		puzzles[i] = Puzzle(result)
+	}
+	return puzzles, nil
+}
+
 func (c *Client) CreatePuzzle(ctx context.Context, puzzle RawPuzzle) (Puzzle, error) {
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
@@ -122,7 +134,6 @@ func (c *Client) ClearPuzzleVoiceRoom(ctx context.Context, room string) error {
 	if err != nil {
 		return xerrors.Errorf("GetPuzzlesByVoiceRoom: %w", err)
 	}
-	// TODO: emit sync events; lock?
 	err = c.queries.ClearPuzzleVoiceRoom(ctx, room)
 	if err != nil {
 		return xerrors.Errorf("ClearPuzzleVoiceRoom: %w", err)

@@ -86,6 +86,15 @@ func (c *Client) UpdateRound(ctx context.Context, id int64,
 		return Round{}, err
 	}
 	c.RoundChange <- RoundChange{&before, &after}
+	puzzles, err := c.ListPuzzlesByRound(ctx, id)
+	if err != nil {
+		return Round{}, err
+	}
+	for _, puzzle := range puzzles {
+		var pre, post = puzzle, puzzle
+		pre.Round = before
+		c.PuzzleChange <- PuzzleChange{&pre, &post}
+	}
 	return after, nil
 }
 
