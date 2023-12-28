@@ -17,6 +17,16 @@ export type AnnotatedRound = Round & {
   total: number;
 };
 
+export type NewRound = {
+  name: string;
+  emoji: string;
+  hue: number;
+  sort?: number;
+  special?: boolean;
+  drive_folder?: string;
+  discord_category?: string;
+};
+
 export type Puzzle = {
   id: number;
   name: string;
@@ -31,6 +41,15 @@ export type Puzzle = {
   meta: boolean;
   voice_room: string;
   reminder: string;
+};
+
+export type NewPuzzle = {
+  name: string;
+  round: number;
+  puzzle_url: string;
+  spreadsheet_id?: string;
+  discord_channel?: string;
+  meta?: boolean;
 };
 
 export enum Status {

@@ -24,8 +24,14 @@ const submit = (e: SubmitEvent) => {
   if (previous) toast.remove(previous);
   setTimeout(() => {
     const request = (props.kind === "round") ?
-      store.addRound({ name: data.name, emoji: data.emoji, hue: data.hue }) :
-      store.addPuzzle({ name: data.name, round: data.round!.id, puzzle_url: data.url });
+      store.addRound({
+        name: data.name, emoji: data.emoji, hue: data.hue,
+        drive_folder: "+", discord_category: "+",
+      }) :
+      store.addPuzzle({
+        name: data.name, round: data.round!.id, puzzle_url: data.url,
+        spreadsheet_id: "+", discord_channel: "+",
+      });
     request.then(() => close())
       .catch((e) => (
         previous = toast.add({

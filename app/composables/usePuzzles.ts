@@ -57,7 +57,7 @@ export default defineStore("puzzles", {
         new Date(data.value.next_hunt) : undefined;
       this.voice_rooms = data.value.voice_rooms;
     },
-    async addRound(data: { name: string; emoji: string; hue: number; }) {
+    async addRound(data: NewRound) {
       return useAPI(`/rounds`, data)
         .then((r: any) => r.value && this._rounds.set(r.value.id, r.value));
     },
@@ -67,7 +67,7 @@ export default defineStore("puzzles", {
       await useAPI(`/rounds/${round.id}`, data)
         .catch(() => this._rounds.set(round.id, previous));
     },
-    async addPuzzle(data: { name: string; round: number; puzzle_url: string; }) {
+    async addPuzzle(data: NewPuzzle) {
       return useAPI(`/puzzles`, data)
         .then((r: any) => r.value && this._puzzles.set(r.value.id, r.value));
     },
