@@ -21,6 +21,12 @@ func ValidateRound(r Round) error {
 		return ValidationError{"emoji", "must have emoji presentation"}
 	} else if r.Hue < 0 || r.Hue >= 360 {
 		return ValidationError{"hue", "must be in range [0, 360)"}
+	} else if r.DriveFolder == "" {
+		// FYI: if puzzle sheets aren't added to the round folder, no one will be
+		// able to access them.
+		return ValidationError{"drive_folder", "is required"}
+	} else if r.DiscordCategory == "" {
+		return ValidationError{"discord_category", "is required"}
 	}
 	return nil
 }

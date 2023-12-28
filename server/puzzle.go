@@ -54,6 +54,10 @@ func (s *Server) CreatePuzzle(c echo.Context) error {
 		return err
 	}
 	var raw = state.RawPuzzle(params)
+	round, err := s.state.GetRound(ctx, raw.Round)
+	if err != nil {
+		return err
+	}
 
 	// Run validations before handling sheet and channel creation
 	if err = state.ValidatePuzzle(raw); err != nil {
@@ -66,7 +70,7 @@ func (s *Server) CreatePuzzle(c echo.Context) error {
 		}
 	}
 	if raw.DiscordChannel == "+" {
-		raw.DiscordChannel, err = s.sync.CreateDiscordChannel(ctx, raw)
+		raw.DiscordChannel, err = s.sync.CreateDiscordChannel(ctx, raw, round)
 		if err != nil {
 			return err
 		}

@@ -21,12 +21,10 @@ const (
 	embedColor           = 0x7C39ED
 )
 
-// CreateDiscordChannel creates a new Discord channel and returns its ID. To
-// avoid the channel appearing in the wrong position, we create it in a "Solved"
-// category and will it to the proper category and position later.
-func (c *Client) CreateDiscordChannel(ctx context.Context, puzzle state.RawPuzzle) (string, error) {
+// CreateDiscordChannel creates a new Discord channel and returns its ID.
+func (c *Client) CreateDiscordChannel(ctx context.Context, puzzle state.RawPuzzle, round state.Round) (string, error) {
 	log.Printf("sync: creating discord channel for %q", puzzle.Name)
-	channel, err := c.discord.CreateChannel(puzzle.Name, c.solvedCategories[0])
+	channel, err := c.discord.CreateChannel(puzzle.Name, round.DiscordCategory)
 	if err != nil {
 		return "", err
 	}
