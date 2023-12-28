@@ -477,6 +477,43 @@ func (q *Queries) ListPuzzlesByRound(ctx context.Context, round int64) ([]ListPu
 	return items, nil
 }
 
+const listPuzzlesByVoiceRoom = `-- name: ListPuzzlesByVoiceRoom :many
+SELECT p.id, p.name, p.voice_room
+FROM puzzles as p
+INNER JOIN rounds ON p.round = rounds.id
+WHERE p.voice_room != ""
+ORDER BY p.voice_room, rounds.special, rounds.sort, rounds.id, p.meta, p.name
+`
+
+type ListPuzzlesByVoiceRoomRow struct {
+	ID        int64  `json:"id"`
+	Name      string `json:"name"`
+	VoiceRoom string `json:"voice_room"`
+}
+
+func (q *Queries) ListPuzzlesByVoiceRoom(ctx context.Context) ([]ListPuzzlesByVoiceRoomRow, error) {
+	rows, err := q.db.QueryContext(ctx, listPuzzlesByVoiceRoom)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListPuzzlesByVoiceRoomRow
+	for rows.Next() {
+		var i ListPuzzlesByVoiceRoomRow
+		if err := rows.Scan(&i.ID, &i.Name, &i.VoiceRoom); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listRounds = `-- name: ListRounds :many
 SELECT id, name, emoji, hue, sort, special, drive_folder, discord_category FROM rounds
 ORDER BY special, sort, id

@@ -92,7 +92,7 @@ func (c *Client) UpdateDiscordPin(fields DiscordPinFields) error {
 		}
 		if fields.Location != "" {
 			if locationMsg != locationDefaultMsg {
-				locationMsg += fmt.Sprintf("Also in-person in %s.", fields.Location)
+				locationMsg += fmt.Sprintf(" Also in-person in %s.", fields.Location)
 			} else {
 				locationMsg = fmt.Sprintf("In-person in %s.", fields.Location)
 			}

@@ -95,12 +95,12 @@ func (c *Client) UpdateRound(ctx context.Context, id int64,
 		return Round{}, err
 	}
 	c.RoundChange <- RoundChange{&before, &after}
-	puzzles, err := c.ListPuzzlesByRound(ctx, id)
+	puzzles, err := c.queries.ListPuzzlesByRound(ctx, id)
 	if err != nil {
-		return Round{}, err
+		return Round{}, xerrors.Errorf("ListPuzzlesByRound: %w", err)
 	}
 	for _, puzzle := range puzzles {
-		var pre, post = puzzle, puzzle
+		var pre, post = Puzzle(puzzle), Puzzle(puzzle)
 		pre.Round = before
 		c.PuzzleChange <- PuzzleChange{&pre, &post, false}
 	}

@@ -10,6 +10,7 @@ import (
 type (
 	Round     = db.Round
 	RawPuzzle = db.Puzzle
+	VoiceInfo = db.ListPuzzlesByVoiceRoomRow
 )
 
 // Must match db.GetPuzzleRow and db.ListPuzzlesRow

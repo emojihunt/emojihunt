@@ -68,16 +68,14 @@ func (c *Client) ListPuzzles(ctx context.Context) ([]Puzzle, error) {
 	return puzzles, nil
 }
 
-func (c *Client) ListPuzzlesByRound(ctx context.Context, round int64) ([]Puzzle, error) {
-	results, err := c.queries.ListPuzzlesByRound(ctx, round)
+func (c *Client) ListVoiceRoomInfo(ctx context.Context) ([]VoiceInfo, error) {
+	// Used by sync! To avoid deadlocks, this function must not acquire the global
+	// database lock.
+	results, err := c.queries.ListPuzzlesByVoiceRoom(ctx)
 	if err != nil {
-		return nil, xerrors.Errorf("ListPuzzlesByRound: %w", err)
+		return nil, xerrors.Errorf("ListPuzzlesByVoiceRoom: %w", err)
 	}
-	var puzzles = make([]Puzzle, len(results))
-	for i, result := range results {
-		puzzles[i] = Puzzle(result)
-	}
-	return puzzles, nil
+	return results, nil
 }
 
 func (c *Client) CreatePuzzle(ctx context.Context, puzzle RawPuzzle) (Puzzle, error) {

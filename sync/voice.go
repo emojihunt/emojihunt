@@ -19,19 +19,31 @@ const (
 	eventDelay = 7 * 24 * time.Hour
 )
 
+func NewVoiceInfo(puzzle state.Puzzle) state.VoiceInfo {
+	return state.VoiceInfo{
+		ID:        puzzle.ID,
+		Name:      puzzle.Name,
+		VoiceRoom: puzzle.VoiceRoom,
+	}
+}
+
 // SyncVoiceRooms synchronizes all Discord scheduled events, creating and
 // deleting events so that Discord matches the database state.
-func (s *Client) SyncVoiceRooms(ctx context.Context, puzzles []state.Puzzle) error {
+func (c *Client) SyncVoiceRooms(ctx context.Context) error {
 	log.Printf("syncer: syncing voice rooms")
-	events, err := s.discord.ListScheduledEvents()
+	events, err := c.discord.ListScheduledEvents()
+	if err != nil {
+		return err
+	}
+	infos, err := c.state.ListVoiceRoomInfo(ctx)
 	if err != nil {
 		return err
 	}
 
 	var placeholderEvents []*discordgo.GuildScheduledEvent
-	var puzzlesByChannel = make(map[string][]state.Puzzle)
+	var puzzlesByChannel = make(map[string][]state.VoiceInfo)
 	var eventsByChannel = make(map[string]*discordgo.GuildScheduledEvent)
-	for _, puzzle := range puzzles {
+	for _, puzzle := range infos {
 		if puzzle.VoiceRoom == "" {
 			continue
 		}
@@ -52,7 +64,7 @@ func (s *Client) SyncVoiceRooms(ctx context.Context, puzzles []state.Puzzle) err
 		if _, ok := puzzlesByChannel[event.ChannelID]; !ok {
 			// Event has no more puzzles; delete
 			log.Printf("deleting scheduled event %s in %s", event.ID, event.ChannelID)
-			if err := s.discord.DeleteScheduledEvent(event); err != nil {
+			if err := c.discord.DeleteScheduledEvent(event); err != nil {
 				return err
 			}
 		}
@@ -72,9 +84,9 @@ func (s *Client) SyncVoiceRooms(ctx context.Context, puzzles []state.Puzzle) err
 				event, placeholderEvents = placeholderEvents[0], placeholderEvents[1:]
 
 				if event.ChannelID != channelID {
-					// (changing the event's voice channel can't be done in the
-					// same call as starting the event, apparently)
-					event, err = s.discord.UpdateScheduledEvent(event,
+					// (changing the event's voice channel can't be done in the same call
+					// as starting the event, apparently)
+					event, err = c.discord.UpdateScheduledEvent(event,
 						&discordgo.GuildScheduledEventParams{
 							ChannelID: channelID,
 						},
@@ -87,7 +99,7 @@ func (s *Client) SyncVoiceRooms(ctx context.Context, puzzles []state.Puzzle) err
 				// ...otherwise create a new event
 				log.Printf("creating scheduled event in %q", channelID)
 				start := time.Now().Add(eventDelay)
-				event, err = s.discord.CreateScheduledEvent(&discordgo.GuildScheduledEventParams{
+				event, err = c.discord.CreateScheduledEvent(&discordgo.GuildScheduledEventParams{
 					ChannelID:          channelID,
 					Name:               eventTitle,
 					PrivacyLevel:       discordgo.GuildScheduledEventPrivacyLevelGuildOnly,
@@ -101,10 +113,10 @@ func (s *Client) SyncVoiceRooms(ctx context.Context, puzzles []state.Puzzle) err
 			}
 
 			// Then start the event
-			event, err = s.discord.UpdateScheduledEvent(event,
+			event, err = c.discord.UpdateScheduledEvent(event,
 				&discordgo.GuildScheduledEventParams{
-					// FYI, we pass these fields again because Discord has (had?) a
-					// bug where events are sometimes created with fields missing.
+					// FYI, we pass these fields again because Discord has (had?) a bug
+					// where events are sometimes created with fields missing.
 					ChannelID:   channelID,
 					Name:        eventTitle,
 					Description: VoiceRoomEventDescription,
@@ -121,7 +133,7 @@ func (s *Client) SyncVoiceRooms(ctx context.Context, puzzles []state.Puzzle) err
 		} else if eventTitle != event.Name {
 			// Update event name
 			log.Printf("updating scheduled event %s in %s", event.ID, event.ChannelID)
-			_, err = s.discord.UpdateScheduledEvent(event,
+			_, err = c.discord.UpdateScheduledEvent(event,
 				&discordgo.GuildScheduledEventParams{
 					Name: eventTitle,
 				},
@@ -132,7 +144,7 @@ func (s *Client) SyncVoiceRooms(ctx context.Context, puzzles []state.Puzzle) err
 		}
 	}
 
-	s.RestorePlaceholderEvent()
+	c.RestorePlaceholderEvent()
 	return nil
 }
 

@@ -16,14 +16,15 @@ type Client struct {
 	discord          *discord.Client
 	discovery        bool
 	drive            *drive.Client
+	state            *state.Client
 	solvedCategories []string
 }
 
-func New(discord *discord.Client, discovery bool, drive *drive.Client) *Client {
-	return &Client{discord, discovery, drive, nil}
+func New(discord *discord.Client, discovery bool, drive *drive.Client, state *state.Client) *Client {
+	return &Client{discord, discovery, drive, state, nil}
 }
 
-func (c *Client) Watch(ctx context.Context, state *state.Client) {
+func (c *Client) Watch(ctx context.Context) {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
@@ -35,7 +36,7 @@ func (c *Client) Watch(ctx context.Context, state *state.Client) {
 	// *do* allow panics to bubble up to main()
 
 	// The bot's status is reset when we connect to Discord
-	if err := c.TriggerDiscoveryEnabled(ctx, state.IsEnabled(ctx)); err != nil {
+	if err := c.TriggerDiscoveryEnabled(ctx); err != nil {
 		panic(err)
 	}
 	if err := c.RestoreSolvedCategories(); err != nil {
@@ -48,11 +49,11 @@ func (c *Client) Watch(ctx context.Context, state *state.Client) {
 	for {
 		var err error
 		select {
-		case enabled := <-state.DiscoveryChange:
-			err = c.TriggerDiscoveryEnabled(ctx, enabled)
-		case change := <-state.PuzzleChange:
+		case <-c.state.DiscoveryChange:
+			err = c.TriggerDiscoveryEnabled(ctx)
+		case change := <-c.state.PuzzleChange:
 			err = c.TriggerPuzzle(ctx, change)
-		case change := <-state.RoundChange:
+		case change := <-c.state.RoundChange:
 			err = c.TriggerRound(ctx, change)
 		case <-ctx.Done():
 			return
@@ -63,11 +64,11 @@ func (c *Client) Watch(ctx context.Context, state *state.Client) {
 	}
 }
 
-func (c *Client) TriggerDiscoveryEnabled(ctx context.Context, enabled bool) error {
+func (c *Client) TriggerDiscoveryEnabled(ctx context.Context) error {
 	var data discordgo.UpdateStatusData
 	if !c.discovery {
 		data.Status = "idle"
-	} else if enabled {
+	} else if c.state.IsEnabled(ctx) {
 		data.Status = "online"
 	} else {
 		data.Status = "dnd"
@@ -124,6 +125,17 @@ func (c *Client) TriggerPuzzle(ctx context.Context, change state.PuzzleChange) (
 	if puzzle.SpreadsheetID != "" && s0 != s1 {
 		wg.Add(1)
 		go func() { ch <- c.UpdateSpreadsheet(ctx, s1); wg.Done() }()
+	}
+
+	// Maybe sync updates to the voice room
+	var v0 state.VoiceInfo
+	if change.Before != nil {
+		v0 = NewVoiceInfo(*change.Before)
+	}
+	var v1 = NewVoiceInfo(puzzle)
+	if v0 != v1 {
+		wg.Add(1)
+		go func() { ch <- c.SyncVoiceRooms(ctx); wg.Done() }()
 	}
 
 	wg.Wait()

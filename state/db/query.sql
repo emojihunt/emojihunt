@@ -44,6 +44,13 @@ INNER JOIN rounds ON p.round = rounds.id
 WHERE p.round = ?
 ORDER BY rounds.special, rounds.sort, rounds.id, p.meta, p.name;
 
+-- name: ListPuzzlesByVoiceRoom :many
+SELECT p.id, p.name, p.voice_room
+FROM puzzles as p
+INNER JOIN rounds ON p.round = rounds.id
+WHERE p.voice_room != ""
+ORDER BY p.voice_room, rounds.special, rounds.sort, rounds.id, p.meta, p.name;
+
 -- name: CreatePuzzle :one
 INSERT INTO puzzles (
     name, answer, round, status, note, location, puzzle_url,
