@@ -2,6 +2,7 @@ package discord
 
 import (
 	"context"
+	"errors"
 	"log"
 	"os"
 	"sync"
@@ -166,6 +167,14 @@ func Connect(ctx context.Context, prod bool, state *state.Client) *Client {
 	}
 
 	return discord
+}
+
+func ErrCode(err error) int {
+	var cast *discordgo.RESTError
+	if errors.As(err, &cast) && cast.Message != nil {
+		return cast.Message.Code
+	}
+	return 0
 }
 
 func (c *Client) Close() error {

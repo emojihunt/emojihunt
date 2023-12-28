@@ -2,6 +2,7 @@ package sync
 
 import (
 	"context"
+	"log"
 	"sync"
 
 	"github.com/bwmarrin/discordgo"
@@ -83,7 +84,7 @@ func (c *Client) TriggerDiscoveryEnabled(ctx context.Context) error {
 	return c.discord.UpdateStatus(data)
 }
 
-func (c *Client) TriggerPuzzle(ctx context.Context, change state.PuzzleChange) error {
+func (c *Client) TriggerPuzzle(ctx context.Context, change state.PuzzleChange) (err error) {
 	if change.After == nil {
 		// Don't take any action when a puzzle is deleted. To avoid accidents, the
 		// channel and spreadsheet should be cleaned up manually.
@@ -94,7 +95,6 @@ func (c *Client) TriggerPuzzle(ctx context.Context, change state.PuzzleChange) e
 		return nil
 	}
 
-	var err error
 	var puzzle = *change.After
 	if puzzle.SpreadsheetID == "" {
 		puzzle, err = c.CreateSpreadsheet(ctx, puzzle)
@@ -108,6 +108,27 @@ func (c *Client) TriggerPuzzle(ctx context.Context, change state.PuzzleChange) e
 			return err
 		}
 	}
+
+	// If TriggerPuzzle returns an error from here on, check the Discord channel
+	// to make sure it still exists, clearing it from the database if not.
+	defer func() {
+		if err == nil {
+			return
+		}
+		_, e := c.discord.GetChannel(puzzle.DiscordChannel)
+		if discord.ErrCode(e) != discordgo.ErrCodeUnknownChannel {
+			return
+		}
+
+		log.Printf("sync: clearing deleted discord channel from %q", puzzle.Name)
+		var original = puzzle.DiscordChannel
+		c.state.UpdatePuzzleAdvanced(ctx, puzzle.ID, func(puzzle *state.RawPuzzle) error {
+			if puzzle.DiscordChannel == original {
+				puzzle.DiscordChannel = "-"
+			}
+			return nil
+		}, false)
+	}()
 
 	if change.Before == nil {
 		if puzzle.HasDiscordChannel() {
