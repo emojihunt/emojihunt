@@ -233,6 +233,76 @@ func (q *Queries) GetPuzzleByChannel(ctx context.Context, discordChannel string)
 	return i, err
 }
 
+const getPuzzlesByVoiceRoom = `-- name: GetPuzzlesByVoiceRoom :many
+SELECT
+    p.id, p.name, p.answer, rounds.id, rounds.name, rounds.emoji, rounds.hue, rounds.sort, rounds.special, rounds.drive_folder, rounds.discord_category, p.status, p.note,
+    p.location, p.puzzle_url, p.spreadsheet_id, p.discord_channel,
+    p.meta, p.voice_room, p.reminder
+FROM puzzles AS p
+INNER JOIN rounds ON p.round = rounds.id
+WHERE p.voice_room = ?
+`
+
+type GetPuzzlesByVoiceRoomRow struct {
+	ID             int64         `json:"id"`
+	Name           string        `json:"name"`
+	Answer         string        `json:"answer"`
+	Round          Round         `json:"round"`
+	Status         status.Status `json:"status"`
+	Note           string        `json:"note"`
+	Location       string        `json:"location"`
+	PuzzleURL      string        `json:"puzzle_url"`
+	SpreadsheetID  string        `json:"spreadsheet_id"`
+	DiscordChannel string        `json:"discord_channel"`
+	Meta           bool          `json:"meta"`
+	VoiceRoom      string        `json:"voice_room"`
+	Reminder       time.Time     `json:"reminder"`
+}
+
+func (q *Queries) GetPuzzlesByVoiceRoom(ctx context.Context, voiceRoom string) ([]GetPuzzlesByVoiceRoomRow, error) {
+	rows, err := q.db.QueryContext(ctx, getPuzzlesByVoiceRoom, voiceRoom)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetPuzzlesByVoiceRoomRow
+	for rows.Next() {
+		var i GetPuzzlesByVoiceRoomRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Name,
+			&i.Answer,
+			&i.Round.ID,
+			&i.Round.Name,
+			&i.Round.Emoji,
+			&i.Round.Hue,
+			&i.Round.Sort,
+			&i.Round.Special,
+			&i.Round.DriveFolder,
+			&i.Round.DiscordCategory,
+			&i.Status,
+			&i.Note,
+			&i.Location,
+			&i.PuzzleURL,
+			&i.SpreadsheetID,
+			&i.DiscordChannel,
+			&i.Meta,
+			&i.VoiceRoom,
+			&i.Reminder,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getRound = `-- name: GetRound :one
 SELECT id, name, emoji, hue, sort, special, drive_folder, discord_category FROM rounds
 WHERE id = ? LIMIT 1

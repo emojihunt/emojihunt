@@ -16,6 +16,15 @@ FROM puzzles AS p
 INNER JOIN rounds ON p.round = rounds.id
 WHERE p.discord_channel = ?;
 
+-- name: GetPuzzlesByVoiceRoom :many
+SELECT
+    p.id, p.name, p.answer, sqlc.embed(rounds), p.status, p.note,
+    p.location, p.puzzle_url, p.spreadsheet_id, p.discord_channel,
+    p.meta, p.voice_room, p.reminder
+FROM puzzles AS p
+INNER JOIN rounds ON p.round = rounds.id
+WHERE p.voice_room = ?;
+
 -- name: ListPuzzles :many
 SELECT
     p.id, p.name, p.answer, sqlc.embed(rounds), p.status, p.note,

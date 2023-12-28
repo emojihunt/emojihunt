@@ -125,8 +125,23 @@ func (c *Client) UpdatePuzzleAdvanced(
 }
 
 func (c *Client) ClearPuzzleVoiceRoom(ctx context.Context, room string) error {
-	// TODO: emit sync events
-	return c.queries.ClearPuzzleVoiceRoom(ctx, room)
+	c.mutex.Lock()
+	defer c.mutex.Unlock()
+	rows, err := c.queries.GetPuzzlesByVoiceRoom(ctx, room)
+	if err != nil {
+		return xerrors.Errorf("GetPuzzlesByVoiceRoom: %w", err)
+	}
+	// TODO: emit sync events; lock?
+	err = c.queries.ClearPuzzleVoiceRoom(ctx, room)
+	if err != nil {
+		return xerrors.Errorf("ClearPuzzleVoiceRoom: %w", err)
+	}
+	for _, row := range rows {
+		var before, after = Puzzle(row), Puzzle(row)
+		after.VoiceRoom = ""
+		c.PuzzleChange <- PuzzleChange{&before, &after, true}
+	}
+	return nil
 }
 
 func (c *Client) DeletePuzzle(ctx context.Context, id int64) error {
