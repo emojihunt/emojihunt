@@ -36,7 +36,7 @@ func (c *Client) Watch(ctx context.Context) {
 	// *do* allow panics to bubble up to main()
 
 	// The bot's status is reset when we connect to Discord
-	if err := c.TriggerDiscoveryEnabled(ctx); err != nil {
+	if err := c.TriggerDiscoveryEnabled(ctx, c.state.IsEnabled(ctx)); err != nil {
 		panic(err)
 	}
 	if err := c.RestoreSolvedCategories(); err != nil {
@@ -49,8 +49,8 @@ func (c *Client) Watch(ctx context.Context) {
 	for {
 		var err error
 		select {
-		case <-c.state.DiscoveryChange:
-			err = c.TriggerDiscoveryEnabled(ctx)
+		case enabled := <-c.state.DiscoveryChange:
+			err = c.TriggerDiscoveryEnabled(ctx, enabled)
 		case change := <-c.state.PuzzleChange:
 			err = c.TriggerPuzzle(ctx, change)
 		case change := <-c.state.RoundChange:
@@ -64,11 +64,11 @@ func (c *Client) Watch(ctx context.Context) {
 	}
 }
 
-func (c *Client) TriggerDiscoveryEnabled(ctx context.Context) error {
+func (c *Client) TriggerDiscoveryEnabled(ctx context.Context, enabled bool) error {
 	var data discordgo.UpdateStatusData
 	if !c.discovery {
 		data.Status = "idle"
-	} else if c.state.IsEnabled(ctx) {
+	} else if enabled {
 		data.Status = "online"
 	} else {
 		data.Status = "dnd"
