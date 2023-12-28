@@ -96,13 +96,13 @@ func (c *Client) TriggerPuzzle(ctx context.Context, change state.PuzzleChange) (
 	}
 
 	var puzzle = *change.After
-	if puzzle.SpreadsheetID == "" {
+	if puzzle.SpreadsheetID == "" && puzzle.Round.HasDriveFolder() {
 		puzzle, err = c.CreateSpreadsheet(ctx, puzzle)
 		if err != nil {
 			return err
 		}
 	}
-	if puzzle.DiscordChannel == "" {
+	if puzzle.DiscordChannel == "" && puzzle.Round.HasDiscordCategory() {
 		puzzle, err = c.CreateDiscordChannel(ctx, puzzle)
 		if err != nil {
 			return err
