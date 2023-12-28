@@ -2,12 +2,14 @@ package sync
 
 import (
 	"fmt"
+	"log"
 
 	"github.com/emojihunt/emojihunt/state"
 )
 
 // NotifyNewPuzzle sends the "New puzzle!" message to #more-eyes.
 func (s *Client) NotifyNewPuzzle(puzzle state.Puzzle) error {
+	log.Printf("sync: notifying for new puzzle %q", puzzle.Name)
 	msg := fmt.Sprintf("%s **New puzzle!** <#%s>",
 		puzzle.Round.Emoji, puzzle.DiscordChannel)
 	_, err := s.discord.ChannelSend(s.discord.MoreEyesChannel, msg)
@@ -16,6 +18,7 @@ func (s *Client) NotifyNewPuzzle(puzzle state.Puzzle) error {
 
 // NotifyPuzzleWorking sends the "Work started on puzzle" message to #more-eyes.
 func (s *Client) NotifyPuzzleWorking(puzzle state.Puzzle) error {
+	log.Printf("sync: notifying for working puzzle %q", puzzle.Name)
 	msg := fmt.Sprintf("%s Work started on puzzle <#%s>",
 		puzzle.Round.Emoji, puzzle.DiscordChannel)
 	_, err := s.discord.ChannelSend(s.discord.MoreEyesChannel, msg)
@@ -26,6 +29,7 @@ func (s *Client) NotifyPuzzleWorking(puzzle state.Puzzle) error {
 // backsolved!") messages: one to the puzzle channel, and another to
 // #hanging-out.
 func (s *Client) NotifyPuzzleSolved(puzzle state.Puzzle, suppressSolveNotif bool) error {
+	log.Printf("sync: notifying for solved puzzle %q (%v)", puzzle.Name, suppressSolveNotif)
 	if !suppressSolveNotif {
 		msg := fmt.Sprintf(
 			"Puzzle %s! The answer was `%v`. I'll archive this channel.",

@@ -161,6 +161,7 @@ func (c *Client) RestorePlaceholderEvent() error {
 		return nil
 	}
 
+	log.Printf("sync: restoring voice room placeholder event")
 	start := time.Now().Add(eventDelay)
 	_, err = c.discord.CreateScheduledEvent(&discordgo.GuildScheduledEventParams{
 		ChannelID:          c.discord.DefaultVoiceChannel.ID,

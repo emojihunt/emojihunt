@@ -147,7 +147,10 @@ func (c *Client) TriggerPuzzle(ctx context.Context, change state.PuzzleChange) (
 				return err
 			}
 		}
-		return c.NotifyNewPuzzle(puzzle)
+		if puzzle.HasDiscordChannel() {
+			return c.NotifyNewPuzzle(puzzle)
+		}
+		return nil
 	} else {
 		var wg sync.WaitGroup
 		var ch = make(chan error, 4)

@@ -132,6 +132,7 @@ func (c *Client) RestoreSolvedCategories() error {
 		if category, ok := categories[name]; ok {
 			solved = append(solved, category.ID)
 		} else {
+			log.Printf("sync: restoring category %q", name)
 			category, err := c.discord.CreateCategory(name, 256+i)
 			if err != nil {
 				return err
