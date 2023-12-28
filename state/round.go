@@ -50,10 +50,13 @@ func (c *Client) CreateRound(ctx context.Context, round Round) (Round, error) {
 		return Round{}, err
 	}
 	result, err := c.queries.CreateRound(ctx, db.CreateRoundParams{
-		Name:    round.Name,
-		Emoji:   round.Emoji,
-		Hue:     round.Hue,
-		Special: round.Special,
+		Name:            round.Name,
+		Emoji:           round.Emoji,
+		Hue:             round.Hue,
+		Sort:            round.Sort,
+		Special:         round.Special,
+		DriveFolder:     round.DriveFolder,
+		DiscordCategory: round.DiscordCategory,
 	})
 	if err != nil {
 		return Round{}, xerrors.Errorf("CreateRound: %w", err)
