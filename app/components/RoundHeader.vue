@@ -88,7 +88,7 @@ onMounted(() => {
   background: linear-gradient(68deg, oklch(100% 0 0deg / 90%),
       oklch(100% 0 0deg / 84%)) padding-box,
     linear-gradient(68deg,
-      oklch(90% 0.10 calc(v-bind(hue) - 15)),
+      oklch(80% 0.10 calc(v-bind(hue) - 15)),
       oklch(65% 0.30 calc(v-bind(hue) + 75))) border-box;
   filter: drop-shadow(0 1px 2px oklch(70% 0.07 v-bind(hue) / 25%));
 
