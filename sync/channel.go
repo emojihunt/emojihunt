@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/bwmarrin/discordgo"
+	"github.com/emojihunt/emojihunt/discord"
 	"github.com/emojihunt/emojihunt/state"
 )
 
@@ -34,7 +35,6 @@ func (c *Client) CreateDiscordChannel(ctx context.Context, puzzle state.RawPuzzl
 // CreateDiscordCategory creates a new Discord category and returns its ID.
 func (c *Client) CreateDiscordCategory(ctx context.Context, round state.Round) (string, error) {
 	log.Printf("sync: creating discord category for %q", round.Name)
-
 	category, err := c.discord.CreateCategory(roundCategoryPrefix + round.Name)
 	if err != nil {
 		return "", err
@@ -172,5 +172,65 @@ func (c *Client) UpdateDiscordCategory(fields DiscordCategoryFields) error {
 			"renamed to %q in %s.", name, time.Until(*rateLimit).Round(time.Second))
 		_, err := c.discord.ChannelSend(c.discord.QMChannel, msg)
 		return err
+	}
+}
+
+func (c *Client) HandleDiscordPuzzleError(ctx context.Context, puzzle state.Puzzle, orig error) {
+	var code = discord.ErrCode(orig)
+	if code != discordgo.ErrCodeUnknownChannel && code != discordgo.ErrCodeInvalidFormBody {
+		return
+	} else if puzzle.DiscordChannel == "" {
+		return
+	}
+	log.Printf("sync: checking on puzzle channel for %q", puzzle.Name)
+
+	// Check that puzzle channel exists
+	var channel = puzzle.DiscordChannel
+	_, err := c.discord.GetChannel(channel)
+	if discord.ErrCode(err) == discordgo.ErrCodeUnknownChannel {
+		go c.state.UpdatePuzzle(ctx, puzzle.ID,
+			func(puzzle *state.RawPuzzle) error {
+				if puzzle.DiscordChannel == channel {
+					log.Printf("sync: clearing nonexistent discord channel %q on %q", channel, puzzle.Name)
+					puzzle.DiscordChannel = ""
+				}
+				return nil
+			},
+		)
+	}
+
+	c.HandleDiscordRoundError(ctx, puzzle.Round, orig)
+
+	// Check that solved categories exist. Caveat: unlike the fixups above, this
+	// won't fire a fresh change notification for the puzzle...
+	go c.RestoreSolvedCategories()
+}
+
+func (c *Client) HandleDiscordRoundError(ctx context.Context, round state.Round, orig error) {
+	var code = discord.ErrCode(orig)
+	if code != discordgo.ErrCodeUnknownChannel && code != discordgo.ErrCodeInvalidFormBody {
+		return
+	}
+	log.Printf("sync: checking on round category for %q", round.Name)
+
+	// Check that round category exists
+	var original = round.DiscordCategory
+	_, err := c.discord.GetChannel(original)
+	if discord.ErrCode(err) == discordgo.ErrCodeUnknownChannel {
+		created, err := c.CreateDiscordCategory(ctx, round)
+		if err != nil {
+			return
+		}
+		go c.state.UpdateRound(ctx, round.ID,
+			func(round *state.Round) error {
+				if round.DiscordCategory == original {
+					log.Printf("sync: replacing deleted discord category for %q", round.Name)
+					round.DiscordCategory = created
+				} else {
+					log.Printf("sync: created duplicate discord category for %q", round.Name)
+				}
+				return nil
+			},
+		)
 	}
 }

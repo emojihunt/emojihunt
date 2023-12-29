@@ -142,6 +142,7 @@ func (c *Client) TriggerPuzzle(ctx context.Context, change state.PuzzleChange) (
 	close(ch)
 	for err := range ch {
 		if err != nil {
+			c.HandleDiscordPuzzleError(ctx, puzzle, err)
 			return err
 		}
 	}
@@ -207,6 +208,7 @@ func (c *Client) TriggerRound(ctx context.Context, change state.RoundChange) err
 	close(ch)
 	for err := range ch {
 		if err != nil {
+			c.HandleDiscordRoundError(ctx, round, err)
 			return err
 		}
 	}
