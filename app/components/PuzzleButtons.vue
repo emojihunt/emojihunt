@@ -2,12 +2,11 @@
 const config = useAppConfig();
 const props = defineProps<{ puzzle: Puzzle; focused: FocusInfo; }>();
 
-const puzzleURL = props.puzzle.puzzle_url.length > 1 ?
-  props.puzzle.puzzle_url : '';
-const spreadsheetURL = props.puzzle.spreadsheet_id.length > 1 ?
-  `https://docs.google.com/spreadsheets/d/${props.puzzle.spreadsheet_id}` : '';
-const discordURL = props.puzzle.discord_channel.length > 1 ?
-  `https://discord.com/channels/${config.discordGuild}/${props.puzzle.discord_channel}` : '';
+const puzzleURL = computed(() => props.puzzle.puzzle_url || "");
+const spreadsheetURL = computed(() => props.puzzle.spreadsheet_id ?
+  `https://docs.google.com/spreadsheets/d/${props.puzzle.spreadsheet_id}` : '');
+const discordURL = computed(() => props.puzzle.discord_channel ?
+  `https://discord.com/channels/${config.discordGuild}/${props.puzzle.discord_channel}` : '');
 </script>
 
 <template>
