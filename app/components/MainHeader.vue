@@ -3,6 +3,7 @@ const props = defineProps<{
   rounds: AnnotatedRound[];
   observer: IntersectionObserver | undefined;
 }>();
+const store = usePuzzles();
 
 // IntersectionObserver doesn't fire with scrollIntoView, so fix up the `stuck`
 // classes manually.
@@ -27,7 +28,7 @@ const [focused, keydown] = useRovingTabIndex(props.rounds.length);
 
 <template>
   <header>
-    <nav v-if="rounds.length > 2" @keydown="keydown" class="stop">
+    <nav v-if="store.puzzles.size >= 42" @keydown="keydown" class="stop">
       <EmojiNav v-for="round of rounds" :round="round" :observer-fixup="observerFixup"
         :selected="round.id === rounds[focused.index].id" />
     </nav>
