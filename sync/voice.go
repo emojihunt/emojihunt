@@ -19,18 +19,26 @@ const (
 	eventDelay = 7 * 24 * time.Hour
 )
 
-func NewVoiceInfo(puzzle state.Puzzle) state.VoiceInfo {
-	return state.VoiceInfo{
-		ID:        puzzle.ID,
-		Name:      puzzle.Name,
-		VoiceRoom: puzzle.VoiceRoom,
+type VoiceRoomFields struct {
+	VoiceRoom string
+	Name      string // only if VoiceRoom is set
+}
+
+func NewVoiceRoomFields(puzzle state.Puzzle) VoiceRoomFields {
+	if puzzle.VoiceRoom == "" {
+		return VoiceRoomFields{}
+	} else {
+		return VoiceRoomFields{
+			VoiceRoom: puzzle.VoiceRoom,
+			Name:      puzzle.Name,
+		}
 	}
 }
 
 // SyncVoiceRooms synchronizes all Discord scheduled events, creating and
 // deleting events so that Discord matches the database state.
 func (c *Client) SyncVoiceRooms(ctx context.Context) error {
-	log.Printf("syncer: syncing voice rooms")
+	log.Printf("sync: syncing voice rooms")
 	events, err := c.discord.ListScheduledEvents()
 	if err != nil {
 		return err

@@ -135,11 +135,11 @@ func (c *Client) TriggerPuzzle(ctx context.Context, change state.PuzzleChange) (
 	}
 
 	// Maybe sync updates to the voice room
-	var v0 state.VoiceInfo
+	var v0 VoiceRoomFields
 	if change.Before != nil {
-		v0 = NewVoiceInfo(*change.Before)
+		v0 = NewVoiceRoomFields(*change.Before)
 	}
-	var v1 = NewVoiceInfo(puzzle)
+	var v1 = NewVoiceRoomFields(puzzle)
 	if v0 != v1 {
 		wg.Add(1)
 		go func() { ch <- c.SyncVoiceRooms(ctx); wg.Done() }()
