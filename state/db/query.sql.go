@@ -344,6 +344,7 @@ SELECT
 FROM puzzles AS p
 INNER JOIN rounds ON p.round = rounds.id
 ORDER BY rounds.special, rounds.sort, rounds.id, p.meta, p.name
+COLLATE nocase
 `
 
 type ListPuzzlesRow struct {
@@ -415,6 +416,7 @@ FROM puzzles AS p
 INNER JOIN rounds ON p.round = rounds.id
 WHERE p.round = ?
 ORDER BY rounds.special, rounds.sort, rounds.id, p.meta, p.name
+COLLATE nocase
 `
 
 type ListPuzzlesByRoundRow struct {
@@ -483,6 +485,7 @@ FROM puzzles as p
 INNER JOIN rounds ON p.round = rounds.id
 WHERE p.voice_room != ""
 ORDER BY p.voice_room, rounds.special, rounds.sort, rounds.id, p.meta, p.name
+COLLATE nocase
 `
 
 type ListPuzzlesByVoiceRoomRow struct {
@@ -517,6 +520,7 @@ func (q *Queries) ListPuzzlesByVoiceRoom(ctx context.Context) ([]ListPuzzlesByVo
 const listRounds = `-- name: ListRounds :many
 SELECT id, name, emoji, hue, sort, special, drive_folder, discord_category FROM rounds
 ORDER BY special, sort, id
+COLLATE nocase
 `
 
 func (q *Queries) ListRounds(ctx context.Context) ([]Round, error) {

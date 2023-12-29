@@ -5,6 +5,7 @@ import (
 	"context"
 	"log"
 	"slices"
+	"strings"
 
 	"github.com/emojihunt/emojihunt/discord"
 	"github.com/emojihunt/emojihunt/state"
@@ -41,7 +42,7 @@ func PuzzleSort(a, b PuzzleSortFields) int {
 			return -1
 		}
 	} else {
-		return cmp.Compare(a.Name, b.Name)
+		return cmp.Compare(strings.ToLower(a.Name), strings.ToLower(b.Name))
 	}
 }
 
