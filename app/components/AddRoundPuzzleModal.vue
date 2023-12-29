@@ -26,7 +26,7 @@ const submit = (e: SubmitEvent) => {
     const request = (props.kind === "round") ?
       store.addRound({
         name: data.name, emoji: data.emoji, hue: data.hue,
-        drive_folder: "+", discord_category: "+",
+        drive_folder: "+", // *don't* add category yet, to avoid clutter
       }) :
       store.addPuzzle({
         name: data.name, round: data.round!.id, puzzle_url: data.url,

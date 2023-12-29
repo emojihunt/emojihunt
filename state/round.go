@@ -25,8 +25,6 @@ func ValidateRound(r Round) error {
 		// FYI: if puzzle sheets aren't added to the round folder, no one will be
 		// able to access them.
 		return ValidationError{"drive_folder", "is required"}
-	} else if r.DiscordCategory == "" {
-		return ValidationError{"discord_category", "is required"}
 	}
 	return nil
 }

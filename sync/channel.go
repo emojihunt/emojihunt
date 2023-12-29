@@ -25,6 +25,26 @@ const (
 // CreateDiscordChannel creates a new Discord channel and returns its ID.
 func (c *Client) CreateDiscordChannel(ctx context.Context, puzzle state.RawPuzzle, round state.Round) (string, error) {
 	log.Printf("sync: creating discord channel for %q", puzzle.Name)
+	if round.DiscordCategory == "" {
+		created, err := c.CreateDiscordCategory(ctx, round)
+		if err != nil {
+			return "", err
+		}
+		round, err = c.state.UpdateRound(ctx, round.ID,
+			func(round *state.Round) error {
+				if round.DiscordCategory == "" {
+					log.Printf("sync: replacing deleted discord category for %q", round.Name)
+					round.DiscordCategory = created
+				} else {
+					log.Printf("sync: created duplicate discord category for %q", round.Name)
+				}
+				return nil
+			},
+		)
+		if err != nil {
+			return "", err
+		}
+	}
 	channel, err := c.discord.CreateChannel(puzzle.Name, round.DiscordCategory)
 	if err != nil {
 		return "", err
@@ -175,14 +195,8 @@ func (c *Client) UpdateDiscordCategory(fields DiscordCategoryFields) error {
 	}
 }
 
-func (c *Client) HandleDiscordPuzzleError(ctx context.Context, puzzle state.Puzzle, orig error) {
-	var code = discord.ErrCode(orig)
-	if code != discordgo.ErrCodeUnknownChannel && code != discordgo.ErrCodeInvalidFormBody {
-		return
-	} else if puzzle.DiscordChannel == "" {
-		return
-	}
-	log.Printf("sync: checking on puzzle channel for %q", puzzle.Name)
+func (c *Client) CheckDiscordPuzzle(ctx context.Context, puzzle state.Puzzle) {
+	log.Printf("sync: checking puzzle channel for %q", puzzle.Name)
 
 	// Check that puzzle channel exists
 	var channel = puzzle.DiscordChannel
@@ -199,18 +213,14 @@ func (c *Client) HandleDiscordPuzzleError(ctx context.Context, puzzle state.Puzz
 		)
 	}
 
-	c.HandleDiscordRoundError(ctx, puzzle.Round, orig)
+	c.CheckDiscordRound(ctx, puzzle.Round)
 
 	// Check that solved categories exist. Caveat: unlike the fixups above, this
 	// won't fire a fresh change notification for the puzzle...
 	go c.RestoreSolvedCategories()
 }
 
-func (c *Client) HandleDiscordRoundError(ctx context.Context, round state.Round, orig error) {
-	var code = discord.ErrCode(orig)
-	if code != discordgo.ErrCodeUnknownChannel && code != discordgo.ErrCodeInvalidFormBody {
-		return
-	}
+func (c *Client) CheckDiscordRound(ctx context.Context, round state.Round) {
 	log.Printf("sync: checking on round category for %q", round.Name)
 
 	// Check that round category exists

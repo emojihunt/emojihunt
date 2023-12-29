@@ -95,14 +95,19 @@ func (c *Client) TriggerPuzzle(ctx context.Context, change state.PuzzleChange) (
 	var puzzle = *change.After
 
 	// Maybe sync updates to the Discord channel name and category
-	var c0 DiscordChannelFields
-	if change.Before != nil {
-		c0 = NewDiscordChannelFields(*change.Before)
-	}
-	var c1 = NewDiscordChannelFields(puzzle)
-	if puzzle.DiscordChannel != "" && c0 != c1 {
-		wg.Add(1)
-		go func() { ch <- c.UpdateDiscordChannel(c1); wg.Done() }()
+	if puzzle.Round.DiscordCategory == "" {
+		// Round category needs to be lazily created...
+		c.CheckDiscordRound(ctx, puzzle.Round) // (will trigger another change)
+	} else {
+		var c0 DiscordChannelFields
+		if change.Before != nil {
+			c0 = NewDiscordChannelFields(*change.Before)
+		}
+		var c1 = NewDiscordChannelFields(puzzle)
+		if puzzle.DiscordChannel != "" && c0 != c1 {
+			wg.Add(1)
+			go func() { ch <- c.UpdateDiscordChannel(c1); wg.Done() }()
+		}
 	}
 
 	// Maybe sync updates to the Discord pinned message
@@ -141,8 +146,11 @@ func (c *Client) TriggerPuzzle(ctx context.Context, change state.PuzzleChange) (
 	wg.Wait()
 	close(ch)
 	for err := range ch {
-		if err != nil {
-			c.HandleDiscordPuzzleError(ctx, puzzle, err)
+		var code = discord.ErrCode(err)
+		if code == discordgo.ErrCodeUnknownChannel || code == discordgo.ErrCodeInvalidFormBody {
+			c.CheckDiscordPuzzle(ctx, puzzle)
+			return err
+		} else if err != nil {
 			return err
 		}
 	}
@@ -207,8 +215,11 @@ func (c *Client) TriggerRound(ctx context.Context, change state.RoundChange) err
 	wg.Wait()
 	close(ch)
 	for err := range ch {
-		if err != nil {
-			c.HandleDiscordRoundError(ctx, round, err)
+		var code = discord.ErrCode(err)
+		if code == discordgo.ErrCodeUnknownChannel || code == discordgo.ErrCodeInvalidFormBody {
+			c.CheckDiscordRound(ctx, round)
+			return err
+		} else if err != nil {
 			return err
 		}
 	}
