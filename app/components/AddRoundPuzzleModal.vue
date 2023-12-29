@@ -11,7 +11,7 @@ const toast = useToast();
 
 const modal = ref();
 const initial = () => ({
-  emoji: "", name: "", hue: 274, url: "",
+  emoji: "", name: "", hue: 274, url: "", create: true,
   round: store.rounds.length ? store.rounds[0] : undefined,
 });
 const data = reactive(initial());
@@ -23,15 +23,21 @@ const submit = (e: SubmitEvent) => {
   saving.value = true;
   if (previous) toast.remove(previous);
   setTimeout(() => {
-    const request = (props.kind === "round") ?
-      store.addRound({
+    let request;
+    if (props.kind === "round") {
+      request = store.addRound({
         name: data.name, emoji: data.emoji, hue: data.hue,
         drive_folder: "+", // *don't* add category yet, to avoid clutter
-      }) :
-      store.addPuzzle({
-        name: data.name, round: data.round!.id, puzzle_url: data.url,
-        spreadsheet_id: "+", discord_channel: "+",
       });
+    } else {
+      let params: NewPuzzle = {
+        name: data.name, round: data.round!.id, puzzle_url: data.url,
+      };
+      if (data.create) {
+        params = { ...params, spreadsheet_id: "+", discord_channel: "+" };
+      }
+      request = store.addPuzzle(params);
+    }
     request.then(() => close())
       .catch((e) => (
         previous = toast.add({
@@ -85,6 +91,11 @@ const hue = computed(() => props.kind === "round" ? data.hue : data.round?.hue);
         </USelectMenu>
         <UInput v-model="data.name" placeholder="Puzzle Name" />
         <UInput v-model="data.url" placeholder="Puzzle URL" />
+        <UTooltip text="Create spreadsheet and Discord channel" :open-delay="500"
+          :popper="{ placement: 'top', offsetDistance: 0, strategy: 'absolute' }"
+          class="checkbox">
+          <UCheckbox v-model="data.create" />
+        </UTooltip>
       </template>
       <UButton type="submit" :disabled="saving">
         <Spinner v-if="saving" />
@@ -103,25 +114,30 @@ form {
   gap: 0.5rem;
 }
 
+button {
+  display: flex;
+  justify-content: center;
+}
+
 form.round {
   grid-template-columns: 2.5rem 12rem 3.5rem;
 }
 
 form.puzzle {
-  grid-template-columns: 10rem 12rem 12rem 3.5rem;
+  grid-template-columns: 10rem 12rem 12rem 1.5rem 3.5rem;
 }
 
-form div:first-child :deep(input) {
+.checkbox {
+  justify-content: center;
+  align-items: center;
+}
+
+form.round div:first-child :deep(input) {
   text-align: center;
 }
 
 .hue {
   grid-column: 1 / 4;
-}
-
-button {
-  display: flex;
-  justify-content: center;
 }
 
 .round button {
@@ -152,11 +168,21 @@ form :deep(button):focus {
   --tw-ring-color: oklch(71% 0.18 v-bind(hue));
 }
 
-.hue :deep(input) {
+.hue :deep(input),
+.checkbox :deep(input) {
   color: oklch(71% 0.18 v-bind(hue));
 }
 
 :deep(.emoji-mart-category-label) {
   color: oklch(60% 0.18 v-bind(hue));
+}
+
+/* fix for <Modal> capturing pointer events across full width of screen */
+footer {
+  pointer-events: none;
+}
+
+footer :deep(section) {
+  pointer-events: auto;
 }
 </style>
