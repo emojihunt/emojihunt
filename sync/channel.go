@@ -14,16 +14,14 @@ import (
 )
 
 const (
-	roundCategoryPrefix  = "Round: "
-	solvedCategoryPrefix = "Solved "
-	solvedCategoryCount  = 3
-	pinnedStatusHeader   = "Puzzle Information"
-	locationDefaultMsg   = "Use `/puzzle voice` to assign a voice room"
-	embedColor           = 0x7C39ED
+	pinnedStatusHeader = "Puzzle Information"
+	locationDefaultMsg = "Use `/puzzle voice` to assign a voice room"
+	embedColor         = 0x7C39ED
 )
 
 // CreateDiscordChannel creates a new Discord channel and returns its ID.
-func (c *Client) CreateDiscordChannel(ctx context.Context, puzzle state.RawPuzzle, round state.Round) (string, error) {
+func (c *Client) CreateDiscordChannel(ctx context.Context, puzzle state.RawPuzzle,
+	round state.Round) (string, error) {
 	log.Printf("sync: creating discord channel for %q", puzzle.Name)
 	if round.DiscordCategory == "" {
 		created, err := c.CreateDiscordCategory(ctx, round)
@@ -45,7 +43,11 @@ func (c *Client) CreateDiscordChannel(ctx context.Context, puzzle state.RawPuzzl
 			return "", err
 		}
 	}
-	channel, err := c.discord.CreateChannel(puzzle.Name, round.DiscordCategory)
+	position, err := c.SortDiscordChannels(ctx, NewPuzzleSortFields(puzzle, round))
+	if err != nil {
+		return "", err
+	}
+	channel, err := c.discord.CreateChannel(puzzle.Name, round.DiscordCategory, position)
 	if err != nil {
 		return "", err
 	}
@@ -58,15 +60,17 @@ type DiscordChannelFields struct {
 	RoundName     string
 	RoundCategory string
 	IsSolved      bool
+	PuzzleSortFields
 }
 
 func NewDiscordChannelFields(puzzle state.Puzzle) DiscordChannelFields {
 	return DiscordChannelFields{
-		PuzzleName:    puzzle.Name,
-		PuzzleChannel: puzzle.DiscordChannel,
-		RoundName:     puzzle.Round.Name,
-		RoundCategory: puzzle.Round.DiscordCategory,
-		IsSolved:      puzzle.Status.IsSolved(),
+		PuzzleName:       puzzle.Name,
+		PuzzleChannel:    puzzle.DiscordChannel,
+		RoundName:        puzzle.Round.Name,
+		RoundCategory:    puzzle.Round.DiscordCategory,
+		IsSolved:         puzzle.Status.IsSolved(),
+		PuzzleSortFields: NewPuzzleSortFields(puzzle.RawPuzzle(), puzzle.Round),
 	}
 }
 
@@ -74,8 +78,12 @@ func NewDiscordChannelFields(puzzle state.Puzzle) DiscordChannelFields {
 // Categories are either in a round-specific category (if unsolved) or one of a
 // few "Solved" categories (for solved puzzles), and the channel name is
 // prefixed with a check mark when the puzzle is solved.
-func (c *Client) UpdateDiscordChannel(fields DiscordChannelFields) error {
+func (c *Client) UpdateDiscordChannel(ctx context.Context, fields DiscordChannelFields) error {
 	log.Printf("sync: updating discord channel for %q", fields.PuzzleName)
+	position, err := c.SortDiscordChannels(ctx, fields.PuzzleSortFields)
+	if err != nil {
+		return err
+	}
 
 	// Move puzzle channel to the correct category
 	var category = fields.RoundCategory
@@ -87,7 +95,7 @@ func (c *Client) UpdateDiscordChannel(fields DiscordChannelFields) error {
 		i := binary.BigEndian.Uint64(h.Sum(nil)[:8]) % solvedCategoryCount
 		category = c.solvedCategories[i]
 	}
-	err := c.discord.SetChannelCategory(fields.PuzzleChannel, category)
+	err = c.discord.SetChannelCategory(fields.PuzzleChannel, category, position)
 	if err != nil {
 		return err
 	}
@@ -101,7 +109,7 @@ func (c *Client) UpdateDiscordChannel(fields DiscordChannelFields) error {
 	}
 	ch := make(chan error)
 	go func() {
-		ch <- c.discord.SetChannelName(fields.PuzzleChannel, title)
+		ch <- c.discord.SetChannelName(fields.PuzzleChannel, title, position)
 	}()
 	select {
 	case err := <-ch:

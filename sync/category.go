@@ -11,10 +11,21 @@ import (
 	"github.com/emojihunt/emojihunt/state"
 )
 
+const (
+	roundCategoryPrefix  = "Round: "
+	solvedCategoryPrefix = "Solved "
+	solvedCategoryCount  = 3
+	sortGracePeriod      = 60 * time.Second
+)
+
 // CreateDiscordCategory creates a new Discord category and returns its ID.
 func (c *Client) CreateDiscordCategory(ctx context.Context, round state.Round) (string, error) {
 	log.Printf("sync: creating discord category for %q", round.Name)
-	category, err := c.discord.CreateCategory(roundCategoryPrefix + round.Name)
+	position, err := c.SortDiscordCategories(ctx, NewRoundSortFields(round))
+	if err != nil {
+		return "", err
+	}
+	category, err := c.discord.CreateCategory(roundCategoryPrefix+round.Name, position)
 	if err != nil {
 		return "", err
 	}
@@ -22,7 +33,7 @@ func (c *Client) CreateDiscordCategory(ctx context.Context, round state.Round) (
 }
 
 func (c *Client) RestoreSolvedCategories() error {
-	categories, err := c.discord.GetChannelCategories()
+	categories, err := c.discord.ListCategoriesByName()
 	if err != nil {
 		return err
 	}
@@ -33,7 +44,7 @@ func (c *Client) RestoreSolvedCategories() error {
 			solved = append(solved, category.ID)
 		} else {
 			log.Printf("sync: restoring category %q", name)
-			category, err := c.discord.CreateCategory(name)
+			category, err := c.discord.CreateCategory(name, 256+i)
 			if err != nil {
 				return err
 			}
@@ -47,18 +58,24 @@ func (c *Client) RestoreSolvedCategories() error {
 type DiscordCategoryFields struct {
 	RoundName     string
 	RoundCategory string
+	RoundSortFields
 }
 
 func NewDiscordCategoryFields(round state.Round) DiscordCategoryFields {
 	return DiscordCategoryFields{
-		RoundName:     round.Name,
-		RoundCategory: round.DiscordCategory,
+		RoundName:       round.Name,
+		RoundCategory:   round.DiscordCategory,
+		RoundSortFields: NewRoundSortFields(round),
 	}
 }
 
 // UpdateDiscordCategory configures the name of the round category.
-func (c *Client) UpdateDiscordCategory(fields DiscordCategoryFields) error {
+func (c *Client) UpdateDiscordCategory(ctx context.Context, fields DiscordCategoryFields) error {
 	log.Printf("sync: updating discord category for %q", fields.RoundName)
+	position, err := c.SortDiscordCategories(ctx, fields.RoundSortFields)
+	if err != nil {
+		return err
+	}
 
 	// The Discord rate limit on channel renames is fairly restrictive (2 per 10
 	// minutes per channel), so finish renaming the category asynchronously if we
@@ -66,7 +83,7 @@ func (c *Client) UpdateDiscordCategory(fields DiscordCategoryFields) error {
 	var name = roundCategoryPrefix + fields.RoundName
 	ch := make(chan error)
 	go func() {
-		ch <- c.discord.SetChannelName(fields.RoundCategory, name)
+		ch <- c.discord.SetChannelName(fields.RoundCategory, name, position)
 	}()
 	select {
 	case err := <-ch:

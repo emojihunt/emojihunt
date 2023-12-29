@@ -232,11 +232,12 @@ func (c *Client) GetMessage(ch *discordgo.Channel, messageID string) (*discordgo
 	return msg, nil
 }
 
-func (c *Client) CreateChannel(name string, category string) (*discordgo.Channel, error) {
+func (c *Client) CreateChannel(name string, category string, position int) (*discordgo.Channel, error) {
 	ch, err := c.s.GuildChannelCreateComplex(c.Guild.ID, discordgo.GuildChannelCreateData{
 		Name:     name,
 		Type:     discordgo.ChannelTypeGuildText,
 		ParentID: category,
+		Position: position,
 	})
 	if err != nil {
 		return nil, xerrors.Errorf("CreateChannel: %w", err)
@@ -244,16 +245,12 @@ func (c *Client) CreateChannel(name string, category string) (*discordgo.Channel
 	return ch, nil
 }
 
-func (c *Client) SetChannelName(chID, name string) error {
-	channel, err := c.s.Channel(chID)
-	if err != nil {
-		return xerrors.Errorf("SetChannelName.Channel: %w", err)
-	}
+func (c *Client) SetChannelName(chID, name string, position int) error {
 	// Note that setting the title, even if it's a no-op, causes the channel's
 	// position to be reset.
-	_, err = c.s.ChannelEdit(chID, &discordgo.ChannelEdit{
+	_, err := c.s.ChannelEdit(chID, &discordgo.ChannelEdit{
 		Name:     name,
-		Position: channel.Position,
+		Position: position,
 	})
 	if err != nil {
 		return xerrors.Errorf("SetChannelName.Edit: %w", err)
@@ -269,7 +266,20 @@ func (c *Client) GetChannel(id string) (*discordgo.Channel, error) {
 	return channel, nil
 }
 
-func (c *Client) GetChannelCategories() (map[string]*discordgo.Channel, error) {
+func (c *Client) ListChannelsByID() (map[string]*discordgo.Channel, error) {
+	channels, err := c.s.GuildChannels(c.Guild.ID)
+	if err != nil {
+		return nil, xerrors.Errorf("GuildChannels: %w", err)
+	}
+
+	var result = make(map[string]*discordgo.Channel)
+	for _, channel := range channels {
+		result[channel.ID] = channel
+	}
+	return result, nil
+}
+
+func (c *Client) ListCategoriesByName() (map[string]*discordgo.Channel, error) {
 	channels, err := c.s.GuildChannels(c.Guild.ID)
 	if err != nil {
 		return nil, xerrors.Errorf("GuildChannels: %w", err)
@@ -284,11 +294,12 @@ func (c *Client) GetChannelCategories() (map[string]*discordgo.Channel, error) {
 	return categories, nil
 }
 
-func (c *Client) CreateCategory(name string) (*discordgo.Channel, error) {
+func (c *Client) CreateCategory(name string, position int) (*discordgo.Channel, error) {
 	category, err := c.s.GuildChannelCreateComplex(c.Guild.ID,
 		discordgo.GuildChannelCreateData{
-			Name: name,
-			Type: discordgo.ChannelTypeGuildCategory,
+			Name:     name,
+			Type:     discordgo.ChannelTypeGuildCategory,
+			Position: position,
 		},
 	)
 	if err != nil {
@@ -297,9 +308,10 @@ func (c *Client) CreateCategory(name string) (*discordgo.Channel, error) {
 	return category, nil
 }
 
-func (c *Client) SetChannelCategory(channel string, category string) error {
+func (c *Client) SetChannelCategory(channel string, category string, position int) error {
 	_, err := c.s.ChannelEditComplex(channel, &discordgo.ChannelEdit{
 		ParentID: category,
+		Position: position,
 	})
 	if err != nil {
 		return xerrors.Errorf("error moving channel to category %s: %w", category, err)

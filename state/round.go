@@ -38,6 +38,8 @@ func (c *Client) GetRound(ctx context.Context, id int64) (Round, error) {
 }
 
 func (c *Client) ListRounds(ctx context.Context) ([]Round, error) {
+	// Used by sync! To avoid deadlocks, this function must not acquire the global
+	// database lock.
 	results, err := c.queries.ListRounds(ctx)
 	if err != nil {
 		return nil, xerrors.Errorf("ListRounds: %w", err)

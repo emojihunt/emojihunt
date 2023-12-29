@@ -64,12 +64,14 @@ func (s *Server) CreatePuzzle(c echo.Context) error {
 		return err
 	}
 	if raw.SpreadsheetID == "+" {
+		raw.SpreadsheetID = ""
 		raw.SpreadsheetID, err = s.sync.CreateSpreadsheet(ctx, raw)
 		if err != nil {
 			return err
 		}
 	}
 	if raw.DiscordChannel == "+" {
+		raw.DiscordChannel = ""
 		raw.DiscordChannel, err = s.sync.CreateDiscordChannel(ctx, raw, round)
 		if err != nil {
 			return err

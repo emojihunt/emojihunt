@@ -57,6 +57,8 @@ func (c *Client) GetPuzzleByChannel(ctx context.Context, channel string) (Puzzle
 }
 
 func (c *Client) ListPuzzles(ctx context.Context) ([]Puzzle, error) {
+	// Used by sync! To avoid deadlocks, this function must not acquire the global
+	// database lock.
 	results, err := c.queries.ListPuzzles(ctx)
 	if err != nil {
 		return nil, xerrors.Errorf("ListPuzzles: %w", err)

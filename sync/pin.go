@@ -1,6 +1,7 @@
 package sync
 
 import (
+	"context"
 	"fmt"
 	"log"
 
@@ -41,7 +42,7 @@ func NewDiscordPinFields(puzzle state.Puzzle) DiscordPinFields {
 // UpdateDiscordPin creates or updates the pinned message at the top of the
 // puzzle channel. This message contains information about the puzzle status as
 // well as links to the puzzle and the spreadsheet.
-func (c *Client) UpdateDiscordPin(fields DiscordPinFields) error {
+func (c *Client) UpdateDiscordPin(ctx context.Context, fields DiscordPinFields) error {
 	log.Printf("sync: updating discord pin for %q", fields.PuzzleName)
 
 	embed := &discordgo.MessageEmbed{

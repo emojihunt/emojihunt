@@ -53,12 +53,14 @@ func (s *Server) CreateRound(c echo.Context) error {
 		return err
 	}
 	if round.DriveFolder == "+" {
+		round.DriveFolder = ""
 		round.DriveFolder, err = s.sync.CreateDriveFolder(ctx, round)
 		if err != nil {
 			return err
 		}
 	}
 	if round.DiscordCategory == "+" {
+		round.DiscordCategory = ""
 		round.DiscordCategory, err = s.sync.CreateDiscordCategory(ctx, round)
 		if err != nil {
 			return err

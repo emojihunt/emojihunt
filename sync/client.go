@@ -13,15 +13,17 @@ import (
 )
 
 type Client struct {
-	discord          *discord.Client
-	discovery        bool
-	drive            *drive.Client
-	state            *state.Client
+	discord   *discord.Client
+	discovery bool
+	drive     *drive.Client
+	state     *state.Client
+
 	solvedCategories []string
+	sortLock         sync.Mutex
 }
 
 func New(discord *discord.Client, discovery bool, drive *drive.Client, state *state.Client) *Client {
-	return &Client{discord, discovery, drive, state, nil}
+	return &Client{discord: discord, discovery: discovery, drive: drive, state: state}
 }
 
 func (c *Client) Watch(ctx context.Context) {
@@ -106,7 +108,7 @@ func (c *Client) TriggerPuzzle(ctx context.Context, change state.PuzzleChange) (
 		var c1 = NewDiscordChannelFields(puzzle)
 		if puzzle.DiscordChannel != "" && c0 != c1 {
 			wg.Add(1)
-			go func() { ch <- c.UpdateDiscordChannel(c1); wg.Done() }()
+			go func() { ch <- c.UpdateDiscordChannel(ctx, c1); wg.Done() }()
 		}
 	}
 
@@ -118,7 +120,7 @@ func (c *Client) TriggerPuzzle(ctx context.Context, change state.PuzzleChange) (
 	var p1 = NewDiscordPinFields(puzzle)
 	if puzzle.DiscordChannel != "" && p0 != p1 {
 		wg.Add(1)
-		go func() { ch <- c.UpdateDiscordPin(p1); wg.Done() }()
+		go func() { ch <- c.UpdateDiscordPin(ctx, p1); wg.Done() }()
 	}
 
 	// Maybe sync updates to the spreadsheet name and folder
@@ -198,7 +200,7 @@ func (c *Client) TriggerRound(ctx context.Context, change state.RoundChange) err
 	var c1 = NewDiscordCategoryFields(round)
 	if round.DiscordCategory != "" && c0 != c1 {
 		wg.Add(1)
-		go func() { ch <- c.UpdateDiscordCategory(c1); wg.Done() }()
+		go func() { ch <- c.UpdateDiscordCategory(ctx, c1); wg.Done() }()
 	}
 
 	// Maybe sync updates to the Google Drive folder name
