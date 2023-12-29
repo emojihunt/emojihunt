@@ -75,7 +75,8 @@ const hue = computed(() => props.kind === "round" ? data.hue : data.round?.hue);
 
 <template>
   <Modal ref="modal" :open="open" @submit="submit">
-    <form :class="kind" @keydown="(e: KeyboardEvent) => e.key == 'Escape' && close()">
+    <form :class="kind"
+      @keydown="(e: KeyboardEvent) => e.key == 'Escape' ? close() : e.stopPropagation()">
       <template v-if="kind === 'round'">
         <UInput v-model="data.emoji" placeholder="🫥" readonly="readonly" />
         <UInput v-model="data.name" placeholder="Round Name" class="name" />
