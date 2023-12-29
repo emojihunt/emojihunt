@@ -62,9 +62,9 @@ const close = () => {
     <hr>
   </section>
   <fieldset>
-    <button ref="round" @click="() => (modal = 'round')"
+    <button ref="round" @click="() => (modal = (modal === 'round') ? null : 'round')"
       :disabled="!!display && !store.rounds.length">○ Add Round</button>
-    <button ref="puzzle" @click="() => (modal = 'puzzle')"
+    <button ref="puzzle" @click="() => (modal = (modal === 'puzzle') ? null : 'puzzle')"
       :disabled="!!display && !store.rounds.length">▢ Add Puzzle</button>
     <button>◆ Admin</button>
   </fieldset>
