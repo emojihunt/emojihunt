@@ -11,6 +11,10 @@ import (
 	"github.com/emojihunt/emojihunt/state"
 )
 
+// When setting the position of Discord channels and categories, start at a high
+// offset so manually-managed items are listed first.
+const baseSortOffset = 64
+
 type PuzzleSortFields struct {
 	ID             int64
 	DiscordChannel string
@@ -75,9 +79,17 @@ func (c *Client) SortDiscordChannels(ctx context.Context, puzzle PuzzleSortField
 	}
 
 	var found int
+	var position int = baseSortOffset
+	var round int64
 	var order []discord.ChannelOrder
-	for i, p := range puzzles {
-		var position = 2 * i
+	for _, p := range puzzles {
+		// Scope position to the round (category). Adding new puzzles to a round
+		// shouldn't shift the position of *all* later puzzles.
+		if round != p.RoundSortFields.ID {
+			position = baseSortOffset
+			round = p.RoundSortFields.ID
+		}
+		position += 1
 		if p.ID == puzzle.ID {
 			found = position
 		}
@@ -165,8 +177,7 @@ func (c *Client) SortDiscordCategories(ctx context.Context, round RoundSortField
 	var found int
 	var order []discord.ChannelOrder
 	for i, r := range rounds {
-		// Use a high offset so manually-managed categories are listed first
-		var position = 64 + 2*i
+		var position = baseSortOffset + i
 		if r.ID == round.ID {
 			found = position
 		}
@@ -178,7 +189,7 @@ func (c *Client) SortDiscordCategories(ctx context.Context, round RoundSortField
 	}
 	for i, solved := range c.solvedCategories {
 		order = append(order, discord.ChannelOrder{
-			ID: solved, Position: 256 + i,
+			ID: solved, Position: baseSortOffset*4 + i,
 		})
 	}
 
