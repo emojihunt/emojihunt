@@ -29,7 +29,6 @@ func NewClient(ctx context.Context, prod bool) *Client {
 	raw, ok := os.LookupEnv("GOOGLE_CREDENTIALS")
 	if !ok {
 		log.Panicf("GOOGLE_CREDENTIALS is required")
-
 	}
 	credentials, err := base64.StdEncoding.DecodeString(raw)
 	if err != nil {

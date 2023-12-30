@@ -4,15 +4,18 @@ import (
 	"context"
 	"sync"
 
+	"github.com/ably/ably-go/ably"
 	"github.com/bwmarrin/discordgo"
 	"github.com/emojihunt/emojihunt/discord"
 	"github.com/emojihunt/emojihunt/drive"
 	"github.com/emojihunt/emojihunt/state"
 	"github.com/emojihunt/emojihunt/state/status"
 	"github.com/getsentry/sentry-go"
+	"golang.org/x/xerrors"
 )
 
 type Client struct {
+	ably      *ably.RealtimeChannel
 	discord   *discord.Client
 	discovery bool
 	drive     *drive.Client
@@ -22,8 +25,34 @@ type Client struct {
 	sortLock         sync.Mutex
 }
 
-func New(discord *discord.Client, discovery bool, drive *drive.Client, state *state.Client) *Client {
-	return &Client{discord: discord, discovery: discovery, drive: drive, state: state}
+const (
+	ablyChannelName = "huntbot"
+	ablyEventTitle  = "sync"
+)
+
+type AblyModel string
+type AblyKind string
+
+const (
+	AblyModelPuzzle AblyModel = "puzzle"
+	AblyModelRound  AblyModel = "round"
+
+	AblyKindUpsert AblyKind = "upsert"
+	AblyKindDelete AblyKind = "delete"
+)
+
+type AblyMessage struct {
+	Model AblyModel   `json:"model"`
+	Kind  AblyKind    `json:"kind"`
+	Data  interface{} `json:"data"`
+}
+
+func New(ably *ably.Realtime, discord *discord.Client, discovery bool,
+	drive *drive.Client, state *state.Client) *Client {
+	return &Client{
+		ably:    ably.Channels.Get(ablyChannelName),
+		discord: discord, discovery: discovery, drive: drive, state: state,
+	}
 }
 
 func (c *Client) Watch(ctx context.Context) {
@@ -85,7 +114,21 @@ func (c *Client) TriggerDiscoveryEnabled(ctx context.Context) error {
 	return c.discord.UpdateStatus(data)
 }
 
-func (c *Client) TriggerPuzzle(ctx context.Context, change state.PuzzleChange) (err error) {
+func (c *Client) TriggerPuzzle(ctx context.Context, change state.PuzzleChange) error {
+	// Publish the update to Ably
+	var message = AblyMessage{Model: AblyModelPuzzle}
+	if change.After == nil {
+		message.Kind = AblyKindDelete
+		message.Data = map[string]int64{"id": change.Before.ID}
+	} else {
+		message.Kind = AblyKindUpsert
+		message.Data = *change.After
+	}
+	err := c.ably.Publish(ctx, ablyEventTitle, message)
+	if err != nil {
+		return xerrors.Errorf("ably.Publish: %w", err)
+	}
+
 	if change.After == nil {
 		// Don't take any action when a puzzle is deleted. To avoid accidents, the
 		// channel and spreadsheet should be cleaned up manually.
@@ -184,6 +227,20 @@ func (c *Client) TriggerPuzzle(ctx context.Context, change state.PuzzleChange) (
 }
 
 func (c *Client) TriggerRound(ctx context.Context, change state.RoundChange) error {
+	// Publish the update to Ably
+	var message = AblyMessage{Model: AblyModelRound}
+	if change.After == nil {
+		message.Kind = AblyKindDelete
+		message.Data = map[string]int64{"id": change.Before.ID}
+	} else {
+		message.Kind = AblyKindUpsert
+		message.Data = *change.After
+	}
+	err := c.ably.Publish(ctx, ablyEventTitle, message)
+	if err != nil {
+		return xerrors.Errorf("ably.Publish: %w", err)
+	}
+
 	if change.After == nil {
 		return nil
 	}

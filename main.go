@@ -11,6 +11,7 @@ import (
 	"net/http"
 	_ "net/http/pprof"
 
+	"github.com/ably/ably-go/ably"
 	"github.com/emojihunt/emojihunt/bot"
 	"github.com/emojihunt/emojihunt/discord"
 	"github.com/emojihunt/emojihunt/drive"
@@ -75,9 +76,19 @@ func main() {
 	defer discord.Close()
 	var drive = drive.NewClient(ctx, *prod)
 
+	ablyKey, ok := os.LookupEnv("ABLY_API_KEY")
+	if !ok {
+		log.Panicf("ABLY_API_KEY is required")
+	}
+	ably, err := ably.NewRealtime(ably.WithKey(ablyKey))
+	if err != nil {
+		log.Panicf("ably.NewRealtime: %s", err)
+	}
+	defer ably.Close()
+
 	// Start internal engines
 	var discovery = false
-	var sync = sync.New(discord, discovery, drive, state)
+	var sync = sync.New(ably, discord, discovery, drive, state)
 	go sync.Watch(ctx)
 
 	log.Printf("starting web server")
