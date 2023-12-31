@@ -60,7 +60,7 @@ hr {
 nav {
   position: absolute;
   top: 0.75rem;
-  right: 2.5rem;
+  right: 1rem;
 
   display: flex;
   gap: 0.4rem;
@@ -70,12 +70,12 @@ nav {
   position: absolute;
   top: 4.5rem;
   right: 0;
-  padding: 0.5rem 0.75rem 0.5rem 0.5rem;
+  padding: 0.5rem 1.25rem 0.5rem 0.5rem;
 }
 
 .dot {
-  width: 0.4rem;
-  height: 0.4rem;
+  width: 1rem;
+  height: 0.33rem;
   border-radius: 0.25rem;
 }
 

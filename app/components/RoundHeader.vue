@@ -65,7 +65,7 @@ onMounted(() => {
   grid-template-columns: subgrid;
   align-self: flex-end;
 
-  margin-right: 1.5rem;
+  margin-right: 2.5rem;
   padding-bottom: 0.25rem;
 
   position: sticky;
