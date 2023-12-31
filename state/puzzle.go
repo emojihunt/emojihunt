@@ -70,6 +70,20 @@ func (c *Client) ListPuzzles(ctx context.Context) ([]Puzzle, error) {
 	return puzzles, nil
 }
 
+func (c *Client) ListHome(ctx context.Context) ([]Puzzle, []Round, int64, error) {
+	c.mutex.Lock()
+	defer c.mutex.Unlock()
+	puzzles, err := c.ListPuzzles(ctx)
+	if err != nil {
+		return nil, nil, 0, err
+	}
+	rounds, err := c.ListRounds(ctx)
+	if err != nil {
+		return nil, nil, 0, err
+	}
+	return puzzles, rounds, c.changeID, nil
+}
+
 func (c *Client) ListVoiceRoomInfo(ctx context.Context) ([]VoiceInfo, error) {
 	// Used by sync! To avoid deadlocks, this function must not acquire the global
 	// database lock.

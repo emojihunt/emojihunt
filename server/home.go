@@ -9,11 +9,7 @@ import (
 )
 
 func (s *Server) ListHome(c echo.Context) error {
-	puzzles, err := s.state.ListPuzzles(c.Request().Context())
-	if err != nil {
-		return err
-	}
-	rounds, err := s.state.ListRounds(c.Request().Context())
+	puzzles, rounds, changeID, err := s.state.ListHome(c.Request().Context())
 	if err != nil {
 		return err
 	}
@@ -22,6 +18,7 @@ func (s *Server) ListHome(c echo.Context) error {
 	return c.JSON(http.StatusOK, map[string]interface{}{
 		"puzzles":     puzzles,
 		"rounds":      rounds,
+		"change_id":   changeID,
 		"next_hunt":   next,
 		"voice_rooms": voiceRooms,
 	})

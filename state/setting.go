@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"errors"
+	"strconv"
 	"time"
 
 	"github.com/emojihunt/emojihunt/state/db"
@@ -76,15 +77,19 @@ func (c *Client) SetReminderTimestamp(ctx context.Context, timestamp time.Time) 
 
 func (c *Client) IncrementSyncEpoch(ctx context.Context) (previous int64, err error) {
 	// Concurrency rule: this setting is only written on startup.
-	if raw, err := c.readSetting(ctx, reminderSetting); err != nil {
+	raw, err := c.readSetting(ctx, syncEpochSetting)
+	if err != nil {
 		return 0, err
-	} else if v, ok := raw.(int64); !ok {
-		return 0, err
-	} else if err := c.writeSetting(ctx, reminderSetting, v+1); err != nil {
-		return 0, err
-	} else {
-		return v, nil
 	}
+	// `previous` defaults to zero
+	if s, ok := raw.(string); ok {
+		previous, err = strconv.ParseInt(s, 10, 64)
+		if err != nil {
+			return 0, err
+		}
+	}
+	return previous, c.writeSetting(ctx, syncEpochSetting,
+		strconv.FormatInt(previous+1, 10))
 }
 
 func (c *Client) readSetting(ctx context.Context, key string) (interface{}, error) {
