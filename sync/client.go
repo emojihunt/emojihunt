@@ -3,6 +3,7 @@ package sync
 import (
 	"context"
 	"sync"
+	"time"
 
 	"github.com/ably/ably-go/ably"
 	"github.com/bwmarrin/discordgo"
@@ -23,29 +24,6 @@ type Client struct {
 
 	solvedCategories []string
 	sortLock         sync.Mutex
-}
-
-const (
-	ablyChannelName = "huntbot"
-	ablyEventTitle  = "sync"
-)
-
-type AblyModel string
-type AblyKind string
-
-const (
-	AblyModelPuzzle AblyModel = "puzzle"
-	AblyModelRound  AblyModel = "round"
-
-	AblyKindUpsert AblyKind = "upsert"
-	AblyKindDelete AblyKind = "delete"
-)
-
-type AblyMessage struct {
-	ChangeID int64       `json:"change_id"`
-	Model    AblyModel   `json:"model"`
-	Kind     AblyKind    `json:"kind"`
-	Data     interface{} `json:"data"`
 }
 
 func New(ably *ably.Realtime, discord *discord.Client, discovery bool,
@@ -96,6 +74,26 @@ func (c *Client) Watch(ctx context.Context) {
 	}
 }
 
+const (
+	ablyChannelName = "huntbot"
+	ablyEventTitle  = "sync"
+)
+
+type AblyKind string
+
+const (
+	AblyKindUpsert AblyKind = "upsert"
+	AblyKindDelete AblyKind = "delete"
+)
+
+type AblyMessage struct {
+	ChangeID    int64         `json:"change_id"`
+	Kind        AblyKind      `json:"kind"`
+	Puzzle      *state.Puzzle `json:"puzzle,omitempty"`
+	Round       *state.Round  `json:"round,omitempty"`
+	ReminderFix string        `json:"reminder_fix,omitempty"`
+}
+
 func (c *Client) TriggerDiscoveryEnabled(ctx context.Context) error {
 	var data discordgo.UpdateStatusData
 	if !c.discovery {
@@ -117,13 +115,15 @@ func (c *Client) TriggerDiscoveryEnabled(ctx context.Context) error {
 
 func (c *Client) TriggerPuzzle(ctx context.Context, change state.PuzzleChange) error {
 	// Publish the update to Ably
-	var message = AblyMessage{ChangeID: change.ChangeID, Model: AblyModelPuzzle}
+	var message = AblyMessage{ChangeID: change.ChangeID}
 	if change.After == nil {
 		message.Kind = AblyKindDelete
-		message.Data = map[string]int64{"id": change.Before.ID}
+		message.Puzzle = &state.Puzzle{ID: change.Before.ID}
 	} else {
 		message.Kind = AblyKindUpsert
-		message.Data = *change.After
+		message.Puzzle = change.After
+		// Ably incorrectly encodes time.Time
+		message.ReminderFix = change.After.Reminder.Format(time.RFC3339)
 	}
 	err := c.ably.Publish(ctx, ablyEventTitle, message)
 	if err != nil {
@@ -211,7 +211,7 @@ func (c *Client) TriggerPuzzle(ctx context.Context, change state.PuzzleChange) e
 		// in the puzzle channel so there's no need to send a solve notification
 		// there.
 		if !change.Bot {
-			err = c.NotifySolveInPuzzleChannel(puzzle)
+			err := c.NotifySolveInPuzzleChannel(puzzle)
 			if err != nil {
 				return err
 			}
@@ -229,13 +229,13 @@ func (c *Client) TriggerPuzzle(ctx context.Context, change state.PuzzleChange) e
 
 func (c *Client) TriggerRound(ctx context.Context, change state.RoundChange) error {
 	// Publish the update to Ably
-	var message = AblyMessage{ChangeID: change.ChangeID, Model: AblyModelRound}
+	var message = AblyMessage{ChangeID: change.ChangeID}
 	if change.After == nil {
 		message.Kind = AblyKindDelete
-		message.Data = map[string]int64{"id": change.Before.ID}
+		message.Round = &state.Round{ID: change.Before.ID}
 	} else {
 		message.Kind = AblyKindUpsert
-		message.Data = *change.After
+		message.Round = change.After
 	}
 	err := c.ably.Publish(ctx, ablyEventTitle, message)
 	if err != nil {

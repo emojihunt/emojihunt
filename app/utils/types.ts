@@ -91,10 +91,11 @@ export type AblyWorkerMessage =
 
 export type ConnectionState = "disconnected" | "connected" | "broken";
 
-export type SyncMessage =
-  { model: "puzzle"; kind: "upsert"; data: Puzzle; } |
-  { model: "puzzle"; kind: "delete"; data: { id: number; }; } |
-  { model: "round"; kind: "upsert"; data: Round; } |
-  { model: "round"; kind: "delete"; data: { id: number; }; };
+export type SyncMessage = {
+  kind: "upsert" | "delete";
+  puzzle?: Puzzle;
+  round?: Round;
+  reminder_fix?: string;
+};
 
 export type FocusInfo = { index: number; };

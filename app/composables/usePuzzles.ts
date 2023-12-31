@@ -78,13 +78,18 @@ export default defineStore("puzzles", {
       await useAPI(`/puzzles/${puzzle.id}`, data)
         .catch(() => this._puzzles.set(puzzle.id, previous));
     },
-    handleUpdate({ model, kind, data }: SyncMessage) {
-      if (model === "puzzle") {
-        if (kind === "upsert") this._puzzles.set(data.id, data);
-        else this._puzzles.delete(data.id);
-      } else if (model === "round") {
-        if (kind === "upsert") this._rounds.set(data.id, data);
-        else this._rounds.delete(data.id);
+    handleUpdate({ kind, puzzle, round, reminder_fix }: SyncMessage) {
+      if (kind === "upsert") {
+        if (puzzle) {
+          puzzle.reminder = reminder_fix!;
+          this._puzzles.set(puzzle.id, puzzle);
+        }
+        if (round) this._rounds.set(round.id, round);
+      } else if (kind === "delete") {
+        if (puzzle) this._puzzles.delete(puzzle.id);
+        if (round) this._rounds.delete(round.id);
+      } else {
+        console.error(`unknown update kind: ${kind}`);
       }
     },
   },
