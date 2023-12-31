@@ -92,7 +92,7 @@ func main() {
 	go sync.Watch(ctx)
 
 	log.Printf("starting web server")
-	server.Start(ctx, *prod, discord, state, sync)
+	server.Start(ctx, *prod, ably, discord, state, sync)
 
 	log.Printf("starting discord bots")
 	discord.RegisterBots(

@@ -11,6 +11,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/ably/ably-go/ably"
 	"github.com/emojihunt/emojihunt/discord"
 	"github.com/emojihunt/emojihunt/state"
 	"github.com/emojihunt/emojihunt/sync"
@@ -22,6 +23,7 @@ import (
 )
 
 type Server struct {
+	ably    *ably.Realtime
 	discord *discord.Client
 	echo    *echo.Echo
 	state   *state.Client
@@ -39,10 +41,10 @@ type IDParams struct {
 
 const sentryContextKey = "emojihunt.sentry"
 
-func Start(ctx context.Context, prod bool, discord *discord.Client,
-	state *state.Client, sync *sync.Client) {
+func Start(ctx context.Context, prod bool, ably *ably.Realtime,
+	discord *discord.Client, state *state.Client, sync *sync.Client) {
 	var e = echo.New()
-	var s = &Server{discord: discord, echo: e, state: state, sync: sync}
+	var s = &Server{ably: ably, discord: discord, echo: e, state: state, sync: sync}
 
 	if raw, ok := os.LookupEnv("SERVER_SECRET"); !ok {
 		log.Panicf("SERVER_SECRET is required")
@@ -103,6 +105,7 @@ func Start(ctx context.Context, prod bool, discord *discord.Client,
 	rg.DELETE("/:id", s.DeleteRound)
 
 	e.GET("/home", s.ListHome, s.AuthenticationMiddleware)
+	e.POST("/ably", s.RequestAblyToken, s.AuthenticationMiddleware)
 
 	go func() {
 		err := e.Start(":8080")
