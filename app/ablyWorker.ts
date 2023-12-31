@@ -20,7 +20,14 @@ const client = new Ably.Realtime.Promise({
     }
   },
 });
-client.channels.get("huntbot").subscribe("sync", (e) => {
+
+// Enable rewind. There's a brief window where changes would otherwise be
+// missed: between when Vercel finishes making the API request to /home during
+// server-side rendering and when we subscribe to the channel on the frontend.
+//
+// Note: Ably's maximum rewind window is 2 minutes or 100 messages.
+//
+client.channels.get("[?rewind=2m]huntbot").subscribe("sync", (e) => {
   console.log("Sync", e);
   ports.forEach(p => p.postMessage(e));
 });
