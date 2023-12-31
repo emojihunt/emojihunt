@@ -73,7 +73,6 @@ func (c *Client) SortDiscordChannels(ctx context.Context, puzzle PuzzleSortField
 	}
 	slices.SortFunc(puzzles, PuzzleSort)
 
-	channels, err := c.discord.ListChannelsByID()
 	if err != nil {
 		return 0, err
 	}
@@ -82,6 +81,7 @@ func (c *Client) SortDiscordChannels(ctx context.Context, puzzle PuzzleSortField
 	var position int = baseSortOffset
 	var round int64
 	var order []discord.ChannelOrder
+	var channels = c.discord.ListChannelsByID()
 	for _, p := range puzzles {
 		// Scope position to the round (category). Adding new puzzles to a round
 		// shouldn't shift the position of *all* later puzzles.

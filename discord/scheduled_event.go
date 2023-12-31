@@ -1,75 +1,11 @@
 package discord
 
 import (
-	"context"
-	"log"
 	"time"
 
 	"github.com/bwmarrin/discordgo"
 	"golang.org/x/xerrors"
 )
-
-// Voice Channel Cache
-
-func (c *Client) ListVoiceChannels() map[string]string {
-	c.mutex.Lock()
-	defer c.mutex.Unlock()
-	var result = make(map[string]string)
-	for id, channel := range c.voiceRooms {
-		result[id] = channel.Name
-	}
-	return result
-}
-
-func (c *Client) handleChannelCreate(ctx context.Context, r *discordgo.ChannelCreate) error {
-	if r.Channel.Type != discordgo.ChannelTypeGuildVoice {
-		return nil
-	}
-	c.mutex.Lock()
-	defer c.mutex.Unlock()
-	c.voiceRooms[r.ID] = r.Channel
-	log.Printf("voice room added: %q", r.Channel.Name)
-	return nil
-}
-func (c *Client) handleChannelUpdate(ctx context.Context, r *discordgo.ChannelUpdate) error {
-	if r.Channel.Type != discordgo.ChannelTypeGuildVoice {
-		return nil
-	}
-	c.mutex.Lock()
-	defer c.mutex.Unlock()
-	c.voiceRooms[r.ID] = r.Channel
-	log.Printf("voice room renamed: %q", r.Channel.Name)
-	return nil
-}
-
-func (c *Client) handleChannelDelete(ctx context.Context, r *discordgo.ChannelDelete) error {
-	if r.Channel.Type != discordgo.ChannelTypeGuildVoice {
-		return nil
-	}
-	c.mutex.Lock()
-	defer c.mutex.Unlock()
-	delete(c.voiceRooms, r.ID)
-	log.Printf("voice room removed: %q", r.Channel.Name)
-	return nil
-}
-
-func (c *Client) refreshVoiceChannels() error {
-	c.mutex.Lock()
-	defer c.mutex.Unlock()
-	channels, err := c.s.GuildChannels(c.Guild.ID)
-	if err != nil {
-		return err
-	}
-	c.voiceRooms = make(map[string]*discordgo.Channel)
-	for _, channel := range channels {
-		if channel.Type == discordgo.ChannelTypeGuildVoice {
-			c.voiceRooms[channel.ID] = channel
-		}
-	}
-	return nil
-}
-
-// Scheduled Events API
 
 func (c *Client) GetScheduledEvent(id string) (*discordgo.GuildScheduledEvent, error) {
 	return c.s.GuildScheduledEvent(c.Guild.ID, id, false)

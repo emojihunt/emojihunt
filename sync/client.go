@@ -2,6 +2,7 @@ package sync
 
 import (
 	"context"
+	"log"
 	"sync"
 	"time"
 
@@ -70,6 +71,8 @@ func (c *Client) Watch(ctx context.Context) {
 		}
 		if err != nil {
 			sentry.GetHubFromContext(ctx).CaptureException(err)
+		} else if len(c.state.PuzzleChange) == 0 && len(c.state.RoundChange) == 0 {
+			log.Printf("sync: up to date!")
 		}
 	}
 }

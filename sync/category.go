@@ -33,11 +33,8 @@ func (c *Client) CreateDiscordCategory(ctx context.Context, round state.Round) (
 }
 
 func (c *Client) RestoreSolvedCategories() error {
-	categories, err := c.discord.ListCategoriesByName()
-	if err != nil {
-		return err
-	}
 	var solved []string
+	var categories = c.discord.ListCategoriesByName()
 	for i := 0; i < solvedCategoryCount; i++ {
 		name := solvedCategoryPrefix + string(rune(int('A')+i))
 		if category, ok := categories[name]; ok {

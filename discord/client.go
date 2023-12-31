@@ -54,10 +54,10 @@ type Client struct {
 
 	mutex                     sync.Mutex // hold while accessing everything below
 	commandsRegistered        bool
+	channelCache              map[string]*discordgo.Channel
 	scheduledEventsCache      map[string]*discordgo.GuildScheduledEvent
 	scheduledEventsLastUpdate time.Time
 	rateLimits                map[string]*time.Time // url -> retryAfter time
-	voiceRooms                map[string]*discordgo.Channel
 }
 
 func Connect(ctx context.Context, prod bool, state *state.Client) *Client {
@@ -149,9 +149,9 @@ func Connect(ctx context.Context, prod bool, state *state.Client) *Client {
 		DefaultVoiceChannel:       defaultVoiceChannel,
 		QMRole:                    qmRole,
 		botsByCommand:             make(map[string]*botRegistration),
+		channelCache:              make(map[string]*discordgo.Channel),
 		scheduledEventsLastUpdate: time.Now().Add(-24 * time.Hour),
 		rateLimits:                make(map[string]*time.Time),
-		voiceRooms:                make(map[string]*discordgo.Channel),
 	}
 
 	// Register handlers. Remember to register the necessary intents above!
@@ -162,10 +162,9 @@ func Connect(ctx context.Context, prod bool, state *state.Client) *Client {
 	s.AddHandler(WrapHandler(ctx, "channel", discord.handleChannelCreate))
 	s.AddHandler(WrapHandler(ctx, "channel", discord.handleChannelUpdate))
 	s.AddHandler(WrapHandler(ctx, "channel", discord.handleChannelDelete))
-	if err := discord.refreshVoiceChannels(); err != nil {
-		log.Panicf("failed to refresh voice channels: %s", err)
+	if err := discord.refreshChannelCache(); err != nil {
+		log.Panicf("refreshChannelCache: %w", err)
 	}
-
 	return discord
 }
 
@@ -230,115 +229,6 @@ func (c *Client) GetMessage(ch *discordgo.Channel, messageID string) (*discordgo
 		return nil, xerrors.Errorf("ChannelMessage: %w", err)
 	}
 	return msg, nil
-}
-
-func (c *Client) CreateChannel(name string, category string, position int) (*discordgo.Channel, error) {
-	ch, err := c.s.GuildChannelCreateComplex(c.Guild.ID, discordgo.GuildChannelCreateData{
-		Name:     name,
-		Type:     discordgo.ChannelTypeGuildText,
-		ParentID: category,
-		Position: position,
-	})
-	if err != nil {
-		return nil, xerrors.Errorf("CreateChannel: %w", err)
-	}
-	return ch, nil
-}
-
-func (c *Client) SetChannelName(chID, name string, position int) error {
-	// Note that setting the title, even if it's a no-op, causes the channel's
-	// position to be reset.
-	_, err := c.s.ChannelEdit(chID, &discordgo.ChannelEdit{
-		Name:     name,
-		Position: position,
-	})
-	if err != nil {
-		return xerrors.Errorf("SetChannelName.Edit: %w", err)
-	}
-	return nil
-}
-
-func (c *Client) GetChannel(id string) (*discordgo.Channel, error) {
-	channel, err := c.s.Channel(id)
-	if err != nil {
-		return nil, xerrors.Errorf("GetChannel: %w", err)
-	}
-	return channel, nil
-}
-
-func (c *Client) ListChannelsByID() (map[string]*discordgo.Channel, error) {
-	channels, err := c.s.GuildChannels(c.Guild.ID)
-	if err != nil {
-		return nil, xerrors.Errorf("GuildChannels: %w", err)
-	}
-
-	var result = make(map[string]*discordgo.Channel)
-	for _, channel := range channels {
-		result[channel.ID] = channel
-	}
-	return result, nil
-}
-
-func (c *Client) ListCategoriesByName() (map[string]*discordgo.Channel, error) {
-	channels, err := c.s.GuildChannels(c.Guild.ID)
-	if err != nil {
-		return nil, xerrors.Errorf("GuildChannels: %w", err)
-	}
-
-	var categories = make(map[string]*discordgo.Channel)
-	for _, channel := range channels {
-		if channel.Type == discordgo.ChannelTypeGuildCategory {
-			categories[channel.Name] = channel
-		}
-	}
-	return categories, nil
-}
-
-func (c *Client) CreateCategory(name string, position int) (*discordgo.Channel, error) {
-	category, err := c.s.GuildChannelCreateComplex(c.Guild.ID,
-		discordgo.GuildChannelCreateData{
-			Name:     name,
-			Type:     discordgo.ChannelTypeGuildCategory,
-			Position: position,
-		},
-	)
-	if err != nil {
-		return nil, xerrors.Errorf("CreateCategory: %w", err)
-	}
-	return category, nil
-}
-
-func (c *Client) SetChannelCategory(channel string, category string, position int) error {
-	_, err := c.s.ChannelEditComplex(channel, &discordgo.ChannelEdit{
-		ParentID: category,
-		Position: position,
-	})
-	if err != nil {
-		return xerrors.Errorf("error moving channel to category %s: %w", category, err)
-	}
-	return nil
-}
-
-type ChannelOrder struct {
-	ID       string
-	Position int
-}
-
-func (c *Client) SortChannels(order []ChannelOrder) error {
-	data := make([]struct {
-		ID       string `json:"id"`
-		Position int    `json:"position"`
-	}, len(order))
-	for i, c := range order {
-		data[i].ID = c.ID
-		data[i].Position = c.Position
-	}
-	_, err := c.s.RequestWithBucketID("PATCH", discordgo.EndpointGuildChannels(c.Guild.ID),
-		data, discordgo.EndpointGuildChannels(c.Guild.ID))
-	if err != nil {
-		return xerrors.Errorf("SortChannels: %w", err)
-	}
-	return nil
 }
 
 // Set the pinned status message, by posting one or editing the existing one.
