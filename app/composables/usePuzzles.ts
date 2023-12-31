@@ -45,6 +45,7 @@ export default defineStore("puzzles", {
       }
       return grouped;
     },
+    puzzleCount: (state): number => state._puzzles.size,
   },
   actions: {
     async refresh() {
