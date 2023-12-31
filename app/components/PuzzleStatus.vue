@@ -54,7 +54,7 @@ const cancel = () => answering.value && (answering.value = null, open.value = fa
     <div v-if="puzzle.answer || answering" class="answer">
       <EditableSpan ref="input" :value="puzzle.answer" :tabindex="tabindex"
         :sticky="!!answering" @save="save" @cancel="cancel" />
-      <UTooltip :text="answering || puzzle.status" :open-delay="500"
+      <UTooltip :text="answering || puzzle.status" :open-delay="400"
         :popper="{ placement: 'right', offsetDistance: 0 }">
         <button :tabindex="tabindex"
           @click="() => answering ? (answering = null, open = true) : (open = !open)">

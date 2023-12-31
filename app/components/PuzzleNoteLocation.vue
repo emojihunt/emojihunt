@@ -49,7 +49,7 @@ const save = (updated: string) => {
 
 <template>
   <div class="cell" :class="field">
-    <UTooltip v-if="tooltip" :text="tooltip.text" :open-delay="500"
+    <UTooltip v-if="tooltip" :text="tooltip.text" :open-delay="250"
       :popper="{ placement: 'right', offsetDistance: 0 }">
       <span class="emoji">{{ tooltip.emoji }}</span>
     </UTooltip>

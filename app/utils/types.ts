@@ -85,6 +85,12 @@ export const StatusNeedsAnswer = (status: Status): boolean => {
   }
 };
 
+export type AblyWorkerMessage =
+  { name: "sync"; data: SyncMessage; } |
+  { name: "client"; state: ConnectionState; };
+
+export type ConnectionState = "disconnected" | "connected" | "broken";
+
 export type SyncMessage =
   { model: "puzzle"; kind: "upsert"; data: Puzzle; } |
   { model: "puzzle"; kind: "delete"; data: { id: number; }; } |

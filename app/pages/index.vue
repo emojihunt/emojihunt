@@ -2,7 +2,7 @@
 useHead({ title: "Puzzle Tracker" });
 const store = usePuzzles();
 await store.refresh();
-useAbly();
+const connected = useAbly();
 
 // Puzzle & Round Helpers
 const timelineFromID = (id: number) => `--round-${id}`;
@@ -48,7 +48,7 @@ const keydown = (e: KeyboardEvent) => {
 </script>
 
 <template>
-  <MainHeader :rounds="store.rounds" :observer="observer" />
+  <MainHeader :rounds="store.rounds" :observer="observer" :connected="connected" />
   <main @keydown="keydown">
     <div class="rule first"></div>
     <div class="rule"></div>
