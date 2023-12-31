@@ -2,6 +2,7 @@
 useHead({ title: "Puzzle Tracker" });
 const store = usePuzzles();
 await store.refresh();
+useAbly();
 
 // Puzzle & Round Helpers
 const timelineFromID = (id: number) => `--round-${id}`;

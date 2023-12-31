@@ -59,7 +59,7 @@ export enum Status {
   Solved = "Solved",
   Backsolved = "Backsolved",
   Purchased = "Purchased",
-}
+};
 
 export const StatusLabel = (status: Status): string => status || "Not Started";
 
@@ -84,5 +84,11 @@ export const StatusNeedsAnswer = (status: Status): boolean => {
     case Status.Purchased: return true;
   }
 };
+
+export type SyncMessage =
+  { model: "puzzle"; kind: "upsert"; data: Puzzle; } |
+  { model: "puzzle"; kind: "delete"; data: { id: number; }; } |
+  { model: "round"; kind: "upsert"; data: Round; } |
+  { model: "round"; kind: "delete"; data: { id: number; }; };
 
 export type FocusInfo = { index: number; };

@@ -77,5 +77,14 @@ export default defineStore("puzzles", {
       await useAPI(`/puzzles/${puzzle.id}`, data)
         .catch(() => this._puzzles.set(puzzle.id, previous));
     },
+    handleUpdate({ model, kind, data }: SyncMessage) {
+      if (model === "puzzle") {
+        if (kind === "upsert") this._puzzles.set(data.id, data);
+        else this._puzzles.delete(data.id);
+      } else if (model === "round") {
+        if (kind === "upsert") this._rounds.set(data.id, data);
+        else this._rounds.delete(data.id);
+      }
+    },
   },
 });
