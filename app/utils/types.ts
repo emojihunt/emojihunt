@@ -92,6 +92,7 @@ export type AblyWorkerMessage =
 export type ConnectionState = "disconnected" | "connected" | "broken";
 
 export type SyncMessage = {
+  change_id: number;
   kind: "upsert" | "delete";
   puzzle?: Puzzle;
   round?: Round;

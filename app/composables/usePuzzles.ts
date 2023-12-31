@@ -4,6 +4,7 @@ export default defineStore("puzzles", {
   state: () => ({
     _rounds: new Map<number, Round>(),
     _puzzles: new Map<number, Puzzle>(),
+    _initial_change_id: 0,
     next_hunt: undefined as Date | undefined,
     voice_rooms: {} as Record<string, string>
   }),
@@ -54,6 +55,7 @@ export default defineStore("puzzles", {
       this._puzzles.clear();
       (data.value.rounds || []).forEach((r: any) => this._rounds.set(r.id, r));
       (data.value.puzzles || []).forEach((p: any) => this._puzzles.set(p.id, p));
+      this._initial_change_id = data.value.change_id;
       this.next_hunt = data.value.next_hunt ?
         new Date(data.value.next_hunt) : undefined;
       this.voice_rooms = data.value.voice_rooms;
@@ -78,7 +80,8 @@ export default defineStore("puzzles", {
       await useAPI(`/puzzles/${puzzle.id}`, data)
         .catch(() => this._puzzles.set(puzzle.id, previous));
     },
-    handleUpdate({ kind, puzzle, round, reminder_fix }: SyncMessage) {
+    handleUpdate({ change_id, kind, puzzle, round, reminder_fix }: SyncMessage) {
+      if (change_id <= this._initial_change_id) return;
       if (kind === "upsert") {
         if (puzzle) {
           puzzle.reminder = reminder_fix!;
