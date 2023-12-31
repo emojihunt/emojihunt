@@ -15,6 +15,7 @@ const (
 	enabledSetting          = "discovery_enabled"
 	discoveredRoundsSetting = "discovered_rounds"
 	reminderSetting         = "reminder_timestamp"
+	syncEpochSetting        = "sync_epoch"
 )
 
 func (c *Client) IsEnabled(ctx context.Context) bool {
@@ -41,6 +42,22 @@ func (c *Client) EnableDiscovery(ctx context.Context, enabled bool) bool {
 	return true
 }
 
+func (c *Client) DiscoveredRounds(ctx context.Context) (map[string]DiscoveredRound, error) {
+	if raw, err := c.readSetting(ctx, discoveredRoundsSetting); err != nil {
+		return nil, err
+	} else if v, ok := raw.(map[string]DiscoveredRound); !ok {
+		return make(map[string]DiscoveredRound), nil // default
+	} else {
+		return v, nil
+	}
+}
+
+func (c *Client) SetDiscoveredRounds(ctx context.Context, rounds map[string]DiscoveredRound) error {
+	// Concurrency rule: this setting is only written from the discovery poller's
+	// round creation worker goroutine.
+	return c.writeSetting(ctx, discoveredRoundsSetting, rounds)
+}
+
 func (c *Client) ReminderTimestamp(ctx context.Context) (time.Time, error) {
 	if raw, err := c.readSetting(ctx, reminderSetting); err != nil {
 		return time.Time{}, err
@@ -57,20 +74,17 @@ func (c *Client) SetReminderTimestamp(ctx context.Context, timestamp time.Time) 
 	return c.writeSetting(ctx, reminderSetting, timestamp)
 }
 
-func (c *Client) DiscoveredRounds(ctx context.Context) (map[string]DiscoveredRound, error) {
-	if raw, err := c.readSetting(ctx, discoveredRoundsSetting); err != nil {
-		return nil, err
-	} else if v, ok := raw.(map[string]DiscoveredRound); !ok {
-		return make(map[string]DiscoveredRound), nil // default
+func (c *Client) IncrementSyncEpoch(ctx context.Context) (previous int64, err error) {
+	// Concurrency rule: this setting is only written on startup.
+	if raw, err := c.readSetting(ctx, reminderSetting); err != nil {
+		return 0, err
+	} else if v, ok := raw.(int64); !ok {
+		return 0, err
+	} else if err := c.writeSetting(ctx, reminderSetting, v+1); err != nil {
+		return 0, err
 	} else {
 		return v, nil
 	}
-}
-
-func (c *Client) SetDiscoveredRounds(ctx context.Context, rounds map[string]DiscoveredRound) error {
-	// Concurrency rule: this setting is only written from the discovery poller's
-	// round creation worker goroutine.
-	return c.writeSetting(ctx, discoveredRoundsSetting, rounds)
 }
 
 func (c *Client) readSetting(ctx context.Context, key string) (interface{}, error) {

@@ -42,9 +42,10 @@ const (
 )
 
 type AblyMessage struct {
-	Model AblyModel   `json:"model"`
-	Kind  AblyKind    `json:"kind"`
-	Data  interface{} `json:"data"`
+	ChangeID int64       `json:"change_id"`
+	Model    AblyModel   `json:"model"`
+	Kind     AblyKind    `json:"kind"`
+	Data     interface{} `json:"data"`
 }
 
 func New(ably *ably.Realtime, discord *discord.Client, discovery bool,
@@ -116,7 +117,7 @@ func (c *Client) TriggerDiscoveryEnabled(ctx context.Context) error {
 
 func (c *Client) TriggerPuzzle(ctx context.Context, change state.PuzzleChange) error {
 	// Publish the update to Ably
-	var message = AblyMessage{Model: AblyModelPuzzle}
+	var message = AblyMessage{ChangeID: change.ChangeID, Model: AblyModelPuzzle}
 	if change.After == nil {
 		message.Kind = AblyKindDelete
 		message.Data = map[string]int64{"id": change.Before.ID}
@@ -228,7 +229,7 @@ func (c *Client) TriggerPuzzle(ctx context.Context, change state.PuzzleChange) e
 
 func (c *Client) TriggerRound(ctx context.Context, change state.RoundChange) error {
 	// Publish the update to Ably
-	var message = AblyMessage{Model: AblyModelRound}
+	var message = AblyMessage{ChangeID: change.ChangeID, Model: AblyModelRound}
 	if change.After == nil {
 		message.Kind = AblyKindDelete
 		message.Data = map[string]int64{"id": change.Before.ID}

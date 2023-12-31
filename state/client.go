@@ -21,8 +21,9 @@ type Client struct {
 	PuzzleChange    chan PuzzleChange
 	RoundChange     chan RoundChange
 
-	queries *db.Queries
-	mutex   sync.Mutex // used to serialize writes
+	queries  *db.Queries
+	mutex    sync.Mutex // used to serialize database writes
+	changeID int64      // must hold mutex when reading/writing
 }
 
 func New(ctx context.Context, path string) *Client {
@@ -41,12 +42,20 @@ func New(ctx context.Context, path string) *Client {
 			panic(xerrors.Errorf("ExecContext(ctx, ddl): %w", err))
 		}
 	}
-	return &Client{
+	var client = Client{
 		DiscoveryChange: make(chan bool, 8),
 		PuzzleChange:    make(chan PuzzleChange, 32),
 		RoundChange:     make(chan RoundChange, 8),
 		queries:         db.New(dbx),
 	}
+	epoch, err := client.IncrementSyncEpoch(ctx)
+	if err != nil {
+		panic(err)
+	}
+	// Allow for 4 billion writes per restart. Note: Javascript can safely
+	// represent numbers up to ~2^53.
+	client.changeID = epoch << 32
+	return &client
 }
 
 type ValidationError struct {
