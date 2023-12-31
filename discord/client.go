@@ -163,7 +163,7 @@ func Connect(ctx context.Context, prod bool, state *state.Client) *Client {
 	s.AddHandler(WrapHandler(ctx, "channel", discord.handleChannelUpdate))
 	s.AddHandler(WrapHandler(ctx, "channel", discord.handleChannelDelete))
 	if err := discord.refreshChannelCache(); err != nil {
-		log.Panicf("refreshChannelCache: %w", err)
+		log.Panicf("refreshChannelCache: %v", err)
 	}
 	return discord
 }

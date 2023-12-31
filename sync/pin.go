@@ -8,11 +8,14 @@ import (
 	"github.com/bwmarrin/discordgo"
 	"github.com/emojihunt/emojihunt/state"
 	"github.com/emojihunt/emojihunt/state/status"
+	"github.com/mazznoer/csscolorparser"
+	"golang.org/x/xerrors"
 )
 
 type DiscordPinFields struct {
 	RoundName  string
 	RoundEmoji string
+	RoundHue   int64
 
 	PuzzleName     string
 	Status         status.Status
@@ -28,6 +31,7 @@ func NewDiscordPinFields(puzzle state.Puzzle) DiscordPinFields {
 	return DiscordPinFields{
 		RoundName:      puzzle.Round.Name,
 		RoundEmoji:     puzzle.Round.Emoji,
+		RoundHue:       puzzle.Round.Hue,
 		PuzzleName:     puzzle.Name,
 		Status:         puzzle.Status,
 		Note:           puzzle.Note,
@@ -44,12 +48,22 @@ func NewDiscordPinFields(puzzle state.Puzzle) DiscordPinFields {
 // well as links to the puzzle and the spreadsheet.
 func (c *Client) UpdateDiscordPin(ctx context.Context, fields DiscordPinFields) error {
 	log.Printf("sync: updating discord pin for %q", fields.PuzzleName)
+	css, err := csscolorparser.Parse(
+		// csscolorparser makes poor choices when given colors outside of sRGB. The
+		// lightness and chroma below were chosen so that all hues are within sRGB.
+		fmt.Sprintf("oklch(65%% 0.11, %ddeg)", fields.RoundHue),
+	)
+	if err != nil {
+		return xerrors.Errorf("csscolorparser: %w", err)
+	}
+	r, g, b, _ := css.RGBA255()
+	color := int(r)*256*256 + int(g)*256 + int(b)
 
 	embed := &discordgo.MessageEmbed{
 		Author: &discordgo.MessageEmbedAuthor{Name: pinnedStatusHeader},
 		Title:  fields.PuzzleName,
 		URL:    fields.PuzzleURL,
-		Color:  embedColor,
+		Color:  color,
 		Fields: []*discordgo.MessageEmbedField{
 			{
 				Name:   "Round",

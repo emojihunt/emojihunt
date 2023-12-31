@@ -16,7 +16,6 @@ import (
 const (
 	pinnedStatusHeader = "Puzzle Information"
 	locationDefaultMsg = "Use `/puzzle voice` to assign a voice room"
-	embedColor         = 0x7C39ED
 )
 
 // CreateDiscordChannel creates a new Discord channel and returns its ID.
