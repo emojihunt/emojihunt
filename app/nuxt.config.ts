@@ -6,6 +6,9 @@ export default defineNuxtConfig({
     discordGuild: prod ? "1058090773582721214" : "1058090773582721214",
     huntURL: "https://mitmh2024.com/",
   },
+  build: {
+    transpile: ["emoji-mart-vue-fast"],
+  },
   colorMode: {
     preference: "light",
   },
@@ -22,7 +25,7 @@ export default defineNuxtConfig({
     "@pinia/nuxt",
   ],
   routeRules: {
-    "**": {
+    "/**": {
       headers: {
         "X-Content-Type-Options": "nosniff",
         "Referrer-Policy": "origin",

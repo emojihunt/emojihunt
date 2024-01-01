@@ -1,5 +1,5 @@
 {
-  "name": "nuxt-app",
+  "name": "emojihunt",
   "private": true,
   "type": "module",
   "scripts": {
@@ -10,16 +10,13 @@
     "postinstall": "nuxt prepare"
   },
   "devDependencies": {
-    "@flydotio/dockerfile": "latest",
     "@nuxt/devtools": "latest",
     "@nuxt/ui": "^2.11.1",
     "@pinia/nuxt": "^0.5.1",
     "ably": "^1.2.48",
+    "emoji-mart-vue-fast": "^15.0.0",
     "nuxt": "^3.8.1",
     "vue": "^3.3.8",
     "vue-router": "^4.2.5"
-  },
-  "dependencies": {
-    "emoji-mart-vue-fast": "^15.0.0"
   }
 }
