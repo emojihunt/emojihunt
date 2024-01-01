@@ -4,10 +4,11 @@
 // because it's small and gets inlined by the build step.
 import inter from "~/assets/InterVariable.woff2";
 import plex from "~/assets/IBMPlexMono-Bold-Latin1.woff2";
+import noto from "~/assets/Noto-COLRv1.woff2";
 useHead({
   title: "Log in",
   // @ts-ignore
-  link: [inter, plex].map((href) =>
+  link: [inter, plex, noto].map((href) =>
     ({ rel: "preload", href, as: "font", type: "font/woff2", crossorigin: true })),
 });
 
@@ -49,7 +50,7 @@ section {
   padding: 1rem;
   margin: 30vh auto;
   max-width: 27rem;
-  font-family: "Inter Variable Login", sans-serif;
+  font-family: "Inter Variable Login", "Noto Color Emoji", sans-serif;
 }
 
 h1 {

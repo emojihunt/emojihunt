@@ -130,7 +130,7 @@ const cancel = () => answering.value && (answering.value = null, open.value = fa
 }
 
 .answer span {
-  font-family: 'IBM Plex Mono', monospace;
+  font-family: "IBM Plex Mono", "Noto Color Emoji", monospace;
   font-weight: 600;
   text-transform: uppercase;
 }

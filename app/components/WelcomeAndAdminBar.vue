@@ -4,7 +4,6 @@ const config = useAppConfig();
 
 const display = ref<string | undefined>();
 const recalculate = () => {
-  console.warn("Recalculating...");
   display.value = undefined;
   if (!store.next_hunt) return;
 
