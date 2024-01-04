@@ -10,6 +10,7 @@ const hue = computed(() => props.round.hue);
 <template>
   <div class="cell" :class="puzzle.meta && 'meta'">
     <EditableSpan :value="puzzle.name" readonly :tabindex="tabindex" />
+    <button tabindex="-1">Edit</button>
   </div>
 </template>
 
@@ -19,6 +20,13 @@ const hue = computed(() => props.round.hue);
   display: flex;
   position: relative;
   overflow: hidden;
+}
+
+button {
+  position: absolute;
+  right: 0;
+  height: 1.8rem;
+  padding: 0 0.25rem;
 }
 
 /* Theming */
@@ -42,5 +50,19 @@ const hue = computed(() => props.round.hue);
 
 .cell:focus-within {
   outline: auto black;
+}
+
+button {
+  font-size: 0.8rem;
+  color: oklch(60% 0.15 245deg);
+  visibility: hidden;
+}
+
+.cell:hover button {
+  visibility: visible;
+}
+
+button:hover {
+  filter: brightness(60%);
 }
 </style>
