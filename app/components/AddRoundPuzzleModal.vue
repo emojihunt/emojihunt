@@ -96,7 +96,7 @@ const hue = computed(() => props.kind === "round" ? data.hue : data.round?.hue);
       <template v-else>
         <USelectMenu v-model="data.round" placeholder="Round" :options="store.rounds"
           option-attribute="displayName" :popper="{ arrow: false }" searchable
-          @close="focus">
+          clear-search-on-close @close="focus">
           <template #trailing>
             <UIcon name="i-heroicons-chevron-up" class="text-gray-400" />
           </template>
