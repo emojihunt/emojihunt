@@ -94,6 +94,9 @@ func (c *Client) ListVoiceChannels() map[string]string {
 }
 
 func (c *Client) CreateChannel(name string, category string, position int) (*discordgo.Channel, error) {
+	if len(name) > 100 {
+		name = name[:100]
+	}
 	ch, err := c.s.GuildChannelCreateComplex(c.Guild.ID, discordgo.GuildChannelCreateData{
 		Name:     name,
 		Type:     discordgo.ChannelTypeGuildText,
@@ -107,6 +110,9 @@ func (c *Client) CreateChannel(name string, category string, position int) (*dis
 }
 
 func (c *Client) CreateCategory(name string, position int) (*discordgo.Channel, error) {
+	if len(name) > 100 {
+		name = name[:100]
+	}
 	category, err := c.s.GuildChannelCreateComplex(c.Guild.ID,
 		discordgo.GuildChannelCreateData{
 			Name:     name,
@@ -123,6 +129,9 @@ func (c *Client) CreateCategory(name string, position int) (*discordgo.Channel, 
 func (c *Client) SetChannelName(chID, name string, position int) error {
 	// Note that setting the name, even if it's a no-op, causes the channel's
 	// position to be reset.
+	if len(name) > 100 {
+		name = name[:100]
+	}
 	_, err := c.s.ChannelEdit(chID, &discordgo.ChannelEdit{
 		Name:     name,
 		Position: position,
