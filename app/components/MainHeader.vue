@@ -97,7 +97,7 @@ hr {
 }
 
 .dot.connected {
-  background-color: oklch(70% 0.10 150deg);
-  filter: drop-shadow(0 0 3px oklch(85% 0.10 150deg / 50%));
+  background-color: oklch(55% 0.08 150deg);
+  filter: drop-shadow(0 0 3px oklch(65% 0.10 150deg / 50%));
 }
 </style>
