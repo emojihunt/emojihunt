@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import emojifile from "emoji-mart-vue-fast/data/all.json";
 import { Picker, EmojiIndex } from "emoji-mart-vue-fast/src";
+import emojihues from "~/assets/emoji-hues.json";
 
 const index = new EmojiIndex(emojifile, { recent: [] });
 
@@ -59,8 +60,18 @@ const close = () => {
 };
 
 const emoji = (e: any) => {
-  if (data.emoji === e.native) data.emoji = "";
-  else data.emoji = e.native;
+  if (data.emoji === e.native) {
+    data.emoji = "";
+  } else {
+    data.emoji = e.native;
+    for (const [hue, ...emojis] of emojihues) {
+      if (emojis.includes(e.native)) {
+        data.hue = (hue as number);
+        break;
+      }
+    }
+  };
+
   modal.value?.contents.querySelector(".name input")?.focus();
 };
 const focus = () => nextTick(() =>
