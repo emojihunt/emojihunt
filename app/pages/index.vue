@@ -45,6 +45,33 @@ const keydown = (e: KeyboardEvent) => {
     tabKeydown(e);
   }
 };
+
+const toast = useToast();
+const copy = async (id: number): Promise<void> => {
+  const puzzles = store.puzzles.get(id);
+  if (!puzzles) return;
+  const data = puzzles.map((p) =>
+    [p.name, p.answer || `${StatusEmoji(p.status)} ${StatusLabel(p.status)}`]);
+  const text = data.map(([a, b]) => `${a}, ${b}`).join("\n");
+  const html = "<table>\n" + data.map(([a, b]) =>
+    `<tr><td>${a}</td><td>${b}</td></tr>`
+  ).join("\n") + "</table>";
+  if (navigator.clipboard.write) {
+    await navigator.clipboard.write([
+      new ClipboardItem({
+        "text/plain": new Blob([text], { type: "text/plain" }),
+        "text/html": new Blob([html], { type: "text/html" }),
+      }),
+    ]);
+  } else {
+    await navigator.clipboard.writeText(text);
+  }
+  toast.add({
+    title: "Copied",
+    color: "green",
+    icon: "i-heroicons-clipboard-document-check",
+  });
+};
 </script>
 
 <template>
@@ -55,7 +82,8 @@ const keydown = (e: KeyboardEvent) => {
     <div class="rule"></div>
     <template v-for="[i, round] of store.rounds.entries()">
       <RoundHeader :round="round" :timeline="timelineFromID(i)"
-        :next-timeline="nextTimelineFromID(i)" :observer="observer" />
+        :next-timeline="nextTimelineFromID(i)" :observer="observer"
+        @copy="() => copy(round.id)" />
       <Puzzle v-for="puzzle in store.puzzles.get(round.id)" :puzzle="puzzle" :round="round"
         :focused="focused" />
       <div class="empty" v-if="!round.total">

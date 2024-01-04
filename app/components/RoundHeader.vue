@@ -5,6 +5,7 @@ const props = defineProps<{
   nextTimeline: string | undefined;
   observer: IntersectionObserver | undefined;
 }>();
+const emit = defineEmits<{ (e: "copy"): void; }>();
 const hue = computed(() => props.round.hue);
 
 const pill = ref<HTMLElement>();
@@ -24,7 +25,9 @@ onMounted(() => {
   <header class="pill" ref="pill" :id="round.anchor">
     <div class="emoji">{{ round.emoji }}&#xfe0f;</div>
     <div class="round">{{ round.name }}</div>
-    <div class="progress">{{ round.solved }}/{{ round.total }} </div>
+    <div class="spaces"></div>
+    <button @click="() => emit('copy')">Copy</button>
+    <div class="progress">{{ round.solved }}/{{ round.total }}</div>
   </header>
   <header class="titles" ref="titles" v-if="round.total">
     <span>Status &bull; Answer</span>
@@ -57,6 +60,15 @@ onMounted(() => {
   top: calc(6rem - 1.4rem);
 
   z-index: 20;
+}
+
+button {
+  padding: 0.5rem;
+  margin: 0.25rem 0;
+}
+
+.spaces {
+  flex-grow: 1;
 }
 
 .titles {
@@ -100,9 +112,19 @@ onMounted(() => {
   font-weight: 715;
 }
 
+button {
+  font-weight: 550;
+  font-size: 0.70rem;
+  color: oklch(50% 0.30 calc(v-bind(hue) + 70));
+  opacity: 0;
+}
+
+button:hover,
+button:focus-visible {
+  opacity: 1;
+}
+
 .progress {
-  flex-grow: 1;
-  text-align: right;
   font-variant-numeric: diagonal-fractions;
   color: oklch(50% 0.30 calc(v-bind(hue) + 75));
   user-select: none;
