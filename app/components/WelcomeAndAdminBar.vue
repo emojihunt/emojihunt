@@ -120,7 +120,7 @@ span {
 }
 
 a:hover span {
-  filter: brightness(60%);
+  color: oklch(40% 0.15 245deg);
 }
 
 .hunt {
@@ -134,7 +134,7 @@ button {
 }
 
 button:hover {
-  filter: brightness(60%);
+  color: oklch(40% 0.15 245deg);
 }
 
 button[disabled] {

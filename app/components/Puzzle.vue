@@ -8,14 +8,14 @@ const props = defineProps<{
   <span class="row stop">
     <PuzzleButtons :puzzle="puzzle" :focused="focused" />
     <span class="data">
-      <PuzzleName :puzzle="puzzle" :round="round" :tabindex="tabIndex(focused, 3)"
-        @focusin="() => (focused.index = 3)" />
-      <PuzzleStatus :puzzle="puzzle" :tabindex="tabIndex(focused, 4)"
-        @focusin="() => (focused.index = 4)" />
-      <PuzzleNoteLocation :puzzle="puzzle" field="location" :tabindex="tabIndex(focused, 5)"
-        @focusin="() => (focused.index = 5)" />
-      <PuzzleNoteLocation :puzzle="puzzle" field="note" :tabindex="tabIndex(focused, 6)"
-        @focusin="() => (focused.index = 6)" />
+      <PuzzleName :puzzle="puzzle" :round="round" :focused="focused"
+        @focusin="() => (focused.index !== 4) && (focused.index = 3)" />
+      <PuzzleStatus :puzzle="puzzle" :focused="focused"
+        @focusin="() => (focused.index !== 6) && (focused.index = 5)" />
+      <PuzzleNoteLocation :puzzle="puzzle" field="location" :tabindex="tabIndex(focused, 7)"
+        @focusin="() => (focused.index = 7)" />
+      <PuzzleNoteLocation :puzzle="puzzle" field="note" :tabindex="tabIndex(focused, 8)"
+        @focusin="() => (focused.index = 8)" />
     </span>
   </span>
 </template>

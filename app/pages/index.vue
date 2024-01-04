@@ -20,7 +20,7 @@ if (import.meta.client && !CSS.supports("view-timeline", "--test")) {
   observer = useStickyIntersectionObserver(76);
 }
 
-const [focused, tabKeydown] = useRovingTabIndex(7, 3);
+const [focused, tabKeydown] = useRovingTabIndex(9, 3);
 const keydown = (e: KeyboardEvent) => {
   let sibling;
 

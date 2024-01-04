@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { Status } from "../utils/types";
+import type { Status } from "../utils/types";
 
-const props = defineProps<{ puzzle: Puzzle; tabindex: number; }>();
+const props = defineProps<{ puzzle: Puzzle; focused: FocusInfo; }>();
 const store = usePuzzles();
 
 const input = ref();
@@ -52,11 +52,11 @@ const cancel = () => answering.value && (answering.value = null, open.value = fa
 <template>
   <div class="cell">
     <div v-if="puzzle.answer || answering" class="answer">
-      <EditableSpan ref="input" :value="puzzle.answer" :tabindex="tabindex"
+      <EditableSpan ref="input" :value="puzzle.answer" :tabindex="tabIndex(focused, 5)"
         :sticky="!!answering" @save="save" @cancel="cancel" />
       <UTooltip :text="answering || puzzle.status" :open-delay="400"
         :popper="{ placement: 'right', offsetDistance: 0 }">
-        <button :tabindex="tabindex"
+        <button :tabindex="tabIndex(focused, 6)"
           @click="() => answering ? (answering = null, open = true) : (open = !open)">
           {{ StatusEmoji(answering || puzzle.status) }}
         </button>
@@ -64,7 +64,8 @@ const cancel = () => answering.value && (answering.value = null, open.value = fa
       <div v-if="answering" class="hint">🎉 Press Enter to record answer</div>
       <Spinner v-if="saving" />
     </div>
-    <button v-else ref="button" class="status" :tabindex="tabindex"
+    <button v-else ref="button" class="status"
+      :tabindex="focused.index === 5 || focused.index === 6 ? 0 : -1"
       @click="() => (open = !open)">
       <span class="highlight">
         {{ StatusEmoji(puzzle.status) }} {{ StatusLabel(puzzle.status) }}

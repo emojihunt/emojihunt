@@ -2,16 +2,16 @@
 const props = defineProps<{
   puzzle: Puzzle;
   round: AnnotatedRound;
-  tabindex: number;
+  focused: FocusInfo;
 }>();
 const hue = computed(() => props.round.hue);
 </script>
 
 <template>
   <div class="cell">
-    <EditableSpan :value="puzzle.name" readonly :tabindex="tabindex"
+    <EditableSpan :value="puzzle.name" readonly :tabindex="tabIndex(focused, 3)"
       :class="puzzle.meta && 'meta'" />
-    <button tabindex="-1">Edit</button>
+    <button :tabindex="tabIndex(focused, 4)">Edit</button>
   </div>
 </template>
 
@@ -21,13 +21,6 @@ const hue = computed(() => props.round.hue);
   display: flex;
   position: relative;
   overflow: hidden;
-}
-
-button {
-  position: absolute;
-  right: 0;
-  height: 1.8rem;
-  padding: 0 0.33rem;
 }
 
 /* Theming */
@@ -54,16 +47,20 @@ button {
 }
 
 button {
+  width: 0;
+  padding: 0;
   font-size: 0.8rem;
   color: oklch(60% 0.15 245deg);
-  visibility: hidden;
 }
 
-.cell:hover button {
-  visibility: visible;
+.cell:hover button,
+button:hover,
+button:focus-visible {
+  width: auto;
+  padding: 0 0.33rem;
 }
 
 button:hover {
-  filter: brightness(60%);
+  color: oklch(40% 0.15 245deg);
 }
 </style>
