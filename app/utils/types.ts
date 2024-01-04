@@ -85,6 +85,14 @@ export const StatusNeedsAnswer = (status: Status): boolean => {
   }
 };
 
+export type HomeResponse = {
+  puzzles: Puzzle[];
+  rounds: Round[];
+  change_id: number;
+  next_hunt: string | undefined;
+  voice_rooms: Record<string, string>;
+};
+
 export type AblyWorkerMessage =
   { name: "sync"; data: SyncMessage; } |
   { name: "client"; state: ConnectionState; };

@@ -51,9 +51,9 @@ func (c *Client) ListRounds(ctx context.Context) ([]Round, error) {
 	return rounds, nil
 }
 
-func (c *Client) CreateRound(ctx context.Context, round Round) (Round, error) {
+func (c *Client) CreateRound(ctx context.Context, round Round) (Round, int64, error) {
 	if err := ValidateRound(round); err != nil {
-		return Round{}, err
+		return Round{}, 0, err
 	}
 	result, err := c.queries.CreateRound(ctx, db.CreateRoundParams{
 		Name:            round.Name,
@@ -65,62 +65,62 @@ func (c *Client) CreateRound(ctx context.Context, round Round) (Round, error) {
 		DiscordCategory: round.DiscordCategory,
 	})
 	if err != nil {
-		return Round{}, xerrors.Errorf("CreateRound: %w", err)
+		return Round{}, 0, xerrors.Errorf("CreateRound: %w", err)
 	}
 	created := Round(result)
 	c.changeID += 1
 	c.RoundChange <- RoundChange{nil, &created, c.changeID}
-	return created, nil
+	return created, c.changeID, nil
 }
 
 func (c *Client) UpdateRound(ctx context.Context, id int64,
-	mutate func(round *Round) error) (Round, error) {
+	mutate func(round *Round) error) (Round, int64, error) {
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
 	before, err := c.GetRound(ctx, id)
 	if err != nil {
-		return Round{}, err
+		return Round{}, 0, err
 	}
 	var raw = before
 	if err := mutate(&raw); err != nil {
-		return Round{}, err
+		return Round{}, 0, err
 	} else if err := ValidateRound(raw); err != nil {
-		return Round{}, err
+		return Round{}, 0, err
 	} else if raw.ID != id {
-		return Round{}, xerrors.Errorf("mutation must not change round ID")
+		return Round{}, 0, xerrors.Errorf("mutation must not change round ID")
 	} else if err := c.queries.UpdateRound(ctx, db.UpdateRoundParams(raw)); err != nil {
-		return Round{}, xerrors.Errorf("UpdateRound: %w", err)
+		return Round{}, 0, xerrors.Errorf("UpdateRound: %w", err)
 	}
 	after, err := c.GetRound(ctx, id)
 	if err != nil {
-		return Round{}, err
+		return Round{}, 0, err
 	}
 	c.changeID += 1
 	c.RoundChange <- RoundChange{&before, &after, c.changeID}
 	puzzles, err := c.queries.ListPuzzlesByRound(ctx, id)
 	if err != nil {
-		return Round{}, xerrors.Errorf("ListPuzzlesByRound: %w", err)
+		return Round{}, 0, xerrors.Errorf("ListPuzzlesByRound: %w", err)
 	}
 	for _, puzzle := range puzzles {
 		var pre, post = Puzzle(puzzle), Puzzle(puzzle)
 		pre.Round = before
 		c.PuzzleChange <- PuzzleChange{&pre, &post, c.changeID, false}
 	}
-	return after, nil
+	return after, c.changeID, nil
 }
 
-func (c *Client) DeleteRound(ctx context.Context, id int64) error {
+func (c *Client) DeleteRound(ctx context.Context, id int64) (int64, error) {
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
 	round, err := c.GetRound(ctx, id)
 	if err != nil {
-		return err
+		return 0, err
 	}
 	err = c.queries.DeleteRound(ctx, id)
 	if err != nil {
-		return xerrors.Errorf("DeleteRound: %w", err)
+		return 0, xerrors.Errorf("DeleteRound: %w", err)
 	}
 	c.changeID += 1
 	c.RoundChange <- RoundChange{&round, nil, c.changeID}
-	return nil
+	return c.changeID, nil
 }

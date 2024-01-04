@@ -5,9 +5,9 @@ const config = useAppConfig();
 const display = ref<string | undefined>();
 const recalculate = () => {
   display.value = undefined;
-  if (!store.next_hunt) return;
+  if (!store.nextHunt) return;
 
-  let delta = store.next_hunt.getTime() - new Date().getTime();
+  let delta = store.nextHunt.getTime() - new Date().getTime();
   delta = Math.floor(delta / 1000);
   if (delta <= 0) return;
 

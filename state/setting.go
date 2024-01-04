@@ -75,13 +75,13 @@ func (c *Client) SetReminderTimestamp(ctx context.Context, timestamp time.Time) 
 	return c.writeSetting(ctx, reminderSetting, timestamp)
 }
 
-func (c *Client) IncrementSyncEpoch(ctx context.Context) (previous int64, err error) {
+func (c *Client) IncrementSyncEpoch(ctx context.Context) (int64, error) {
 	// Concurrency rule: this setting is only written on startup.
 	raw, err := c.readSetting(ctx, syncEpochSetting)
 	if err != nil {
 		return 0, err
 	}
-	// `previous` defaults to zero
+	var previous int64 = 1 // default
 	if s, ok := raw.(string); ok {
 		previous, err = strconv.ParseInt(s, 10, 64)
 		if err != nil {

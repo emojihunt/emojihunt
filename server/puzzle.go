@@ -78,10 +78,11 @@ func (s *Server) CreatePuzzle(c echo.Context) error {
 		}
 	}
 
-	puzzle, err := s.state.CreatePuzzle(ctx, raw)
+	puzzle, chid, err := s.state.CreatePuzzle(ctx, raw)
 	if err != nil {
 		return err
 	}
+	SetChangeIDHeader(c, chid)
 	return c.JSON(http.StatusOK, puzzle)
 }
 
@@ -90,8 +91,7 @@ func (s *Server) UpdatePuzzle(c echo.Context) error {
 	if err := c.Bind(&id); err != nil {
 		return err
 	}
-
-	updated, err := s.state.UpdatePuzzle(c.Request().Context(), id.ID,
+	updated, chid, err := s.state.UpdatePuzzle(c.Request().Context(), id.ID,
 		func(puzzle *state.RawPuzzle) error {
 			var params = (*PuzzleParams)(puzzle)
 			return c.Bind(params)
@@ -100,6 +100,7 @@ func (s *Server) UpdatePuzzle(c echo.Context) error {
 	if err != nil {
 		return err
 	}
+	SetChangeIDHeader(c, chid)
 	return c.JSON(http.StatusOK, updated)
 }
 
@@ -112,9 +113,10 @@ func (s *Server) DeletePuzzle(c echo.Context) error {
 	if err != nil {
 		return err
 	}
-	err = s.state.DeletePuzzle(c.Request().Context(), id.ID)
+	chid, err := s.state.DeletePuzzle(c.Request().Context(), id.ID)
 	if err != nil {
 		return err
 	}
+	SetChangeIDHeader(c, chid)
 	return c.JSON(http.StatusOK, puzzle)
 }

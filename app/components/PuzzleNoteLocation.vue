@@ -11,7 +11,7 @@ const tooltip = computed(() => {
   if (props.field === "location") {
     const id = props.puzzle.voice_room;
     if (!id) return;
-    const channel = store.voice_rooms[id];
+    const channel = store.voiceRooms[id];
     if (!channel) return;
     // We expect the channel's emoji to go at the end
     const p = channel.split(" ");

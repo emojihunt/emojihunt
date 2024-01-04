@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"strconv"
 	"strings"
 
 	"github.com/ably/ably-go/ably"
@@ -152,4 +153,8 @@ func (s *Server) ErrorHandler(err error, c echo.Context) {
 		hub.CaptureException(err)
 	}
 	s.echo.DefaultHTTPErrorHandler(err, c)
+}
+
+func SetChangeIDHeader(c echo.Context, id int64) {
+	c.Response().Header().Set("X-Change-ID", strconv.FormatInt(id, 10))
 }

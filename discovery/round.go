@@ -92,7 +92,7 @@ func (p *Poller) getTopReaction(messageID string) (string, error) {
 func (p *Poller) createRound(ctx context.Context, round state.DiscoveredRound,
 	emoji string) error {
 
-	created, err := p.state.CreateRound(ctx, state.Round{
+	created, _, err := p.state.CreateRound(ctx, state.Round{
 		Name:  round.Name,
 		Emoji: emoji,
 	})

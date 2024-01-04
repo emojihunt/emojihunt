@@ -3,7 +3,7 @@ import type { NuxtError } from 'nuxt/app';
 
 const props = defineProps<{ error: NuxtError; }>();
 const stack = import.meta.dev && props.error.stack;
-if (props.error.statusCode != 401) {
+if (props.error.statusCode !== 401) {
   console.error(props.error);
 }
 

@@ -94,11 +94,11 @@ func (c *Client) ListVoiceRoomInfo(ctx context.Context) ([]VoiceInfo, error) {
 	return results, nil
 }
 
-func (c *Client) CreatePuzzle(ctx context.Context, puzzle RawPuzzle) (Puzzle, error) {
+func (c *Client) CreatePuzzle(ctx context.Context, puzzle RawPuzzle) (Puzzle, int64, error) {
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
 	if err := c.ValidatePuzzle(ctx, puzzle); err != nil {
-		return Puzzle{}, err
+		return Puzzle{}, 0, err
 	}
 	id, err := c.queries.CreatePuzzle(ctx, db.CreatePuzzleParams{
 		Name:           puzzle.Name,
@@ -114,44 +114,44 @@ func (c *Client) CreatePuzzle(ctx context.Context, puzzle RawPuzzle) (Puzzle, er
 		VoiceRoom:      puzzle.VoiceRoom,
 	})
 	if err != nil {
-		return Puzzle{}, xerrors.Errorf("CreatePuzzle: %w", err)
+		return Puzzle{}, 0, xerrors.Errorf("CreatePuzzle: %w", err)
 	}
 	created, err := c.GetPuzzle(ctx, id)
 	if err != nil {
-		return Puzzle{}, err
+		return Puzzle{}, 0, err
 	}
 	c.changeID += 1
 	c.PuzzleChange <- PuzzleChange{nil, &created, c.changeID, false}
-	return created, nil
+	return created, c.changeID, nil
 }
 
 func (c *Client) UpdatePuzzle(ctx context.Context, id int64,
-	mutate func(puzzle *RawPuzzle) error) (Puzzle, error) {
+	mutate func(puzzle *RawPuzzle) error) (Puzzle, int64, error) {
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
 
 	before, err := c.GetPuzzle(ctx, id)
 	if err != nil {
-		return Puzzle{}, err
+		return Puzzle{}, 0, err
 	}
 	var raw = before.RawPuzzle()
 	if err := mutate(&raw); err != nil {
-		return Puzzle{}, err
+		return Puzzle{}, 0, err
 	} else if err := c.ValidatePuzzle(ctx, raw); err != nil {
-		return Puzzle{}, err
+		return Puzzle{}, 0, err
 	} else if raw.ID != id {
-		return Puzzle{}, xerrors.Errorf("mutation must not change puzzle ID")
+		return Puzzle{}, 0, xerrors.Errorf("mutation must not change puzzle ID")
 	} else if err := c.queries.UpdatePuzzle(ctx, db.UpdatePuzzleParams(raw)); err != nil {
-		return Puzzle{}, xerrors.Errorf("UpdatePuzzle: %w", err)
+		return Puzzle{}, 0, xerrors.Errorf("UpdatePuzzle: %w", err)
 	}
 
 	after, err := c.GetPuzzle(ctx, id)
 	if err != nil {
-		return Puzzle{}, err
+		return Puzzle{}, 0, err
 	}
 	c.changeID += 1
 	c.PuzzleChange <- PuzzleChange{&before, &after, c.changeID, false}
-	return after, nil
+	return after, c.changeID, nil
 }
 
 func (c *Client) UpdatePuzzleByDiscordChannel(ctx context.Context, channel string,
@@ -203,18 +203,18 @@ func (c *Client) ClearPuzzleVoiceRoom(ctx context.Context, room string) error {
 	return nil
 }
 
-func (c *Client) DeletePuzzle(ctx context.Context, id int64) error {
+func (c *Client) DeletePuzzle(ctx context.Context, id int64) (int64, error) {
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
 	puzzle, err := c.GetPuzzle(ctx, id)
 	if err != nil {
-		return err
+		return 0, err
 	}
 	err = c.queries.DeletePuzzle(ctx, id)
 	if err != nil {
-		return xerrors.Errorf("DeletePuzzle: %w", err)
+		return 0, xerrors.Errorf("DeletePuzzle: %w", err)
 	}
 	c.changeID += 1
 	c.PuzzleChange <- PuzzleChange{&puzzle, nil, c.changeID, false}
-	return nil
+	return c.changeID, nil
 }

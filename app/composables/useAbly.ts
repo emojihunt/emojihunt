@@ -9,7 +9,7 @@ export default function (): Ref<boolean> {
     const worker = new AblyWorker();
     worker.port.addEventListener("message", (e: MessageEvent<AblyWorkerMessage>) => {
       if (e.data.name === "sync") {
-        store.handleUpdate(e.data.data);
+        store.handleDelta(e.data.data);
       } else if (e.data.name === "client") {
         if (e.data.state === "connected") {
           connected.value = true;

@@ -133,7 +133,7 @@ func (p *Poller) createPuzzles(ctx context.Context, puzzles []state.RawPuzzle) e
 		if !p.state.IsEnabled(ctx) {
 			return xerrors.Errorf("puzzle discovery is paused")
 		}
-		_, err := p.state.CreatePuzzle(ctx, puzzle)
+		_, _, err := p.state.CreatePuzzle(ctx, puzzle)
 		if err != nil {
 			return err
 		}

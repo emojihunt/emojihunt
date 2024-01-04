@@ -27,7 +27,7 @@ func (c *Client) CreateDiscordChannel(ctx context.Context, puzzle state.RawPuzzl
 		if err != nil {
 			return "", err
 		}
-		round, err = c.state.UpdateRound(ctx, round.ID,
+		round, _, err = c.state.UpdateRound(ctx, round.ID,
 			func(round *state.Round) error {
 				if round.DiscordCategory == "" {
 					log.Printf("sync: replacing deleted discord category for %q", round.Name)
