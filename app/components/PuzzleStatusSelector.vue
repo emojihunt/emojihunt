@@ -38,10 +38,10 @@ fieldset {
 fieldset button {
   border: 1px solid oklch(85% 0 0deg);
   border-radius: 0.6rem;
+  outline-offset: 1px;
 }
 
-fieldset button:hover,
-fieldset button:focus-visible {
+fieldset button:hover {
   background-color: oklch(95% 0 0deg);
 }
 </style>

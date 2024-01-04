@@ -128,7 +128,7 @@ span[contenteditable='plaintext-only'] {
 }
 
 span[contenteditable='plaintext-only'] {
-  background-color: oklch(95% 0.03 275deg);
+  background-color: oklch(97% 0.02 275deg);
 }
 
 span[readonly] {

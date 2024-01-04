@@ -44,6 +44,10 @@
   font-optical-sizing: auto;
 }
 
+:root ::selection {
+  background-color: oklch(75% 0.21 275deg / 0.33);
+}
+
 .highlight {
   /* https://stackoverflow.com/a/64127605 */
   margin: 0 -0.4em;

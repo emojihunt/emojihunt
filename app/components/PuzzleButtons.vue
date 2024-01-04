@@ -88,6 +88,7 @@ a[ok="false"] {
 
 a {
   color: oklch(42% 0.24 var(--hue));
+  outline-color: oklch(42% 0.24 var(--hue));
   stroke-width: 0.8px;
 }
 

@@ -8,8 +8,9 @@ const hue = computed(() => props.round.hue);
 </script>
 
 <template>
-  <div class="cell" :class="puzzle.meta && 'meta'">
-    <EditableSpan :value="puzzle.name" readonly :tabindex="tabindex" />
+  <div class="cell">
+    <EditableSpan :value="puzzle.name" readonly :tabindex="tabindex"
+      :class="puzzle.meta && 'meta'" />
     <button tabindex="-1">Edit</button>
   </div>
 </template>
@@ -26,7 +27,7 @@ button {
   position: absolute;
   right: 0;
   height: 1.8rem;
-  padding: 0 0.25rem;
+  padding: 0 0.33rem;
 }
 
 /* Theming */
