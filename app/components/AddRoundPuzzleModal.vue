@@ -189,6 +189,10 @@ form :deep(button):focus {
   color: oklch(60% 0.18 v-bind(hue));
 }
 
+:deep(.emoji-mart-emoji) {
+  outline-color: oklch(71% 0.18 v-bind(hue))
+}
+
 /* fix for <Modal> capturing pointer events across full width of screen */
 footer {
   pointer-events: none;
