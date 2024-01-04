@@ -87,7 +87,7 @@ header {
 
 hr {
   background-color: white;
-  border-bottom: 1px solid oklch(50% 0.03 275deg);
+  border-bottom: 1px solid oklch(70% 0.03 275deg);
   filter: drop-shadow(0 1.5rem 1rem oklch(100% 0 0deg));
 }
 

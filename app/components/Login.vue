@@ -75,7 +75,7 @@ a {
   background-color: oklch(var(--button-oklch));
 
   box-shadow: 0 0 1px 1px oklch(var(--button-oklch)) inset;
-  filter: drop-shadow(0 6px 8px oklch(var(--button-oklch) / 25%));
+  filter: drop-shadow(0 3px 3px oklch(var(--button-oklch) / 20%));
   background-image: linear-gradient(68deg,
       oklch(100% 0 0deg / 20%) 60%, oklch(0% 0 0deg / 0%) 100%);
 

@@ -91,7 +91,7 @@ onMounted(() => {
     linear-gradient(68deg,
       oklch(80% 0.10 calc(v-bind(hue) - 15)),
       oklch(65% 0.30 calc(v-bind(hue) + 75))) border-box;
-  filter: drop-shadow(0 1px 2px oklch(70% 0.07 v-bind(hue) / 25%));
+  filter: drop-shadow(0 -1px 1px oklch(70% 0.07 v-bind(hue) / 20%));
 
   cursor: default;
 }
