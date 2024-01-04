@@ -55,7 +55,7 @@ const cancel = () => answering.value && (answering.value = null, open.value = fa
       <EditableSpan ref="input" :value="puzzle.answer" :tabindex="tabIndex(focused, 5)"
         :sticky="!!answering" @save="save" @cancel="cancel" />
       <UTooltip :text="answering || puzzle.status" :open-delay="400"
-        :popper="{ placement: 'right', offsetDistance: 0 }">
+        :popper="{ placement: 'left', offsetDistance: 0 }">
         <button :tabindex="tabIndex(focused, 6)"
           @click="() => answering ? (answering = null, open = true) : (open = !open)">
           {{ StatusEmoji(answering || puzzle.status) }}

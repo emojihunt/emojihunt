@@ -38,7 +38,6 @@ const [focused, keydown] = useRovingTabIndex(props.rounds.length);
       <div class="dot" :class="connected && 'connected'"></div>
     </UTooltip>
   </header>
-  <hr>
 </template>
 
 <style scoped>
@@ -48,13 +47,6 @@ header {
   height: 6rem;
   position: fixed;
   z-index: 15;
-}
-
-hr {
-  width: 100%;
-  height: 6rem;
-  position: fixed;
-  z-index: 10;
 }
 
 nav {
@@ -82,13 +74,9 @@ nav {
 /* Theming */
 header {
   background-color: oklch(30% 0.03 275deg);
-  user-select: none;
-}
-
-hr {
-  background-color: white;
   border-bottom: 1px solid oklch(70% 0.03 275deg);
   filter: drop-shadow(0 1.5rem 1rem oklch(100% 0 0deg));
+  user-select: none;
 }
 
 .dot {
