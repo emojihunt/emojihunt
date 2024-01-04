@@ -20,7 +20,7 @@ const updateRequest = async <T>(endpoint: string, params: any): Promise<[T, numb
     throw createError({
       fatal: true,
       statusCode: response.status,
-      data: await response.text(),
+      data: await response.json().catch(() => response.text()),
     });
   }
   return [
