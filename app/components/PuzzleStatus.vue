@@ -98,6 +98,7 @@ const cancel = () => answering.value && (answering.value = null, open.value = fa
 .answer button {
   flex-grow: 1;
   text-align: center;
+  align-self: flex-start;
 }
 
 .status {

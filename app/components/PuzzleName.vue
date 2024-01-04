@@ -19,7 +19,6 @@ const hue = computed(() => props.round.hue);
 /* Layout */
 .cell {
   display: flex;
-  position: relative;
   overflow: hidden;
 }
 
@@ -49,7 +48,10 @@ const hue = computed(() => props.round.hue);
 button {
   width: 0;
   padding: 0;
+
   font-size: 0.8rem;
+  line-height: 1.85rem;
+  align-self: flex-start;
   color: oklch(60% 0.15 245deg);
 }
 
@@ -58,6 +60,10 @@ button:hover,
 button:focus-visible {
   width: auto;
   padding: 0 0.33rem;
+}
+
+.cell:hover span {
+  white-space: unset;
 }
 
 button:hover {
