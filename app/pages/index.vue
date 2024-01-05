@@ -48,7 +48,7 @@ const keydown = (e: KeyboardEvent) => {
 
 const toast = useToast();
 const copy = async (id: number): Promise<void> => {
-  const puzzles = store.puzzles.get(id);
+  const puzzles = store.puzzlesByRound.get(id);
   if (!puzzles) return;
   const data = puzzles.map((p) =>
     [p.name, p.answer || `${StatusEmoji(p.status)} ${StatusLabel(p.status)}`]);
@@ -72,6 +72,8 @@ const copy = async (id: number): Promise<void> => {
     icon: "i-heroicons-clipboard-document-check",
   });
 };
+
+const editing = ref<number>();
 </script>
 
 <template>
@@ -84,14 +86,15 @@ const copy = async (id: number): Promise<void> => {
       <RoundHeader :round="round" :timeline="timelineFromID(i)"
         :next-timeline="nextTimelineFromID(i)" :observer="observer"
         @copy="() => copy(round.id)" />
-      <Puzzle v-for="puzzle in store.puzzles.get(round.id)" :puzzle="puzzle" :round="round"
-        :focused="focused" />
+      <Puzzle v-for="puzzle in store.puzzlesByRound.get(round.id)" :puzzle="puzzle"
+        :round="round" :focused="focused" @edit="() => (editing = puzzle.id)" />
       <div class="empty" v-if="!round.total">
         🫙&hairsp; No Puzzles
       </div>
       <hr>
     </template>
     <WelcomeAndAdminBar />
+    <EditPuzzleModal :id="editing" @close="() => (editing = undefined)" />
   </main>
 </template>
 

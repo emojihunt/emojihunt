@@ -2,6 +2,7 @@
 const props = defineProps<{
   puzzle: Puzzle; round: AnnotatedRound; focused: FocusInfo;
 }>();
+const emit = defineEmits<{ (e: "edit"): void; }>();
 </script>
 
 <template>
@@ -9,7 +10,8 @@ const props = defineProps<{
     <PuzzleButtons :puzzle="puzzle" :focused="focused" />
     <span class="data">
       <PuzzleName :puzzle="puzzle" :round="round" :focused="focused"
-        @focusin="() => (focused.index !== 4) && (focused.index = 3)" />
+        @focusin="() => (focused.index !== 4) && (focused.index = 3)"
+        @edit="() => emit('edit')" />
       <PuzzleStatus :puzzle="puzzle" :focused="focused"
         @focusin="() => (focused.index !== 6) && (focused.index = 5)" />
       <PuzzleNoteLocation :puzzle="puzzle" field="location" :tabindex="tabIndex(focused, 7)"

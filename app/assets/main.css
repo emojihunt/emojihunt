@@ -114,3 +114,12 @@ button {
 .titles.stuck {
   color: white !important;
 }
+
+/* fix for <Modal> capturing pointer events across full width of screen */
+footer.modal-fixup {
+  pointer-events: none;
+}
+
+footer.modal-fixup section {
+  pointer-events: auto;
+}

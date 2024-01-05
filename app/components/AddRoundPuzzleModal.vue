@@ -85,9 +85,9 @@ const hue = computed(() => props.kind === "round" ? data.hue : data.round?.hue);
 </script>
 
 <template>
-  <Modal ref="modal" :open="open" @submit="submit">
-    <form :class="kind"
-      @keydown="(e: KeyboardEvent) => e.key == 'Escape' ? close() : e.stopPropagation()">
+  <Modal ref="modal" class="modal-fixup" :open="open" @submit="submit"
+    @keydown="(e: KeyboardEvent) => e.key == 'Escape' ? close() : e.stopPropagation()">
+    <form :class="kind">
       <template v-if="kind === 'round'">
         <UInput v-model="data.emoji" placeholder="🫥" readonly="readonly" />
         <UInput v-model="data.name" placeholder="Round Name" class="name" />
@@ -191,14 +191,5 @@ form :deep(button):focus {
 
 :deep(.emoji-mart-emoji) {
   outline-color: oklch(71% 0.18 v-bind(hue))
-}
-
-/* fix for <Modal> capturing pointer events across full width of screen */
-footer {
-  pointer-events: none;
-}
-
-footer :deep(section) {
-  pointer-events: auto;
 }
 </style>

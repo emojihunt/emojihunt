@@ -61,6 +61,11 @@ export enum Status {
   Purchased = "Purchased",
 };
 
+// https://stackoverflow.com/a/62850363
+export const Statuses: Status[] = Object.keys(Status).
+  filter((k) => !isFinite(Number(k))).
+  map((k) => (Status as any)[k]);
+
 export const StatusLabel = (status: Status): string => status || "Not Started";
 
 export const StatusEmoji = (status: Status): string => {

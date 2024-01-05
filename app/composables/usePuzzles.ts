@@ -53,7 +53,7 @@ export default defineStore("puzzles", {
       }
       const annotated: AnnotatedRound[] = [];
       for (const base of rounds.values()) {
-        const puzzles = this.puzzles.get(base.id) || [];
+        const puzzles = this.puzzlesByRound.get(base.id) || [];
         annotated.push({
           ...base,
           anchor: base.name.trim().toLowerCase().replaceAll(" ", "-"),
@@ -70,7 +70,7 @@ export default defineStore("puzzles", {
       });
       return annotated;
     },
-    puzzles(state): Map<number, Puzzle[]> {
+    puzzles(state): Map<number, Puzzle> {
       const puzzles = new Map(state._puzzles);
       const entries = [...state._optimistic.entries()].sort();
       for (const [_, entry] of entries) {
@@ -78,8 +78,11 @@ export default defineStore("puzzles", {
           puzzles.set(entry.id, { ...puzzles.get(entry.id)!, ...entry });
         }
       }
+      return puzzles;
+    },
+    puzzlesByRound(): Map<number, Puzzle[]> {
       const grouped = new Map<number, Puzzle[]>();
-      for (const puzzle of puzzles.values()) {
+      for (const puzzle of this.puzzles.values()) {
         const id = puzzle.round.id;
         if (!grouped.has(id)) {
           grouped.set(id, []);
@@ -96,7 +99,7 @@ export default defineStore("puzzles", {
     },
     puzzleCount(): number {
       let count = 0;
-      for (const [_round, puzzles] of this.puzzles) {
+      for (const [_round, puzzles] of this.puzzlesByRound) {
         count += puzzles.length;
       }
       return count;

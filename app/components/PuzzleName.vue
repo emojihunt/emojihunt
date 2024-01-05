@@ -4,6 +4,7 @@ const props = defineProps<{
   round: AnnotatedRound;
   focused: FocusInfo;
 }>();
+const emit = defineEmits<{ (e: "edit"): void; }>();
 const hue = computed(() => props.round.hue);
 </script>
 
@@ -11,7 +12,7 @@ const hue = computed(() => props.round.hue);
   <div class="cell">
     <EditableSpan :value="puzzle.name" readonly :tabindex="tabIndex(focused, 3)"
       :class="puzzle.meta && 'meta'" />
-    <button :tabindex="tabIndex(focused, 4)">Edit</button>
+    <button :tabindex="tabIndex(focused, 4)" @click="() => emit('edit')">Edit</button>
   </div>
 </template>
 
