@@ -31,7 +31,7 @@ export type Puzzle = {
   id: number;
   name: string;
   answer: string;
-  round: Round;
+  round: number;
   status: Status;
   note: string;
   location: string;
@@ -42,6 +42,11 @@ export type Puzzle = {
   voice_room: string;
   reminder: string;
 };
+
+export const PuzzleKeys: (keyof Omit<Puzzle, "id">)[] = [
+  "name", "answer", "round", "status", "note", "location", "puzzle_url",
+  "spreadsheet_id", "discord_channel", "meta", "voice_room", "reminder",
+];
 
 export type NewPuzzle = {
   name: string;
@@ -90,8 +95,12 @@ export const StatusNeedsAnswer = (status: Status): boolean => {
   }
 };
 
+export const DefaultReminder = "0001-01-01T00:00:00Z";
+
+export type ServerPuzzle = Omit<Puzzle, "round"> & { round: Round; };
+
 export type HomeResponse = {
-  puzzles: Puzzle[];
+  puzzles: ServerPuzzle[];
   rounds: Round[];
   change_id: number;
   next_hunt: string | undefined;
@@ -107,7 +116,7 @@ export type ConnectionState = "disconnected" | "connected" | "broken";
 export type SyncMessage = {
   change_id: number;
   kind: "upsert" | "delete";
-  puzzle?: Puzzle;
+  puzzle?: ServerPuzzle;
   round?: Round;
   reminder_fix?: string;
 };

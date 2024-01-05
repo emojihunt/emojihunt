@@ -42,7 +42,7 @@ const tooltip = computed(() => {
 
 const save = (updated: string) => {
   saving.value = true;
-  store.updatePuzzle(props.puzzle, { [props.field]: updated })
+  store.updatePuzzleOptimistic(props.puzzle.id, { [props.field]: updated })
     .finally(() => (saving.value = false));
 };
 </script>

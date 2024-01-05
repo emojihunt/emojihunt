@@ -3,17 +3,25 @@ import type { HomeResponse } from '~/utils/types';
 
 type Optimistic = (
   ({ type: "round"; } & Partial<Round>) |
-  ({ type: "puzzle"; } & Partial<Puzzle>)
+  ({ type: "round.delete", id: number; }) |
+  ({ type: "puzzle"; } & Partial<Puzzle>) |
+  ({ type: "puzzle.delete", id: number; })
 ) & { id: number; };
 
 const updateRequest = async <T>(endpoint: string, params: any): Promise<[T, number]> => {
-  const response = await fetch(`/api${endpoint}`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/x-www-form-urlencoded",
-    },
-    body: (new URLSearchParams(params as any)).toString(),
-  });
+  let args: RequestInit;
+  if (params.delete === true) {
+    args = { method: "DELETE" };
+  } else {
+    args = {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body: (new URLSearchParams(params as any)).toString(),
+    };
+  }
+  const response = await fetch(`/api${endpoint}`, args);
   if (response.status === 401) {
     window.location.reload();
   } else if (response.status !== 200) {
@@ -49,6 +57,8 @@ export default defineStore("puzzles", {
       for (const [_, entry] of entries) {
         if (entry.type === "round") {
           rounds.set(entry.id, { ...rounds.get(entry.id)!, ...entry });
+        } else if (entry.type === "round.delete") {
+          rounds.delete(entry.id);
         }
       }
       const annotated: AnnotatedRound[] = [];
@@ -76,6 +86,8 @@ export default defineStore("puzzles", {
       for (const [_, entry] of entries) {
         if (entry.type === "puzzle") {
           puzzles.set(entry.id, { ...puzzles.get(entry.id)!, ...entry });
+        } else if (entry.type === "puzzle.delete") {
+          puzzles.delete(entry.id);
         }
       }
       return puzzles;
@@ -83,11 +95,10 @@ export default defineStore("puzzles", {
     puzzlesByRound(): Map<number, Puzzle[]> {
       const grouped = new Map<number, Puzzle[]>();
       for (const puzzle of this.puzzles.values()) {
-        const id = puzzle.round.id;
-        if (!grouped.has(id)) {
-          grouped.set(id, []);
+        if (!grouped.has(puzzle.round)) {
+          grouped.set(puzzle.round, []);
         }
-        grouped.get(id)!.push(puzzle);
+        grouped.get(puzzle.round)!.push(puzzle);
       }
       for (const [_, puzzles] of grouped) {
         puzzles.sort((a, b) => {
@@ -126,7 +137,7 @@ export default defineStore("puzzles", {
       this._puzzles.clear();
       this._optimistic.clear();
       (data.value?.rounds || []).forEach((r: any) => this._rounds.set(r.id, r));
-      (data.value?.puzzles || []).forEach((p: any) => this._puzzles.set(p.id, p));
+      (data.value?.puzzles || []).forEach((p: any) => this._puzzles.set(p.id, { ...p, round: p.round.id }));
       this._initialChangeId = data.value?.change_id || 0;
       this.nextHunt = data.value?.next_hunt ?
         new Date(data.value.next_hunt) : undefined;
@@ -136,12 +147,16 @@ export default defineStore("puzzles", {
       const [round, changeId] = await updateRequest<Round>("/rounds", data);
       this._optimistic.set(changeId, { type: "round", ...round });
     },
-    async updateRound(round: Round, data: Omit<Partial<Round>, "id">) {
+    async updateRound(id: number, data: Omit<Partial<Round>, "id">) {
+      const [_, changeId] = await updateRequest<Round>(`/rounds/${id}`, data);
+      this._optimistic.set(changeId, { type: "round", id, ...data });
+    },
+    async updateRoundOptimistic(id: number, data: Omit<Partial<Round>, "id">) {
       const localId = this._optimisticCounter++;
-      const delta: Optimistic = { type: "round", id: round.id, ...data };
+      const delta: Optimistic = { type: "round", id, ...data };
       this._optimistic.set(localId, delta);
       try {
-        const [_, changeId] = await updateRequest<Round>(`/rounds/${round.id}`, data);
+        const [_, changeId] = await updateRequest<Round>(`/rounds/${id}`, data);
         this._optimistic.set(changeId, delta);
       } finally { this._optimistic.delete(localId); }
     },
@@ -149,12 +164,26 @@ export default defineStore("puzzles", {
       const [puzzle, changeId] = await updateRequest<Puzzle>("/puzzles", data);
       this._optimistic.set(changeId, { type: "puzzle", ...puzzle });
     },
-    async updatePuzzle(puzzle: Puzzle, data: Omit<Partial<Puzzle>, "id">) {
+    async updatePuzzle(id: number, data: Omit<Partial<Puzzle>, "id">) {
+      const [_, changeId] = await updateRequest<Puzzle>(`/puzzles/${id}`, data);
+      this._optimistic.set(changeId, { type: "puzzle", id, ...data });
+    },
+    async updatePuzzleOptimistic(id: number, data: Omit<Partial<Puzzle>, "id">) {
       const localId = this._optimisticCounter++;
-      const delta: Optimistic = { type: "puzzle", id: puzzle.id, ...data };
+      const delta: Optimistic = { type: "puzzle", id, ...data };
       this._optimistic.set(localId, delta);
       try {
-        const [_, changeId] = await updateRequest<Puzzle>(`/puzzles/${puzzle.id}`, data);
+        const [_, changeId] = await updateRequest<Puzzle>(`/puzzles/${id}`, data);
+        this._optimistic.set(changeId, delta);
+      } finally { this._optimistic.delete(localId); }
+    },
+    async deletePuzzle(id: number) {
+      const localId = this._optimisticCounter++;
+      const delta: Optimistic = { type: "puzzle.delete", id };
+      this._optimistic.set(localId, delta);
+      try {
+        const [_, changeId] = await updateRequest<Puzzle>(
+          `/puzzles/${id}`, { delete: true });
         this._optimistic.set(changeId, delta);
       } finally { this._optimistic.delete(localId); }
     },
@@ -164,7 +193,7 @@ export default defineStore("puzzles", {
       if (kind === "upsert") {
         if (puzzle) {
           puzzle.reminder = reminder_fix!;
-          this._puzzles.set(puzzle.id, puzzle);
+          this._puzzles.set(puzzle.id, { ...puzzle, round: puzzle.round.id });
         }
         if (round) this._rounds.set(round.id, round);
       } else if (kind === "delete") {

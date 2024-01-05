@@ -16,12 +16,12 @@ const select = (status: Status) => {
   answering.value = null;
   if (!StatusNeedsAnswer(status)) {
     saving.value = true;
-    store.updatePuzzle(props.puzzle, { status, answer: "" })
+    store.updatePuzzleOptimistic(props.puzzle.id, { status, answer: "" })
       .finally(() => (saving.value = false));
     nextTick(() => button.value?.focus());
   } else if (props.puzzle.answer) {
     saving.value = true;
-    store.updatePuzzle(props.puzzle, { status })
+    store.updatePuzzleOptimistic(props.puzzle.id, { status })
       .finally(() => (saving.value = false));
   } else {
     answering.value = status;
@@ -35,13 +35,13 @@ const save = (answer: string) => {
   if (answering.value) {
     // Answer with state change to "Solved", etc.
     saving.value = true;
-    store.updatePuzzle(props.puzzle, { answer, status: answering.value, voice_room: "" })
+    store.updatePuzzleOptimistic(props.puzzle.id, { answer, status: answering.value, voice_room: "" })
       .finally(() => (saving.value = false));
     answering.value = null;
   } else {
     // Regular answer fixup
     saving.value = true;
-    store.updatePuzzle(props.puzzle, { answer })
+    store.updatePuzzleOptimistic(props.puzzle.id, { answer })
       .finally(() => (saving.value = false));
   }
 };
