@@ -63,7 +63,7 @@ function arcMedian(list: number[]) {
   }
   var leftCount = list.length - i;
   var circleStart = i;
-  if (circleStart == list.length)
+  if (circleStart === list.length)
     circleStart = 0;
   else
     for (; i < list.length; ++i)
@@ -81,7 +81,7 @@ function arcMedian(list: number[]) {
         --leftCount;
         distanceSum += 2 * (list[circleStart] - candidate) - period;
         ++circleStart;
-        if (circleStart == list.length) {
+        if (circleStart === list.length) {
           circleStart = 0;
           break;
         }
@@ -104,7 +104,7 @@ function arcMedian(list: number[]) {
     }
     previousCandidate = candidate;
   }
-  if (bestCandidates.length == 1) return bestCandidates[0];
+  if (bestCandidates.length === 1) return bestCandidates[0];
   else return circularMean(bestCandidates);
 }
 </script>

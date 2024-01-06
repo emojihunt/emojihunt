@@ -12,7 +12,7 @@ const toast = useToast();
 
 const initial = () => ({
   emoji: "", name: "", hue: 274, url: "", create: true,
-  round: store.rounds.length ? store.rounds[0] : undefined,
+  round: store.rounds.length ? store.rounds[0] : { id: 0, hue: 0 },
 });
 const data = reactive(initial());
 const saving = ref(false);
@@ -31,7 +31,7 @@ const submit = (e: Event) => {
       });
     } else {
       let params: NewPuzzle = {
-        name: data.name, round: data.round!.id, puzzle_url: data.url,
+        name: data.name, round: data.round.id, puzzle_url: data.url,
       };
       if (data.create) {
         params = { ...params, spreadsheet_id: "+", discord_channel: "+" };

@@ -5,7 +5,7 @@ const props = defineProps<{ puzzle: Puzzle; }>();
 const emit = defineEmits<{ (e: "select", s: Status): void; }>();
 
 const statuses = computed(() =>
-  Object.values(Status).filter((s) => s != props.puzzle.status)
+  Object.values(Status).filter((s) => s !== props.puzzle.status)
 );
 </script>
 

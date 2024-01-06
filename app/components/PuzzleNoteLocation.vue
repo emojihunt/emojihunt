@@ -15,7 +15,7 @@ const tooltip = computed(() => {
     if (!channel) return;
     // We expect the channel's emoji to go at the end
     const p = channel.split(" ");
-    if ([...p[p.length - 1]].length == 1) {
+    if ([...p[p.length - 1]].length === 1) {
       const text = p.slice(0, p.length - 1).join(" ");
       return {
         emoji: p[p.length - 1],

@@ -18,7 +18,7 @@ const client = new Ably.Realtime.Promise({
   authCallback: async (_, callback) => {
     console.log("Fetching Ably token...");
     const r = await fetch("/api/ably", { method: "POST" });
-    if (r.status != 200) {
+    if (r.status !== 200) {
       const msg = `HTTP ${r.status}: ${await r.text()}`;
       console.error(msg);
       callback(msg, null);

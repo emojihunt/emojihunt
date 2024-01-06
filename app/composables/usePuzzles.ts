@@ -38,10 +38,9 @@ const updateRequest = async <T>(endpoint: string, params: any): Promise<[T, numb
       data: await response.json().catch(() => response.text()),
     });
   }
-  return [
-    await response.json(),
-    parseInt(response.headers.get("X-Change-ID")!),
-  ];
+  const header = response.headers.get("X-Change-ID");
+  if (!header) throw "Missing X-Change-ID header";
+  return [await response.json(), parseInt(header)];
 };
 
 export default defineStore("puzzles", {

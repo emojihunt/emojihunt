@@ -19,18 +19,19 @@ const span = ref<HTMLSpanElement>();
 // changing state of the contenteditable. Instead, have Vue render the component
 // once and control all further updates manually.
 const rerender = () => {
-  span.value!.contentEditable = editing.value ? "plaintext-only" : "false";
+  if (!span.value) return;
+  span.value.contentEditable = editing.value ? "plaintext-only" : "false";
   let updated = props.value.trim();
   if (!editing.value && !updated) {
     updated = props.placeholder;
-    span.value!.classList.add("placeholder");
+    span.value.classList.add("placeholder");
   } else {
-    span.value!.classList.remove("placeholder");
+    span.value.classList.remove("placeholder");
   }
-  if (span.value!.innerText != updated) {
-    span.value!.innerText = updated;
+  if (span.value.innerText !== updated) {
+    span.value.innerText = updated;
   }
-  span.value!.tabIndex = props.tabindex || 0;
+  span.value.tabIndex = props.tabindex || 0;
 };
 onMounted(() => rerender());
 watch([props], () => (editing.value = false, rerender()));
@@ -42,14 +43,14 @@ defineExpose({
       rerender();
     }
     nextTick(() => span.value?.focus());
-    props.value && nextTick(() => highlightContents(span.value!));
+    props.value && nextTick(() => span.value && highlightContents(span.value));
   },
 });
 
 const saveEdit = (): boolean => {
   let updated = span.value?.textContent?.trim() || "";
-  if (updated === "-" || updated == props.placeholder) updated = "";
-  if (updated != props.value.trim()) {
+  if (updated === "-" || updated === props.placeholder) updated = "";
+  if (updated !== props.value.trim()) {
     editing.value = false;
     emit("save", updated);
     nextTick(() => rerender());
@@ -91,7 +92,7 @@ const keydown = (e: KeyboardEvent) => {
     switch (e.key) {
       case "Enter":
         editing.value = true;
-        highlightContents(span.value!);
+        if (span.value) highlightContents(span.value);
         rerender();
         e.preventDefault();
         break;
