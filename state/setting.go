@@ -60,19 +60,24 @@ func (c *Client) SetDiscoveredRounds(ctx context.Context, rounds map[string]Disc
 }
 
 func (c *Client) ReminderTimestamp(ctx context.Context) (time.Time, error) {
-	if raw, err := c.readSetting(ctx, reminderSetting); err != nil {
+	raw, err := c.readSetting(ctx, reminderSetting)
+	if err != nil {
 		return time.Time{}, err
-	} else if v, ok := raw.(time.Time); !ok {
-		return time.Time{}, nil // default
-	} else {
-		return v, nil
 	}
+	var previous int64 = 0 // default
+	if s, ok := raw.(string); ok {
+		previous, err = strconv.ParseInt(s, 10, 64)
+		if err != nil {
+			return time.Time{}, err
+		}
+	}
+	return time.Unix(previous, 0), nil
 }
 
 func (c *Client) SetReminderTimestamp(ctx context.Context, timestamp time.Time) error {
 	// Concurrency rule: this setting is only written from the reminder bot's
 	// worker goroutine.
-	return c.writeSetting(ctx, reminderSetting, timestamp)
+	return c.writeSetting(ctx, reminderSetting, strconv.FormatInt(timestamp.Unix(), 10))
 }
 
 func (c *Client) IncrementSyncEpoch(ctx context.Context) (int64, error) {

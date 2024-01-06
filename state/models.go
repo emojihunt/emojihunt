@@ -59,7 +59,7 @@ type DiscoveredRound struct {
 }
 
 func (p Puzzle) HasReminder() bool {
-	return p.Reminder.Year() < 2000
+	return p.Reminder.Year() >= 2000
 }
 
 func (p Puzzle) RawPuzzle() RawPuzzle {

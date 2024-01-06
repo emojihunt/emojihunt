@@ -13,11 +13,9 @@ import (
 )
 
 type ReminderBot struct {
-	discord *discord.Client
-	state   *state.Client
-
-	intervals          []time.Duration
-	warnErrorFrequency time.Duration
+	discord   *discord.Client
+	state     *state.Client
+	intervals []time.Duration
 }
 
 func NewReminderBot(main context.Context, discord *discord.Client, state *state.Client) discord.Bot {
@@ -29,7 +27,6 @@ func NewReminderBot(main context.Context, discord *discord.Client, state *state.
 			-1 * time.Hour,
 			-30 * time.Minute,
 		},
-		warnErrorFrequency: 10 * time.Minute,
 	}
 	go b.worker(main)
 	return b
@@ -138,15 +135,15 @@ func (b *ReminderBot) notify(ctx context.Context, since time.Time) (*time.Time, 
 		}
 
 		if msg != "" {
-			if len(puzzle.DiscordChannel) > 1 {
+			_, err = b.discord.ChannelSend(b.discord.QMChannel, msg)
+			if err != nil {
+				return nil, err
+			}
+			if puzzle.DiscordChannel != "" {
 				err = b.discord.ChannelSendRawID(puzzle.DiscordChannel, msg)
 				if err != nil {
 					return nil, err
 				}
-			}
-			_, err = b.discord.ChannelSend(b.discord.QMChannel, msg)
-			if err != nil {
-				return nil, err
 			}
 		}
 	}
