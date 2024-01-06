@@ -11,7 +11,14 @@ type Optimistic = (
 const updateRequest = async <T>(endpoint: string, params: any): Promise<[T, number]> => {
   let args: RequestInit;
   if (params.delete === true) {
-    args = { method: "DELETE" };
+    args = {
+      method: "DELETE",
+      // Workaround for https://github.com/nuxt/nuxt/issues/23422
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body: "-",
+    };
   } else {
     args = {
       method: "POST",
