@@ -5,12 +5,11 @@ import emojihues from "~/assets/emoji-hues.json";
 
 const index = new EmojiIndex(emojifile, { recent: [] });
 
-const props = defineProps<{ kind: "round" | "puzzle" | null; open: boolean; }>();
+const props = defineProps<{ kind: "round" | "puzzle"; }>();
 const emit = defineEmits<{ (event: "close"): void; }>();
 const store = usePuzzles();
 const toast = useToast();
 
-const modal = ref();
 const initial = () => ({
   emoji: "", name: "", hue: 274, url: "", create: true,
   round: store.rounds.length ? store.rounds[0] : undefined,
@@ -19,7 +18,7 @@ const data = reactive(initial());
 const saving = ref(false);
 
 let previous: string;
-const submit = (e: SubmitEvent) => {
+const submit = (e: Event) => {
   e.preventDefault();
   saving.value = true;
   if (previous) toast.remove(previous);
@@ -39,26 +38,23 @@ const submit = (e: SubmitEvent) => {
       }
       request = store.addPuzzle(params);
     }
-    request.then(() => close())
-      .catch((e) => (
+    request.
+      then(() => (
+        toast.add({
+          title: `Added ${props.kind}`, color: "green",
+          icon: "i-heroicons-check-badge",
+        }),
+        emit("close")
+      )).catch((e) => (
         previous = toast.add({
-          title: "Error",
-          color: "red",
-          description: e.data.message,
+          title: "Error", color: "red", description: e.data.message,
           icon: "i-heroicons-exclamation-triangle",
         }).id),
       ).finally(() => (saving.value = false));
   }, 500);
 };
-const close = () => {
-  if (previous) toast.remove(previous);
-  for (const [key, value] of Object.entries(initial())) {
-    // @ts-ignore
-    data[key] = value;
-  }
-  emit("close");
-};
 
+const form = ref<HTMLFormElement>();
 const emoji = (e: any) => {
   if (data.emoji === e.native) {
     data.emoji = "";
@@ -71,52 +67,49 @@ const emoji = (e: any) => {
       }
     }
   };
-
-  modal.value?.contents.querySelector(".name input")?.focus();
+  form.value?.querySelectorAll("input")[1].focus();
 };
-const focus = () => nextTick(() =>
-  modal.value?.contents?.querySelector(
-    props.kind === "round" ? ".emoji-mart input" : "button"
-  )?.focus(),
-);
-watch([props], () => props.open && focus());
+
+// USelectMenu doesn't support autofocus
+const autofocus = () => (props.kind === "puzzle") &&
+  nextTick(() => form.value?.querySelector("button")?.focus());
+onMounted(autofocus);
+watch([props], autofocus);
+const select = () => form.value?.querySelector("input")?.focus();
 
 const hue = computed(() => props.kind === "round" ? data.hue : data.round?.hue);
 </script>
 
 <template>
-  <Modal ref="modal" class="modal-fixup" :open="open" @submit="submit"
-    @keydown="(e: KeyboardEvent) => e.key == 'Escape' ? close() : e.stopPropagation()">
-    <form :class="kind">
-      <template v-if="kind === 'round'">
-        <UInput v-model="data.emoji" placeholder="🫥" readonly="readonly" />
-        <UInput v-model="data.name" placeholder="Round Name" class="name" />
-        <URange v-model="data.hue" :min=0 :max="359" class="hue" />
-      </template>
-      <template v-else>
-        <USelectMenu v-model="data.round" placeholder="Round" :options="store.rounds"
-          option-attribute="displayName" :popper="{ arrow: false }" searchable
-          clear-search-on-close @close="focus">
-          <template #trailing>
-            <UIcon name="i-heroicons-chevron-up" class="text-gray-400" />
-          </template>
-        </USelectMenu>
-        <UInput v-model="data.name" placeholder="Puzzle Name" />
-        <UInput v-model="data.url" placeholder="Puzzle URL" />
-        <UTooltip text="Create spreadsheet and Discord channel" :open-delay="500"
-          :popper="{ placement: 'top', offsetDistance: 0, strategy: 'absolute' }"
-          class="checkbox">
-          <UCheckbox v-model="data.create" />
-        </UTooltip>
-      </template>
-      <UButton type="submit" :disabled="saving">
-        <Spinner v-if="saving" />
-        <span v-else>Add</span>
-      </UButton>
-      <Picker v-if="kind === 'round'" :data="index" autofocus native :showPreview="false"
-        :showCategories="false" :emojiSize="16" emojiTooltip @select="emoji" />
-    </form>
-  </Modal>
+  <form ref="form" :class="kind" @submit="submit">
+    <template v-if="kind === 'round'">
+      <UInput v-model="data.emoji" placeholder="🫥" readonly="readonly" />
+      <UInput v-model="data.name" placeholder="Round Name" />
+      <URange v-model="data.hue" :min=0 :max="359" class="hue" />
+    </template>
+    <template v-else>
+      <USelectMenu v-model="data.round" placeholder="Round" :options="store.rounds"
+        option-attribute="displayName" :popper="{ arrow: false }" searchable
+        clear-search-on-close @close="select">
+        <template #trailing>
+          <UIcon name="i-heroicons-chevron-up" class="text-gray-400" />
+        </template>
+      </USelectMenu>
+      <UInput v-model="data.name" placeholder="Puzzle Name" />
+      <UInput v-model="data.url" placeholder="Puzzle URL" />
+      <UTooltip text="Create spreadsheet and Discord channel" :open-delay="500"
+        :popper="{ placement: 'top', offsetDistance: 0, strategy: 'absolute' }"
+        class="checkbox">
+        <UCheckbox v-model="data.create" />
+      </UTooltip>
+    </template>
+    <UButton type="submit" :disabled="saving">
+      <Spinner v-if="saving" />
+      <span v-else>Add</span>
+    </UButton>
+    <Picker v-if="kind === 'round'" :data="index" autoFocus native :showPreview="false"
+      :showCategories="false" :emojiSize="16" emojiTooltip @select="emoji" />
+  </form>
 </template>
 
 <style scoped>

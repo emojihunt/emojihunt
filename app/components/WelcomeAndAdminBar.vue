@@ -67,7 +67,9 @@ const close = () => {
       :disabled="!!display && !store.rounds.length">▢ Add Puzzle</button>
     <button>◆ Admin</button>
   </fieldset>
-  <AddRoundPuzzleModal :open="!!modal" :kind="modal" @close="close" />
+  <Modal v-if="!!modal" @close="close">
+    <AddRoundPuzzleForm :kind="modal" @close="close" />
+  </Modal>
 </template>
 
 <style scoped>

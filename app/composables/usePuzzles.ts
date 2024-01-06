@@ -178,14 +178,9 @@ export default defineStore("puzzles", {
       } finally { this._optimistic.delete(localId); }
     },
     async deletePuzzle(id: number) {
-      const localId = this._optimisticCounter++;
-      const delta: Optimistic = { type: "puzzle.delete", id };
-      this._optimistic.set(localId, delta);
-      try {
-        const [_, changeId] = await updateRequest<Puzzle>(
-          `/puzzles/${id}`, { delete: true });
-        this._optimistic.set(changeId, delta);
-      } finally { this._optimistic.delete(localId); }
+      const [_, changeId] = await updateRequest<Puzzle>(
+        `/puzzles/${id}`, { delete: true });
+      this._optimistic.set(changeId, { type: "puzzle.delete", id });
     },
     handleDelta({ change_id, kind, puzzle, round, reminder_fix }: SyncMessage) {
       this._optimistic.delete(change_id);

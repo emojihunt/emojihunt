@@ -1,12 +1,15 @@
 <script setup lang="ts">
-const props = defineProps<{ open: boolean; }>();
-const contents = ref<HTMLElement>();
-defineExpose({ contents });
+const emit = defineEmits<{ (event: "close"): void; }>();
+
+const keydown = (e: KeyboardEvent) => {
+  e.stopPropagation();
+  if (e.key === "Escape") emit("close");
+};
 </script>
 
 <template>
-  <footer v-if="open">
-    <section class="ring-1 ring-inset ring-gray-300" ref="contents">
+  <footer @keydown="keydown">
+    <section class="ring-1 ring-inset ring-gray-300">
       <slot></slot>
     </section>
   </footer>
@@ -35,5 +38,14 @@ section {
   border-radius: 0.6rem;
   background-color: white;
   filter: drop-shadow(0 2.5px 4px oklch(77% 0.0 0deg / 40%));
+}
+
+/* fix for capturing pointer events across full width of screen */
+footer {
+  pointer-events: none;
+}
+
+section {
+  pointer-events: auto;
 }
 </style>

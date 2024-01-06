@@ -27,7 +27,7 @@ const editState = (puzzle: Partial<Omit<Puzzle, "id">>): Partial<EditState> => {
 };
 
 const initial = (): Partial<Omit<Puzzle, "id">> =>
-  props.id ? (store.puzzles.get(props.id) || {}) : {};
+  props.id ? { ...store.puzzles.get(props.id) } : {};
 const original = reactive(initial());
 const edits = reactive(editState(original));
 const modified = computed(() => {
@@ -59,11 +59,12 @@ const modified = computed(() => {
   return modified;
 });
 
+const form = ref<HTMLFormElement>();
 watch([props], () => {
+  if (props.id) nextTick(() => form.value?.querySelector("input")?.focus());
   const updated = initial();
   Object.assign(original, updated);
   Object.assign(edits, editState(updated));
-  if (props.id) focus();
 });
 watch([storeToRefs(store).puzzlesByRound], () => {
   const updated = initial();
@@ -82,8 +83,9 @@ watch([storeToRefs(store).puzzlesByRound], () => {
   Object.assign(original, updated);
 });
 
+let previous: string;
 const saving = ref(false);
-const submit = (e: SubmitEvent) => {
+const submit = (e: Event) => {
   e.preventDefault();
   if (!props.id) return;
   saving.value = true;
@@ -91,9 +93,10 @@ const submit = (e: SubmitEvent) => {
   store.updatePuzzle(props.id, modified.value)
     .then(() => (
       toast.add({
-        title: "Updated", color: "green", icon: "i-heroicons-check-badge",
+        title: "Updated puzzle", color: "green",
+        icon: "i-heroicons-check-badge",
       }),
-      emit("close") // don't dismiss toast
+      emit("close")
     )).catch((e) => (
       previous = toast.add({
         title: "Error", color: "red", description: e.data.message,
@@ -106,28 +109,19 @@ const del = (e: MouseEvent) => {
   e.preventDefault();
   if (!props.id) return;
   if (!confirm("Delete this puzzle?")) return;
+  if (previous) toast.remove(previous);
   store.deletePuzzle(props.id)
     .then(() => (
       toast.add({
         title: "Deleted", color: "green", icon: "i-heroicons-trash",
       }),
-      emit("close") // don't dismiss toast
+      emit("close")
     )).catch((e) => (
       previous = toast.add({
         title: "Error", color: "red", description: e.data.message,
         icon: "i-heroicons-exclamation-triangle",
       }).id),
     ).finally(() => (saving.value = false));
-};
-
-let previous: string;
-const modal = ref();
-const focus = () => nextTick(() =>
-  modal.value?.contents?.querySelector("#puzzle-name")?.focus(),
-);
-const close = () => {
-  if (previous) toast.remove(previous);
-  emit("close");
 };
 
 const rounds = computed(() => store.rounds.map((r) =>
@@ -138,55 +132,51 @@ const hue = computed(() => store.rounds.find((r) => r.id === parseInt(edits.roun
 </script>
 
 <template>
-  <Modal ref="modal" :open="!!id" class="modal-fixup" @submit="submit"
-    @keydown="(e: KeyboardEvent) => e.key == 'Escape' ? close() : e.stopPropagation()">
-    <h1>Puzzle #{{ id }}</h1>
-    <form>
-      <label for="puzzle-name" :class="'name' in modified && 'modified'">Name</label>
-      <UInput v-model="edits.name" id="puzzle-name" />
-      <label for="puzzle-answer" :class="'answer' in modified && 'modified'">Answer</label>
-      <UInput v-model="edits.answer" id="puzzle-answer" />
-      <label for="puzzle-round" :class="'round' in modified && 'modified'">Round</label>
-      <USelect v-model="edits.round" :options="rounds" id="puzzle-round" />
-      <label for="puzzle-status" :class="'status' in modified && 'modified'">Status</label>
-      <USelect v-model="edits.status" :options="statuses" id="puzzle-status" />
-      <label for="puzzle-note" :class="'note' in modified && 'modified'">Note</label>
-      <UInput v-model="edits.note" id="puzzle-note" />
-      <label for="puzzle-location"
-        :class="'location' in modified && 'modified'">Location</label>
-      <UInput v-model="edits.location" id="puzzle-location" />
-      <label for="puzzle-url" :class="'puzzle_url' in modified && 'modified'">Puzzle
-        URL</label>
-      <UInput v-model="edits.puzzle_url" id="puzzle-url" />
-      <label for="puzzle-spreadsheet"
-        :class="'spreadsheet_id' in modified && 'modified'">Spreadsheet
-        ID</label>
-      <UInput v-model="edits.spreadsheet_id" id="puzzle-spreadsheet" />
-      <label for="puzzle-channel" :class="'discord_channel' in modified && 'modified'">Text
-        Channel ID</label>
-      <UInput v-model="edits.discord_channel" id="puzzle-channel" />
-      <label for="puzzle-voice" :class="'voice_room' in modified && 'modified'">Voice Room
-        ID</label>
-      <UInput v-model="edits.voice_room" id="puzzle-voice" />
-      <label for="puzzle-reminder-date"
-        :class="'reminder' in modified && 'modified'">Reminder
-        (ET)</label>
-      <div class="reminders">
-        <UInput v-model="edits.rdate" id="puzzle-reminder-date" type="date" />
-        <UInput v-model="edits.rtime" id="puzzle-reminder-time" type="time" />
-      </div>
-      <fieldset>
-        <UCheckbox v-model="edits.meta" label="Meta" class="checkbox"
-          :class="'meta' in modified && 'modified'" />
-        <div class="spacer"></div>
-        <button class="delete" type="button" @click="del">Delete</button>
-        <UButton type="submit" :disabled="saving">
-          <Spinner v-if="saving" />
-          <span v-else>Update</span>
-        </UButton>
-      </fieldset>
-    </form>
-  </Modal>
+  <h1>Puzzle #{{ id }}</h1>
+  <form ref="form" @submit="submit">
+    <label for="puzzle-name" :class="'name' in modified && 'modified'">Name</label>
+    <UInput v-model="edits.name" id="puzzle-name" autofocus />
+    <label for="puzzle-answer" :class="'answer' in modified && 'modified'">Answer</label>
+    <UInput v-model="edits.answer" id="puzzle-answer" />
+    <label for="puzzle-round" :class="'round' in modified && 'modified'">Round</label>
+    <USelect v-model="edits.round" :options="rounds" id="puzzle-round" />
+    <label for="puzzle-status" :class="'status' in modified && 'modified'">Status</label>
+    <USelect v-model="edits.status" :options="statuses" id="puzzle-status" />
+    <label for="puzzle-note" :class="'note' in modified && 'modified'">Note</label>
+    <UInput v-model="edits.note" id="puzzle-note" />
+    <label for="puzzle-location"
+      :class="'location' in modified && 'modified'">Location</label>
+    <UInput v-model="edits.location" id="puzzle-location" />
+    <label for="puzzle-url" :class="'puzzle_url' in modified && 'modified'">Puzzle
+      URL</label>
+    <UInput v-model="edits.puzzle_url" id="puzzle-url" />
+    <label for="puzzle-spreadsheet"
+      :class="'spreadsheet_id' in modified && 'modified'">Spreadsheet
+      ID</label>
+    <UInput v-model="edits.spreadsheet_id" id="puzzle-spreadsheet" />
+    <label for="puzzle-channel" :class="'discord_channel' in modified && 'modified'">Text
+      Channel ID</label>
+    <UInput v-model="edits.discord_channel" id="puzzle-channel" />
+    <label for="puzzle-voice" :class="'voice_room' in modified && 'modified'">Voice Room
+      ID</label>
+    <UInput v-model="edits.voice_room" id="puzzle-voice" />
+    <label for="puzzle-reminder-date" :class="'reminder' in modified && 'modified'">Reminder
+      (ET)</label>
+    <div class="reminders">
+      <UInput v-model="edits.rdate" id="puzzle-reminder-date" type="date" />
+      <UInput v-model="edits.rtime" id="puzzle-reminder-time" type="time" />
+    </div>
+    <fieldset>
+      <UCheckbox v-model="edits.meta" label="Meta" class="checkbox"
+        :class="'meta' in modified && 'modified'" />
+      <div class="spacer"></div>
+      <button class="delete" type="button" @click="del">Delete</button>
+      <UButton type="submit" :disabled="saving">
+        <Spinner v-if="saving" />
+        <span v-else>Update</span>
+      </UButton>
+    </fieldset>
+  </form>
 </template>
 
 <style scoped>

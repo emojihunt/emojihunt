@@ -94,7 +94,9 @@ const editing = ref<number>();
       <hr>
     </template>
     <WelcomeAndAdminBar />
-    <EditPuzzleModal :id="editing" @close="() => (editing = undefined)" />
+    <Modal v-if="!!editing" @close="() => (editing = undefined)">
+      <EditPuzzleForm :id="editing" @close="() => (editing = undefined)" />
+    </Modal>
   </main>
 </template>
 
