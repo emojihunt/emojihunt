@@ -166,6 +166,11 @@ export default defineStore("puzzles", {
         this._optimistic.set(changeId, delta);
       } finally { this._optimistic.delete(localId); }
     },
+    async deleteRound(id: number) {
+      const [_, changeId] = await updateRequest<Puzzle>(
+        `/rounds/${id}`, { delete: true });
+      this._optimistic.set(changeId, { type: "round.delete", id });
+    },
     async addPuzzle(data: NewPuzzle) {
       const [puzzle, changeId] = await updateRequest<Puzzle>("/puzzles", data);
       this._optimistic.set(changeId, { type: "puzzle", ...puzzle });

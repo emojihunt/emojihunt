@@ -66,7 +66,7 @@ watch([props], () => {
   Object.assign(original, updated);
   Object.assign(edits, editState(updated));
 });
-watch([storeToRefs(store).puzzlesByRound], () => {
+watch([storeToRefs(store).puzzles], () => {
   const updated = initial();
   const transformed = editState(updated);
   for (const key of PuzzleKeys) {
@@ -113,7 +113,7 @@ const del = (e: MouseEvent) => {
   store.deletePuzzle(props.id)
     .then(() => (
       toast.add({
-        title: "Deleted", color: "green", icon: "i-heroicons-trash",
+        title: "Deleted puzzle", color: "green", icon: "i-heroicons-trash",
       }),
       emit("close")
     )).catch((e) => (
@@ -275,7 +275,6 @@ form :deep(select):focus {
   --tw-ring-color: oklch(71% 0.18 v-bind(hue));
 }
 
-.hue :deep(input),
 .checkbox :deep(input) {
   color: oklch(71% 0.18 v-bind(hue));
 }

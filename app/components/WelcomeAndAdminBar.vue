@@ -65,7 +65,6 @@ const close = () => {
       :disabled="!!display && !store.rounds.length">○ Add Round</button>
     <button ref="puzzle" @click="() => (modal = (modal === 'puzzle') ? null : 'puzzle')"
       :disabled="!!display && !store.rounds.length">▢ Add Puzzle</button>
-    <button>◆ Admin</button>
   </fieldset>
   <Modal v-if="!!modal" @close="close">
     <AddRoundPuzzleForm :kind="modal" @close="close" />

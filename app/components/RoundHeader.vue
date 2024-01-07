@@ -5,7 +5,7 @@ const props = defineProps<{
   nextTimeline: string | undefined;
   observer: IntersectionObserver | undefined;
 }>();
-const emit = defineEmits<{ (e: "copy"): void; }>();
+const emit = defineEmits<{ (e: "copy"): void; (e: "edit"): void; }>();
 const hue = computed(() => props.round.hue);
 
 const pill = ref<HTMLElement>();
@@ -26,6 +26,7 @@ onMounted(() => {
     <div class="emoji">{{ round.emoji }}&#xfe0f;</div>
     <div class="round">{{ round.name }}</div>
     <div class="spaces"></div>
+    <button @click="() => emit('edit')">Edit</button>
     <button @click="() => emit('copy')">Copy</button>
     <div class="progress">{{ round.solved }}/{{ round.total }}</div>
   </header>

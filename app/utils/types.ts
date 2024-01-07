@@ -9,6 +9,10 @@ export type Round = {
   discord_category: string;
 };
 
+export const RoundKeys: (keyof Omit<Round, "id">)[] = [
+  "name", "emoji", "hue", "sort", "special", "drive_folder", "discord_category",
+];
+
 export type AnnotatedRound = Round & {
   anchor: string;
   complete: boolean;

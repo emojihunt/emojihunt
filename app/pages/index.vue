@@ -73,7 +73,7 @@ const copy = async (id: number): Promise<void> => {
   });
 };
 
-const editing = ref<number>();
+const editing = ref<{ kind: "puzzle" | "round", id: number; }>();
 </script>
 
 <template>
@@ -85,9 +85,11 @@ const editing = ref<number>();
     <template v-for="[i, round] of store.rounds.entries()">
       <RoundHeader :round="round" :timeline="timelineFromID(i)"
         :next-timeline="nextTimelineFromID(i)" :observer="observer"
-        @copy="() => copy(round.id)" />
+        @copy="() => copy(round.id)"
+        @edit="() => (editing = { kind: 'round', id: round.id })" />
       <Puzzle v-for="puzzle in store.puzzlesByRound.get(round.id)" :puzzle="puzzle"
-        :round="round" :focused="focused" @edit="() => (editing = puzzle.id)" />
+        :round="round" :focused="focused"
+        @edit="() => (editing = { kind: 'puzzle', id: puzzle.id })" />
       <div class="empty" v-if="!round.total">
         🫙&hairsp; No Puzzles
       </div>
@@ -95,7 +97,10 @@ const editing = ref<number>();
     </template>
     <WelcomeAndAdminBar />
     <Modal v-if="!!editing" @close="() => (editing = undefined)">
-      <EditPuzzleForm :id="editing" @close="() => (editing = undefined)" />
+      <EditPuzzleForm v-if="editing?.kind === 'puzzle'" :id="editing.id"
+        @close="() => (editing = undefined)" />
+      <EditRoundForm v-if="editing?.kind === 'round'" :id="editing.id"
+        @close="() => (editing = undefined)" />
     </Modal>
   </main>
 </template>
