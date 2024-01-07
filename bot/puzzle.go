@@ -133,7 +133,7 @@ func (b *PuzzleBot) Register() (*discordgo.ApplicationCommand, bool) {
 
 func (b *PuzzleBot) Handle(ctx context.Context, input *discord.CommandInput) (string, error) {
 	var reply string
-	_, err := b.state.UpdatePuzzleByDiscordChannel(ctx, input.IC.ChannelID,
+	change, err := b.state.UpdatePuzzleByDiscordChannel(ctx, input.IC.ChannelID,
 		func(puzzle *state.RawPuzzle) error {
 			// Reminder: we're holding the global database lock, so don't make any
 			// blocking calls in here!
@@ -218,7 +218,8 @@ func (b *PuzzleBot) Handle(ctx context.Context, input *discord.CommandInput) (st
 	} else if err != nil {
 		return "", err
 	}
-	return reply, nil
+	err = <-change.BotComplete
+	return reply, err
 }
 
 func (b *PuzzleBot) HandleScheduledEvent(ctx context.Context,

@@ -35,8 +35,9 @@ type PuzzleChange struct {
 	After    *Puzzle
 	ChangeID int64
 
-	// Whether or not the change was triggered from a bot command.
-	Bot bool
+	// An optional channel to notify on completion. Only set when called from a
+	// bot command.
+	BotComplete chan error
 }
 
 type RoundChange struct {

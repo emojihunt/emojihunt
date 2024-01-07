@@ -152,7 +152,12 @@ func (c *Client) SyncVoiceRooms(ctx context.Context) error {
 		}
 	}
 
-	c.RestorePlaceholderEvent()
+	go func() {
+		err := c.RestorePlaceholderEvent()
+		if err != nil {
+			log.Printf("error restoring placeholder event: %v", err)
+		}
+	}()
 	return nil
 }
 

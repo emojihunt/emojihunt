@@ -64,6 +64,9 @@ func (c *Client) Watch(ctx context.Context) {
 			err = c.TriggerDiscoveryEnabled(ctx)
 		case change := <-c.state.PuzzleChange:
 			err = c.TriggerPuzzle(ctx, change)
+			if change.BotComplete != nil {
+				change.BotComplete <- err
+			}
 		case change := <-c.state.RoundChange:
 			err = c.TriggerRound(ctx, change)
 		case <-ctx.Done():
@@ -213,7 +216,7 @@ func (c *Client) TriggerPuzzle(ctx context.Context, change state.PuzzleChange) e
 		// If the change was triggered by a bot, the bot's response will be visible
 		// in the puzzle channel so there's no need to send a solve notification
 		// there.
-		if !change.Bot {
+		if change.BotComplete == nil {
 			err := c.NotifySolveInPuzzleChannel(puzzle)
 			if err != nil {
 				return err
