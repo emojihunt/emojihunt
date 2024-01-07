@@ -3,6 +3,10 @@ db.sqlite
 fly.toml
 secrets
 
+# large directories
+.git
+app
+
 # Nuxt dev/build outputs
 .output
 .data
