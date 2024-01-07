@@ -19,19 +19,19 @@ const handleLogin = async (url: URL): Promise<LoginResult> => {
     return { status: "not_started" };
   }
 
-  const response = await fetch("/api/authenticate", {
+  const { data, error } = await useFetch("/api/authenticate", {
     method: "POST",
     headers: {
       "Content-Type": "application/x-www-form-urlencoded",
     },
     body: (new URLSearchParams({ code })).toString(),
   });
-  if (response.status === 200) {
+  if (data.value) {
     return { status: "success" };
-  } else if (response.status === 403) {
+  } else if (error.value?.statusCode === 403) {
     // The /authorize endpoint returns HTTP 403 if the code fails to verify. All
     // other errors should bubble up.
-    const { username } = await response.json();
+    const { username } = await error.value.data;
     if (username) {
       return { status: "unknown_member", username };
     }
@@ -39,8 +39,8 @@ const handleLogin = async (url: URL): Promise<LoginResult> => {
   } else {
     throw createError({
       fatal: true,
-      statusCode: response.status,
-      data: await response.text(),
+      statusCode: error.value?.statusCode,
+      data: error.value?.data,
     });
   }
 };
