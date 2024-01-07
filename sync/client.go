@@ -17,21 +17,20 @@ import (
 )
 
 type Client struct {
-	ably      *ably.RealtimeChannel
-	discord   *discord.Client
-	discovery bool
-	drive     *drive.Client
-	state     *state.Client
+	ably    *ably.RealtimeChannel
+	discord *discord.Client
+	drive   *drive.Client
+	state   *state.Client
 
 	solvedCategories []string
 	sortLock         sync.Mutex
 }
 
-func New(ably *ably.Realtime, discord *discord.Client, discovery bool,
-	drive *drive.Client, state *state.Client) *Client {
+func New(ably *ably.Realtime, discord *discord.Client, drive *drive.Client,
+	state *state.Client) *Client {
 	return &Client{
 		ably:    ably.Channels.Get(ablyChannelName),
-		discord: discord, discovery: discovery, drive: drive, state: state,
+		discord: discord, drive: drive, state: state,
 	}
 }
 
@@ -101,8 +100,13 @@ type AblyMessage struct {
 }
 
 func (c *Client) TriggerDiscoveryEnabled(ctx context.Context) error {
+	config, err := c.state.DiscoveryConfig(ctx)
+	if err != nil {
+		return err
+	}
+
 	var data discordgo.UpdateStatusData
-	if !c.discovery {
+	if config.PuzzlesURL == "" {
 		data.Status = "idle"
 	} else if c.state.IsEnabled(ctx) {
 		data.Status = "online"

@@ -88,7 +88,7 @@ func main() {
 
 	// Start internal engines
 	var discovery = false
-	var sync = sync.New(ably, discord, discovery, drive, state)
+	var sync = sync.New(ably, discord, drive, state)
 	go sync.Watch(ctx)
 
 	log.Printf("starting web server")

@@ -13,6 +13,7 @@ import (
 )
 
 const (
+	discoveryConfigSetting  = "discovery_config"
 	enabledSetting          = "discovery_enabled"
 	discoveredRoundsSetting = "discovered_rounds"
 	reminderSetting         = "reminder_timestamp"
@@ -39,7 +40,7 @@ func (c *Client) EnableDiscovery(ctx context.Context, enabled bool) bool {
 	if err := c.writeSetting(ctx, enabledSetting, enabled); err != nil {
 		panic(err)
 	}
-	c.DiscoveryChange <- enabled
+	c.DiscoveryChange <- true
 	return true
 }
 

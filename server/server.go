@@ -107,6 +107,8 @@ func Start(ctx context.Context, prod bool, ably *ably.Realtime,
 
 	e.GET("/home", s.ListHome, s.AuthenticationMiddleware)
 	e.POST("/ably", s.RequestAblyToken, s.AuthenticationMiddleware)
+	e.GET("/discovery", s.GetDiscovery, s.AuthenticationMiddleware)
+	e.POST("/discovery", s.UpdateDiscovery, s.AuthenticationMiddleware)
 
 	go func() {
 		err := e.Start(":8080")
