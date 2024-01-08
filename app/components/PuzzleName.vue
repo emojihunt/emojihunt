@@ -51,7 +51,7 @@ button {
   padding: 0;
 
   font-size: 0.8rem;
-  line-height: 1.85rem;
+  line-height: 1.75rem;
   align-self: flex-start;
   color: oklch(60% 0.15 245deg);
 }
