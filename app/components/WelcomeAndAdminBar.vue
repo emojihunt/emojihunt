@@ -1,4 +1,7 @@
 <script setup lang="ts">
+const emit = defineEmits<{
+  (e: "click", kind: "round" | "puzzle" | "admin"): void;
+}>();
 const store = usePuzzles();
 const config = useAppConfig();
 
@@ -28,7 +31,6 @@ const recalculate = () => {
 
   display.value = `${delta} day${delta > 1 ? 's' : ''}...`;
 };
-defineExpose({ hunt: !display });
 
 recalculate();
 onMounted(() => {
@@ -38,14 +40,15 @@ onMounted(() => {
   }
 });
 
-const modal = ref<"round" | "puzzle" | null>(null);
 const round = ref();
 const puzzle = ref();
-const close = () => {
-  if (modal.value === "round") nextTick(() => round.value?.focus());
-  else nextTick(() => puzzle.value?.focus());
-  modal.value = null;
-};
+const admin = ref();
+const focus = (kind: "round" | "puzzle" | "admin") => nextTick(() => {
+  if (kind === "round") round.value?.focus();
+  else if (kind === "puzzle") puzzle.value?.focus();
+  else admin.value?.focus();
+});
+defineExpose({ focus });
 </script>
 
 <template>
@@ -61,14 +64,13 @@ const close = () => {
     <hr>
   </section>
   <fieldset>
-    <button ref="round" @click="() => (modal = (modal === 'round') ? null : 'round')"
+    <button ref="round" @click="() => emit('click', 'round')"
       :disabled="!!display && !store.rounds.length">○ Add Round</button>
-    <button ref="puzzle" @click="() => (modal = (modal === 'puzzle') ? null : 'puzzle')"
+    <button ref="puzzle" @click="() => emit('click', 'puzzle')"
       :disabled="!!display && !store.rounds.length">▢ Add Puzzle</button>
+    <button ref="admin" @click="emit('click', 'admin')">◆
+      Admin</button>
   </fieldset>
-  <Modal v-if="!!modal" @close="close">
-    <AddRoundPuzzleForm :kind="modal" @close="close" />
-  </Modal>
 </template>
 
 <style scoped>

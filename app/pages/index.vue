@@ -73,7 +73,24 @@ const copy = async (id: number): Promise<void> => {
   });
 };
 
-const editing = ref<{ kind: "puzzle" | "round", id: number; }>();
+const welcome = ref();
+const editing = ref<
+  { kind: "round" | "puzzle" | "admin"; id?: void; } |
+  { kind: "round" | "puzzle", id: number; }
+>();
+const click = (kind: "round" | "puzzle" | "admin") => {
+  if (editing.value?.kind === kind && !editing.value.id) {
+    editing.value = undefined;
+  } else {
+    editing.value = { kind };
+  }
+};
+const close = () => {
+  if (editing.value && !editing.value.id) {
+    welcome.value?.focus(editing.value.kind);
+  }
+  editing.value = undefined;
+};
 </script>
 
 <template>
@@ -95,11 +112,13 @@ const editing = ref<{ kind: "puzzle" | "round", id: number; }>();
       </div>
       <hr>
     </template>
-    <WelcomeAndAdminBar />
-    <Modal v-if="!!editing" @close="() => (editing = undefined)">
-      <EditPuzzleForm v-if="editing?.kind === 'puzzle'" :id="editing.id"
+    <WelcomeAndAdminBar ref="welcome" @click="click" />
+    <Modal v-if="!!editing" @close="close">
+      <template v-if="editing.kind === 'admin'" />
+      <AddRoundPuzzleForm v-else-if="!editing.id" :kind="editing.kind" @close="close" />
+      <EditRoundForm v-else-if="editing?.kind === 'round'" :id="editing.id"
         @close="() => (editing = undefined)" />
-      <EditRoundForm v-if="editing?.kind === 'round'" :id="editing.id"
+      <EditPuzzleForm v-else-if="editing?.kind === 'puzzle'" :id="editing.id"
         @close="() => (editing = undefined)" />
     </Modal>
   </main>
