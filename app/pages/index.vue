@@ -114,12 +114,12 @@ const close = () => {
     </template>
     <WelcomeAndAdminBar ref="welcome" @click="click" />
     <Modal v-if="!!editing" @close="close">
-      <template v-if="editing.kind === 'admin'" />
+      <AdminForm v-if="editing.kind === 'admin'" @close=close />
       <AddRoundPuzzleForm v-else-if="!editing.id" :kind="editing.kind" @close="close" />
       <EditRoundForm v-else-if="editing?.kind === 'round'" :id="editing.id"
-        @close="() => (editing = undefined)" />
+        @close="close" />
       <EditPuzzleForm v-else-if="editing?.kind === 'puzzle'" :id="editing.id"
-        @close="() => (editing = undefined)" />
+        @close="close" />
     </Modal>
   </main>
 </template>

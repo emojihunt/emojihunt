@@ -111,6 +111,19 @@ export type HomeResponse = {
   voice_rooms: Record<string, string>;
 };
 
+export type DiscoveryConfig = {
+  puzzles_url: string;
+  cookie_name: string;
+  cookie_value: string;
+  group_mode: boolean;
+  group_selector: string;
+  round_name_selector: string;
+  puzzle_list_selector: string;
+  puzzle_item_selector: string;
+  websocket_url: string;
+  websocket_token: string;
+};
+
 export type AblyWorkerMessage =
   { name: "sync"; data: SyncMessage; } |
   { name: "client"; state: ConnectionState; };
