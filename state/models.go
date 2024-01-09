@@ -46,17 +46,17 @@ type RoundChange struct {
 	ChangeID int64
 }
 
-type DiscoveredPuzzle struct {
-	Name      string
-	RoundName string
-	URL       string
+type ScrapedPuzzle struct {
+	Name      string `json:"name"`
+	RoundName string `json:"round_name"`
+	PuzzleURL string `json:"puzzle_url"`
 }
 
-type DiscoveredRound struct {
+type ScrapedRound struct {
 	MessageID  string
 	Name       string
 	NotifiedAt time.Time
-	Puzzles    []DiscoveredPuzzle
+	Puzzles    []ScrapedPuzzle
 }
 
 func (p Puzzle) HasReminder() bool {

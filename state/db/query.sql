@@ -109,3 +109,52 @@ WHERE key = ?;
 -- name: UpdateSetting :exec
 INSERT OR REPLACE INTO settings (key, value)
 VALUES (?, ?);
+
+
+-- name: CheckPuzzleIsCreated :one
+SELECT COUNT(*) FROM puzzles
+WHERE name = ? OR puzzle_url = ? COLLATE nocase;
+
+-- name: CheckPuzzleIsDiscovered :one
+SELECT COUNT(*) FROM discovered_puzzles
+WHERE name = ? OR puzzle_url = ? COLLATE nocase;
+
+-- name: GetCreatedRound :one
+SELECT * FROM rounds
+WHERE name = ? COLLATE nocase;
+
+-- name: GetDiscoveredRound :one
+SELECT * FROM discovered_rounds
+WHERE name = ? COLLATE nocase;
+
+-- name: CreateDiscoveredPuzzle :exec
+INSERT INTO discovered_puzzles (puzzle_url, name, discovered_round)
+VALUES (?, ?, ?);
+
+-- name: CreateDiscoveredRound :one
+INSERT INTO discovered_rounds (name, message_id, notified_at, created_as)
+VALUES (?, ?, ?, ?) RETURNING id;
+
+-- name: UpdateDiscoveredRound :exec
+UPDATE discovered_rounds
+SET name = ?2, message_id = ?3, notified_at = ?4, created_as = ?5
+WHERE id = ?1;
+
+-- name: ListPendingDiscoveredRounds :many
+SELECT * FROM discovered_rounds WHERE created_as = 0;
+
+-- name: ListDiscoveredPuzzlesForRound :many
+SELECT * FROM discovered_puzzles WHERE discovered_round = ?;
+
+-- name: CompleteDiscoveredRound :exec
+UPDATE discovered_rounds SET created_as = ?2 WHERE id = ?1;
+
+-- name: ListCreatablePuzzles :many
+SELECT *
+FROM discovered_puzzles
+INNER JOIN discovered_rounds
+ON discovered_puzzles.discovered_round = discovered_rounds.id
+WHERE discovered_rounds.created_as != 0;
+
+-- name: CompleteDiscoveredPuzzle :exec
+UPDATE discovered_puzzles SET discovered_round = NULL WHERE id = ?;

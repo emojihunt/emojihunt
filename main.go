@@ -92,7 +92,7 @@ func main() {
 	go sync.Watch(ctx)
 
 	var discovery = discovery.New(discord, state, sync)
-	go discovery.RoundCreationWorker(ctx)
+	go discovery.SyncWorker(ctx)
 	go discovery.Watch(ctx)
 
 	log.Printf("starting web server")

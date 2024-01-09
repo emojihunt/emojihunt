@@ -7,10 +7,45 @@ package db
 
 import (
 	"context"
+	"database/sql"
 	"time"
 
 	"github.com/emojihunt/emojihunt/state/status"
 )
+
+const checkPuzzleIsCreated = `-- name: CheckPuzzleIsCreated :one
+SELECT COUNT(*) FROM puzzles
+WHERE name = ? OR puzzle_url = ? COLLATE nocase
+`
+
+type CheckPuzzleIsCreatedParams struct {
+	Name      string `json:"name"`
+	PuzzleURL string `json:"puzzle_url"`
+}
+
+func (q *Queries) CheckPuzzleIsCreated(ctx context.Context, arg CheckPuzzleIsCreatedParams) (int64, error) {
+	row := q.db.QueryRowContext(ctx, checkPuzzleIsCreated, arg.Name, arg.PuzzleURL)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
+const checkPuzzleIsDiscovered = `-- name: CheckPuzzleIsDiscovered :one
+SELECT COUNT(*) FROM discovered_puzzles
+WHERE name = ? OR puzzle_url = ? COLLATE nocase
+`
+
+type CheckPuzzleIsDiscoveredParams struct {
+	Name      string `json:"name"`
+	PuzzleURL string `json:"puzzle_url"`
+}
+
+func (q *Queries) CheckPuzzleIsDiscovered(ctx context.Context, arg CheckPuzzleIsDiscoveredParams) (int64, error) {
+	row := q.db.QueryRowContext(ctx, checkPuzzleIsDiscovered, arg.Name, arg.PuzzleURL)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
 
 const clearPuzzleVoiceRoom = `-- name: ClearPuzzleVoiceRoom :exec
 UPDATE puzzles
@@ -21,6 +56,69 @@ WHERE voice_room = ?
 func (q *Queries) ClearPuzzleVoiceRoom(ctx context.Context, voiceRoom string) error {
 	_, err := q.db.ExecContext(ctx, clearPuzzleVoiceRoom, voiceRoom)
 	return err
+}
+
+const completeDiscoveredPuzzle = `-- name: CompleteDiscoveredPuzzle :exec
+UPDATE discovered_puzzles SET discovered_round = NULL WHERE id = ?
+`
+
+func (q *Queries) CompleteDiscoveredPuzzle(ctx context.Context, id int64) error {
+	_, err := q.db.ExecContext(ctx, completeDiscoveredPuzzle, id)
+	return err
+}
+
+const completeDiscoveredRound = `-- name: CompleteDiscoveredRound :exec
+UPDATE discovered_rounds SET created_as = ?2 WHERE id = ?1
+`
+
+type CompleteDiscoveredRoundParams struct {
+	ID        int64 `json:"id"`
+	CreatedAs int64 `json:"created_as"`
+}
+
+func (q *Queries) CompleteDiscoveredRound(ctx context.Context, arg CompleteDiscoveredRoundParams) error {
+	_, err := q.db.ExecContext(ctx, completeDiscoveredRound, arg.ID, arg.CreatedAs)
+	return err
+}
+
+const createDiscoveredPuzzle = `-- name: CreateDiscoveredPuzzle :exec
+INSERT INTO discovered_puzzles (puzzle_url, name, discovered_round)
+VALUES (?, ?, ?)
+`
+
+type CreateDiscoveredPuzzleParams struct {
+	PuzzleURL       string        `json:"puzzle_url"`
+	Name            string        `json:"name"`
+	DiscoveredRound sql.NullInt64 `json:"discovered_round"`
+}
+
+func (q *Queries) CreateDiscoveredPuzzle(ctx context.Context, arg CreateDiscoveredPuzzleParams) error {
+	_, err := q.db.ExecContext(ctx, createDiscoveredPuzzle, arg.PuzzleURL, arg.Name, arg.DiscoveredRound)
+	return err
+}
+
+const createDiscoveredRound = `-- name: CreateDiscoveredRound :one
+INSERT INTO discovered_rounds (name, message_id, notified_at, created_as)
+VALUES (?, ?, ?, ?) RETURNING id
+`
+
+type CreateDiscoveredRoundParams struct {
+	Name       string    `json:"name"`
+	MessageID  string    `json:"message_id"`
+	NotifiedAt time.Time `json:"notified_at"`
+	CreatedAs  int64     `json:"created_as"`
+}
+
+func (q *Queries) CreateDiscoveredRound(ctx context.Context, arg CreateDiscoveredRoundParams) (int64, error) {
+	row := q.db.QueryRowContext(ctx, createDiscoveredRound,
+		arg.Name,
+		arg.MessageID,
+		arg.NotifiedAt,
+		arg.CreatedAs,
+	)
+	var id int64
+	err := row.Scan(&id)
+	return id, err
 }
 
 const createPuzzle = `-- name: CreatePuzzle :one
@@ -123,6 +221,45 @@ WHERE id = ?
 func (q *Queries) DeleteRound(ctx context.Context, id int64) error {
 	_, err := q.db.ExecContext(ctx, deleteRound, id)
 	return err
+}
+
+const getCreatedRound = `-- name: GetCreatedRound :one
+SELECT id, name, emoji, hue, sort, special, drive_folder, discord_category FROM rounds
+WHERE name = ? COLLATE nocase
+`
+
+func (q *Queries) GetCreatedRound(ctx context.Context, name string) (Round, error) {
+	row := q.db.QueryRowContext(ctx, getCreatedRound, name)
+	var i Round
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.Emoji,
+		&i.Hue,
+		&i.Sort,
+		&i.Special,
+		&i.DriveFolder,
+		&i.DiscordCategory,
+	)
+	return i, err
+}
+
+const getDiscoveredRound = `-- name: GetDiscoveredRound :one
+SELECT id, name, message_id, notified_at, created_as FROM discovered_rounds
+WHERE name = ? COLLATE nocase
+`
+
+func (q *Queries) GetDiscoveredRound(ctx context.Context, name string) (DiscoveredRound, error) {
+	row := q.db.QueryRowContext(ctx, getDiscoveredRound, name)
+	var i DiscoveredRound
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.MessageID,
+		&i.NotifiedAt,
+		&i.CreatedAs,
+	)
+	return i, err
 }
 
 const getPuzzle = `-- name: GetPuzzle :one
@@ -329,11 +466,129 @@ SELECT value from settings
 WHERE key = ?
 `
 
-func (q *Queries) GetSetting(ctx context.Context, key interface{}) ([]byte, error) {
+func (q *Queries) GetSetting(ctx context.Context, key string) ([]byte, error) {
 	row := q.db.QueryRowContext(ctx, getSetting, key)
 	var value []byte
 	err := row.Scan(&value)
 	return value, err
+}
+
+const listCreatablePuzzles = `-- name: ListCreatablePuzzles :many
+SELECT discovered_puzzles.id, puzzle_url, discovered_puzzles.name, discovered_round, discovered_rounds.id, discovered_rounds.name, message_id, notified_at, created_as
+FROM discovered_puzzles
+INNER JOIN discovered_rounds
+ON discovered_puzzles.discovered_round = discovered_rounds.id
+WHERE discovered_rounds.created_as != 0
+`
+
+type ListCreatablePuzzlesRow struct {
+	ID              int64         `json:"id"`
+	PuzzleURL       string        `json:"puzzle_url"`
+	Name            string        `json:"name"`
+	DiscoveredRound sql.NullInt64 `json:"discovered_round"`
+	ID_2            int64         `json:"id_2"`
+	Name_2          string        `json:"name_2"`
+	MessageID       string        `json:"message_id"`
+	NotifiedAt      time.Time     `json:"notified_at"`
+	CreatedAs       int64         `json:"created_as"`
+}
+
+func (q *Queries) ListCreatablePuzzles(ctx context.Context) ([]ListCreatablePuzzlesRow, error) {
+	rows, err := q.db.QueryContext(ctx, listCreatablePuzzles)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListCreatablePuzzlesRow
+	for rows.Next() {
+		var i ListCreatablePuzzlesRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.PuzzleURL,
+			&i.Name,
+			&i.DiscoveredRound,
+			&i.ID_2,
+			&i.Name_2,
+			&i.MessageID,
+			&i.NotifiedAt,
+			&i.CreatedAs,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listDiscoveredPuzzlesForRound = `-- name: ListDiscoveredPuzzlesForRound :many
+SELECT id, puzzle_url, name, discovered_round FROM discovered_puzzles WHERE discovered_round = ?
+`
+
+func (q *Queries) ListDiscoveredPuzzlesForRound(ctx context.Context, discoveredRound sql.NullInt64) ([]DiscoveredPuzzle, error) {
+	rows, err := q.db.QueryContext(ctx, listDiscoveredPuzzlesForRound, discoveredRound)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []DiscoveredPuzzle
+	for rows.Next() {
+		var i DiscoveredPuzzle
+		if err := rows.Scan(
+			&i.ID,
+			&i.PuzzleURL,
+			&i.Name,
+			&i.DiscoveredRound,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listPendingDiscoveredRounds = `-- name: ListPendingDiscoveredRounds :many
+SELECT id, name, message_id, notified_at, created_as FROM discovered_rounds WHERE created_as = 0
+`
+
+func (q *Queries) ListPendingDiscoveredRounds(ctx context.Context) ([]DiscoveredRound, error) {
+	rows, err := q.db.QueryContext(ctx, listPendingDiscoveredRounds)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []DiscoveredRound
+	for rows.Next() {
+		var i DiscoveredRound
+		if err := rows.Scan(
+			&i.ID,
+			&i.Name,
+			&i.MessageID,
+			&i.NotifiedAt,
+			&i.CreatedAs,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const listPuzzles = `-- name: ListPuzzles :many
@@ -555,6 +810,31 @@ func (q *Queries) ListRounds(ctx context.Context) ([]Round, error) {
 	return items, nil
 }
 
+const updateDiscoveredRound = `-- name: UpdateDiscoveredRound :exec
+UPDATE discovered_rounds
+SET name = ?2, message_id = ?3, notified_at = ?4, created_as = ?5
+WHERE id = ?1
+`
+
+type UpdateDiscoveredRoundParams struct {
+	ID         int64     `json:"id"`
+	Name       string    `json:"name"`
+	MessageID  string    `json:"message_id"`
+	NotifiedAt time.Time `json:"notified_at"`
+	CreatedAs  int64     `json:"created_as"`
+}
+
+func (q *Queries) UpdateDiscoveredRound(ctx context.Context, arg UpdateDiscoveredRoundParams) error {
+	_, err := q.db.ExecContext(ctx, updateDiscoveredRound,
+		arg.ID,
+		arg.Name,
+		arg.MessageID,
+		arg.NotifiedAt,
+		arg.CreatedAs,
+	)
+	return err
+}
+
 const updatePuzzle = `-- name: UpdatePuzzle :exec
 UPDATE puzzles
 SET name = ?2, answer = ?3, round = ?4, status = ?5, note = ?6,
@@ -636,8 +916,8 @@ VALUES (?, ?)
 `
 
 type UpdateSettingParams struct {
-	Key   interface{} `json:"key"`
-	Value []byte      `json:"value"`
+	Key   string `json:"key"`
+	Value []byte `json:"value"`
 }
 
 func (q *Queries) UpdateSetting(ctx context.Context, arg UpdateSettingParams) error {

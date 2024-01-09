@@ -12,11 +12,10 @@ import (
 )
 
 const (
-	discoveryConfigSetting  = "discovery_config"
-	enabledSetting          = "discovery_enabled"
-	discoveredRoundsSetting = "discovered_rounds"
-	reminderSetting         = "reminder_timestamp"
-	syncEpochSetting        = "sync_epoch"
+	discoveryConfigSetting = "discovery_config"
+	enabledSetting         = "discovery_enabled"
+	reminderSetting        = "reminder_timestamp"
+	syncEpochSetting       = "sync_epoch"
 )
 
 func (c *Client) IsEnabled(ctx context.Context) bool {
@@ -46,30 +45,6 @@ func (c *Client) EnableDiscovery(ctx context.Context, enabled bool) bool {
 	}
 	c.DiscoveryChange <- true
 	return true
-}
-
-func (c *Client) DiscoveredRounds(ctx context.Context) (map[string]DiscoveredRound, error) {
-	data, err := c.readSetting(ctx, discoveredRoundsSetting)
-	if err != nil {
-		return nil, err
-	}
-	var rounds map[string]DiscoveredRound
-	if len(data) > 0 {
-		err = json.Unmarshal(data, &rounds)
-		if err != nil {
-			return nil, xerrors.Errorf("DiscoveredRounds unmarshal: %w", err)
-		}
-	}
-	if rounds == nil {
-		rounds = make(map[string]DiscoveredRound)
-	}
-	return rounds, nil
-}
-
-func (c *Client) SetDiscoveredRounds(ctx context.Context, rounds map[string]DiscoveredRound) error {
-	// Concurrency rule: this setting is only written from the discovery poller's
-	// round creation worker goroutine.
-	return c.writeSetting(ctx, discoveredRoundsSetting, rounds)
 }
 
 func (c *Client) ReminderTimestamp(ctx context.Context) (time.Time, error) {

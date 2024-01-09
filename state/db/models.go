@@ -5,10 +5,26 @@
 package db
 
 import (
+	"database/sql"
 	"time"
 
 	"github.com/emojihunt/emojihunt/state/status"
 )
+
+type DiscoveredPuzzle struct {
+	ID              int64         `json:"id"`
+	PuzzleURL       string        `json:"puzzle_url"`
+	Name            string        `json:"name"`
+	DiscoveredRound sql.NullInt64 `json:"discovered_round"`
+}
+
+type DiscoveredRound struct {
+	ID         int64     `json:"id"`
+	Name       string    `json:"name"`
+	MessageID  string    `json:"message_id"`
+	NotifiedAt time.Time `json:"notified_at"`
+	CreatedAs  int64     `json:"created_as"`
+}
 
 type Puzzle struct {
 	ID             int64         `json:"id"`
@@ -38,6 +54,6 @@ type Round struct {
 }
 
 type Setting struct {
-	Key   interface{} `json:"key"`
-	Value []byte      `json:"value"`
+	Key   string `json:"key"`
+	Value []byte `json:"value"`
 }

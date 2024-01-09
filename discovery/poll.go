@@ -100,7 +100,7 @@ func NewPoller(config state.DiscoveryConfig) (*Poller, error) {
 	}, nil
 }
 
-func (p *Poller) Poll(ctx context.Context, c *Client) error {
+func (p *Poller) Poll(ctx context.Context, r chan []state.ScrapedPuzzle) error {
 	hub := sentry.CurrentHub().Clone()
 	hub.ConfigureScope(func(scope *sentry.Scope) {
 		scope.SetTag("task", "discovery.poll")
@@ -112,22 +112,18 @@ reconnect:
 		ws, ch, err := p.OpenWebsocket(ctx)
 		if err != nil {
 			log.Printf("discovery: failed to open websocket: %v", spew.Sprint(err))
-		} else {
+		} else if ws != nil {
 			defer ws.Close()
 		}
 
 		for {
-			c.mutex.Lock()
 			subctx, cancel := context.WithTimeout(ctx, pollTimeout)
 			if puzzles, err := p.Scrape(subctx); err != nil {
 				sentry.GetHubFromContext(ctx).CaptureException(err)
-			} else if err := subctx.Err(); err != nil {
-				log.Printf("discovery: subcontext canceled: %v", err)
-			} else if err := c.SyncPuzzles(subctx, puzzles); err != nil {
-				sentry.GetHubFromContext(ctx).CaptureException(err)
+			} else {
+				r <- puzzles
 			}
 			cancel()
-			c.mutex.Unlock()
 
 			select {
 			case <-ctx.Done():
@@ -142,7 +138,7 @@ reconnect:
 	}
 }
 
-func (p *Poller) Scrape(ctx context.Context) ([]state.DiscoveredPuzzle, error) {
+func (p *Poller) Scrape(ctx context.Context) ([]state.ScrapedPuzzle, error) {
 	// Download
 	log.Printf("discovery: scraping %q", p.puzzlesURL.String())
 	req, err := http.NewRequestWithContext(ctx, "GET", p.puzzlesURL.String(), nil)
@@ -224,7 +220,7 @@ func (p *Poller) Scrape(ctx context.Context) ([]state.DiscoveredPuzzle, error) {
 	}
 
 	// Parse out individual puzzles
-	var puzzles []state.DiscoveredPuzzle
+	var puzzles []state.ScrapedPuzzle
 	for _, pair := range discovered {
 		nameNode, puzzleListNode := pair[0], pair[1]
 		var roundBuf bytes.Buffer
@@ -253,10 +249,10 @@ func (p *Poller) Scrape(ctx context.Context) ([]state.DiscoveredPuzzle, error) {
 			}
 
 			url := p.puzzlesURL.ResolveReference(u).String()
-			puzzles = append(puzzles, state.DiscoveredPuzzle{
+			puzzles = append(puzzles, state.ScrapedPuzzle{
 				Name:      strings.TrimSpace(puzzleBuf.String()),
 				RoundName: roundName,
-				URL:       url,
+				PuzzleURL: url,
 			})
 		}
 	}

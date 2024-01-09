@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 
+	"github.com/emojihunt/emojihunt/state/db"
 	"golang.org/x/xerrors"
 )
 
@@ -93,4 +94,111 @@ func (c *Client) UpdateDiscoveryConfig(ctx context.Context,
 	}
 	c.DiscoveryChange <- true
 	return c.DiscoveryConfig(ctx)
+}
+
+func (c *Client) ShouldCreatePuzzle(ctx context.Context, puzzle ScrapedPuzzle) (bool, error) {
+	count, err := c.queries.CheckPuzzleIsCreated(ctx, db.CheckPuzzleIsCreatedParams{
+		Name: puzzle.Name, PuzzleURL: puzzle.PuzzleURL,
+	})
+	if err != nil {
+		return false, xerrors.Errorf("CheckPuzzleIsCreated: %w", err)
+	} else if count > 0 {
+		return false, nil
+	}
+
+	count, err = c.queries.CheckPuzzleIsDiscovered(ctx, db.CheckPuzzleIsDiscoveredParams{
+		Name: puzzle.Name, PuzzleURL: puzzle.PuzzleURL,
+	})
+	if err != nil {
+		return false, xerrors.Errorf("CheckPuzzleIsDiscovered: %w", err)
+	} else if count > 0 {
+		return false, nil
+	}
+	return true, nil
+}
+
+func (c *Client) GetCreatedRound(ctx context.Context, name string) (Round, error) {
+	round, err := c.queries.GetCreatedRound(ctx, name)
+	if err != nil {
+		return Round{}, xerrors.Errorf("GetCreatedRound: %w", err)
+	}
+	return round, nil
+}
+
+func (c *Client) GetDiscoveredRound(ctx context.Context, name string) (db.DiscoveredRound, error) {
+	discovered, err := c.queries.GetDiscoveredRound(ctx, name)
+	if err != nil {
+		return db.DiscoveredRound{}, xerrors.Errorf("GetDiscoveredRound: %w", err)
+	}
+	return discovered, nil
+}
+
+func (c *Client) CreateDiscoveredPuzzle(ctx context.Context, puzzle db.CreateDiscoveredPuzzleParams) error {
+	err := c.queries.CreateDiscoveredPuzzle(ctx, puzzle)
+	if err != nil {
+		return xerrors.Errorf("CreateDiscoveredPuzzle: %w", err)
+	}
+	return nil
+}
+
+func (c *Client) CreateDiscoveredRound(ctx context.Context, round string) (int64, error) {
+	id, err := c.queries.CreateDiscoveredRound(ctx, db.CreateDiscoveredRoundParams{
+		Name: round,
+	})
+	if err != nil {
+		return 0, xerrors.Errorf("CreateDiscoveredRound: %w", err)
+	}
+	return id, nil
+}
+
+func (c *Client) UpdateDiscoveredRound(ctx context.Context, round db.DiscoveredRound) error {
+	err := c.queries.UpdateDiscoveredRound(ctx, db.UpdateDiscoveredRoundParams(round))
+	if err != nil {
+		return xerrors.Errorf("UpdateDiscoveredRound: %w", err)
+	}
+	return nil
+}
+
+func (c *Client) ListPendingDiscoveredRounds(ctx context.Context) ([]db.DiscoveredRound, error) {
+	discovered, err := c.queries.ListPendingDiscoveredRounds(ctx)
+	if err != nil {
+		return nil, xerrors.Errorf("ListPendingDiscoveredRounds: %w", err)
+	}
+	return discovered, nil
+}
+
+func (c *Client) ListDiscoveredPuzzlesForRound(ctx context.Context, id int64) ([]db.DiscoveredPuzzle, error) {
+	discovered, err := c.queries.ListDiscoveredPuzzlesForRound(
+		ctx, sql.NullInt64{Int64: id, Valid: true},
+	)
+	if err != nil {
+		return nil, xerrors.Errorf("ListDiscoveredPuzzlesForRound: %w", err)
+	}
+	return discovered, nil
+}
+
+func (c *Client) CompleteDiscoveredRound(ctx context.Context, id int64, round Round) error {
+	err := c.queries.CompleteDiscoveredRound(ctx, db.CompleteDiscoveredRoundParams{
+		ID: id, CreatedAs: round.ID,
+	})
+	if err != nil {
+		return xerrors.Errorf("CompleteDiscoveredRound: %w", err)
+	}
+	return nil
+}
+
+func (c *Client) ListCreatablePuzzles(ctx context.Context) ([]db.ListCreatablePuzzlesRow, error) {
+	puzzles, err := c.queries.ListCreatablePuzzles(ctx)
+	if err != nil {
+		return nil, xerrors.Errorf("ListCreatablePuzzles: %w", err)
+	}
+	return puzzles, nil
+}
+
+func (c *Client) CompleteDiscoveredPuzzle(ctx context.Context, id int64) error {
+	err := c.queries.CompleteDiscoveredPuzzle(ctx, id)
+	if err != nil {
+		return xerrors.Errorf("CompleteDiscoveredPuzzle: %w", err)
+	}
+	return nil
 }

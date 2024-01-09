@@ -2,13 +2,15 @@ package discovery
 
 import (
 	"context"
+	"database/sql"
+	"errors"
+	"fmt"
 	"log"
-	"strings"
-	m "sync"
 	"time"
 
 	"github.com/emojihunt/emojihunt/discord"
 	"github.com/emojihunt/emojihunt/state"
+	"github.com/emojihunt/emojihunt/state/db"
 	"github.com/emojihunt/emojihunt/sync"
 	"github.com/getsentry/sentry-go"
 )
@@ -17,12 +19,12 @@ type Client struct {
 	discord *discord.Client
 	state   *state.Client
 	sync    *sync.Client
-	rounds  chan state.DiscoveredRound
-	mutex   m.Mutex
+
+	discovered chan []state.ScrapedPuzzle
 }
 
 func New(discord *discord.Client, s *state.Client, y *sync.Client) *Client {
-	return &Client{discord, s, y, make(chan state.DiscoveredRound), m.Mutex{}}
+	return &Client{discord, s, y, make(chan []state.ScrapedPuzzle)}
 }
 
 func (c *Client) Watch(ctx context.Context) {
@@ -54,7 +56,7 @@ func (c *Client) Watch(ctx context.Context) {
 				if err != nil {
 					return err
 				}
-				go poller.Poll(ctx, c)
+				go poller.Poll(ctx, c.discovered)
 				return nil
 			}()
 			if err != nil {
@@ -64,7 +66,6 @@ func (c *Client) Watch(ctx context.Context) {
 
 		select {
 		case <-ctx.Done():
-			log.Printf("discovery: exiting worker!")
 			cancel()
 			return
 		case <-c.sync.RestartDiscovery:
@@ -74,127 +75,193 @@ func (c *Client) Watch(ctx context.Context) {
 	}
 }
 
-func (c *Client) SyncPuzzles(ctx context.Context, puzzles []state.DiscoveredPuzzle) error {
-	log.Printf("discovery: syncing %d puzzles", len(puzzles))
-
-	// Filter out known puzzles; add remaining puzzles
-	var fragments = make(map[string]bool)
-	existing, err := c.state.ListPuzzles(ctx)
-	if err != nil {
-		return err
-	}
-	for _, puzzle := range existing {
-		fragments[strings.ToUpper(puzzle.Name)] = true
-		fragments[strings.ToUpper(puzzle.PuzzleURL)] = true
-	}
-
-	var roundsByName = make(map[string]state.Round)
-	rounds, err := c.state.ListRounds(ctx)
-	if err != nil {
-		return err
-	}
-	for _, round := range rounds {
-		roundsByName[strings.ToUpper(round.Name)] = round
-	}
-
-	var newPuzzles []state.RawPuzzle
-	newRounds := make(map[string][]state.DiscoveredPuzzle)
-	for _, puzzle := range puzzles {
-		if fragments[strings.ToUpper(puzzle.URL)] ||
-			fragments[strings.ToUpper(puzzle.Name)] {
-			// skip if name or URL matches an existing puzzle
-			continue
-		}
-		if round, ok := roundsByName[strings.ToUpper(puzzle.RoundName)]; ok {
-			log.Printf("discovery: preparing to add puzzle %q (%s) in round %q",
-				puzzle.Name, puzzle.URL, puzzle.RoundName)
-			newPuzzles = append(newPuzzles, state.RawPuzzle{
-				Name:      puzzle.Name,
-				Round:     round.ID,
-				PuzzleURL: puzzle.URL,
-			})
-		} else {
-			// puzzle belongs to a new round
-			newRounds[puzzle.RoundName] = append(newRounds[puzzle.RoundName], puzzle)
-		}
-	}
-
-	if len(newPuzzles) > 0 {
-		err := c.handleNewPuzzles(ctx, newPuzzles)
-		if err != nil {
-			return err
-		}
-	}
-
-	if len(newRounds) > 0 {
-		err := c.handleNewRounds(ctx, newRounds)
-		if err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
-func (c *Client) RoundCreationWorker(ctx context.Context) {
+func (c *Client) SyncWorker(ctx context.Context) {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
 	hub := sentry.CurrentHub().Clone()
 	hub.ConfigureScope(func(scope *sentry.Scope) {
-		scope.SetTag("task", "discovery.rounds")
+		scope.SetTag("task", "discovery.sync")
 	})
 	ctx = sentry.SetHubOnContext(ctx, hub)
 	// *do* allow panics to bubble up to main()
 
-	rounds, err := c.state.DiscoveredRounds(ctx)
-	if err != nil {
-		panic(err)
-	}
-
-	var wakeup = time.Now()
+	var wakeup = time.Now().Add(roundCreationPause)
 	for {
 		select {
-		case v, ok := <-c.rounds:
-			// Read and record one round from the queue
-			if !ok {
-				panic("channel closed")
+		case puzzles := <-c.discovered:
+			for _, puzzle := range puzzles {
+				if !c.state.IsEnabled(ctx) {
+					break
+				}
+				if err := c.handleScrapedPuzzle(ctx, puzzle); err != nil {
+					sentry.GetHubFromContext(ctx).CaptureException(err)
+					break
+				}
 			}
-			rounds[v.Name] = v
-			if err := c.state.SetDiscoveredRounds(ctx, rounds); err != nil {
-				panic(err)
-			}
-			continue
 		case <-time.After(time.Until(wakeup)):
-			// Periodically process any round(s) that have passed the timeout
 		case <-ctx.Done():
 			return
 		}
 
-		// Process any round(s) that have passed the timeout
-		var queue []state.DiscoveredRound
+		rounds, err := c.state.ListPendingDiscoveredRounds(ctx)
+		if err != nil {
+			sentry.GetHubFromContext(ctx).CaptureException(err)
+			continue
+		}
 		for _, round := range rounds {
-			if wakeup.After(round.NotifiedAt.Add(roundCreationPause)) {
-				queue = append(queue, round)
+			if !c.state.IsEnabled(ctx) {
+				break
+			}
+			err := c.handleDiscoveredRound(ctx, round)
+			if err != nil {
+				sentry.GetHubFromContext(ctx).CaptureException(err)
 			}
 		}
-		for _, round := range queue {
-			if emoji, err := c.discord.GetTopReaction(c.discord.QMChannel, round.MessageID); err != nil {
+
+		puzzles, err := c.state.ListCreatablePuzzles(ctx)
+		if err != nil {
+			sentry.GetHubFromContext(ctx).CaptureException(err)
+			continue
+		}
+		for _, puzzle := range puzzles {
+			if !c.state.IsEnabled(ctx) {
+				break
+			}
+			err := c.handleCreatablePuzzle(ctx, puzzle)
+			if err != nil {
 				sentry.GetHubFromContext(ctx).CaptureException(err)
-			} else if emoji == "" {
-				// QM hasn't assigned an emoji yet
-				continue
-			} else if err := c.createRound(ctx, round, emoji); err != nil {
-				sentry.GetHubFromContext(ctx).CaptureException(err)
-			} else {
-				// Success!
-				delete(rounds, round.Name)
-				break // only process one round at a time
 			}
 		}
-		if err := c.state.SetDiscoveredRounds(ctx, rounds); err != nil {
-			panic(err)
-		}
-		wakeup = time.Now().Add(roundCreationPause)
+		wakeup = wakeup.Add(roundCreationPause)
 	}
+}
+
+func (c *Client) handleScrapedPuzzle(ctx context.Context, record state.ScrapedPuzzle) error {
+	ok, err := c.state.ShouldCreatePuzzle(ctx, record)
+	if err != nil {
+		return err
+	}
+	if !ok {
+		return nil // already created
+	}
+
+	var params = db.CreateDiscoveredPuzzleParams{
+		PuzzleURL: record.PuzzleURL,
+		Name:      record.Name,
+	}
+	round, err := c.state.GetCreatedRound(ctx, record.RoundName)
+	if errors.Is(err, sql.ErrNoRows) {
+		round, err := c.state.GetDiscoveredRound(ctx, record.RoundName)
+		if errors.Is(err, sql.ErrNoRows) {
+			// New round, hasn't even been logged yet
+			new, err := c.state.CreateDiscoveredRound(ctx, record.RoundName)
+			if err != nil {
+				return err
+			}
+			params.DiscoveredRound = sql.NullInt64{Int64: new, Valid: true}
+		} else if err != nil {
+			return err
+		} else {
+			// New round, pending QM approval & creation
+			params.DiscoveredRound = sql.NullInt64{Int64: round.ID, Valid: true}
+		}
+		return c.state.CreateDiscoveredPuzzle(ctx, params)
+	} else if err != nil {
+		return err
+	} else {
+		// Ready to create puzzle
+		err = c.state.CreateDiscoveredPuzzle(ctx, params)
+		if err != nil {
+			return err
+		}
+		return c.createPuzzle(ctx, record, round)
+	}
+}
+
+func (c *Client) createPuzzle(ctx context.Context, record state.ScrapedPuzzle,
+	round state.Round) error {
+	log.Printf("discovery: creating puzzle %q (%s) in round %q",
+		record.Name, record.PuzzleURL, round.Name)
+	var err error
+	var puzzle = state.RawPuzzle{
+		Name:      record.Name,
+		Round:     round.ID,
+		PuzzleURL: record.PuzzleURL,
+	}
+	puzzle.SpreadsheetID, err = c.sync.CreateSpreadsheet(ctx, puzzle)
+	if err != nil {
+		return err
+	}
+	puzzle.DiscordChannel, err = c.sync.CreateDiscordChannel(ctx, puzzle, round)
+	if err != nil {
+		return err
+	}
+	_, _, err = c.state.CreatePuzzle(ctx, puzzle)
+	return err
+}
+
+func (c *Client) handleDiscoveredRound(ctx context.Context, round db.DiscoveredRound) error {
+	if round.MessageID == "" {
+		log.Printf("discovery: notifying #qm of new round %q", round.Name)
+		puzzles, err := c.state.ListDiscoveredPuzzlesForRound(ctx, round.ID)
+		if err != nil {
+			return err
+		}
+
+		msg := fmt.Sprintf("```*** ❓ NEW ROUND: \"%s\" ***\n\n", round.Name)
+		for _, puzzle := range puzzles {
+			msg += fmt.Sprintf("%s\n%s\n\n", puzzle.Name, puzzle.PuzzleURL)
+		}
+		msg += "Reminder: use `/qm discovery pause` to stop the bot.\n\n"
+		msg += ">> REACT TO PROPOSE AN EMOJI FOR THIS ROUND <<\n```\n"
+
+		id, err := c.discord.ChannelSend(c.discord.QMChannel, msg)
+		if err != nil {
+			return err
+		}
+		round.MessageID = id
+		round.NotifiedAt = time.Now()
+		return c.state.UpdateDiscoveredRound(ctx, round)
+
+	} else if time.Now().After(round.NotifiedAt.Add(roundCreationPause)) {
+		// It's been a while, check Discord for round emoji
+		emoji, err := c.discord.GetTopReaction(c.discord.QMChannel, round.MessageID)
+		if err != nil {
+			return err
+		} else if emoji == "" {
+			// QM hasn't assigned an emoji yet
+			return nil
+		}
+
+		log.Printf("discovery: creating round %q with emoji %q", round.Name, emoji)
+		var dbRound = state.Round{Name: round.Name, Emoji: emoji}
+		dbRound.DriveFolder, err = c.sync.CreateDriveFolder(ctx, dbRound)
+		if err != nil {
+			return err
+		}
+		created, _, err := c.state.CreateRound(ctx, dbRound)
+		if err != nil {
+			return err
+		}
+		return c.state.CompleteDiscoveredRound(ctx, round.ID, created)
+	}
+	return nil
+}
+
+func (c *Client) handleCreatablePuzzle(ctx context.Context, row db.ListCreatablePuzzlesRow) error {
+	var scraped = state.ScrapedPuzzle{
+		Name:      row.Name,
+		RoundName: row.Name_2,
+		PuzzleURL: row.PuzzleURL,
+	}
+	round, err := c.state.GetCreatedRound(ctx, scraped.RoundName)
+	if err != nil {
+		return err
+	}
+	err = c.state.CompleteDiscoveredPuzzle(ctx, row.ID)
+	if err != nil {
+		return err
+	}
+	return c.createPuzzle(ctx, scraped, round)
 }
