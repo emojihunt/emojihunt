@@ -124,6 +124,12 @@ export type DiscoveryConfig = {
   websocket_token: string;
 };
 
+export type ScrapedPuzzle = {
+  name: string;
+  round_name: string;
+  puzzle_url: string;
+};
+
 export type AblyWorkerMessage =
   { name: "sync"; data: SyncMessage; } |
   { name: "client"; state: ConnectionState; };
