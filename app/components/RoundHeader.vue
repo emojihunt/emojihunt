@@ -102,8 +102,8 @@ button {
   background: linear-gradient(68deg, oklch(100% 0 0deg / 90%),
       oklch(100% 0 0deg / 84%)) padding-box,
     linear-gradient(68deg,
-      oklch(80% 0.10 calc(v-bind(hue) - 15)),
-      oklch(65% 0.30 calc(v-bind(hue) + 75))) border-box;
+      oklch(80% 0.15 calc(v-bind(hue) - 10)),
+      oklch(65% 0.30 calc(v-bind(hue) + 65))) border-box;
   filter: drop-shadow(0 -1px 1px oklch(70% 0.07 v-bind(hue) / 20%));
 
   cursor: default;
@@ -116,7 +116,7 @@ button {
 button {
   font-weight: 550;
   font-size: 0.70rem;
-  color: oklch(50% 0.30 calc(v-bind(hue) + 70));
+  color: oklch(50% 0.30 calc(v-bind(hue) + 60));
   opacity: 0;
 }
 
@@ -127,7 +127,7 @@ button:focus-visible {
 
 .progress {
   font-variant-numeric: diagonal-fractions;
-  color: oklch(50% 0.30 calc(v-bind(hue) + 75));
+  color: oklch(50% 0.30 calc(v-bind(hue) + 65));
   user-select: none;
 }
 
