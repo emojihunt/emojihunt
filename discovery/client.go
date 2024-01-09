@@ -142,8 +142,7 @@ func (c *Client) handleScrapedPuzzle(ctx context.Context, record state.ScrapedPu
 	ok, err := c.state.ShouldCreatePuzzle(ctx, record)
 	if err != nil {
 		return err
-	}
-	if !ok {
+	} else if !ok {
 		return nil // already created
 	}
 
@@ -262,6 +261,14 @@ func (c *Client) handleCreatablePuzzle(ctx context.Context, row db.ListCreatable
 		RoundName: row.Name_2,
 		PuzzleURL: row.PuzzleURL,
 	}
+	ok, err := c.state.ShouldCreatePuzzle(ctx, scraped)
+	if err != nil {
+		return err
+	} else if !ok {
+		// was manually created in the interim
+		return c.state.CompleteDiscoveredPuzzle(ctx, row.ID)
+	}
+
 	round, err := c.state.GetCreatedRound(ctx, scraped.RoundName)
 	if err != nil {
 		return err
