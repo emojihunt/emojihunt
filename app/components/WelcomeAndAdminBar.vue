@@ -29,7 +29,7 @@ const recalculate = () => {
   delta = Math.floor(delta / 24);
   if (delta <= 0) return;
 
-  display.value = `${delta} day${delta > 1 ? 's' : ''}...`;
+  display.value = `${delta} day${delta > 1 ? 's' : ''}, ${hours} hour${hours > 1 ? 's' : ''}...`;
 };
 
 recalculate();
