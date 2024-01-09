@@ -139,11 +139,17 @@ func (c *Client) SyncWorker(ctx context.Context) {
 }
 
 func (c *Client) handleScrapedPuzzle(ctx context.Context, record state.ScrapedPuzzle) error {
-	ok, err := c.state.ShouldCreatePuzzle(ctx, record)
+	created, err := c.state.IsPuzzleCreated(ctx, record)
 	if err != nil {
 		return err
-	} else if !ok {
+	} else if created {
 		return nil // already created
+	}
+	discovered, err := c.state.IsPuzzleDiscovered(ctx, record)
+	if err != nil {
+		return err
+	} else if discovered {
+		return nil // already handled
 	}
 
 	var params = db.CreateDiscoveredPuzzleParams{
@@ -261,10 +267,10 @@ func (c *Client) handleCreatablePuzzle(ctx context.Context, row db.ListCreatable
 		RoundName: row.Name_2,
 		PuzzleURL: row.PuzzleURL,
 	}
-	ok, err := c.state.ShouldCreatePuzzle(ctx, scraped)
+	created, err := c.state.IsPuzzleCreated(ctx, scraped)
 	if err != nil {
 		return err
-	} else if !ok {
+	} else if created {
 		// was manually created in the interim
 		return c.state.CompleteDiscoveredPuzzle(ctx, row.ID)
 	}

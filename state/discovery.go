@@ -96,25 +96,24 @@ func (c *Client) UpdateDiscoveryConfig(ctx context.Context,
 	return c.DiscoveryConfig(ctx)
 }
 
-func (c *Client) ShouldCreatePuzzle(ctx context.Context, puzzle ScrapedPuzzle) (bool, error) {
+func (c *Client) IsPuzzleCreated(ctx context.Context, puzzle ScrapedPuzzle) (bool, error) {
 	count, err := c.queries.CheckPuzzleIsCreated(ctx, db.CheckPuzzleIsCreatedParams{
 		Name: puzzle.Name, PuzzleURL: puzzle.PuzzleURL,
 	})
 	if err != nil {
 		return false, xerrors.Errorf("CheckPuzzleIsCreated: %w", err)
-	} else if count > 0 {
-		return false, nil
 	}
+	return count > 0, nil
+}
 
-	count, err = c.queries.CheckPuzzleIsDiscovered(ctx, db.CheckPuzzleIsDiscoveredParams{
+func (c *Client) IsPuzzleDiscovered(ctx context.Context, puzzle ScrapedPuzzle) (bool, error) {
+	count, err := c.queries.CheckPuzzleIsDiscovered(ctx, db.CheckPuzzleIsDiscoveredParams{
 		Name: puzzle.Name, PuzzleURL: puzzle.PuzzleURL,
 	})
 	if err != nil {
 		return false, xerrors.Errorf("CheckPuzzleIsDiscovered: %w", err)
-	} else if count > 0 {
-		return false, nil
 	}
-	return true, nil
+	return count > 0, nil
 }
 
 func (c *Client) GetCreatedRound(ctx context.Context, name string) (Round, error) {
