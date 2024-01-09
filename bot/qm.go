@@ -11,13 +11,12 @@ import (
 )
 
 type QMBot struct {
-	discord   *discord.Client
-	discovery bool
-	state     *state.Client
+	discord *discord.Client
+	state   *state.Client
 }
 
-func NewQMBot(discord *discord.Client, discovery bool, state *state.Client) discord.Bot {
-	return &QMBot{discord, discovery, state}
+func NewQMBot(discord *discord.Client, state *state.Client) discord.Bot {
+	return &QMBot{discord, state}
 }
 
 func (b *QMBot) Register() (*discordgo.ApplicationCommand, bool) {
@@ -69,6 +68,11 @@ func (b *QMBot) Handle(ctx context.Context, input *discord.CommandInput) (string
 			b.discord.QMChannel.Mention()), nil
 	}
 
+	config, err := b.state.DiscoveryConfig(ctx)
+	if err != nil {
+		return "", err
+	}
+
 	switch input.Subcommand {
 	case "shift.start":
 		if err := b.discord.MakeQM(input.User); err != nil {
@@ -81,7 +85,7 @@ func (b *QMBot) Handle(ctx context.Context, input *discord.CommandInput) (string
 		}
 		return fmt.Sprintf("%s is no longer a QM", input.User.Mention()), nil
 	case "discovery.pause":
-		if !b.discovery {
+		if config.PuzzlesURL == "" {
 			return "Puzzle discovery isn't configured.", nil
 		} else if b.state.EnableDiscovery(ctx, false) {
 			return "Ok, I've paused puzzle discovery. Re-enable it with `/qm discovery resume`.", nil
@@ -89,7 +93,7 @@ func (b *QMBot) Handle(ctx context.Context, input *discord.CommandInput) (string
 			return "Discovery was already paused. Re-enable it with `/qm discovery resume`.", nil
 		}
 	case "discovery.resume":
-		if !b.discovery {
+		if config.PuzzlesURL == "" {
 			return "Puzzle discovery isn't configured.", nil
 		} else if b.state.EnableDiscovery(ctx, true) {
 			return "Ok, I've resumed puzzle discovery. Pause it with `/qm discovery pause`.", nil

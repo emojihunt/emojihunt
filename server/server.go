@@ -40,6 +40,10 @@ type IDParams struct {
 	ID int64 `param:"id"`
 }
 
+type TestParams struct {
+	Test bool `param:"test"`
+}
+
 const sentryContextKey = "emojihunt.sentry"
 
 func Start(ctx context.Context, prod bool, ably *ably.Realtime,

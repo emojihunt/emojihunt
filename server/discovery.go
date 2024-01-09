@@ -3,6 +3,7 @@ package server
 import (
 	"net/http"
 
+	"github.com/emojihunt/emojihunt/discovery"
 	"github.com/emojihunt/emojihunt/state"
 	"github.com/labstack/echo/v4"
 )
@@ -29,10 +30,19 @@ func (s *Server) GetDiscovery(c echo.Context) error {
 }
 
 func (s *Server) UpdateDiscovery(c echo.Context) error {
+	var test TestParams
+	if err := c.Bind(&test); err != nil {
+		return err
+	}
 	config, err := s.state.UpdateDiscoveryConfig(c.Request().Context(),
 		func(config *state.DiscoveryConfig) error {
 			var params = (*DiscoveryParams)(config)
-			return c.Bind(params)
+			err := c.Bind(params)
+			if err != nil {
+				return err
+			}
+			_, err = discovery.NewPoller(*config) // validate config
+			return err
 		},
 	)
 	if err != nil {

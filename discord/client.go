@@ -265,6 +265,22 @@ func (c *Client) CreateUpdatePin(chanID, header string, embed *discordgo.Message
 	}
 }
 
+func (c *Client) GetTopReaction(channel *discordgo.Channel, messageID string) (string, error) {
+	msg, err := c.GetMessage(channel, messageID)
+	if err != nil {
+		return "", err
+	}
+
+	emoji, count := "", 0
+	for _, reaction := range msg.Reactions {
+		if reaction.Count > count && reaction.Emoji.Name != "" {
+			emoji = reaction.Emoji.Name
+			count = reaction.Count
+		}
+	}
+	return emoji, nil
+}
+
 func (c *Client) GetGuildMember(user *discordgo.User) (*discordgo.Member, error) {
 	member, err := c.s.GuildMember(c.Guild.ID, user.ID)
 	if err != nil {

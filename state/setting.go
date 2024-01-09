@@ -5,7 +5,6 @@ import (
 	"database/sql"
 	"encoding/json"
 	"errors"
-	"strconv"
 	"time"
 
 	"github.com/emojihunt/emojihunt/state/db"
@@ -21,13 +20,18 @@ const (
 )
 
 func (c *Client) IsEnabled(ctx context.Context) bool {
-	if raw, err := c.readSetting(ctx, enabledSetting); err != nil {
+	data, err := c.readSetting(ctx, enabledSetting)
+	if err != nil {
 		panic(err)
-	} else if v, ok := raw.(bool); !ok {
-		return true // default
-	} else {
-		return v
 	}
+	var enabled bool = true // default
+	if len(data) > 0 {
+		err = json.Unmarshal(data, &enabled)
+		if err != nil {
+			panic(xerrors.Errorf("IsEnabled unmarshal: %w", err))
+		}
+	}
+	return enabled
 }
 
 func (c *Client) EnableDiscovery(ctx context.Context, enabled bool) bool {
@@ -45,13 +49,21 @@ func (c *Client) EnableDiscovery(ctx context.Context, enabled bool) bool {
 }
 
 func (c *Client) DiscoveredRounds(ctx context.Context) (map[string]DiscoveredRound, error) {
-	if raw, err := c.readSetting(ctx, discoveredRoundsSetting); err != nil {
+	data, err := c.readSetting(ctx, discoveredRoundsSetting)
+	if err != nil {
 		return nil, err
-	} else if v, ok := raw.(map[string]DiscoveredRound); !ok {
-		return make(map[string]DiscoveredRound), nil // default
-	} else {
-		return v, nil
 	}
+	var rounds map[string]DiscoveredRound
+	if len(data) > 0 {
+		err = json.Unmarshal(data, &rounds)
+		if err != nil {
+			return nil, xerrors.Errorf("DiscoveredRounds unmarshal: %w", err)
+		}
+	}
+	if rounds == nil {
+		rounds = make(map[string]DiscoveredRound)
+	}
+	return rounds, nil
 }
 
 func (c *Client) SetDiscoveredRounds(ctx context.Context, rounds map[string]DiscoveredRound) error {
@@ -61,56 +73,50 @@ func (c *Client) SetDiscoveredRounds(ctx context.Context, rounds map[string]Disc
 }
 
 func (c *Client) ReminderTimestamp(ctx context.Context) (time.Time, error) {
-	raw, err := c.readSetting(ctx, reminderSetting)
+	data, err := c.readSetting(ctx, reminderSetting)
 	if err != nil {
 		return time.Time{}, err
 	}
-	var previous int64 = 0 // default
-	if s, ok := raw.(string); ok {
-		previous, err = strconv.ParseInt(s, 10, 64)
+	var reminder time.Time
+	if len(data) > 0 {
+		err = json.Unmarshal(data, &reminder)
 		if err != nil {
-			return time.Time{}, err
+			return time.Time{}, xerrors.Errorf("ReminderTimestamp unmarshal: %w", err)
 		}
 	}
-	return time.Unix(previous, 0), nil
+	return reminder, nil
 }
 
-func (c *Client) SetReminderTimestamp(ctx context.Context, timestamp time.Time) error {
+func (c *Client) SetReminderTimestamp(ctx context.Context, reminder time.Time) error {
 	// Concurrency rule: this setting is only written from the reminder bot's
 	// worker goroutine.
-	return c.writeSetting(ctx, reminderSetting, strconv.FormatInt(timestamp.Unix(), 10))
+	return c.writeSetting(ctx, reminderSetting, reminder)
 }
 
 func (c *Client) IncrementSyncEpoch(ctx context.Context) (int64, error) {
 	// Concurrency rule: this setting is only written on startup.
-	raw, err := c.readSetting(ctx, syncEpochSetting)
+	data, err := c.readSetting(ctx, syncEpochSetting)
 	if err != nil {
 		return 0, err
 	}
-	var previous int64 = 1 // default
-	if s, ok := raw.(string); ok {
-		previous, err = strconv.ParseInt(s, 10, 64)
+	var epoch int64 = 1 //default
+	if len(data) > 0 {
+		err = json.Unmarshal(data, &epoch)
 		if err != nil {
-			return 0, err
+			return 0, xerrors.Errorf("IncrementSyncEpoch unmarshal: %w", err)
 		}
 	}
-	return previous, c.writeSetting(ctx, syncEpochSetting,
-		strconv.FormatInt(previous+1, 10))
+	return epoch, c.writeSetting(ctx, syncEpochSetting, epoch+1)
 }
 
-func (c *Client) readSetting(ctx context.Context, key string) (interface{}, error) {
+func (c *Client) readSetting(ctx context.Context, key string) ([]byte, error) {
 	data, err := c.queries.GetSetting(ctx, key)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, nil
 	} else if err != nil {
 		return nil, xerrors.Errorf("GetSetting: %w", err)
 	}
-	var result interface{}
-	err = json.Unmarshal(data, &result)
-	if err != nil {
-		return nil, xerrors.Errorf("setting unmarshal: %w", err)
-	}
-	return result, nil
+	return data, err
 }
 
 func (c *Client) writeSetting(ctx context.Context, key string, value interface{}) error {

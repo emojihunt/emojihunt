@@ -14,6 +14,7 @@ import (
 	"github.com/ably/ably-go/ably"
 	"github.com/emojihunt/emojihunt/bot"
 	"github.com/emojihunt/emojihunt/discord"
+	"github.com/emojihunt/emojihunt/discovery"
 	"github.com/emojihunt/emojihunt/drive"
 	"github.com/emojihunt/emojihunt/server"
 	"github.com/emojihunt/emojihunt/state"
@@ -87,9 +88,12 @@ func main() {
 	defer ably.Close()
 
 	// Start internal engines
-	var discovery = false
 	var sync = sync.New(ably, discord, drive, state)
 	go sync.Watch(ctx)
+
+	var discovery = discovery.New(discord, state, sync)
+	go discovery.RoundCreationWorker(ctx)
+	go discovery.Watch(ctx)
 
 	log.Printf("starting web server")
 	server.Start(ctx, *prod, ably, discord, state, sync)
@@ -99,7 +103,7 @@ func main() {
 		bot.NewEmojiNameBot(),
 		bot.NewHuntYetBot(),
 		bot.NewPuzzleBot(discord, state),
-		bot.NewQMBot(discord, discovery, state),
+		bot.NewQMBot(discord, state),
 		bot.NewReminderBot(ctx, discord, state),
 	)
 

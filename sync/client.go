@@ -17,6 +17,8 @@ import (
 )
 
 type Client struct {
+	RestartDiscovery chan bool
+
 	ably    *ably.RealtimeChannel
 	discord *discord.Client
 	drive   *drive.Client
@@ -29,8 +31,9 @@ type Client struct {
 func New(ably *ably.Realtime, discord *discord.Client, drive *drive.Client,
 	state *state.Client) *Client {
 	return &Client{
-		ably:    ably.Channels.Get(ablyChannelName),
-		discord: discord, drive: drive, state: state,
+		RestartDiscovery: make(chan bool),
+		ably:             ably.Channels.Get(ablyChannelName),
+		discord:          discord, drive: drive, state: state,
 	}
 }
 
@@ -61,6 +64,7 @@ func (c *Client) Watch(ctx context.Context) {
 		select {
 		case <-c.state.DiscoveryChange:
 			err = c.TriggerDiscoveryEnabled(ctx)
+			c.RestartDiscovery <- true
 		case change := <-c.state.PuzzleChange:
 			err = c.TriggerPuzzle(ctx, change)
 			if change.BotComplete != nil {
