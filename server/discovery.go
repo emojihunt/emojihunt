@@ -30,10 +30,6 @@ func (s *Server) GetDiscovery(c echo.Context) error {
 }
 
 func (s *Server) UpdateDiscovery(c echo.Context) error {
-	var test TestParams
-	if err := c.Bind(&test); err != nil {
-		return err
-	}
 	config, err := s.state.UpdateDiscoveryConfig(c.Request().Context(),
 		func(config *state.DiscoveryConfig) error {
 			var params = (*DiscoveryParams)(config)
@@ -41,7 +37,9 @@ func (s *Server) UpdateDiscovery(c echo.Context) error {
 			if err != nil {
 				return err
 			}
-			_, err = discovery.NewPoller(*config) // validate config
+			if config.PuzzlesURL != "" {
+				_, err = discovery.NewPoller(*config) // validate config
+			}
 			return err
 		},
 	)
@@ -49,4 +47,25 @@ func (s *Server) UpdateDiscovery(c echo.Context) error {
 		return err
 	}
 	return c.JSON(http.StatusOK, config)
+}
+
+func (s *Server) TestDiscovery(c echo.Context) error {
+	config, err := s.state.DiscoveryConfig(c.Request().Context())
+	if err != nil {
+		return err
+	}
+	var params = (*DiscoveryParams)(&config)
+	err = c.Bind(params)
+	if err != nil {
+		return err
+	}
+	poller, err := discovery.NewPoller(config) // validate config
+	if err != nil {
+		return err
+	}
+	puzzles, err := poller.Scrape(c.Request().Context())
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+	return c.JSON(http.StatusOK, puzzles)
 }

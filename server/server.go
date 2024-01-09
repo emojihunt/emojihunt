@@ -40,10 +40,6 @@ type IDParams struct {
 	ID int64 `param:"id"`
 }
 
-type TestParams struct {
-	Test bool `param:"test"`
-}
-
 const sentryContextKey = "emojihunt.sentry"
 
 func Start(ctx context.Context, prod bool, ably *ably.Realtime,
@@ -113,6 +109,7 @@ func Start(ctx context.Context, prod bool, ably *ably.Realtime,
 	e.POST("/ably", s.RequestAblyToken, s.AuthenticationMiddleware)
 	e.GET("/discovery", s.GetDiscovery, s.AuthenticationMiddleware)
 	e.POST("/discovery", s.UpdateDiscovery, s.AuthenticationMiddleware)
+	e.POST("/discovery/test", s.TestDiscovery, s.AuthenticationMiddleware)
 
 	go func() {
 		err := e.Start(":8080")
