@@ -107,16 +107,17 @@ func (p *Poller) Poll(ctx context.Context, c *Client) error {
 	})
 	ctx = sentry.SetHubOnContext(ctx, hub)
 
-	defer log.Printf("discovery: exiting poller")
-
 reconnect:
 	for {
-		ch, err := p.OpenWebsocket(ctx)
+		ws, ch, err := p.OpenWebsocket(ctx)
 		if err != nil {
 			log.Printf("discovery: failed to open websocket: %v", spew.Sprint(err))
+		} else {
+			defer ws.Close()
 		}
 
 		for {
+			c.mutex.Lock()
 			subctx, cancel := context.WithTimeout(ctx, pollTimeout)
 			if puzzles, err := p.Scrape(subctx); err != nil {
 				sentry.GetHubFromContext(ctx).CaptureException(err)
@@ -126,6 +127,7 @@ reconnect:
 				sentry.GetHubFromContext(ctx).CaptureException(err)
 			}
 			cancel()
+			c.mutex.Unlock()
 
 			select {
 			case <-ctx.Done():
@@ -261,20 +263,20 @@ func (p *Poller) Scrape(ctx context.Context) ([]state.DiscoveredPuzzle, error) {
 	return puzzles, nil
 }
 
-func (p *Poller) OpenWebsocket(ctx context.Context) (chan bool, error) {
+func (p *Poller) OpenWebsocket(ctx context.Context) (*websocket.Conn, chan bool, error) {
 	// Do *not* allow panics to bubble up to main. We'll fall back to periodic
 	// polling instead.
 	defer sentry.RecoverWithContext(ctx)
 
 	if p.wsURL == nil {
-		return nil, nil
+		return nil, nil, nil
 	}
 
 	log.Printf("discovery: (re-)connecting to websocket...")
 	ch := make(chan bool)
 	config, err := websocket.NewConfig(p.wsURL.String(), "https://"+p.wsURL.Host)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	if p.cookie.Name != "" {
 		// If a cookie is set, send it when opening the Websocket
@@ -282,7 +284,7 @@ func (p *Poller) OpenWebsocket(ctx context.Context) (chan bool, error) {
 	}
 	ws, err := websocket.DialConfig(config)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	log.Printf("discovery: opened websocket connection to %q", p.wsURL.String())
 	if p.wsToken != "" {
@@ -292,10 +294,10 @@ func (p *Poller) OpenWebsocket(ctx context.Context) (chan bool, error) {
 			"data": p.wsToken,
 		})
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 		if _, err := ws.Write(data); err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 		log.Printf("discovery: wrote AUTH message to websocket")
 	}
@@ -313,7 +315,7 @@ func (p *Poller) OpenWebsocket(ctx context.Context) (chan bool, error) {
 		}
 		log.Printf("discovery: closing ws channel")
 	}(ws, ch)
-	return ch, nil
+	return ws, ch, nil
 }
 
 func collectText(n *html.Node, buf *bytes.Buffer) {

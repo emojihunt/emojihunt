@@ -18,8 +18,7 @@ type Client struct {
 	state   *state.Client
 	sync    *sync.Client
 	rounds  chan state.DiscoveredRound
-
-	mutex m.Mutex
+	mutex   m.Mutex
 }
 
 func New(discord *discord.Client, s *state.Client, y *sync.Client) *Client {
@@ -76,9 +75,6 @@ func (c *Client) Watch(ctx context.Context) {
 }
 
 func (c *Client) SyncPuzzles(ctx context.Context, puzzles []state.DiscoveredPuzzle) error {
-	c.mutex.Lock()
-	defer c.mutex.Unlock()
-
 	log.Printf("discovery: syncing %d puzzles", len(puzzles))
 
 	// Filter out known puzzles; add remaining puzzles
