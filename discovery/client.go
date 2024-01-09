@@ -216,7 +216,10 @@ func (c *Client) handleDiscoveredRound(ctx context.Context, round db.DiscoveredR
 			msg += fmt.Sprintf("%s\n%s\n\n", puzzle.Name, puzzle.PuzzleURL)
 		}
 		msg += "Reminder: use `/qm discovery pause` to stop the bot.\n\n"
-		msg += ">> REACT TO PROPOSE AN EMOJI FOR THIS ROUND <<\n```\n"
+		msg += fmt.Sprintf(
+			"```\n%s please react to pick an emoji for this round\n",
+			c.discord.QMRole.Mention(),
+		)
 
 		id, err := c.discord.ChannelSend(c.discord.QMChannel, msg)
 		if err != nil {
