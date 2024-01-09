@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/emojihunt/emojihunt/discord"
+	"github.com/emojihunt/emojihunt/emojiname"
 	"github.com/emojihunt/emojihunt/state"
 	"github.com/emojihunt/emojihunt/state/db"
 	"github.com/emojihunt/emojihunt/sync"
@@ -166,6 +167,7 @@ func (c *Client) handleScrapedPuzzle(ctx context.Context, record state.ScrapedPu
 			// New round, pending QM approval & creation
 			params.DiscoveredRound = sql.NullInt64{Int64: round.ID, Valid: true}
 		}
+		log.Printf("discovery: logging scraped puzzle %q", record.Name)
 		return c.state.CreateDiscoveredPuzzle(ctx, params)
 	} else if err != nil {
 		return err
@@ -234,13 +236,15 @@ func (c *Client) handleDiscoveredRound(ctx context.Context, round db.DiscoveredR
 			return nil
 		}
 
-		log.Printf("discovery: creating round %q with emoji %q", round.Name, emoji)
-		var dbRound = state.Round{Name: round.Name, Emoji: emoji}
-		dbRound.DriveFolder, err = c.sync.CreateDriveFolder(ctx, dbRound)
+		var hue = emojiname.EmojiHue(emoji)
+		var record = state.Round{Name: round.Name, Emoji: emoji, Hue: int64(hue)}
+		log.Printf("discovery: creating round %q with emoji %q, hue %d",
+			record.Name, record.Emoji, record.Hue)
+		record.DriveFolder, err = c.sync.CreateDriveFolder(ctx, record)
 		if err != nil {
 			return err
 		}
-		created, _, err := c.state.CreateRound(ctx, dbRound)
+		created, _, err := c.state.CreateRound(ctx, record)
 		if err != nil {
 			return err
 		}
