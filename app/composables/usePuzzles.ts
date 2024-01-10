@@ -72,7 +72,7 @@ export default defineStore("puzzles", {
         const puzzles = this.puzzlesByRound.get(base.id) || [];
         annotated.push({
           ...base,
-          anchor: base.name.trim().toLowerCase().replaceAll(" ", "-"),
+          anchor: base.name.trim().toLowerCase().replaceAll(/[^A-Za-z0-9]+/g, "-"),
           complete: puzzles.filter((p => !p.answer)).length === 0,
           displayName: `${base.emoji}\uFE0F ${base.name}`,
           solved: puzzles.filter((p) => !!p.answer).length,
