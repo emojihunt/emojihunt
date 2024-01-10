@@ -92,7 +92,7 @@ a {
   border-radius: 2px;
 }
 
-a:focus-visible {
+a:focus {
   outline: 2px solid oklch(42% 0.24 var(--hue));
 }
 

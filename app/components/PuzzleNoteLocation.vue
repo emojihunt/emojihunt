@@ -91,6 +91,8 @@ const save = (updated: string) => {
 .emoji {
   line-height: 1.75rem;
   filter: opacity(70%);
+
+  cursor: default;
   user-select: none;
 }
 

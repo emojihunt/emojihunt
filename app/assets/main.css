@@ -79,7 +79,7 @@ button {
   cursor: pointer;
 }
 
-button:focus-visible {
+button:focus {
   outline: 2px solid black;
 }
 

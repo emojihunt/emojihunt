@@ -137,7 +137,7 @@ button {
 }
 
 button:hover,
-button:focus-visible {
+button:focus {
   opacity: 1;
 }
 

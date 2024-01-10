@@ -35,7 +35,7 @@ const hue = computed(() => props.round.hue);
 }
 
 .meta:focus-within,
-.meta button:focus-visible {
+.meta button:focus {
   outline: 2px solid oklch(50% 0.24 v-bind(hue));
 }
 
@@ -67,7 +67,7 @@ button {
 
 .cell:hover button,
 button:hover,
-button:focus-visible {
+button:focus {
   width: auto;
   padding: 0 0.33rem;
 }

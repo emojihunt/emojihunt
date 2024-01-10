@@ -54,6 +54,7 @@ a {
   border: 1.5px solid transparent;
   border-radius: 3px;
   text-decoration: none;
+  cursor: pointer;
 }
 
 span {
@@ -70,7 +71,7 @@ label {
 }
 
 a:hover,
-a:focus-visible {
+a:focus {
   outline: 2px solid oklch(95% 0.10 v-bind(hue) / 90%);
   background-color: oklch(95% 0.10 v-bind(hue) / 50%);
 }

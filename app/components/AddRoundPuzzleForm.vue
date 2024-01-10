@@ -169,7 +169,7 @@ form button:hover {
   filter: brightness(90%);
 }
 
-form button:focus-visible {
+form button:focus {
   outline-color: oklch(71% 0.18 v-bind(hue));
 }
 
