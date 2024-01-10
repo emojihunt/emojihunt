@@ -10,16 +10,16 @@ const hue = computed(() => props.round.hue);
 
 const pill = ref<HTMLElement>();
 const titles = ref<HTMLElement>();
-const ready = () => {
-  if (props.nextTimeline) {
-    pill.value?.classList.add("ready");
-    titles.value?.classList.add("ready");
-  }
-  pill.value && props.observer?.observe(pill.value);
-  titles.value && props.observer?.observe(titles.value);
-};
+const ready = () => props.nextTimeline && (
+  pill.value?.classList.add("ready"),
+  titles.value?.classList.add("ready")
+);
 watch([props], () => nextTick(() => ready()));
-onMounted(() => nextTick(() => ready()));
+onMounted(() => nextTick(() => (
+  ready(),
+  (pill.value && props.observer?.observe(pill.value)),
+  (titles.value && props.observer?.observe(titles.value))
+)));
 </script>
 
 <template>
@@ -32,7 +32,7 @@ onMounted(() => nextTick(() => ready()));
     <button @click="() => emit('copy')">Copy</button>
     <div class="progress">{{ round.solved }}/{{ round.total }}</div>
   </header>
-  <header class="titles" ref="titles" v-if="round.total">
+  <header class="titles" ref="titles" :class="round.total && 'show'">
     <span>Status &bull; Answer</span>
     <span>Location</span>
     <span>Note</span>
@@ -87,6 +87,12 @@ button {
   position: sticky;
   top: calc(6rem - 1.4rem + 0.1rem);
   z-index: 20;
+
+  visibility: hidden;
+}
+
+.titles.show {
+  visibility: visible;
 }
 
 .titles span {
