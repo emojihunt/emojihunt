@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/bwmarrin/discordgo"
-	"github.com/emojihunt/emojihunt/discord"
 	"github.com/emojihunt/emojihunt/state"
 )
 
@@ -103,8 +102,8 @@ func (c *Client) UpdateDiscordCategory(ctx context.Context, fields DiscordCatego
 func (c *Client) CheckDiscordRound(ctx context.Context, round state.Round) {
 	log.Printf("sync: checking round category for %q", round.Name)
 	var original = round.DiscordCategory
-	_, err := c.discord.GetChannel(original)
-	if discord.ErrCode(err) == discordgo.ErrCodeUnknownChannel {
+	_, ok := c.discord.GetChannel(original)
+	if !ok {
 		created, err := c.CreateDiscordCategory(ctx, round)
 		if err != nil {
 			return

@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/bwmarrin/discordgo"
-	"github.com/emojihunt/emojihunt/discord"
 	"github.com/emojihunt/emojihunt/state"
 )
 
@@ -22,14 +21,16 @@ const (
 func (c *Client) CreateDiscordChannel(ctx context.Context, puzzle state.RawPuzzle,
 	round state.Round) (string, error) {
 	log.Printf("sync: creating discord channel for %q", puzzle.Name)
-	if round.DiscordCategory == "" {
+	var original = round.DiscordCategory
+	_, ok := c.discord.GetChannel(original)
+	if !ok {
 		created, err := c.CreateDiscordCategory(ctx, round)
 		if err != nil {
 			return "", err
 		}
 		round, _, err = c.state.UpdateRound(ctx, round.ID,
 			func(round *state.Round) error {
-				if round.DiscordCategory == "" {
+				if round.DiscordCategory == original {
 					log.Printf("sync: replacing deleted discord category for %q", round.Name)
 					round.DiscordCategory = created
 				} else {
@@ -130,8 +131,8 @@ func (c *Client) UpdateDiscordChannel(ctx context.Context, fields DiscordChannel
 func (c *Client) CheckDiscordPuzzle(ctx context.Context, puzzle state.Puzzle) {
 	log.Printf("sync: checking puzzle channel for %q", puzzle.Name)
 	var channel = puzzle.DiscordChannel
-	_, err := c.discord.GetChannel(channel)
-	if discord.ErrCode(err) == discordgo.ErrCodeUnknownChannel {
+	_, ok := c.discord.GetChannel(channel)
+	if !ok {
 		go c.state.UpdatePuzzle(ctx, puzzle.ID,
 			func(puzzle *state.RawPuzzle) error {
 				if puzzle.DiscordChannel == channel {

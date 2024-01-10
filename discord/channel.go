@@ -17,6 +17,7 @@ func (c *Client) handleChannelCreate(ctx context.Context, r *discordgo.ChannelCr
 	log.Printf("discord: channel created: %q", r.Channel.Name)
 	return nil
 }
+
 func (c *Client) handleChannelUpdate(ctx context.Context, r *discordgo.ChannelUpdate) error {
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
@@ -49,14 +50,11 @@ func (c *Client) refreshChannelCache() error {
 
 // Public API
 
-func (c *Client) GetChannel(id string) (*discordgo.Channel, error) {
+func (c *Client) GetChannel(id string) (*discordgo.Channel, bool) {
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
-	if channel, ok := c.channelCache[id]; !ok {
-		return nil, xerrors.Errorf("no such channel: %s", id)
-	} else {
-		return channel, nil
-	}
+	channel, ok := c.channelCache[id]
+	return channel, ok
 }
 
 func (c *Client) ListChannelsByID() map[string]*discordgo.Channel {
