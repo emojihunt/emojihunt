@@ -10,14 +10,16 @@ const hue = computed(() => props.round.hue);
 
 const pill = ref<HTMLElement>();
 const titles = ref<HTMLElement>();
-onMounted(() => {
+const ready = () => {
   if (props.nextTimeline) {
     pill.value?.classList.add("ready");
     titles.value?.classList.add("ready");
   }
   pill.value && props.observer?.observe(pill.value);
   titles.value && props.observer?.observe(titles.value);
-});
+};
+watch([props], () => nextTick(() => ready()));
+onMounted(() => nextTick(() => ready()));
 </script>
 
 <template>

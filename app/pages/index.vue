@@ -13,7 +13,7 @@ const nextTimelineFromID = (id: number): string | undefined =>
 // We want each round header to disappear when it's covered by the next. Use CSS
 // scroll-linked animations if supported and fall back to IntersectionObserver
 // if not.
-const timelines = store.rounds.map((_, i) => timelineFromID(i));
+const timelines = computed(() => store.rounds.map((_, i) => timelineFromID(i)));
 let observer: IntersectionObserver | undefined;
 if (import.meta.client && !CSS.supports("view-timeline", "--test")) {
   console.log("Falling back to IntersectionObserver...");
