@@ -91,6 +91,11 @@ const close = () => {
   }
   editing.value = undefined;
 };
+
+// If an input element is focused, keydown events bubble from the input.
+// Otherwise, they bubble from the body.
+onMounted(() => window.addEventListener("keydown",
+  (e) => (e.key === "Escape") && close()));
 </script>
 
 <template>
