@@ -113,6 +113,10 @@ button {
 
 .round {
   font-weight: 715;
+
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 
 button {
