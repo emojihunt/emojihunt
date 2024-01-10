@@ -14,11 +14,13 @@ const nextTimelineFromID = (id: number): string | undefined =>
 // scroll-linked animations if supported and fall back to IntersectionObserver
 // if not.
 const timelines = computed(() => store.rounds.map((_, i) => timelineFromID(i)));
-let observer: IntersectionObserver | undefined;
-if (import.meta.client && !CSS.supports("view-timeline", "--test")) {
-  console.log("Falling back to IntersectionObserver...");
-  observer = useStickyIntersectionObserver(76);
-}
+const observer = ref<IntersectionObserver>();
+onMounted(() => {
+  if (!CSS.supports("view-timeline", "--test")) {
+    console.log("Falling back to IntersectionObserver...");
+    observer.value = useStickyIntersectionObserver(76);
+  }
+});
 
 const [focused, tabKeydown] = useRovingTabIndex(9, 3);
 const keydown = (e: KeyboardEvent) => {

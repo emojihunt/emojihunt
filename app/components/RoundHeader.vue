@@ -8,18 +8,22 @@ const props = defineProps<{
 const emit = defineEmits<{ (e: "copy"): void; (e: "edit"): void; }>();
 const hue = computed(() => props.round.hue);
 
+let registered = false;
 const pill = ref<HTMLElement>();
 const titles = ref<HTMLElement>();
-const ready = () => props.nextTimeline && (
-  pill.value?.classList.add("ready"),
-  titles.value?.classList.add("ready")
-);
-watch([props], () => nextTick(() => ready()));
-onMounted(() => nextTick(() => (
-  ready(),
-  (pill.value && props.observer?.observe(pill.value)),
-  (titles.value && props.observer?.observe(titles.value))
-)));
+const ready = () => {
+  if (props.nextTimeline) {
+    pill.value?.classList.add("ready");
+    titles.value?.classList.add("ready");
+  }
+  if (!registered && props.observer) {
+    props.observer.observe(pill.value!);
+    props.observer.observe(titles.value!);
+    registered = true;
+  }
+};
+watch([props], () => nextTick(ready));
+onMounted(() => nextTick(ready));
 </script>
 
 <template>
