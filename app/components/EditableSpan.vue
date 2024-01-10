@@ -20,7 +20,7 @@ const span = ref<HTMLSpanElement>();
 // once and control all further updates manually.
 const rerender = () => {
   if (!span.value) return;
-  span.value.contentEditable = editing.value ? "plaintext-only" : "false";
+  span.value.contentEditable = editing.value ? "true" : "false";
   let updated = props.value.trim();
   if (!editing.value && !updated) {
     updated = props.placeholder;
@@ -124,11 +124,11 @@ span {
 
 span:hover,
 span:focus,
-span[contenteditable='plaintext-only'] {
+span[contenteditable="true"] {
   white-space: unset;
 }
 
-span[contenteditable='plaintext-only'] {
+span[contenteditable="true"] {
   background-color: oklch(97% 0.02 275deg);
 }
 
