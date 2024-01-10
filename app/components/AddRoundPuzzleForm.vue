@@ -69,6 +69,11 @@ const emoji = (e: any) => {
   };
   form.value?.querySelectorAll("input")[1].focus();
 };
+const urlBlur = () => {
+  if (data.url && !data.url.startsWith("http")) {
+    data.url = "https://" + data.url;
+  }
+};
 
 // USelectMenu doesn't support autofocus
 const autofocus = () => (props.kind === "puzzle") &&
@@ -96,7 +101,7 @@ const hue = computed(() => props.kind === "round" ? data.hue : data.round?.hue);
         </template>
       </USelectMenu>
       <UInput v-model="data.name" placeholder="Puzzle Name" />
-      <UInput v-model="data.url" placeholder="Puzzle URL" />
+      <UInput v-model="data.url" placeholder="Puzzle URL" class="url" @blur="urlBlur" />
       <UTooltip text="Create spreadsheet and Discord channel" :open-delay="500"
         :popper="{ placement: 'top', offsetDistance: 0, strategy: 'absolute' }"
         class="checkbox">
