@@ -17,7 +17,6 @@ const ready = () => {
     titles.value?.classList.add("ready");
   }
   if (!registered && props.observer) {
-    props.observer.observe(pill.value!);
     props.observer.observe(titles.value!);
     registered = true;
   }
