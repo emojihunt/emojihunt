@@ -43,7 +43,7 @@ onMounted(() => nextTick(() => ready()));
 /* Layout */
 .spacer {
   height: 1.75rem;
-  scroll-margin-block-start: calc(6rem - 1.4rem);
+  scroll-margin-block-start: 2.845rem;
 }
 
 .spacer:first-of-type {
