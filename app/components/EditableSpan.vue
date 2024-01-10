@@ -34,7 +34,12 @@ const rerender = () => {
   span.value.tabIndex = props.tabindex || 0;
 };
 onMounted(() => rerender());
-watch([props], () => (editing.value = false, rerender()));
+watch([props], () => {
+  if (editing.value) console.log("Props update!",
+    props.value, span.value?.innerText);
+  editing.value = false;
+  rerender();
+});
 
 defineExpose({
   focus(): void {
