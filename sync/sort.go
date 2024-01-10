@@ -140,9 +140,9 @@ func NewRoundSortFields(round state.Round) RoundSortFields {
 func RoundSort(a, b RoundSortFields) int {
 	if a.Special != b.Special {
 		if a.Special {
-			return 1
-		} else {
 			return -1
+		} else {
+			return 1
 		}
 	} else if a.Sort != b.Sort {
 		return cmp.Compare(a.Sort, b.Sort)

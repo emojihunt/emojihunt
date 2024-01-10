@@ -80,7 +80,7 @@ export default defineStore("puzzles", {
         });
       }
       annotated.sort((a, b) => {
-        if (a.special !== b.special) return a.special ? 1 : -1;
+        if (a.special !== b.special) return a.special ? -1 : 1;
         else if (a.sort !== b.sort) return a.sort - b.sort;
         else return a.id - b.id;
       });
