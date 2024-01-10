@@ -88,8 +88,12 @@ a[ok="false"] {
 
 a {
   color: oklch(42% 0.24 var(--hue));
-  outline-color: oklch(42% 0.24 var(--hue));
   stroke-width: 0.8px;
+  border-radius: 2px;
+}
+
+a:focus-visible {
+  outline: 2px solid oklch(42% 0.24 var(--hue));
 }
 
 a svg:last-child {

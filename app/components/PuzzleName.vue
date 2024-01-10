@@ -9,9 +9,8 @@ const hue = computed(() => props.round.hue);
 </script>
 
 <template>
-  <div class="cell">
-    <EditableSpan :value="puzzle.name" readonly :tabindex="tabIndex(focused, 3)"
-      :class="puzzle.meta && 'meta'" />
+  <div class="cell" :class="puzzle.meta && 'meta'">
+    <EditableSpan :value="puzzle.name" readonly :tabindex="tabIndex(focused, 3)" />
     <button :tabindex="tabIndex(focused, 4)" @click="() => emit('edit')">Edit</button>
   </div>
 </template>
@@ -28,9 +27,19 @@ const hue = computed(() => props.round.hue);
   font-weight: 430;
   font-size: 0.9rem;
   color: oklch(25% 0.10 275deg);
+  border-radius: 2px;
 }
 
-.meta {
+.cell:focus-within {
+  outline: 2px solid black;
+}
+
+.meta:focus-within,
+.meta button:focus-visible {
+  outline: 2px solid oklch(50% 0.24 v-bind(hue));
+}
+
+.meta span {
   background:
     linear-gradient(68deg,
       oklch(50% 0.24 calc(v-bind(hue))) 0%,
@@ -42,18 +51,18 @@ const hue = computed(() => props.round.hue);
   font-weight: 550;
 }
 
-.cell:focus-within {
-  outline: auto black;
-}
-
 button {
   width: 0;
   padding: 0;
 
   font-size: 0.8rem;
-  line-height: 1.75rem;
+  line-height: 1.76rem;
   align-self: flex-start;
   color: oklch(60% 0.15 245deg);
+}
+
+.meta button {
+  color: oklch(60% 0.14 calc(v-bind(hue)))
 }
 
 .cell:hover button,

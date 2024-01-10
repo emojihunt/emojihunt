@@ -145,8 +145,8 @@ button[disabled] {
   pointer-events: none;
 }
 
-a,
 button {
-  outline-color: oklch(40% 0.15 245deg);
+  border-radius: 2px;
+  outline-color: oklch(50% 0.15 245deg);
 }
 </style>

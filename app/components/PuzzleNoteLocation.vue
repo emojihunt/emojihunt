@@ -81,10 +81,11 @@ const save = (updated: string) => {
 .cell {
   font-weight: 400;
   font-size: 0.8rem;
+  border-radius: 2px;
 }
 
 .cell:focus-within {
-  outline: auto;
+  outline: 2px solid black;
 }
 
 .emoji {

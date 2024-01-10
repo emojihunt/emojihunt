@@ -49,7 +49,6 @@ label {
   pointer-events: none;
 }
 
-
 /* Theming */
 a {
   border: 1.5px solid transparent;
@@ -72,7 +71,7 @@ label {
 
 a:hover,
 a:focus-visible {
-  border: 1.5px solid oklch(95% 0.10 v-bind(hue) / 90%);
+  outline: 2px solid oklch(95% 0.10 v-bind(hue) / 90%);
   background-color: oklch(95% 0.10 v-bind(hue) / 50%);
 }
 </style>

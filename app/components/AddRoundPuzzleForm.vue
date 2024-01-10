@@ -183,6 +183,6 @@ form :deep(button):focus {
 }
 
 :deep(.emoji-mart-emoji) {
-  outline-color: oklch(71% 0.18 v-bind(hue))
+  outline-color: oklch(71% 0.18 v-bind(hue));
 }
 </style>

@@ -79,6 +79,10 @@ button {
   cursor: pointer;
 }
 
+button:focus-visible {
+  outline: 2px solid black;
+}
+
 @keyframes fade-out {
 
   0% {

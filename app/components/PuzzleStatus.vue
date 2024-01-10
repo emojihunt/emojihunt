@@ -125,10 +125,11 @@ const cancel = () => answering.value && (answering.value = null, open.value = fa
 /* Theming */
 .cell {
   font-size: 0.87rem;
+  border-radius: 2px;
 }
 
 .cell:focus-within {
-  outline: auto;
+  outline: 2px solid black;
 }
 
 .answer span {

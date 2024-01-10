@@ -68,6 +68,7 @@ onMounted(() => nextTick(() => ready()));
 button {
   padding: 0.5rem;
   margin: 0.25rem 0;
+  border-radius: 2px;
 }
 
 .spaces {

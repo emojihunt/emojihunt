@@ -155,6 +155,7 @@ button {
 button.test {
   width: 3rem;
   padding: 0.25rem;
+  border-radius: 2px;
 }
 
 section {

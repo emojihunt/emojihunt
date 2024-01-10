@@ -218,6 +218,10 @@ button[type="submit"] {
   justify-content: center;
 }
 
+button.delete {
+  border-radius: 2px;
+}
+
 .spacer {
   flex-grow: 1;
 }
@@ -249,6 +253,7 @@ form button.delete {
 
   color: oklch(60% 0.15 30deg);
   background: none !important;
+  border-radius: 2px;
 }
 
 form button.delete:hover {

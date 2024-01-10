@@ -190,6 +190,7 @@ form button.delete {
 
   color: oklch(60% 0.15 30deg);
   background: none !important;
+  border-radius: 2px;
 }
 
 form button.delete:hover {
