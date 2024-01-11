@@ -142,7 +142,7 @@ onMounted(() => window.addEventListener("keydown",
 /* Layout */
 main {
   padding: calc(6rem - 1.4rem) 0.5vw 0.5rem 2vw;
-  min-width: 75rem;
+  min-width: 1024px;
   display: grid;
   grid-template-columns: 8rem 6fr 6fr 4fr 8fr;
   column-gap: 0.66rem;
