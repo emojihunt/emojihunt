@@ -95,7 +95,7 @@ const test = async (e: Event) => {
     <fieldset>
       <div class="spacer"></div>
       <button type="submit" class="test" @click="test"
-        :disabled="saving || testing === true">
+        :disabled="saving || testing === true || !data.puzzles_url">
         <Spinner v-if="testing === true" />
         <span v-else>Test</span>
       </button>
