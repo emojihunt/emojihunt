@@ -74,7 +74,7 @@ defineExpose({ focus });
       <button ref="admin" @click="emit('click', 'admin')">◆
         Admin</button>
     </fieldset>
-    <fieldset>
+    <fieldset v-if="!!store.rounds.length">
       <button @click="() => emit('toggle')">
         <template v-if="discord">Discord links open in website</template>
         <template v-else>Discord links open in app</template>
@@ -146,9 +146,6 @@ button {
   font-weight: 350;
   font-size: 0.85rem;
   color: oklch(60% 0.15 245deg);
-
-  border-radius: 2px;
-  outline-color: oklch(50% 0.15 245deg);
 }
 
 button:hover {
@@ -158,5 +155,11 @@ button:hover {
 button[disabled] {
   filter: grayscale(100%) opacity(80%);
   pointer-events: none;
+}
+
+button,
+a {
+  border-radius: 2px;
+  outline-color: oklch(50% 0.15 245deg);
 }
 </style>

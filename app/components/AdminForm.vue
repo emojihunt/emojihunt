@@ -179,6 +179,10 @@ button.test:hover {
   color: oklch(45% 0.19 150deg);
 }
 
+button.test[disabled] {
+  color: oklch(65% 0.05 150deg);
+}
+
 li {
   list-style: circle inside;
   margin: 0 0.5rem;
