@@ -1,12 +1,16 @@
 <script setup lang="ts">
 const config = useAppConfig();
-const props = defineProps<{ puzzle: Puzzle; focused: FocusInfo; }>();
+const props = defineProps<{
+  puzzle: Puzzle; discord: boolean; focused: FocusInfo;
+}>();
 
 const puzzleURL = computed(() => props.puzzle.puzzle_url || "");
 const spreadsheetURL = computed(() => props.puzzle.spreadsheet_id ?
   `https://docs.google.com/spreadsheets/d/${props.puzzle.spreadsheet_id}` : '');
-const discordURL = computed(() => props.puzzle.discord_channel ?
-  `discord:///channels/${config.discordGuild}/${props.puzzle.discord_channel}` : '');
+const discordURL = computed(() => props.puzzle.discord_channel ? props.discord
+  ? `https://discord.com/channels/${config.discordGuild}/${props.puzzle.discord_channel}`
+  : `discord:///channels/${config.discordGuild}/${props.puzzle.discord_channel}`
+  : '');
 </script>
 
 <template>
@@ -39,8 +43,8 @@ const discordURL = computed(() => props.puzzle.discord_channel ?
           d="M5.25 5.25a3 3 0 0 0-3 3v10.5a3 3 0 0 0 3 3h10.5a3 3 0 0 0 3-3V13.5a.75.75 0 0 0-1.5 0v5.25a1.5 1.5 0 0 1-1.5 1.5H5.25a1.5 1.5 0 0 1-1.5-1.5V8.25a1.5 1.5 0 0 1 1.5-1.5h5.25a.75.75 0 0 0 0-1.5H5.25Z" />
       </svg>
     </NuxtLink>
-    <NuxtLink :href="discordURL || '#'" :ok="!!discordURL" :tabindex="tabIndex(focused, 2)"
-      style="--hue: 282deg;">
+    <NuxtLink :href="discordURL || '#'" :target="discord ? '_blank' : ''" :ok="!!discordURL"
+      :tabindex="tabIndex(focused, 2)" style="--hue: 282deg;">
       <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
         stroke="currentColor">
         <path stroke-linecap="round" stroke-linejoin="round"

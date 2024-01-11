@@ -1,13 +1,13 @@
 <script setup lang="ts">
 const props = defineProps<{
-  puzzle: Puzzle; round: AnnotatedRound; focused: FocusInfo;
+  puzzle: Puzzle; round: AnnotatedRound; discord: boolean; focused: FocusInfo;
 }>();
 const emit = defineEmits<{ (e: "edit"): void; }>();
 </script>
 
 <template>
   <span class="row stop">
-    <PuzzleButtons :puzzle="puzzle" :focused="focused" />
+    <PuzzleButtons :puzzle="puzzle" :discord="discord" :focused="focused" />
     <span class="data">
       <PuzzleName :puzzle="puzzle" :round="round" :focused="focused"
         @focusin="() => (focused.index !== 4) && (focused.index = 3)"

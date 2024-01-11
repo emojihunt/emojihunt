@@ -1,6 +1,8 @@
 <script setup lang="ts">
+const props = defineProps<{ discord: boolean; }>();
 const emit = defineEmits<{
   (e: "click", kind: "round" | "puzzle" | "admin"): void;
+  (e: "toggle"): void;
 }>();
 const store = usePuzzles();
 const config = useAppConfig();
@@ -63,14 +65,22 @@ defineExpose({ focus });
     </NuxtLink>
     <hr>
   </section>
-  <fieldset>
-    <button ref="round" @click="() => emit('click', 'round')"
-      :disabled="!!display && !store.rounds.length">○ Add Round</button>
-    <button ref="puzzle" @click="() => emit('click', 'puzzle')"
-      :disabled="!!display && !store.rounds.length">▢ Add Puzzle</button>
-    <button ref="admin" @click="emit('click', 'admin')">◆
-      Admin</button>
-  </fieldset>
+  <footer>
+    <fieldset>
+      <button ref="round" @click="() => emit('click', 'round')"
+        :disabled="!!display && !store.rounds.length">○ Add Round</button>
+      <button ref="puzzle" @click="() => emit('click', 'puzzle')"
+        :disabled="!!display && !store.rounds.length">▢ Add Puzzle</button>
+      <button ref="admin" @click="emit('click', 'admin')">◆
+        Admin</button>
+    </fieldset>
+    <fieldset>
+      <button @click="() => emit('toggle')">
+        <template v-if="discord">Discord links open in website</template>
+        <template v-else>Discord links open in app</template>
+      </button>
+    </fieldset>
+  </footer>
 </template>
 
 <style scoped>
@@ -96,18 +106,20 @@ hr {
   border-bottom: 1px solid oklch(90% 0.03 275deg);
 }
 
-fieldset {
+footer {
   grid-column: 1 / 6;
   display: flex;
-  gap: 0.5rem;
+  flex-direction: column;
+  align-items: flex-end;
 
-  justify-content: flex-end;
-  margin: 0 1rem;
+  gap: 0.4rem;
+  margin: 0 0.75rem;
   padding-bottom: 18vh;
 }
 
 button {
   padding: 0.25rem;
+  margin: 0 0.25rem;
 }
 
 /* Theming */
@@ -134,6 +146,9 @@ button {
   font-weight: 350;
   font-size: 0.85rem;
   color: oklch(60% 0.15 245deg);
+
+  border-radius: 2px;
+  outline-color: oklch(50% 0.15 245deg);
 }
 
 button:hover {
@@ -143,10 +158,5 @@ button:hover {
 button[disabled] {
   filter: grayscale(100%) opacity(80%);
   pointer-events: none;
-}
-
-button {
-  border-radius: 2px;
-  outline-color: oklch(50% 0.15 245deg);
 }
 </style>
