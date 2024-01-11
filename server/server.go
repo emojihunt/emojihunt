@@ -65,7 +65,7 @@ func Start(ctx context.Context, prod bool, ably *ably.Realtime,
 	}
 
 	s.redirectURI = DevRedirectURI
-	if _, ok := os.LookupEnv("FLY_REGION"); prod || ok { // TODO
+	if prod {
 		s.redirectURI = ProdRedirectURI
 	}
 

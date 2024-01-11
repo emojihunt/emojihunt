@@ -12,5 +12,4 @@ COPY --from=build /build/emojihunt /bin/huntbot
 
 USER root
 WORKDIR /state
-# TODO: -prod flag
-ENTRYPOINT ["huntbot"]
+ENTRYPOINT ["huntbot", "-prod"]
