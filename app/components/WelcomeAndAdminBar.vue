@@ -67,10 +67,10 @@ defineExpose({ focus });
   </section>
   <footer>
     <fieldset>
-      <button ref="round" @click="() => emit('click', 'round')"
-        :disabled="!!display && !store.rounds.length">○ Add Round</button>
+      <button ref="round" @click="() => emit('click', 'round')" :disabled="!!display">○ Add
+        Round</button>
       <button ref="puzzle" @click="() => emit('click', 'puzzle')"
-        :disabled="!!display && !store.rounds.length">▢ Add Puzzle</button>
+        :disabled="!!display || !store.rounds.length">▢ Add Puzzle</button>
       <button ref="admin" @click="emit('click', 'admin')">◆
         Admin</button>
     </fieldset>
