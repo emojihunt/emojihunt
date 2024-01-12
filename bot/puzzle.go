@@ -142,6 +142,9 @@ func (b *PuzzleBot) Handle(ctx context.Context, input *discord.CommandInput) (st
 				if opt, ok := input.Options["in"]; !ok {
 					return xerrors.Errorf("missing option: in")
 				} else {
+					if !puzzle.Status.IsSolved() {
+						puzzle.Status = status.Working
+					}
 					puzzle.VoiceRoom = opt.Value.(string)
 					reply = fmt.Sprintf("Set puzzle voice room to <#%s>", puzzle.VoiceRoom)
 				}
