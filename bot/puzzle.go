@@ -178,6 +178,7 @@ func (b *PuzzleBot) Handle(ctx context.Context, input *discord.CommandInput) (st
 				} else {
 					puzzle.Status = status
 					puzzle.Answer = strings.ToUpper(opt.StringValue())
+					puzzle.Location = ""
 					puzzle.VoiceRoom = ""
 					reply = fmt.Sprintf(
 						"🎉 Congratulations on the %s! I'll record the answer `%s` and archive this channel.",
