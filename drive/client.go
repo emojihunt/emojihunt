@@ -60,7 +60,13 @@ func NewClient(ctx context.Context, prod bool) *Client {
 
 func (c *Client) CreateSheet(ctx context.Context, name string) (id string, err error) {
 	sheet, err := withRetry("sheets.Create", func() (*sheets.Spreadsheet, error) {
-		return c.sheets.Spreadsheets.Create(&sheets.Spreadsheet{}).Context(ctx).Do()
+		return c.sheets.Spreadsheets.Create(&sheets.Spreadsheet{
+			Sheets: []*sheets.Sheet{
+				{Properties: &sheets.SheetProperties{
+					Title: name, ForceSendFields: []string{"SheetId"},
+				}},
+			},
+		}).Context(ctx).Do()
 	})
 	if err != nil {
 		return "", err
