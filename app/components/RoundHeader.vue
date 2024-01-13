@@ -69,7 +69,15 @@ onMounted(() => nextTick(ready));
 }
 
 button {
-  padding: 0.5rem;
+  width: 0;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.pill:hover button,
+button:focus {
+  width: auto;
+  padding: 0.25rem;
   margin: 0.25rem 0;
   border-radius: 2px;
 }
@@ -133,12 +141,10 @@ button {
   font-weight: 550;
   font-size: 0.70rem;
   color: oklch(50% 0.30 calc(v-bind(hue) + 60));
-  opacity: 0;
 }
 
-button:hover,
-button:focus {
-  opacity: 1;
+button:hover {
+  color: oklch(30% 0.30 calc(v-bind(hue) + 60));
 }
 
 .progress {
