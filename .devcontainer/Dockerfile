@@ -1,6 +1,6 @@
 # syntax = btidor/syntax
 
-FROM mcr.microsoft.com/vscode/devcontainers/base:0-jammy
+FROM mcr.microsoft.com/vscode/devcontainers/base:noble
 
 COPY *.sources /etc/apt/sources.list.d/
 ADD --apt nodejs sqlite3
