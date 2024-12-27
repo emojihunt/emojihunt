@@ -132,7 +132,7 @@ func (c *Client) SetChannelName(chID, name string, position int) error {
 	}
 	_, err := c.s.ChannelEdit(chID, &discordgo.ChannelEdit{
 		Name:     name,
-		Position: position,
+		Position: &position,
 	})
 	if err != nil {
 		return xerrors.Errorf("SetChannelName.Edit: %w", err)
@@ -143,7 +143,7 @@ func (c *Client) SetChannelName(chID, name string, position int) error {
 func (c *Client) SetChannelCategory(channel string, category string, position int) error {
 	_, err := c.s.ChannelEditComplex(channel, &discordgo.ChannelEdit{
 		ParentID: category,
-		Position: position,
+		Position: &position,
 	})
 	if err != nil {
 		return xerrors.Errorf("error moving channel to category %s: %w", category, err)

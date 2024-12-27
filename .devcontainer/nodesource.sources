@@ -1,6 +1,6 @@
 Types: deb deb-src
 URIs: https://deb.nodesource.com/node_20.x
-Suites: noble
+Suites: nodistro
 Components: main
 Signed-By:
  -----BEGIN PGP PUBLIC KEY BLOCK-----
