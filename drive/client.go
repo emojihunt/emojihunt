@@ -20,7 +20,7 @@ const (
 	DevRootFolderID = "1KNcBa-GjA9Uz8LJ5OYs_zfWRvFRDVu1d"
 
 	// ID of this year's root folder (e.g. the "emoji hunt/2023" folder)
-	ProdRootFolderID = "1qrztjHhZuM0FT09HKHuRiwvGHs1Lepcz"
+	ProdRootFolderID = "1lqp9IXmkcgUs12lzJW0RswlzL4CRQTyT"
 )
 
 type Client struct {
