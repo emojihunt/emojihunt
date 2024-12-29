@@ -11,13 +11,13 @@
   },
   "devDependencies": {
     "@nuxt/devtools": "latest",
-    "@nuxt/ui": "^2.11.1",
-    "@pinia/nuxt": "^0.5.1",
-    "ably": "^1.2.48",
+    "@nuxt/ui": "^2.20.0",
+    "@pinia/nuxt": "^0.5.5",
+    "ably": "^1.2.50",
     "colorjs.io": "^0.4.5",
-    "emoji-mart-vue-fast": "^15.0.0",
+    "emoji-mart-vue-fast": "^15.0.3",
     "nuxt": "3.14.0",
-    "vue": "^3.3.8",
-    "vue-router": "^4.2.5"
+    "vue": "^3.5.13",
+    "vue-router": "^4.5.0"
   }
 }
