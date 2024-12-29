@@ -1,4 +1,4 @@
-import Ably from 'ably/build/ably-webworker.min';
+import Ably from 'ably';
 import type { AblyWorkerMessage, ConnectionState } from './utils/types';
 
 // Keep a list of clients as they connect. There's no easy way to implement
@@ -14,7 +14,7 @@ self.addEventListener("connect", (e: any) => {
   }
 });
 
-const client = new Ably.Realtime.Promise({
+const client = new Ably.Realtime({
   authCallback: async (_, callback) => {
     console.log("Fetching Ably token...");
     const r = await fetch("/api/ably", { method: "POST" });

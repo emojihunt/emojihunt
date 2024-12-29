@@ -10,11 +10,11 @@
     "postinstall": "nuxt prepare"
   },
   "devDependencies": {
-    "@nuxt/devtools": "latest",
+    "@nuxt/devtools": "^1.7.0",
     "@nuxt/ui": "^2.20.0",
-    "@pinia/nuxt": "^0.5.5",
-    "ably": "^1.2.50",
-    "colorjs.io": "^0.4.5",
+    "@pinia/nuxt": "^0.9.0",
+    "ably": "^2.6.0",
+    "colorjs.io": "^0.5.2",
     "emoji-mart-vue-fast": "^15.0.3",
     "nuxt": "3.14.0",
     "vue": "^3.5.13",
