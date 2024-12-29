@@ -16,7 +16,7 @@
     "ably": "^1.2.48",
     "colorjs.io": "^0.4.5",
     "emoji-mart-vue-fast": "^15.0.0",
-    "nuxt": "^3.8.1",
+    "nuxt": "3.14.0",
     "vue": "^3.3.8",
     "vue-router": "^4.2.5"
   }

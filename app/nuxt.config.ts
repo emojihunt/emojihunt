@@ -12,6 +12,7 @@ export default defineNuxtConfig({
   colorMode: {
     preference: "light",
   },
+  compatibilityDate: "2024-12-29",
   css: [
     "assets/normalize.css",
     "assets/main.css",
