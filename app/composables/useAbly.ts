@@ -4,6 +4,7 @@ import type { AblyWorkerMessage } from "~/utils/types";
 export default function (): Ref<boolean> {
   const store = usePuzzles();
   const connected = ref<boolean>(false);
+  let poisoned = false;
   onMounted(() => {
     // SharedWorker is only available on the client.
     const worker = new AblyWorker();
@@ -12,17 +13,13 @@ export default function (): Ref<boolean> {
         store.handleDelta(e.data.data);
       } else if (e.data.name === "client") {
         if (e.data.state === "connected") {
-          connected.value = true;
+          if (poisoned) window.location.reload();
+          else connected.value = true;
         } else if (e.data.state === "disconnected") {
           connected.value = false;
         } else {
-          if (window.navigator.onLine) {
-            console.warn("Connection lost. Reloading page...");
-            window.location.reload();
-          } else {
-            console.warn("Connection lost. Will reload page when next online...");
-            window.addEventListener("online", () => window.location.reload());
-          }
+          console.warn("Connection lost. Will reload page when next online...");
+          poisoned = true;
         }
       }
     });
