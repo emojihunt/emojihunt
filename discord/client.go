@@ -233,14 +233,14 @@ func (c *Client) GetMessage(ch *discordgo.Channel, messageID string) (*discordgo
 
 // Set the pinned status message, by posting one or editing the existing one.
 // No-op if the status was already set.
-func (c *Client) CreateUpdatePin(chanID, header string, embed *discordgo.MessageEmbed) error {
+func (c *Client) CreateUpdatePin(chanID string, embed *discordgo.MessageEmbed) error {
 	existing, err := c.s.ChannelMessagesPinned(chanID)
 	if err != nil {
 		return xerrors.Errorf("ChannelMessagesPinned: %w", err)
 	}
 	var statusMessage *discordgo.Message
 	for _, msg := range existing {
-		if len(msg.Embeds) > 0 && msg.Embeds[0].Author.Name == header {
+		if len(msg.Embeds) > 0 {
 			if statusMessage != nil {
 				log.Printf("discord: multiple status messages in %v, editing last one", chanID)
 			}

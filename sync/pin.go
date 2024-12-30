@@ -60,10 +60,9 @@ func (c *Client) UpdateDiscordPin(ctx context.Context, fields DiscordPinFields) 
 	color := int(r)*256*256 + int(g)*256 + int(b)
 
 	embed := &discordgo.MessageEmbed{
-		Author: &discordgo.MessageEmbedAuthor{Name: pinnedStatusHeader},
-		Title:  fields.PuzzleName,
-		URL:    fields.PuzzleURL,
-		Color:  color,
+		Title: fields.PuzzleName,
+		URL:   fields.PuzzleURL,
+		Color: color,
 		Fields: []*discordgo.MessageEmbedField{
 			{
 				Name:   "Round",
@@ -119,5 +118,5 @@ func (c *Client) UpdateDiscordPin(ctx context.Context, fields DiscordPinFields) 
 		})
 	}
 
-	return c.discord.CreateUpdatePin(fields.DiscordChannel, pinnedStatusHeader, embed)
+	return c.discord.CreateUpdatePin(fields.DiscordChannel, embed)
 }

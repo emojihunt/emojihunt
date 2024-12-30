@@ -13,7 +13,6 @@ import (
 )
 
 const (
-	pinnedStatusHeader = "Puzzle Information"
 	locationDefaultMsg = "Use `/puzzle voice` to assign a voice room"
 )
 
