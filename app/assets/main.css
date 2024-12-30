@@ -99,6 +99,13 @@ button:focus {
   }
 }
 
+@keyframes blink {
+
+  50% {
+    opacity: 1;
+  }
+}
+
 :nth-last-child(n+2 of .pill.stuck) {
   visibility: hidden;
 }
