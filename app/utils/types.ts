@@ -101,6 +101,13 @@ export const StatusNeedsAnswer = (status: Status): boolean => {
 
 export const DefaultReminder = "0001-01-01T00:00:00Z";
 
+export const parseReminder = (puzzle: Puzzle): Date | null => {
+  if (!puzzle.reminder) return null;
+  const date = new Date(puzzle.reminder);
+  if (date.getTime() < 1700000000000) return null;
+  return date;
+};
+
 export type ServerPuzzle = Omit<Puzzle, "round"> & { round: Round; };
 
 export type HomeResponse = {

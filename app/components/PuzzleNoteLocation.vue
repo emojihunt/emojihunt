@@ -26,11 +26,9 @@ const tooltip = computed(() => {
       return { emoji: "📻", placeholder: channel, text: `in ${channel}` };
     }
   } else {
-    const reminder = props.puzzle.reminder;
+    const reminder = parseReminder(props.puzzle);
     if (!reminder) return;
-    const date = new Date(reminder);
-    if (date.getTime() < 1700000000000) return;
-    const formatted = new Date(reminder).toLocaleString("en-US", {
+    const formatted = reminder.toLocaleString("en-US", {
       weekday: "long",
       hour: "numeric",
       minute: "2-digit",

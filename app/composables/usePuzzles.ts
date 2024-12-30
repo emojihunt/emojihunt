@@ -1,4 +1,5 @@
 import { defineStore } from 'pinia';
+import { parseReminder } from '~/utils/types';
 import type { HomeResponse } from '~/utils/types';
 
 type Optimistic = (
@@ -109,7 +110,16 @@ export default defineStore("puzzles", {
       for (const [_, puzzles] of grouped) {
         puzzles.sort((a, b) => {
           if (a.meta !== b.meta) return a.meta ? 1 : -1;
-          else return a.name.localeCompare(b.name);
+          const ra = parseReminder(a);
+          const rb = parseReminder(b);
+          if (ra) {
+            if (rb) return ra.getTime() - rb.getTime();
+            if (rb) return a.name.localeCompare(b.name);
+            else return -1;
+          } else {
+            if (rb) return 1;
+            else return a.name.localeCompare(b.name);
+          }
         });
       }
       return grouped;
