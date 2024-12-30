@@ -114,19 +114,6 @@ func (b *PuzzleBot) Register() (*discordgo.ApplicationCommand, bool) {
 					},
 				},
 			},
-			{
-				Name:        "location",
-				Description: "Use in a puzzle channel to add or update the location 📍",
-				Type:        discordgo.ApplicationCommandOptionSubCommand,
-				Options: []*discordgo.ApplicationCommandOption{
-					{
-						Name:        "set",
-						Description: "What should the location be set to?",
-						Required:    false,
-						Type:        discordgo.ApplicationCommandOptionString,
-					},
-				},
-			},
 		},
 	}, true
 }
@@ -198,19 +185,6 @@ func (b *PuzzleBot) Handle(ctx context.Context, input *discord.CommandInput) (st
 					reply += fmt.Sprintf(" Previous note was: ```\n%s\n```", puzzle.Note)
 				}
 				puzzle.Note = note
-			case "location":
-				var location string
-				if opt, ok := input.Options["set"]; ok {
-					location = opt.StringValue()
-					reply = ":writing_hand: Updated puzzle location!"
-				} else {
-					reply = ":cl: Cleared puzzle location."
-				}
-
-				if puzzle.Location != "" {
-					reply += fmt.Sprintf(" Previous location was: ```\n%s\n```", puzzle.Location)
-				}
-				puzzle.Location = location
 			default:
 				return xerrors.Errorf("unexpected /puzzle subcommand: %q", input.Subcommand)
 			}
