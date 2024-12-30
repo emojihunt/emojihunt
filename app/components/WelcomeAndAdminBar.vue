@@ -17,7 +17,7 @@ const recalculate = () => {
   if (delta <= 0) return;
 
   const seconds = delta % 60;
-  display.value = `${seconds} second${seconds > 1 ? 's' : ''}!!!!`;
+  display.value = `${seconds} second${seconds === 1 ? '' : 's'}!!!!`;
   delta = Math.floor(delta / 60);
   if (delta <= 0) return;
 
@@ -31,7 +31,7 @@ const recalculate = () => {
   delta = Math.floor(delta / 24);
   if (delta <= 0) return;
 
-  display.value = `${delta} day${delta > 1 ? 's' : ''}, ${hours} hour${hours > 1 ? 's' : ''}...`;
+  display.value = `${delta} day${delta === 1 ? '' : 's'}, ${hours} hour${hours === 1 ? '' : 's'}...`;
 };
 
 recalculate();
