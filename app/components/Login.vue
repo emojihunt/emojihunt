@@ -59,8 +59,8 @@ h1 {
   font-size: 1.2rem;
   letter-spacing: 0.2rem;
   user-select: none;
-  opacity: 75%;
-  filter: drop-shadow(0 2.5px 4px oklch(77% 0.10 243deg / 40%));
+  opacity: 70%;
+  filter: drop-shadow(0 2.5px 4px oklch(82% 0.10 243deg / 40%));
 }
 
 a {
@@ -79,11 +79,11 @@ a {
   background-image: linear-gradient(68deg,
       oklch(100% 0 0deg / 20%) 60%, oklch(0% 0 0deg / 0%) 100%);
 
-  --button-oklch: 58% 0.21 274deg;
+  --button-oklch: 50% 0.21 274deg;
 }
 
 a:hover {
-  --button-oklch: 49% 0.18 274deg;
+  --button-oklch: 47% 0.18 274deg;
 }
 
 a svg {
@@ -94,7 +94,7 @@ a svg {
 }
 
 a .vh {
-  height: 2.75rem;
+  height: 2.5rem;
   border-left: 1px solid white;
 }
 
