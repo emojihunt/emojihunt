@@ -71,10 +71,11 @@ export default defineStore("puzzles", {
       const annotated: AnnotatedRound[] = [];
       for (const base of rounds.values()) {
         const puzzles = this.puzzlesByRound.get(base.id) || [];
+        const metas = puzzles.filter((p => p.meta));
         annotated.push({
           ...base,
           anchor: base.name.trim().toLowerCase().replaceAll(/[^A-Za-z0-9]+/g, "-"),
-          complete: puzzles.filter((p => !p.answer)).length === 0,
+          complete: (metas.length === 0 ? puzzles : metas).filter((p => !p.answer)).length === 0,
           displayName: `${base.emoji}\uFE0F ${base.name}`,
           solved: puzzles.filter((p) => !!p.answer).length,
           total: puzzles.length,

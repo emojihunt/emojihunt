@@ -62,8 +62,8 @@ span {
 }
 
 label {
-  color: oklch(100% 0.09 v-bind(hue));
-  font-size: 0.6rem;
+  color: oklch(100% 0.08 v-bind(hue));
+  font-size: 0.66rem;
   text-align: center;
 
   border-radius: 0.3rem;
