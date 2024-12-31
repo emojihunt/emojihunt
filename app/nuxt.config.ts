@@ -18,10 +18,23 @@ export default defineNuxtConfig({
     "assets/main.css",
     "assets/emojimart.css",
   ],
+  icon: {
+    clientBundle: {
+      scan: {
+        globInclude: [
+          "components/**/*.vue",
+          "node_modules/@nuxt/ui/**/*.js",
+        ],
+        globExclude: [],
+      },
+    },
+    serverBundle: false,
+  },
   nitro: {
     preset: "vercel-edge",
   },
   modules: [
+    "@nuxt/icon",
     "@nuxt/ui",
     "@pinia/nuxt",
   ],
