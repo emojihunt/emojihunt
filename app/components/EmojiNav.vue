@@ -62,7 +62,7 @@ span {
 }
 
 label {
-  color: oklch(90% 0.10 v-bind(hue));
+  color: oklch(100% 0.09 v-bind(hue));
   font-size: 0.6rem;
   text-align: center;
 
