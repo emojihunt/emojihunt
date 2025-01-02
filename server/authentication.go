@@ -15,7 +15,6 @@ const (
 	SessionDuration = 4 * 24 * time.Hour
 	OAuth2TokenURL  = "https://discord.com/api/v10/oauth2/token"
 
-	DevRedirectURI  = "http://localhost:3000/login"
 	ProdRedirectURI = "https://www.emojihunt.org/login"
 
 	CookieName = "session"
@@ -55,7 +54,7 @@ func (s *Server) Authenticate(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "code is required")
 	}
 
-	token, err := s.oauth2TokenExchange(params.Code)
+	token, err := s.oauth2TokenExchange(params.Code, c.Request().Referer())
 	if err != nil {
 		log.Printf("OAuth2 token exchange failed: %#v", err)
 		return c.JSON(http.StatusForbidden, AuthenticateResponse{})
@@ -96,7 +95,7 @@ func (s *Server) Authenticate(c echo.Context) error {
 	})
 }
 
-func (s *Server) oauth2TokenExchange(code string) (string, error) {
+func (s *Server) oauth2TokenExchange(code, referer string) (string, error) {
 	endpoint, err := url.Parse(OAuth2TokenURL)
 	if err != nil {
 		return "", err
@@ -106,7 +105,16 @@ func (s *Server) oauth2TokenExchange(code string) (string, error) {
 	var query = url.Values{}
 	query.Add("grant_type", "authorization_code")
 	query.Add("code", code)
-	query.Add("redirect_uri", s.redirectURI)
+
+	if s.redirectURI == "" {
+		redirectURI, err := url.JoinPath(referer, "login")
+		if err != nil {
+			return "", err
+		}
+		query.Add("redirect_uri", redirectURI)
+	} else {
+		query.Add("redirect_uri", s.redirectURI)
+	}
 
 	resp, err := http.PostForm(endpoint.String(), query)
 	if err != nil {

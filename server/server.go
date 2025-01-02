@@ -64,10 +64,10 @@ func Start(ctx context.Context, prod bool, ably *ably.Realtime,
 		s.credentials = url.UserPassword(parts[0], parts[1])
 	}
 
-	s.redirectURI = DevRedirectURI
 	if prod {
 		s.redirectURI = ProdRedirectURI
 	}
+	// blank value disables strict validation
 
 	e.HideBanner = true
 	e.Use(s.SentryMiddleware)
