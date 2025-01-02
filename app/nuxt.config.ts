@@ -51,6 +51,5 @@ export default defineNuxtConfig({
     "/api/**": {
       proxy: prod ? "https://huntbot.fly.dev/**" : "http://localhost:8080/**",
     },
-    "/login": { ssr: false },
   },
 });

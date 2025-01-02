@@ -1,42 +1,51 @@
 <script setup lang="ts">
-// This page accesses local storage and calls the /authenticate API (which sets
-// a cookie). These things need to happen on the client, so server-side
-// rendering is disabled for this page in routeRules.
+import { appendResponseHeader } from 'h3';
 
-type LoginResult =
-  { status: "not_started"; } |
+const event = useRequestEvent();
+const redirect_uri = useRedirectURI();
+
+const url = useRequestURL();
+const returnURL = url.searchParams.get("state") || "/";
+const code = url.searchParams.get("code");
+
+type LoginError =
   { status: "canceled"; } |
   { status: "invalid_code"; } |
-  { status: "unknown_member", username: string; } |
-  { status: "success"; };
+  { status: "unknown_member", username: string; };
 
-const handleLogin = async (url: URL): Promise<LoginResult> => {
-  if (url.searchParams.has("error")) {
-    return { status: "canceled" };
-  }
-  const code = url.searchParams.get("code");
-  const redirect_uri = useRedirectURI();
-  if (!code) {
-    return { status: "not_started" };
-  }
-
+const result = ref<LoginError>();
+if (url.searchParams.has("error")) {
+  result.value = { status: "canceled" };
+} else if (!code) {
+  // not started
+} else {
   const { data, error } = await useFetch("/api/authenticate", {
     method: "POST",
     headers: {
       "Content-Type": "application/x-www-form-urlencoded",
     },
     body: (new URLSearchParams({ code, redirect_uri })).toString(),
+    onResponse({ response }) {
+      const cookie = response.headers.getSetCookie();
+      if (import.meta.server && cookie && event) {
+        // If this call was made during server-side rendering, make sure to pass
+        // through the Set-Cookie header:
+        // https://nuxt.com/docs/getting-started/data-fetching#pass-cookies-from-server-side-api-calls-on-ssr-response
+        appendResponseHeader(event, 'set-cookie', cookie);
+      }
+    },
   });
+
   if (data.value) {
-    return { status: "success" };
+    await navigateTo(returnURL); // success!
   } else if (error.value?.statusCode === 403) {
-    // The /authorize endpoint returns HTTP 403 if the code fails to verify. All
-    // other errors should bubble up.
+    // The /authenticate endpoint returns HTTP 403 if the code fails to verify.
+    // All other errors are hard errors.
     const { username } = await error.value.data;
     if (username) {
-      return { status: "unknown_member", username };
+      result.value = { status: "unknown_member", username };
     }
-    return { status: "invalid_code" };
+    result.value = { status: "invalid_code" };
   } else {
     throw createError({
       fatal: true,
@@ -44,26 +53,18 @@ const handleLogin = async (url: URL): Promise<LoginResult> => {
       data: error.value?.data,
     });
   }
-};
-
-const url = useRequestURL();
-const returnURL = url.searchParams.get("state") || "/";
-
-const result = await handleLogin(url);
-if (result.status === "success") {
-  await navigateTo(returnURL);
 }
 </script>
 
 <template>
   <Login :returnURL="returnURL">
-    <span v-if="result.status === 'canceled'">
+    <span v-if="result?.status === 'canceled'">
       Canceled.
     </span>
-    <span v-else-if="result.status === 'invalid_code'">
+    <span v-else-if="result?.status === 'invalid_code'">
       Invalid or duplicate login attempt.
     </span>
-    <span v-else-if="result.status === 'unknown_member'">
+    <span v-else-if="result?.status === 'unknown_member'">
       <b>@{{ result.username }}</b> is not a member of the Discord server.
     </span>
   </Login>
