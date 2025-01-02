@@ -13,6 +13,9 @@ useHead({
   link: [inter, plex, noto].map((href) =>
     ({ rel: "preload", href, as: "font", type: "font/woff2", crossorigin: true })),
 });
+useSeoMeta({
+  description: "Welcome to the 🌊🎨🎡 puzzle tracker.",
+});
 
 const config = useAppConfig();
 const params = new URLSearchParams();
