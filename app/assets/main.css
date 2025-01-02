@@ -23,6 +23,8 @@
 }
 
 @font-face {
+  /* https://github.com/googlefonts/noto-emoji/blob/main/fonts/Noto-COLRv1.ttf */
+  /* fonttools ttLib Noto-COLRv1.ttf --flavor woff2 -o Noto-COLRv1.woff2 */
   font-family: "Noto Color Emoji";
   font-style: normal;
   font-weight: 100 900;
