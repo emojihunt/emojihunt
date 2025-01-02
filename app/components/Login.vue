@@ -57,7 +57,7 @@ main {
   padding: 1rem;
   margin: 25vh auto;
   max-width: 26rem;
-  font-family: "Inter Variable Login", "Noto Color Emoji", sans-serif;
+  font-family: "Inter Variable Login", "Noto Color Emoji Login", sans-serif;
 
   display: flex;
   flex-direction: column;

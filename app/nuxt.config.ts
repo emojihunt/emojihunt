@@ -52,4 +52,9 @@ export default defineNuxtConfig({
       proxy: prod ? "https://huntbot.fly.dev/**" : "http://localhost:8080/**",
     },
   },
+  vite: {
+    build: {
+      assetsInlineLimit: 8192,
+    },
+  },
 });

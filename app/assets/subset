@@ -1,0 +1,28 @@
+#!/bin/bash
+
+# generates font subsets containing just the glyphs we use,
+# for faster loading
+
+set -euf -o pipefail
+
+pyftsubset "InterVariable.woff2" \
+  --text="Log in via Discord app discord.com" \
+  --no-ignore-missing-unicodes \
+  --layout-features="" \
+  --layout-scripts="" \
+  --name-IDs="0,13,14" \
+  --canonical-order \
+  --harfbuzz-repacker \
+  --flavor="woff2" \
+  --output-file="InterVariable-Login.woff2"
+
+pyftsubset "Noto-COLRv1.woff2" \
+  --text="🌊🎨🎡📱🌐" \
+  --no-ignore-missing-unicodes \
+  --layout-features="" \
+  --layout-scripts="" \
+  --name-IDs="0,13,14" \
+  --canonical-order \
+  --harfbuzz-repacker \
+  --flavor="woff2" \
+  --output-file="Noto-COLRv1-Login.woff2"
