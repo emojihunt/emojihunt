@@ -5,6 +5,7 @@
 import inter from "~/assets/InterVariable.woff2";
 import plex from "~/assets/IBMPlexMono-Bold-Latin1.woff2";
 import noto from "~/assets/Noto-COLRv1.woff2";
+
 useHead({
   htmlAttrs: { lang: "en" },
   title: "Log in",
@@ -14,16 +15,11 @@ useHead({
 });
 
 const config = useAppConfig();
-const props = defineProps<{
-  returnURL?: string;
-}>();
-
 const params = new URLSearchParams();
 params.set("client_id", config.clientID);
 params.set("redirect_uri", useRedirectURI());
 params.set("response_type", "code");
 params.set("scope", "identify");
-params.set("state", props.returnURL || "/");
 
 const authorize = `oauth2/authorize?${params.toString()}`;
 </script>

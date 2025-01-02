@@ -5,7 +5,6 @@ const event = useRequestEvent();
 const redirect_uri = useRedirectURI();
 
 const url = useRequestURL();
-const returnURL = url.searchParams.get("state") || "/";
 const code = url.searchParams.get("code");
 
 type LoginError =
@@ -37,7 +36,7 @@ if (url.searchParams.has("error")) {
   });
 
   if (data.value) {
-    await navigateTo(returnURL); // success!
+    await navigateTo("/"); // success!
   } else if (error.value?.statusCode === 403) {
     // The /authenticate endpoint returns HTTP 403 if the code fails to verify.
     // All other errors are hard errors.
@@ -57,7 +56,7 @@ if (url.searchParams.has("error")) {
 </script>
 
 <template>
-  <Login :returnURL="returnURL">
+  <Login>
     <span v-if="result?.status === 'canceled'">
       Canceled.
     </span>

@@ -3,20 +3,15 @@ import type { NuxtError } from 'nuxt/app';
 
 const props = defineProps<{ error: NuxtError; }>();
 const stack = import.meta.dev && props.error.stack;
-if (props.error.statusCode !== 401) {
+if (props.error.statusCode === 401) {
+  navigateTo("/login");
+} else {
   console.error(props.error);
-}
-
-// When prompting the user to log in, they should be returned to this page after
-// logging in successfully.
-let returnURL = "/";
-if ("url" in props.error && typeof props.error.url === "string") {
-  returnURL = props.error.url;
 }
 </script>
 
 <template>
-  <Login v-if="error.statusCode === 401" :returnURL="returnURL" />
+  <Login v-if="error.statusCode === 401" />
   <section v-else class="error">
     <div class="center">
       <h1>
@@ -32,7 +27,7 @@ if ("url" in props.error && typeof props.error.url === "string") {
 </template>
 
 <style scoped>
-.error {
+section {
   text-align: center;
 }
 
