@@ -74,8 +74,10 @@ h1 {
 
 section {
   padding: 1rem 1.25rem;
-  border: 2px solid oklch(40% 0.21 274deg);
-  border-radius: 3px;
+  border: 3px solid transparent;
+  border-radius: 4px;
+  background: linear-gradient(white, white) padding-box,
+    linear-gradient(68deg, oklch(33% 0.21 260deg), oklch(50% 0.21 290deg)) border-box;
 
   display: flex;
   gap: 1rem;
