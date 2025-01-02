@@ -3,7 +3,7 @@
 FROM mcr.microsoft.com/vscode/devcontainers/base:noble
 
 COPY *.sources /etc/apt/sources.list.d/
-ADD --apt nodejs sqlite3
+ADD --apt ngrok nodejs sqlite3
 
 # Install Go
 RUN (curl -sL https://golang.org/dl/go1.23.4.linux-amd64.tar.gz | tar xzC /usr/local) && \
