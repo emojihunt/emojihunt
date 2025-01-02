@@ -6,6 +6,7 @@ import inter from "~/assets/InterVariable.woff2";
 import plex from "~/assets/IBMPlexMono-Bold-Latin1.woff2";
 import noto from "~/assets/Noto-COLRv1.woff2";
 useHead({
+  htmlAttrs: { lang: "en" },
   title: "Log in",
   // @ts-ignore
   link: [inter, plex, noto].map((href) =>
@@ -36,7 +37,8 @@ const authorize = `oauth2/authorize?${params.toString()}`;
         <li>
           <span>📱</span>
           <a :href="`discord:///${authorize}`">via Discord app</a>
-          <a href="https://discord.com/download" class="download">
+          <a href="https://discord.com/download" class="download"
+            aria-label="download Discord app">
             <UIcon name="i-heroicons-arrow-down-tray-20-solid" />
           </a>
         </li>

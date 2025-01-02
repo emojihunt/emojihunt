@@ -1,5 +1,8 @@
 <script setup lang="ts">
-useHead({ title: "Puzzle Tracker" });
+useHead({
+  htmlAttrs: { lang: "en" },
+  title: "Puzzle Tracker",
+});
 const store = usePuzzles();
 await store.refresh();
 const connected = useAbly();
@@ -126,7 +129,8 @@ onMounted(() => window.addEventListener("keydown",
       </div>
       <hr>
     </template>
-    <WelcomeAndAdminBar ref="welcome" :discord="discord" @click="click" @toggle="toggle" />
+    <WelcomeAndAdminBar ref="welcome" :discord="discord" @click="click"
+      @toggle="toggle" />
     <Modal v-if="!!editing" @close="close">
       <AdminForm v-if="editing.kind === 'admin'" @close=close />
       <AddRoundPuzzleForm v-else-if="!editing.id" :kind="editing.kind" @close="close" />
