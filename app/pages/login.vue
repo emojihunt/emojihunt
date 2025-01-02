@@ -3,9 +3,15 @@ import { appendResponseHeader } from 'h3';
 
 const event = useRequestEvent();
 const redirect_uri = useRedirectURI();
+const discord = useCookie("discord", {
+  secure: true,
+  sameSite: 'lax',
+  expires: new Date(4070908800000),
+});
 
 const url = useRequestURL();
 const code = url.searchParams.get("code");
+const state = url.searchParams.get("state");
 
 type LoginError =
   { status: "canceled"; } |
@@ -36,6 +42,7 @@ if (url.searchParams.has("error")) {
   });
 
   if (data.value) {
+    discord.value = state;
     await navigateTo("/"); // success!
   } else if (error.value?.statusCode === 403) {
     // The /authenticate endpoint returns HTTP 403 if the code fails to verify.

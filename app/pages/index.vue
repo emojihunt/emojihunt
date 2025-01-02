@@ -83,19 +83,12 @@ const editing = ref<
   { kind: "round" | "puzzle" | "admin"; id?: void; } |
   { kind: "round" | "puzzle", id: number; }
 >();
-const discord = ref(false);
-onMounted(() => discord.value = !!localStorage.getItem("discord"));
 const click = (kind: "round" | "puzzle" | "admin") => {
   if (editing.value?.kind === kind && !editing.value.id) {
     editing.value = undefined;
   } else {
     editing.value = { kind };
   }
-};
-const toggle = () => {
-  discord.value = !discord.value;
-  if (discord.value) localStorage.setItem("discord", "*");
-  else localStorage.removeItem("discord");
 };
 const close = () => {
   if (editing.value && !editing.value.id) {
@@ -122,15 +115,14 @@ onMounted(() => window.addEventListener("keydown",
         @copy="() => copy(round.id)"
         @edit="() => (editing = { kind: 'round', id: round.id })" />
       <Puzzle v-for="puzzle in store.puzzlesByRound.get(round.id)" :puzzle="puzzle"
-        :round="round" :discord="discord" :focused="focused"
+        :round="round" :focused="focused"
         @edit="() => (editing = { kind: 'puzzle', id: puzzle.id })" />
       <div class="empty" v-if="!round.total">
         🫙&hairsp; No Puzzles
       </div>
       <hr>
     </template>
-    <WelcomeAndAdminBar ref="welcome" :discord="discord" @click="click"
-      @toggle="toggle" />
+    <WelcomeAndAdminBar ref="welcome" @click="click" />
     <Modal v-if="!!editing" @close="close">
       <AdminForm v-if="editing.kind === 'admin'" @close=close />
       <AddRoundPuzzleForm v-else-if="!editing.id" :kind="editing.kind" @close="close" />

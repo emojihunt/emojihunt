@@ -1,8 +1,6 @@
 <script setup lang="ts">
-const props = defineProps<{ discord: boolean; }>();
 const emit = defineEmits<{
   (e: "click", kind: "round" | "puzzle" | "admin"): void;
-  (e: "toggle"): void;
 }>();
 const store = usePuzzles();
 const config = useAppConfig();
@@ -75,12 +73,6 @@ defineExpose({ focus });
         :disabled="!store.rounds.length">▢ Add Puzzle</button>
       <button ref="admin" @click="emit('click', 'admin')">◆
         Admin</button>
-    </fieldset>
-    <fieldset v-if="!!store.rounds.length">
-      <button @click="() => emit('toggle')">
-        <template v-if="discord">Discord links open in website</template>
-        <template v-else>Discord links open in app</template>
-      </button>
     </fieldset>
   </footer>
 </template>

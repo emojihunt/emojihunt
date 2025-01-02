@@ -32,7 +32,7 @@ const authorize = `oauth2/authorize?${params.toString()}`;
       <ul>
         <li>
           <span>📱</span>
-          <a :href="`discord:///${authorize}`">via Discord app</a>
+          <a :href="`discord:///${authorize}&state=app`">via Discord app</a>
           <a href="https://discord.com/download" class="download"
             aria-label="download Discord app">
             <UIcon name="i-heroicons-arrow-down-tray-20-solid" />
@@ -40,7 +40,7 @@ const authorize = `oauth2/authorize?${params.toString()}`;
         </li>
         <li>
           <span>🌐</span>
-          <a :href="`https://discord.com/${authorize}`">via discord.com</a>
+          <a :href="`https://discord.com/${authorize}&state=web`">via discord.com</a>
         </li>
       </ul>
     </section>
