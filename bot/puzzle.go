@@ -168,8 +168,8 @@ func (b *PuzzleBot) Handle(ctx context.Context, input *discord.CommandInput) (st
 					puzzle.Location = ""
 					puzzle.VoiceRoom = ""
 					reply = fmt.Sprintf(
-						"🎉 Congratulations on the %s! I'll record the answer `%s` and archive this channel.",
-						puzzle.Status.SolvedExclamation(), puzzle.Answer,
+						"🎉 Congratulations on the %s I'll record the answer `%s` and archive this channel.",
+						puzzle.Status.SolvedNoun(), puzzle.Answer,
 					)
 				}
 			case "note":

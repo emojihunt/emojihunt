@@ -71,17 +71,17 @@ func (s Status) IsSolved() bool {
 func (s Status) SolvedVerb() string {
 	switch s {
 	case Solved:
-		return "solved"
+		return "solved!"
 	case Backsolved:
-		return "backsolved"
+		return "backsolved!!"
 	case Purchased:
-		return "purchased"
+		return "purchased."
 	default:
 		panic("called SolvedVerb() on an unsolved puzzle")
 	}
 }
 
-func (s Status) SolvedExclamation() string {
+func (s Status) SolvedNoun() string {
 	switch s {
 	case Solved:
 		return "solve!"

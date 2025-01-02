@@ -30,7 +30,7 @@ func (c *Client) NotifyPuzzleWorking(puzzle state.Puzzle) error {
 func (c *Client) NotifySolveInPuzzleChannel(puzzle state.Puzzle) error {
 	log.Printf("sync: notifying for solved puzzle %q in puzzle channel", puzzle.Name)
 	msg := fmt.Sprintf(
-		"Puzzle %s! The answer was `%v`. I'll archive this channel.",
+		"Puzzle %s The answer was `%v`. I'll archive this channel.",
 		puzzle.Status.SolvedVerb(), puzzle.Answer,
 	)
 	return c.discord.ChannelSendRawID(puzzle.DiscordChannel, msg)
@@ -45,8 +45,12 @@ func (c *Client) NotifySolveInHangingOut(puzzle state.Puzzle) error {
 	if puzzle.DiscordChannel == "" {
 		mention = fmt.Sprintf("%q", puzzle.Name)
 	}
-	msg := fmt.Sprintf("%s Puzzle %s was **%s!** Answer: `%s`.",
-		puzzle.Round.Emoji, mention, puzzle.Status.SolvedVerb(), puzzle.Answer)
+	kind := "Puzzle"
+	if puzzle.Meta {
+		kind = "Meta"
+	}
+	msg := fmt.Sprintf("%s %s %s was **%s** Answer: `%s`.",
+		puzzle.Round.Emoji, kind, mention, puzzle.Status.SolvedVerb(), puzzle.Answer)
 	_, err := c.discord.ChannelSend(c.discord.HangingOutChannel, msg)
 	return err
 }
