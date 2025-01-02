@@ -73,10 +73,6 @@ func (c *Client) SortDiscordChannels(ctx context.Context, puzzle PuzzleSortField
 	}
 	slices.SortFunc(puzzles, PuzzleSort)
 
-	if err != nil {
-		return 0, err
-	}
-
 	var found int
 	var position int = baseSortOffset
 	var round int64
