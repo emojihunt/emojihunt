@@ -1,5 +1,8 @@
 <script setup lang="ts">
+// Current: Unicode 15.1
+// Update URL: https://github.com/googlefonts/emoji-metadata
 import data from "~/assets/emoji-metadata.json";
+
 const computers = ref();
 const click = () => {
   if (!computers.value) return;
