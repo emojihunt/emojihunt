@@ -15,6 +15,7 @@ const handleLogin = async (url: URL): Promise<LoginResult> => {
     return { status: "canceled" };
   }
   const code = url.searchParams.get("code");
+  const redirect_uri = useRedirectURI();
   if (!code) {
     return { status: "not_started" };
   }
@@ -24,7 +25,7 @@ const handleLogin = async (url: URL): Promise<LoginResult> => {
     headers: {
       "Content-Type": "application/x-www-form-urlencoded",
     },
-    body: (new URLSearchParams({ code })).toString(),
+    body: (new URLSearchParams({ code, redirect_uri })).toString(),
   });
   if (data.value) {
     return { status: "success" };

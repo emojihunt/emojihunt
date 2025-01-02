@@ -13,14 +13,13 @@ useHead({
 });
 
 const config = useAppConfig();
-const url = useRequestURL();
 const props = defineProps<{
   returnURL?: string;
 }>();
 
 const params = new URLSearchParams();
 params.set("client_id", config.clientID);
-params.set("redirect_uri", (new URL("/login", url)).toString());
+params.set("redirect_uri", useRedirectURI());
 params.set("response_type", "code");
 params.set("scope", "identify");
 params.set("state", props.returnURL || "/");

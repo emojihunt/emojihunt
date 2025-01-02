@@ -38,7 +38,8 @@ func (s *Server) AuthenticationMiddleware(next echo.HandlerFunc) echo.HandlerFun
 }
 
 type AuthenticateParams struct {
-	Code string `form:"code"`
+	Code        string `form:"code"`
+	RedirectURI string `form:"redirect_uri"` // used in dev mode only!
 }
 
 type AuthenticateResponse struct {
@@ -54,7 +55,7 @@ func (s *Server) Authenticate(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "code is required")
 	}
 
-	token, err := s.oauth2TokenExchange(params.Code, c.Request().Referer())
+	token, err := s.oauth2TokenExchange(params.Code, params.RedirectURI)
 	if err != nil {
 		log.Printf("OAuth2 token exchange failed: %#v", err)
 		return c.JSON(http.StatusForbidden, AuthenticateResponse{})
@@ -95,7 +96,7 @@ func (s *Server) Authenticate(c echo.Context) error {
 	})
 }
 
-func (s *Server) oauth2TokenExchange(code, referer string) (string, error) {
+func (s *Server) oauth2TokenExchange(code, devRedirectURI string) (string, error) {
 	endpoint, err := url.Parse(OAuth2TokenURL)
 	if err != nil {
 		return "", err
@@ -107,11 +108,7 @@ func (s *Server) oauth2TokenExchange(code, referer string) (string, error) {
 	query.Add("code", code)
 
 	if s.redirectURI == "" {
-		redirectURI, err := url.JoinPath(referer, "login")
-		if err != nil {
-			return "", err
-		}
-		query.Add("redirect_uri", redirectURI)
+		query.Add("redirect_uri", devRedirectURI)
 	} else {
 		query.Add("redirect_uri", s.redirectURI)
 	}
