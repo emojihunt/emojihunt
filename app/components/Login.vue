@@ -8,13 +8,13 @@ import noto from "~/assets/Noto-COLRv1.woff2";
 
 useHead({
   htmlAttrs: { lang: "en" },
-  title: "Log in",
+  title: "Puzzle Tracker",
   // @ts-ignore
   link: [inter, plex, noto].map((href) =>
     ({ rel: "preload", href, as: "font", type: "font/woff2", crossorigin: true })),
 });
 useSeoMeta({
-  description: "Welcome to the 🌊🎨🎡 puzzle tracker.",
+  description: "Welcome to the 🌊🎨🎡 puzzle tracker! Please log in.",
 });
 
 const config = useAppConfig();
