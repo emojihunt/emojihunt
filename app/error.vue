@@ -17,7 +17,7 @@ if ("url" in props.error && typeof props.error.url === "string") {
 
 <template>
   <Login v-if="error.statusCode === 401" :returnURL="returnURL" />
-  <section v-else>
+  <section v-else class="error">
     <div class="center">
       <h1>
         <span class="emoji">🔥</span>Site Error
@@ -32,7 +32,7 @@ if ("url" in props.error && typeof props.error.url === "string") {
 </template>
 
 <style scoped>
-section {
+.error {
   text-align: center;
 }
 
