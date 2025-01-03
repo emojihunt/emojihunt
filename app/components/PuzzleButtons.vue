@@ -17,7 +17,7 @@ const discordURL = computed(() => props.puzzle.discord_channel ? discord.value =
 <template>
   <nav>
     <!-- Icons from Heroicons, https://heroicons.com. -->
-    <NuxtLink :href="puzzleURL || '#'" target="_blank" :ok="!!puzzleURL"
+    <NuxtLink :to="puzzleURL || '#'" target="_blank" :ok="!!puzzleURL"
       :tabindex="tabIndex(focused, 0)" style="--hue: 238deg;">
       <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
         stroke="currentColor">
@@ -32,7 +32,7 @@ const discordURL = computed(() => props.puzzle.discord_channel ? discord.value =
           clip-rule="evenodd" />
       </svg>
     </NuxtLink>
-    <NuxtLink :href="spreadsheetURL || '#'" target="_blank" :ok="!!spreadsheetURL"
+    <NuxtLink :to="spreadsheetURL || '#'" target="_blank" :ok="!!spreadsheetURL"
       :tabindex="tabIndex(focused, 1)" style="--hue: 148deg;">
       <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
         stroke="currentColor">
@@ -48,8 +48,8 @@ const discordURL = computed(() => props.puzzle.discord_channel ? discord.value =
           d="M5.25 5.25a3 3 0 0 0-3 3v10.5a3 3 0 0 0 3 3h10.5a3 3 0 0 0 3-3V13.5a.75.75 0 0 0-1.5 0v5.25a1.5 1.5 0 0 1-1.5 1.5H5.25a1.5 1.5 0 0 1-1.5-1.5V8.25a1.5 1.5 0 0 1 1.5-1.5h5.25a.75.75 0 0 0 0-1.5H5.25Z" />
       </svg>
     </NuxtLink>
-    <NuxtLink :href="discordURL || '#'" :target="discord ? '_blank' : ''"
-      :ok="!!discordURL" :tabindex="tabIndex(focused, 2)" style="--hue: 282deg;">
+    <NuxtLink :to="discordURL || '#'" :target="discord ? '_blank' : ''" :ok="!!discordURL"
+      :tabindex="tabIndex(focused, 2)" style="--hue: 282deg;">
       <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
         stroke="currentColor">
         <title>Discord Channel</title>

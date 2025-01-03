@@ -20,7 +20,7 @@ if (props.error.statusCode === 401) {
       <div class="details">
         <div class="message">{{ error.message }}</div>
         <pre v-if="stack">{{ stack }}</pre>
-        <a href="/">Home</a>
+        <NuxtLink to="/">Return to Home</NuxtLink>
       </div>
     </div>
   </section>

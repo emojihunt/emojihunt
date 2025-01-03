@@ -110,7 +110,7 @@ const test = async (e: Event) => {
       <h3>Round: {{ round }}</h3>
       <ul>
         <li v-for="puzzle of puzzles">
-          <a :href="puzzle.puzzle_url">{{ puzzle.name }}</a>
+          <NuxtLink :to="puzzle.puzzle_url">{{ puzzle.name }}</NuxtLink>
         </li>
       </ul>
     </template>

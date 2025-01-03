@@ -20,11 +20,11 @@ const click = (e: MouseEvent) => {
 </script>
 
 <template>
-  <a :href="`#${round.anchor}`" @click="click" :tabindex="selected ? 0 : -1"
+  <NuxtLink :to="`#${round.anchor}`" @click="click" :tabindex="selected ? 0 : -1"
     :aria-label="`To ${round.name}`">
     <span>{{ round.emoji }}&#xfe0f;</span>
     <label v-if="!round.complete">•</label>
-  </a>
+  </NuxtLink>
 </template>
 
 <style scoped>
