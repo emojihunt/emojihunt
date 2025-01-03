@@ -23,14 +23,25 @@
 }
 
 @font-face {
-  /* https://github.com/googlefonts/noto-emoji/blob/main/fonts/Noto-COLRv1.ttf */
-  /* fonttools ttLib Noto-COLRv1.ttf --flavor woff2 -o Noto-COLRv1.woff2 */
+  /*
+   * We vendor Noto Color Emoji and use it in all browsers except Safari.
+   *
+   * Safari doesn't support COLRv1[0] and gets very laggy when handling large
+   * font files[1], so we fall back to system emoji there.
+   *
+   * To update the font, download the latest TTF[2] and run this command:
+   *
+   *     fonttools ttLib Noto-COLRv1.ttf --flavor woff2 -o Noto-COLRv1.woff2
+   *
+   * [0] https://caniuse.com/colr-v1
+   * [1] https://stackoverflow.com/q/78008226
+   * [2] https://github.com/googlefonts/noto-emoji/blob/main/fonts/Noto-COLRv1.ttf
+   */
   font-family: "Noto Color Emoji";
   font-style: normal;
   font-weight: 100 900;
   font-display: swap;
   src: url("Noto-COLRv1.woff2") format(woff2) tech(color-COLRv1);
-  /* fall back to system emoji: the non-COLRv1 file makes Safari very slow */
 }
 
 @font-face {
