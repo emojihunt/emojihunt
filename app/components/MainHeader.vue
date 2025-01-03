@@ -79,8 +79,8 @@ nav {
 /* Theming */
 header {
   color: white;
-  background-color: oklch(30% 0.03 275deg);
-  border-bottom: 1px solid oklch(70% 0.03 275deg);
+  background-color: oklch(30% 0 0deg);
+  border-bottom: 1px solid oklch(80% 0 0deg);
   filter: drop-shadow(0 1.5rem 1rem oklch(100% 0 0deg));
   user-select: none;
 }
