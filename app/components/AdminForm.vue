@@ -1,10 +1,8 @@
 <script setup lang="ts">
-import type { ScrapedPuzzle } from '~/utils/types';
-
 const emit = defineEmits<{ (event: "close"): void; }>();
 const toast = useToast();
 
-const data: DiscoveryConfig = await (async () => {
+const data: DiscoveryConfig = await(async () => {
   const { data, error } = await useFetch<DiscoveryConfig>("/api/discovery");
   if (error.value) {
     throw createError({

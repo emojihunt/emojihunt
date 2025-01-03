@@ -1,6 +1,4 @@
 <script setup lang="ts">
-import { DefaultReminder, PuzzleKeys } from '~/utils/types';
-
 const props = defineProps<{ id?: number; }>();
 const emit = defineEmits<{ (event: "close"): void; }>();
 const store = usePuzzles();
@@ -160,7 +158,8 @@ const hue = computed(() => store.rounds.find((r) => r.id === parseInt(edits.roun
     <label for="puzzle-voice" :class="'voice_room' in modified && 'modified'">Voice Room
       ID</label>
     <UInput v-model="edits.voice_room" id="puzzle-voice" />
-    <label for="puzzle-reminder-date" :class="'reminder' in modified && 'modified'">Reminder
+    <label for="puzzle-reminder-date"
+      :class="'reminder' in modified && 'modified'">Reminder
       (ET)</label>
     <div class="reminders">
       <UInput v-model="edits.rdate" id="puzzle-reminder-date" type="date" />

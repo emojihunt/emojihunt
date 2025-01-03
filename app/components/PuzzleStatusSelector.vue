@@ -1,6 +1,4 @@
 <script setup lang="ts">
-import { Status } from "../utils/types";
-
 const props = defineProps<{ puzzle: Puzzle; }>();
 const emit = defineEmits<{ (e: "select", s: Status): void; }>();
 

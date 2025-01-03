@@ -1,6 +1,4 @@
 <script setup lang="ts">
-import { RoundKeys } from '~/utils/types';
-
 const props = defineProps<{ id?: number; }>();
 const emit = defineEmits<{ (event: "close"): void; }>();
 const store = usePuzzles();
@@ -104,7 +102,8 @@ const hue = computed(() => edits.hue || 0);
     <label for="round-drive" :class="'drive_folder' in modified && 'modified'">Drive
       Folder</label>
     <UInput v-model="edits.drive_folder" id="round-drive" />
-    <label for="round-discord" :class="'discord_category' in modified && 'modified'">Discord
+    <label for="round-discord"
+      :class="'discord_category' in modified && 'modified'">Discord
       Group</label>
     <UInput v-model="edits.discord_category" id="round-discord" />
     <fieldset>

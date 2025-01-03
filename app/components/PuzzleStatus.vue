@@ -1,6 +1,4 @@
 <script setup lang="ts">
-import type { Status } from "../utils/types";
-
 const props = defineProps<{ puzzle: Puzzle; round: Round, focused: FocusInfo; }>();
 const store = usePuzzles();
 
