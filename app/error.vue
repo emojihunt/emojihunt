@@ -11,8 +11,7 @@ if (props.error.statusCode === 401) {
 </script>
 
 <template>
-  <Login v-if="error.statusCode === 401" />
-  <section v-else class="error">
+  <main>
     <div class="center">
       <h1>
         <span class="emoji">🔥</span>Site Error
@@ -23,11 +22,11 @@ if (props.error.statusCode === 401) {
         <NuxtLink to="/">Return to Home</NuxtLink>
       </div>
     </div>
-  </section>
+  </main>
 </template>
 
 <style scoped>
-section {
+main {
   text-align: center;
 }
 
