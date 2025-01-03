@@ -1,6 +1,18 @@
 <script setup lang="ts">
-import emojifile from "emoji-mart-vue-fast/data/all.json";
 import { Picker, EmojiIndex } from "emoji-mart-vue-fast/src";
+
+// Custom emoji data file. To generate:
+//
+//  1. git clone https://github.com/serebrov/emoji-mart-vue
+//  2. Update emoji-datasource version in package.json
+//  3. npm install && node scripts/build-data.js
+//  4. Data is in data/all.json
+//
+// Current version: Unicode 15.1 (emoji-datasource 15.1.2)
+//
+import emojifile from "~/assets/emojimart.json";
+
+// Generated from http://localhost:3000/emoji (see console output)
 import emojihues from "~/assets/emoji-hues.json";
 
 const index = new EmojiIndex(emojifile, { recent: [] });
