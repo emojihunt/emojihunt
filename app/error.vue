@@ -56,11 +56,14 @@ h1 {
 a {
   display: block;
   margin: 1.8rem 0;
-  color: black;
+
+  font-weight: 450;
+  color: oklch(58% 0.20 49deg);
   user-select: none;
 }
 
 a:hover {
-  opacity: 70%;
+  text-decoration: underline;
+  filter: brightness(75%);
 }
 </style>
