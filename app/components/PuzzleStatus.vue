@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { Status } from "../utils/types";
 
-const props = defineProps<{ puzzle: Puzzle; focused: FocusInfo; }>();
+const props = defineProps<{ puzzle: Puzzle; round: Round, focused: FocusInfo; }>();
 const store = usePuzzles();
 
 const input = ref();
@@ -46,6 +46,7 @@ const save = (answer: string) => {
   }
 };
 
+const hue = computed(() => props.round.hue);
 const cancel = () => answering.value && (answering.value = null, open.value = false);
 </script>
 
@@ -152,6 +153,18 @@ const cancel = () => answering.value && (answering.value = null, open.value = fa
 .status {
   margin: 0 1px;
   outline: none;
+}
+
+.highlight {
+  /* https://stackoverflow.com/a/64127605 */
+  margin: 0 -0.4em;
+  padding: 0.1em 1.0em 0.1em 0.8em;
+  border-radius: 0.75em 0.3em;
+  background-image: linear-gradient(90deg,
+      oklch(85% 0.10 v-bind(hue) / 10%),
+      oklch(91% 0.10 v-bind(hue) / 70%) 4%,
+      oklch(91% 0.15 v-bind(hue) / 30%) 92%,
+      oklch(91% 0.10 v-bind(hue) / 0%));
 }
 
 .hint {

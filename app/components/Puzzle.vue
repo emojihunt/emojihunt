@@ -12,7 +12,7 @@ const emit = defineEmits<{ (e: "edit"): void; }>();
       <PuzzleName :puzzle="puzzle" :round="round" :focused="focused"
         @focusin="() => (focused.index !== 4) && (focused.index = 3)"
         @edit="() => emit('edit')" />
-      <PuzzleStatus :puzzle="puzzle" :focused="focused"
+      <PuzzleStatus :puzzle="puzzle" :round="round" :focused="focused"
         @focusin="() => (focused.index !== 6) && (focused.index = 5)" />
       <PuzzleNoteLocation :puzzle="puzzle" field="location"
         :tabindex="tabIndex(focused, 7)" @focusin="() => (focused.index = 7)" />

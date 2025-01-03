@@ -62,18 +62,6 @@
   background-color: oklch(75% 0.21 275deg / 0.33);
 }
 
-.highlight {
-  /* https://stackoverflow.com/a/64127605 */
-  margin: 0 -0.4em;
-  padding: 0.1em 1.0em 0.1em 0.8em;
-  border-radius: 0.75em 0.3em;
-  background-image: linear-gradient(90deg,
-      oklch(85% 0.25 100deg / 10%),
-      oklch(91% 0.19 100deg / 70%) 4%,
-      oklch(91% 0.25 100deg / 30%) 92%,
-      oklch(91% 0.25 100deg / 0%));
-}
-
 div[data-popper-placement] {
   z-index: 8;
 }
