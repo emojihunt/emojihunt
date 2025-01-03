@@ -112,25 +112,25 @@ button:focus {
 
 /* Theming */
 .pill {
-  font-size: 1.07rem;
+  font-size: 1rem;
   padding: 0 1.2rem;
   gap: 0.6rem;
 
   color: oklch(51% 0.075 v-bind(hue));
-  border-radius: 0.6rem;
-  border: 2.5px solid transparent;
-  background: linear-gradient(68deg, oklch(100% 0 0deg / 90%),
-      oklch(100% 0 0deg / 84%)) padding-box,
+  background: linear-gradient(white, white) padding-box,
     linear-gradient(68deg,
-      oklch(80% 0.15 calc(v-bind(hue) - 10)),
-      oklch(65% 0.30 calc(v-bind(hue) + 65))) border-box;
+      oklch(80% 0.10 calc(v-bind(hue) - 10)),
+      oklch(65% 0.21 calc(v-bind(hue) + 20))) border-box;
+
+  border: 2.5px solid transparent;
+  border-radius: 7px;
   filter: drop-shadow(0 -1px 1px oklch(70% 0.07 v-bind(hue) / 20%));
 
   cursor: default;
 }
 
 .round {
-  font-weight: 715;
+  font-weight: 650;
 
   overflow: hidden;
   white-space: nowrap;
@@ -139,17 +139,17 @@ button:focus {
 
 button {
   font-weight: 550;
-  font-size: 0.70rem;
-  color: oklch(50% 0.30 calc(v-bind(hue) + 60));
+  font-size: 0.7rem;
+  color: oklch(50% 0.21 calc(v-bind(hue) + 20));
 }
 
 button:hover {
-  color: oklch(30% 0.30 calc(v-bind(hue) + 60));
+  color: oklch(30% 0.21 calc(v-bind(hue) + 20));
 }
 
 .progress {
   font-variant-numeric: diagonal-fractions;
-  color: oklch(50% 0.30 calc(v-bind(hue) + 65));
+  color: oklch(50% 0.21 calc(v-bind(hue) + 20));
   user-select: none;
 }
 
