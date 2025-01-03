@@ -34,20 +34,22 @@ const authorize = `oauth2/authorize?${params.toString()}`;
       <h2>Log in</h2>
       <ul>
         <li>
-          <span>📱</span>
-          <a :href="`discord:///${authorize}&state=app`">via Discord app</a>
-          <a href="https://discord.com/download" class="download"
+          <NuxtLink :to="`discord:///${authorize}&state=app`">
+            📱 <span class="link">via Discord app</span>
+          </NuxtLink>
+          <NuxtLink to="https://discord.com/download" id="download"
             aria-label="download Discord app">
             <UIcon name="i-heroicons-arrow-down-tray-20-solid" />
-          </a>
+          </NuxtLink>
         </li>
         <li>
-          <span>🌐</span>
-          <a :href="`https://discord.com/${authorize}&state=web`">via discord.com</a>
+          <NuxtLink :to="`https://discord.com/${authorize}&state=web`">
+            🌐 <span class="link">via discord.com</span>
+          </NuxtLink>
         </li>
       </ul>
     </section>
-    <div class="error" v-if="$slots.default">
+    <div class="error" role="alert" v-if="$slots.default">
       <slot></slot>
     </div>
   </main>
@@ -85,41 +87,49 @@ section {
   display: flex;
   gap: 1rem;
 
-  color: oklch(40% 0.21 274deg);
   user-select: none;
 }
 
 h2 {
-  font-weight: 650;
+  font-weight: 600;
+  color: oklch(40% 0.21 270deg);
 }
 
 ul {
-  font-weight: 450;
+  color: oklch(50% 0.21 280deg);
 }
 
 li:first-child {
   margin-bottom: 0.7rem;
 }
 
-li span {
-  padding: 0 0.25rem;
-}
-
-.download {
-  margin: 0 0.4rem;
-  padding: 0.2rem 0.2rem 0;
+a {
+  padding: 0.1rem 0.1rem;
   border-radius: 2px;
 }
 
-a:hover {
-  text-decoration: underline;
-  filter: brightness(75%);
+a:focus {
+  outline: 2px solid oklch(50% 0.15 274deg);
 }
 
-.download:hover {
+a:hover .link {
+  text-decoration: underline;
+  color: oklch(33% 0.21 280deg);
+}
+
+#download {
+  margin: 0 0.5rem;
+  padding: 0.2rem 0.2rem 0;
+}
+
+#download {
+  color: oklch(50% 0.21 290deg);
+}
+
+#download:hover {
   filter: none;
   color: white;
-  background-color: oklch(33% 0.21 274deg);
+  background-color: oklch(33% 0.21 290deg);
 }
 
 .error {

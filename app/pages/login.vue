@@ -65,13 +65,13 @@ if (url.searchParams.has("error")) {
 <template>
   <Login>
     <span v-if="result?.status === 'canceled'">
-      Canceled.
+      Error: login canceled.
     </span>
     <span v-else-if="result?.status === 'invalid_code'">
-      Invalid or duplicate login attempt.
+      Error: invalid or duplicate login attempt.
     </span>
     <span v-else-if="result?.status === 'unknown_member'">
-      <b>@{{ result.username }}</b> is not a member of the Discord server.
+      Error: <b>@{{ result.username }}</b> is not a member of the Discord server.
     </span>
   </Login>
 </template>
