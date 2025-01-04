@@ -17,7 +17,14 @@ const nextTimelineFromID = (id: number): string | undefined =>
 
 const copy = async (id: number): Promise<void> => {
   const puzzles = store.puzzlesByRound.get(id);
-  if (!puzzles) return;
+  if (!puzzles) {
+    toast.add({
+      title: "No puzzles to copy",
+      color: "red",
+      icon: "i-heroicons-exclamation-triangle",
+    });
+    return;
+  };
   const data = puzzles.map((p) =>
     [p.name, p.answer || `${StatusEmoji(p.status)} ${StatusLabel(p.status)}`]);
   const text = data.map(([a, b]) => `${a}, ${b}`).join("\n");
