@@ -78,11 +78,7 @@ const cancel = () => answering.value && (answering.value = null, open.value = fa
 <style scoped>
 /* Layout */
 .cell {
-  display: flex;
   flex-direction: column;
-
-  position: relative;
-  overflow: hidden;
 }
 
 .answer {
@@ -124,12 +120,8 @@ const cancel = () => answering.value && (answering.value = null, open.value = fa
 /* Theming */
 .cell {
   font-size: 0.87rem;
-  border-radius: var(--default-border-radius);
 }
 
-.cell:focus-within {
-  outline: 2px solid black;
-}
 
 .answer span {
   font-family: "IBM Plex Mono", "Noto Color Emoji", monospace;

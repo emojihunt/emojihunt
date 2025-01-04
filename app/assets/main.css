@@ -1,3 +1,4 @@
+/* Fonts! */
 @font-face {
   font-family: "Inter Variable";
   font-style: normal;
@@ -52,7 +53,7 @@
   src: url("Noto-COLRv1-Login.woff2") format(woff2) tech(color-COLRv1);
 }
 
-
+/* Defaults */
 :root {
   font-family: "Inter Variable", "Noto Color Emoji", sans-serif;
   font-optical-sizing: auto;
@@ -97,6 +98,7 @@ button:focus-visible {
   outline-color: black !important;
 }
 
+/* Dynamic colors in Nuxt UI forms */
 form .focus\:ring-primary-500:focus,
 form .focus-visible\:ring-primary-500:focus-visible,
 form .focus-visible\:outline-primary-500:focus-visible,
@@ -136,12 +138,38 @@ form div[aria-haspopup="listbox"] button {
   outline: none !important
 }
 
+/* Common Classes */
 .flex-spacer {
   flex-grow: 1;
 }
 
-@keyframes fade-out {
+.cell {
+  display: flex;
+  overflow: hidden;
+  position: relative;
 
+  border-radius: var(--default-border-radius);
+}
+
+.cell:focus-within {
+  outline: 2px solid black;
+}
+
+/* Main Page */
+:nth-last-child(n+2 of .pill.stuck) {
+  visibility: hidden;
+}
+
+:nth-last-child(n+2 of .pill.stuck)+.titles {
+  visibility: hidden;
+}
+
+.titles.stuck {
+  color: white !important;
+}
+
+/* Animations */
+@keyframes fade-out {
   0% {
     opacity: 100%;
   }
@@ -153,7 +181,6 @@ form div[aria-haspopup="listbox"] button {
 }
 
 @keyframes color-in {
-
   0% {
     color: oklch(55% 0.03 275deg);
   }
@@ -165,20 +192,7 @@ form div[aria-haspopup="listbox"] button {
 }
 
 @keyframes blink {
-
   50% {
     opacity: 100%;
   }
-}
-
-:nth-last-child(n+2 of .pill.stuck) {
-  visibility: hidden;
-}
-
-:nth-last-child(n+2 of .pill.stuck)+.titles {
-  visibility: hidden;
-}
-
-.titles.stuck {
-  color: white !important;
 }

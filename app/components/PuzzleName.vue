@@ -16,31 +16,20 @@ const hue = computed(() => props.round.hue);
 </template>
 
 <style scoped>
-/* Layout */
-.cell {
-  display: flex;
-  overflow: hidden;
-}
-
 /* Theming */
 .cell {
   font-weight: 430;
   font-size: 0.9rem;
   color: oklch(25% 0.10 275deg);
-  border-radius: var(--default-border-radius);
 }
 
 button {
   border-radius: 0;
 }
 
-.cell:focus-within {
-  outline: 2px solid black;
-}
-
 .meta:focus-within,
-.meta button:focus {
-  outline: 2px solid oklch(50% 0.24 v-bind(hue));
+.meta button:focus-visible {
+  outline-color: oklch(50% 0.24 v-bind(hue)) !important;
 }
 
 .meta span {

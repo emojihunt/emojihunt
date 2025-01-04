@@ -59,12 +59,6 @@ const save = (updated: string) => {
 
 <style scoped>
 /* Layout */
-.cell {
-  display: flex;
-  position: relative;
-  overflow: hidden;
-}
-
 .emoji {
   width: 1.5rem;
   text-align: center;
@@ -79,12 +73,8 @@ const save = (updated: string) => {
 .cell {
   font-weight: 400;
   font-size: 0.8rem;
-  border-radius: var(--default-border-radius);
 }
 
-.cell:focus-within {
-  outline: 2px solid black;
-}
 
 .emoji {
   line-height: 1.75rem;
