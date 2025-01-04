@@ -30,8 +30,14 @@ onMounted(() => nextTick(ready));
     <div class="emoji">{{ round.emoji }}&#xfe0f;</div>
     <div class="round">{{ round.name }}</div>
     <div class="spaces"></div>
-    <button @click="() => emit('edit')">Edit</button>
-    <button @click="() => emit('copy')">Copy</button>
+    <div class="buttons">
+      <button @click="() => emit('copy')">
+        <UIcon name="i-heroicons-clipboard-document-list" size="1rem" />
+      </button>
+      <button @click="() => emit('edit')">
+        <UIcon name="i-heroicons-pencil" size="1rem" />
+      </button>
+    </div>
     <div class="progress">{{ round.solved }}/{{ round.total }}</div>
   </header>
   <header ref="titles"
@@ -59,6 +65,7 @@ onMounted(() => nextTick(ready));
   width: 92.5%;
   margin: 0 0 0.8rem;
   display: flex;
+  gap: 0.6rem;
 
   height: 2.5rem;
   line-height: 2.35rem;
@@ -69,18 +76,20 @@ onMounted(() => nextTick(ready));
   z-index: 20;
 }
 
-button {
+.buttons {
   width: 0;
   overflow: hidden;
   flex-shrink: 0;
+  opacity: 0;
+
+  display: flex;
+  gap: 0.25rem
 }
 
-.pill:hover button,
-button:focus {
+.pill:hover .buttons,
+.buttons:focus-within {
   width: auto;
-  padding: 0.25rem;
-  margin: 0.25rem 0;
-  border-radius: 2px;
+  opacity: 1;
 }
 
 .spaces {
@@ -115,7 +124,6 @@ button:focus {
 .pill {
   font-size: 1rem;
   padding: 0 1.2rem;
-  gap: 0.6rem;
 
   color: oklch(51% 0.075 v-bind(hue));
   background: linear-gradient(white, white) padding-box,
@@ -138,9 +146,15 @@ button:focus {
   text-overflow: ellipsis;
 }
 
+.buttons {
+  padding: 0 3px;
+}
+
 button {
-  font-weight: 550;
-  font-size: 0.7rem;
+  width: 1.25rem;
+  margin: 0.33rem 0;
+  line-height: 0.75rem;
+  border-radius: 2px;
   color: oklch(50% 0.21 calc(v-bind(hue) + 20));
 }
 
