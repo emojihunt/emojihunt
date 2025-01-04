@@ -46,7 +46,7 @@ const [focused, keydown] = useRovingTabIndex(props.rounds.length);
 /* Layout */
 header {
   width: 100%;
-  height: 6rem;
+  height: var(--header-height);
   position: fixed;
   z-index: 15;
 
@@ -76,7 +76,7 @@ nav {
 header {
   color: white;
   background-color: oklch(30% 0 0deg);
-  border-bottom: 1px solid oklch(80% 0 0deg);
+  border-bottom: calc(var(--header-height-outer) - var(--header-height)) solid oklch(80% 0 0deg);
   filter: drop-shadow(0 1.5rem 1rem oklch(100% 0 0deg));
   user-select: none;
 }

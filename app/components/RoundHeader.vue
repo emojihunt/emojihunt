@@ -71,7 +71,7 @@ onMounted(() => nextTick(ready));
   line-height: 2.35rem;
 
   position: sticky;
-  top: calc(6rem - 1.4rem);
+  top: var(--header-stop);
 
   z-index: 20;
 }
@@ -106,7 +106,7 @@ onMounted(() => nextTick(ready));
   padding-bottom: 0.25rem;
 
   position: sticky;
-  top: calc(6rem - 1.4rem + 0.1rem);
+  top: calc(var(--header-stop) + 0.1rem);
   z-index: 20;
 
   visibility: hidden;
@@ -189,8 +189,8 @@ button:hover {
     animation-name: fade-out;
     animation-timing-function: ease-in;
     animation-fill-mode: both;
-    animation-range-start: cover calc(100vh - (6rem - 1.4rem) - 2.35rem - 6px);
-    animation-range-end: cover calc(100vh - (6rem - 1.4rem) - 6px);
+    animation-range-start: cover calc(100vh - var(--header-stop) - 2.35rem - 6px);
+    animation-range-end: cover calc(100vh - var(--header-stop) - 6px);
     animation-timeline: v-bind(nextTimeline);
   }
 

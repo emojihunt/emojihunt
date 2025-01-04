@@ -95,7 +95,7 @@ onMounted(() => window.addEventListener("keydown",
 <style scoped>
 /* Layout */
 main {
-  padding: calc(6rem - 1.4rem) 0.5vw 0.5rem 2vw;
+  padding: var(--header-stop) 0.5vw 0.5rem 2vw;
   min-width: 1024px;
   display: grid;
   grid-template-columns: 8rem 6fr 5fr 4fr 8fr;
@@ -104,9 +104,9 @@ main {
 
 .rule {
   width: 0;
-  height: calc(100vh - 6rem - 1px);
+  height: calc(100vh - var(--header-height-outer));
   position: sticky;
-  top: calc(6rem + 1px);
+  top: var(--header-height-outer);
   margin-bottom: -100vh;
 
   margin-left: -0.33rem;
