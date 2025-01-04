@@ -6,7 +6,6 @@ const props = defineProps<{
 
 <template>
   <header>
-    <div class="flex-spacer"></div>
     <UTooltip class="ably" text="Live updates paused. Connecting..." :open-delay="250"
       :popper="{ placement: 'auto-end', offsetDistance: 0 }" v-if="!connected">
       <Icon name="i-heroicons-signal-slash" />

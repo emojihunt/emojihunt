@@ -21,6 +21,7 @@ export default function (limit: number, start: number = 0):
     // @ts-ignore
     nextTick(() => parent?.querySelector("[tabindex='0']")?.focus());
     e.preventDefault();
+    e.stopPropagation();
   };
   return [state, keydown];
 };

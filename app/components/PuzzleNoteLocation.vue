@@ -77,7 +77,7 @@ const save = (updated: string) => {
 
 .emoji {
   line-height: 1.75rem;
-  filter: opacity(70%);
+  filter: opacity(90%);
 
   cursor: default;
   user-select: none;

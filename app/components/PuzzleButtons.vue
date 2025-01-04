@@ -98,8 +98,12 @@ a[ok="false"] {
 }
 
 a {
-  color: oklch(42% 0.24 var(--hue));
   stroke-width: 0.8px;
+  color: oklch(45% 0.21 var(--hue));
+}
+
+a:hover {
+  color: oklch(33% 0.28 var(--hue));
 }
 
 a svg:last-child {

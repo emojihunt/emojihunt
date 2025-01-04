@@ -130,7 +130,7 @@ const cancel = () => answering.value && (answering.value = null, open.value = fa
 
 .answer button {
   line-height: 1.75rem;
-  filter: opacity(70%);
+  filter: opacity(90%);
 }
 
 .answer button:hover {
