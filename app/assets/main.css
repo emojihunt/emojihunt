@@ -90,8 +90,11 @@ button {
   cursor: pointer;
 }
 
-button:focus {
-  outline: 2px solid black;
+a:focus-visible,
+button:focus-visible {
+  outline: 2px solid;
+  /* Undo Nuxt UI changes */
+  outline-color: black !important;
 }
 
 @keyframes fade-out {

@@ -151,8 +151,8 @@ button[disabled] {
   pointer-events: none;
 }
 
-button:focus,
-a:focus {
-  outline: 2px solid oklch(50% 0.15 245deg);
+button:focus-visible,
+a:focus-visible {
+  outline-color: oklch(50% 0.15 245deg) !important;
 }
 </style>

@@ -72,7 +72,7 @@ label {
 
 a:hover,
 a:focus {
-  outline: 2px solid oklch(95% 0.10 v-bind(hue) / 90%);
+  outline-color: oklch(95% 0.10 v-bind(hue) / 90%) !important;
   background-color: oklch(95% 0.10 v-bind(hue) / 50%);
 }
 </style>

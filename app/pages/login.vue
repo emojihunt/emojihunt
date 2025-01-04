@@ -175,8 +175,8 @@ a {
   padding: 0.1rem 0.1rem;
 }
 
-a:focus {
-  outline: 2px solid oklch(50% 0.15 274deg);
+a:focus-visible {
+  outline-color: oklch(50% 0.15 274deg) !important;
 }
 
 a:hover .link {

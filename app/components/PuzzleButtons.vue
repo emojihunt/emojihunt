@@ -102,10 +102,6 @@ a {
   stroke-width: 0.8px;
 }
 
-a:focus {
-  outline: 2px solid oklch(42% 0.24 var(--hue));
-}
-
 a svg:last-child {
   display: none;
   opacity: 66%;

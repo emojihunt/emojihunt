@@ -61,6 +61,11 @@ a {
   user-select: none;
 }
 
+a:focus-visible {
+  outline-offset: 2px;
+  outline-color: oklch(45% 0.15 49deg) !important;
+}
+
 a:hover {
   text-decoration: underline;
   filter: brightness(75%);
