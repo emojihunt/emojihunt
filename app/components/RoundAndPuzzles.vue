@@ -66,7 +66,7 @@ const nextTimeline = computed(() => props.sequence < store.rounds.length - 1 ?
 hr {
   grid-column: 1 / 6;
 
-  margin: 0.5rem -0.5vw 0.5rem -2vw;
+  margin: 0.5rem -0.5vw 0.5rem calc(-1 * var(--nav-margin));
   border-bottom: 1px solid oklch(90% 0.03 275deg);
 }
 

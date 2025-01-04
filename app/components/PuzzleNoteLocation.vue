@@ -75,7 +75,6 @@ const save = (updated: string) => {
   font-size: 0.8rem;
 }
 
-
 .emoji {
   line-height: 1.75rem;
   filter: opacity(70%);

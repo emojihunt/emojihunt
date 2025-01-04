@@ -25,7 +25,6 @@ export default function (limit: number, start: number = 0):
   return [state, keydown];
 };
 
-
 // Gets the nearest parent of the given element that has the class "stop".
 export const getStopParent = (element: Element | null): Element | null => {
   if (!element) {

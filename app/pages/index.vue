@@ -74,16 +74,22 @@ const close = () => {
 // Otherwise, they bubble from the body.
 onMounted(() => window.addEventListener("keydown",
   (e) => (e.key === "Escape") && close()));
+
+const rounds = computed(() => store.rounds);
+
+const showNav = computed(() => store.puzzleCount >= 42);
+const navMargin = computed(() => store.puzzleCount >= 42 ? "3.5rem" : "2vw");
 </script>
 
 <template>
-  <MainHeader :rounds="store.rounds" :observer="observer" :connected="connected" />
+  <MainHeader :connected="connected" />
   <main @keydown="keydown">
+    <EmojiNav v-if="showNav" :rounds="rounds" :observer="observer" />
     <div class="rule first"></div>
     <div class="rule"></div>
     <div class="rule"></div>
-    <RoundAndPuzzles v-for="[i, round] of store.rounds.entries()" :round="round"
-      :sequence="i" :focused="focused" :observer="observer"
+    <RoundAndPuzzles v-for="[i, round] of rounds.entries()" :round="round" :sequence="i"
+      :focused="focused" :observer="observer"
       @edit="(kind, id) => { editing = { kind, id }; }" />
     <WelcomeAndAdminBar ref="welcome" @click="click" />
     <Modal v-if="!!editing" @close="close">
@@ -100,7 +106,9 @@ onMounted(() => window.addEventListener("keydown",
 <style scoped>
 /* Layout */
 main {
-  padding: var(--header-stop) 0.5vw 0.5rem 2vw;
+  --nav-margin: v-bind(navMargin);
+
+  padding: var(--header-stop) 0.5vw 0.5rem var(--nav-margin);
   min-width: 1024px;
   display: grid;
   grid-template-columns: 8rem 6fr 5fr 4fr 8fr;
@@ -112,16 +120,18 @@ main {
   height: calc(100vh - var(--header-height-outer));
   position: sticky;
   top: var(--header-height-outer);
-  margin-bottom: -100vh;
-
-  margin-left: -0.33rem;
-  border-left: 1px solid oklch(95% 0.03 275deg);
+  margin: 0 0 -100vh -0.33rem;
 
   z-index: 12;
 }
 
 .rule.first {
   grid-column: 3;
+}
+
+/* Theming */
+.rule {
+  border-right: 1px solid oklch(95% 0.03 275deg);
 }
 
 /* Animation */

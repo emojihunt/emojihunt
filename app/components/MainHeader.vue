@@ -1,16 +1,12 @@
 <script setup lang="ts">
 const props = defineProps<{
-  rounds: AnnotatedRound[];
-  observer: IntersectionObserver | undefined;
   connected: boolean;
 }>();
-const store = usePuzzles();
 </script>
 
 <template>
   <header>
     <div class="flex-spacer"></div>
-    <EmojiNav v-if="store.puzzleCount >= 42" :rounds="rounds" :observer="observer" />
     <UTooltip class="ably" text="Live updates paused. Connecting..." :open-delay="250"
       :popper="{ placement: 'auto-end', offsetDistance: 0 }" v-if="!connected">
       <Icon name="i-heroicons-signal-slash" />

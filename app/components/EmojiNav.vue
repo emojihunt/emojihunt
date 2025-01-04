@@ -3,7 +3,6 @@ const props = defineProps<{
   rounds: AnnotatedRound[];
   observer: IntersectionObserver | undefined;
 }>();
-const store = usePuzzles();
 const url = useRequestURL();
 
 // Navigate to anchors without changing the fragment
@@ -39,8 +38,7 @@ const [focused, keydown] = useRovingTabIndex(props.rounds.length);
       @click="(e) => (e.preventDefault(), goto(round))"
       :tabindex="round.id == rounds[focused.index].id ? 0 : -1"
       :aria-label="`To ${round.name}`" :style="`--hue: ${round.hue}deg;`">
-      <span>{{ round.emoji }}&#xfe0f;</span>
-      <label v-if="!round.complete">•</label>
+      <span :class="round.complete && 'complete'">{{ round.emoji }}&#xfe0f;</span>
     </a>
   </nav>
 </template>
@@ -48,54 +46,32 @@ const [focused, keydown] = useRovingTabIndex(props.rounds.length);
 <style scoped>
 /* Layout */
 nav {
-  display: flex;
-  gap: 0.4rem;
-}
+  width: 2.75rem;
+  height: calc(100vh - var(--header-height));
+  position: sticky;
+  top: var(--header-height);
+  margin: 0 0 -100vh calc(-1 * var(--nav-margin));
 
-a {
   display: flex;
   flex-direction: column;
-}
+  justify-content: center;
+  gap: 0.4rem;
 
-span {
-  display: block;
-  width: 1.75rem;
-  line-height: 1.75rem;
-  height: 2rem;
-}
-
-label {
-  display: block;
-  width: 100%;
-  height: 0.75rem;
-  margin: -0.2rem 0 0.1rem;
-  pointer-events: none;
+  /* tooltip needs to appear above round pills */
+  z-index: 25;
+  overflow: hidden;
 }
 
 /* Theming */
+nav {
+  background-color: white;
+  border-right: 1px solid oklch(95% 0.03 275deg);
+}
+
 a {
-  border: 1.5px solid transparent;
-  border-radius: 3px;
+  text-align: center;
   text-decoration: none;
   cursor: pointer;
-}
-
-span {
-  text-align: center;
-}
-
-label {
-  color: oklch(100% 0.08 var(--hue));
-  font-size: 0.66rem;
-  text-align: center;
-
-  border-radius: 0.3rem;
-  z-index: 3;
-}
-
-a:hover,
-a:focus {
-  outline: 2px solid oklch(95% 0.10 var(--hue) / 90%) !important;
-  background-color: oklch(95% 0.10 var(--hue) / 50%);
+  user-select: none;
 }
 </style>
