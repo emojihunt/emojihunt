@@ -5,36 +5,12 @@ const props = defineProps<{
   connected: boolean;
 }>();
 const store = usePuzzles();
-
-// IntersectionObserver doesn't fire with scrollIntoView, so fix up the `stuck`
-// classes manually.
-const observerFixup = () => {
-  if (props.observer) {
-    for (const pill of document.querySelectorAll(".ready")) {
-      if (pill.getBoundingClientRect().y < 77) {
-        pill.classList.add("stuck");
-      } else {
-        pill.classList.remove("stuck");
-      }
-    }
-  }
-};
-
-onMounted(() => document.location.hash && history.pushState(
-  "", document.title, window.location.pathname + window.location.search,
-));
-
-const [focused, keydown] = useRovingTabIndex(props.rounds.length);
 </script>
 
 <template>
   <header>
-    <h1>🌊🎨🎡</h1>
     <div class="flex-spacer"></div>
-    <nav v-if="store.puzzleCount >= 42" @keydown="keydown" class="stop">
-      <EmojiNav v-for="round of rounds" :round="round" :observer-fixup="observerFixup"
-        :selected="round.id === rounds[focused.index].id" />
-    </nav>
+    <EmojiNav v-if="store.puzzleCount >= 42" :rounds="rounds" :observer="observer" />
     <UTooltip class="ably" text="Live updates paused. Connecting..." :open-delay="250"
       :popper="{ placement: 'auto-end', offsetDistance: 0 }" v-if="!connected">
       <Icon name="i-heroicons-signal-slash" />
@@ -56,15 +32,6 @@ header {
   align-items: flex-start;
 }
 
-h1 {
-  min-width: 33%;
-}
-
-nav {
-  display: flex;
-  gap: 0.4rem;
-}
-
 .ably {
   position: absolute;
   bottom: 5px;
@@ -79,14 +46,6 @@ header {
   border-bottom: calc(var(--header-height-outer) - var(--header-height)) solid oklch(80% 0 0deg);
   filter: drop-shadow(0 1.5rem 1rem oklch(100% 0 0deg));
   user-select: none;
-}
-
-h1 {
-  font-size: 1rem;
-  letter-spacing: 0.2rem;
-  user-select: none;
-  opacity: 80%;
-  filter: drop-shadow(0 2.5px 4px oklch(82% 0.10 243deg / 20%));
 }
 
 /* Animation */

@@ -20,6 +20,11 @@ onMounted(() => {
   }
 });
 
+// We don't update the hash, so strip it from the URL on page load.
+onMounted(() => document.location.hash && history.pushState(
+  "", document.title, window.location.pathname + window.location.search,
+));
+
 const [focused, tabKeydown] = useRovingTabIndex(9, 3);
 const keydown = (e: KeyboardEvent) => {
   let sibling;
