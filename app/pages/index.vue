@@ -7,15 +7,11 @@ const store = usePuzzles();
 await store.refresh();
 const connected = useAbly();
 
-// Puzzle & Round Helpers
-const timelineFromID = (id: number) => `--round-${id}`;
-const nextTimelineFromID = (id: number): string | undefined =>
-  store.rounds[id + 1] ? timelineFromID(id + 1) : undefined;
-
 // It doesn't look great when the round headers stack up on top of one another.
 // We want each round header to disappear when it's covered by the next. Use CSS
 // scroll-linked animations if supported and fall back to IntersectionObserver
 // if not.
+const timelineFromID = (id: number) => `--round-${id}`;
 const timelines = computed(() => store.rounds.map((_, i) => timelineFromID(i)));
 const observer = ref<IntersectionObserver>();
 onMounted(() => {
@@ -51,33 +47,6 @@ const keydown = (e: KeyboardEvent) => {
   }
 };
 
-const toast = useToast();
-const copy = async (id: number): Promise<void> => {
-  const puzzles = store.puzzlesByRound.get(id);
-  if (!puzzles) return;
-  const data = puzzles.map((p) =>
-    [p.name, p.answer || `${StatusEmoji(p.status)} ${StatusLabel(p.status)}`]);
-  const text = data.map(([a, b]) => `${a}, ${b}`).join("\n");
-  const html = "<table>\n" + data.map(([a, b]) =>
-    `<tr><td>${a}</td><td>${b}</td></tr>`
-  ).join("\n") + "</table>";
-  if (navigator.clipboard.write) {
-    await navigator.clipboard.write([
-      new ClipboardItem({
-        "text/plain": new Blob([text], { type: "text/plain" }),
-        "text/html": new Blob([html], { type: "text/html" }),
-      }),
-    ]);
-  } else {
-    await navigator.clipboard.writeText(text);
-  }
-  toast.add({
-    title: "Copied",
-    color: "green",
-    icon: "i-heroicons-clipboard-document-check",
-  });
-};
-
 const welcome = ref();
 const editing = ref<
   { kind: "round" | "puzzle" | "admin"; id?: void; } |
@@ -109,19 +78,9 @@ onMounted(() => window.addEventListener("keydown",
     <div class="rule first"></div>
     <div class="rule"></div>
     <div class="rule"></div>
-    <template v-for="[i, round] of store.rounds.entries()">
-      <RoundHeader :round="round" :timeline="timelineFromID(i)"
-        :next-timeline="nextTimelineFromID(i)" :observer="observer"
-        @copy="() => copy(round.id)"
-        @edit="() => (editing = { kind: 'round', id: round.id })" />
-      <Puzzle v-for="puzzle in store.puzzlesByRound.get(round.id)" :puzzle="puzzle"
-        :round="round" :focused="focused"
-        @edit="() => (editing = { kind: 'puzzle', id: puzzle.id })" />
-      <div class="empty" v-if="!round.total">
-        🫙&hairsp; No Puzzles
-      </div>
-      <hr>
-    </template>
+    <RoundAndPuzzles v-for="[i, round] of store.rounds.entries()" :round="round" :i="i"
+      :focused="focused" :observer="observer"
+      @edit="(kind, id) => { editing = { kind, id }; }" />
     <WelcomeAndAdminBar ref="welcome" @click="click" />
     <Modal v-if="!!editing" @close="close">
       <AdminForm v-if="editing.kind === 'admin'" @close=close />
@@ -159,25 +118,6 @@ main {
 
 .rule.first {
   grid-column: 3;
-}
-
-hr {
-  grid-column: 1 / 6;
-
-  margin: 0.5rem -0.5vw 0.5rem -2vw;
-  border-bottom: 1px solid oklch(90% 0.03 275deg);
-}
-
-.empty {
-  grid-column: 1 / 3;
-  margin: 0 1.5rem;
-}
-
-/* Theming */
-.empty {
-  font-size: 0.9rem;
-  opacity: 50%;
-  user-select: none;
 }
 
 /* Animation */
