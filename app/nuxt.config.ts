@@ -23,6 +23,7 @@ export default defineNuxtConfig({
       scan: {
         globInclude: [
           "components/**/*.vue",
+          "pages/**/*.vue",
           "node_modules/@nuxt/ui/**/*.js",
         ],
         globExclude: [],
