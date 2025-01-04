@@ -11,8 +11,7 @@ const connected = useAbly();
 // We want each round header to disappear when it's covered by the next. Use CSS
 // scroll-linked animations if supported and fall back to IntersectionObserver
 // if not.
-const timelineFromID = (id: number) => `--round-${id}`;
-const timelines = computed(() => store.rounds.map((_, i) => timelineFromID(i)));
+const timelines = computed(() => store.rounds.map((_, i) => timelineFromSequence(i)));
 const observer = ref<IntersectionObserver>();
 onMounted(() => {
   if (!CSS.supports("view-timeline", "--test")) {
@@ -78,8 +77,8 @@ onMounted(() => window.addEventListener("keydown",
     <div class="rule first"></div>
     <div class="rule"></div>
     <div class="rule"></div>
-    <RoundAndPuzzles v-for="[i, round] of store.rounds.entries()" :round="round" :i="i"
-      :focused="focused" :observer="observer"
+    <RoundAndPuzzles v-for="[i, round] of store.rounds.entries()" :round="round"
+      :sequence="i" :focused="focused" :observer="observer"
       @edit="(kind, id) => { editing = { kind, id }; }" />
     <WelcomeAndAdminBar ref="welcome" @click="click" />
     <Modal v-if="!!editing" @close="close">

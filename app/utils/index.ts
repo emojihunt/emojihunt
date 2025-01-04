@@ -7,3 +7,5 @@ export function highlightContents(element: HTMLElement): void {
   selection?.removeAllRanges();
   selection?.addRange(range);
 }
+
+export const timelineFromSequence = (id: number): string => `--round-${id}`;

@@ -12,10 +12,8 @@ let registered = false;
 const pill = ref<HTMLElement>();
 const titles = ref<HTMLElement>();
 const ready = () => {
-  if (props.nextTimeline) {
-    pill.value?.classList.add("ready");
-    titles.value?.classList.add("ready");
-  }
+  pill.value?.classList.add("ready");
+  titles.value?.classList.add("ready");
   if (!registered && props.observer) {
     props.observer.observe(titles.value!);
     registered = true;
@@ -27,7 +25,8 @@ onMounted(() => nextTick(ready));
 
 <template>
   <span class="spacer" :id="round.anchor"></span>
-  <header class="pill" ref="pill" :id="round.anchor">
+  <header ref="pill" :id="round.anchor"
+    :class="['pill', props.nextTimeline ? 'next' : '']">
     <div class="emoji">{{ round.emoji }}&#xfe0f;</div>
     <div class="round">{{ round.name }}</div>
     <div class="spaces"></div>
@@ -35,8 +34,10 @@ onMounted(() => nextTick(ready));
     <button @click="() => emit('copy')">Copy</button>
     <div class="progress">{{ round.solved }}/{{ round.total }}</div>
   </header>
-  <header class="titles" ref="titles" :class="round.total && 'show'">
-    <span>Status &bull; Answer</span>
+  <header ref="titles"
+    :class="['titles', round.total && 'show', props.nextTimeline ? 'next' : '']">
+    <span>Status &bull;
+      Answer</span>
     <span>Location</span>
     <span>Note</span>
   </header>
@@ -169,9 +170,9 @@ button:hover {
 
   /* FYI, if we use the `animation` shorthand propety, Nuxt may incorrectly
      re-order it with other `animation-*` properties. */
-  .pill.ready,
-  .titles.ready,
-  .titles.ready span {
+  .pill.ready.next,
+  .titles.ready.next,
+  .titles.ready.next span {
     animation-name: fade-out;
     animation-timing-function: ease-in;
     animation-fill-mode: both;
@@ -180,7 +181,7 @@ button:hover {
     animation-timeline: v-bind(nextTimeline);
   }
 
-  .titles.ready span {
+  .titles.ready.next span {
     animation-name: color-in;
     animation-timing-function: linear;
     animation-timeline: view();

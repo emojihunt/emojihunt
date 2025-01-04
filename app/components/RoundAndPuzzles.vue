@@ -1,7 +1,7 @@
 <script setup lang="ts">
 const props = defineProps<{
   round: AnnotatedRound;
-  i: number;
+  sequence: number;
   focused: FocusInfo;
   observer: IntersectionObserver | undefined;
 }>();
@@ -10,10 +10,6 @@ const emit = defineEmits<{
 }>();
 const store = usePuzzles();
 const toast = useToast();
-
-const timelineFromID = (id: number) => `--round-${id}`;
-const nextTimelineFromID = (id: number): string | undefined =>
-  store.rounds[id + 1] ? timelineFromID(id + 1) : undefined;
 
 const copy = async (id: number): Promise<void> => {
   const puzzles = store.puzzlesByRound.get(id);
@@ -47,12 +43,16 @@ const copy = async (id: number): Promise<void> => {
     icon: "i-heroicons-clipboard-document-check",
   });
 };
+
+const timeline = computed(() => timelineFromSequence(props.sequence));
+const nextTimeline = computed(() => props.sequence < store.rounds.length - 1 ?
+  timelineFromSequence(props.sequence + 1) : undefined);
 </script>
 
 <template>
-  <RoundHeader :round="round" :timeline="timelineFromID(i)"
-    :next-timeline="nextTimelineFromID(i)" :observer="observer"
-    @copy="() => copy(round.id)" @edit="() => emit('edit', 'round', round.id)" />
+  <RoundHeader :round="round" :timeline="timeline" :next-timeline="nextTimeline"
+    :observer="observer" @copy="() => copy(round.id)"
+    @edit="() => emit('edit', 'round', round.id)" />
   <Puzzle v-for="puzzle in store.puzzlesByRound.get(round.id)" :puzzle="puzzle"
     :round="round" :focused="focused" @edit="() => emit('edit', 'puzzle', puzzle.id)" />
   <div class="empty" v-if="!round.total">
