@@ -124,7 +124,7 @@ const cancel = () => answering.value && (answering.value = null, open.value = fa
 /* Theming */
 .cell {
   font-size: 0.87rem;
-  border-radius: 2px;
+  border-radius: var(--default-border-radius);
 }
 
 .cell:focus-within {

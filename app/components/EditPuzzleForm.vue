@@ -217,10 +217,6 @@ button[type="submit"] {
   justify-content: center;
 }
 
-button.delete {
-  border-radius: 2px;
-}
-
 .spacer {
   flex-grow: 1;
 }

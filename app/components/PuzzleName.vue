@@ -27,7 +27,11 @@ const hue = computed(() => props.round.hue);
   font-weight: 430;
   font-size: 0.9rem;
   color: oklch(25% 0.10 275deg);
-  border-radius: 2px;
+  border-radius: var(--default-border-radius);
+}
+
+button {
+  border-radius: 0;
 }
 
 .cell:focus-within {

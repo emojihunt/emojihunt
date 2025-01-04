@@ -154,7 +154,6 @@ button {
   width: 1.25rem;
   margin: 0.33rem 0;
   line-height: 0.75rem;
-  border-radius: 2px;
   color: oklch(50% 0.21 calc(v-bind(hue) + 20));
 }
 

@@ -91,7 +91,6 @@ section {
 a {
   grid-column: 1 / 3;
   padding: 0.5rem 0.25rem;
-  border-radius: 2px;
 }
 
 hr {
@@ -115,7 +114,6 @@ footer {
 button {
   padding: 0.25rem;
   margin: 0 0.25rem;
-  border-radius: 2px;
 }
 
 /* Theming */

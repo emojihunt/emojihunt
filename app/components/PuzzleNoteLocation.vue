@@ -79,7 +79,7 @@ const save = (updated: string) => {
 .cell {
   font-weight: 400;
   font-size: 0.8rem;
-  border-radius: 2px;
+  border-radius: var(--default-border-radius);
 }
 
 .cell:focus-within {

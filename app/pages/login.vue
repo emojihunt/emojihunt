@@ -173,7 +173,6 @@ li:first-child {
 
 a {
   padding: 0.1rem 0.1rem;
-  border-radius: 2px;
 }
 
 a:focus {
