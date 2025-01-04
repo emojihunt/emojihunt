@@ -97,6 +97,10 @@ button:focus-visible {
   outline-color: black !important;
 }
 
+.flex-spacer {
+  flex-grow: 1;
+}
+
 @keyframes fade-out {
 
   0% {

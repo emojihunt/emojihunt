@@ -91,7 +91,7 @@ const test = async (e: Event) => {
     <UInput v-model="data.websocket_url" placeholder="WebSocket URL" />
     <UInput v-model="data.websocket_token" placeholder="WebSocket Token" />
     <fieldset>
-      <div class="spacer"></div>
+      <div class="flex-spacer"></div>
       <button type="submit" class="test" @click="test"
         :disabled="saving || testing === true || !data.puzzles_url">
         <Spinner v-if="testing === true" />
@@ -135,10 +135,6 @@ fieldset {
   gap: 1rem;
   align-items: center;
   justify-content: space-between;
-}
-
-.spacer {
-  flex-grow: 1;
 }
 
 button {

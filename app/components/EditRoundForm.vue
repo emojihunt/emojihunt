@@ -109,7 +109,7 @@ const hue = computed(() => edits.hue || 0);
     <fieldset>
       <UCheckbox v-model="edits.special" label="Special" class="checkbox"
         :class="'special' in modified && 'modified'" />
-      <div class="spacer"></div>
+      <div class="flex-spacer"></div>
       <button class="delete" type="button" @click="del">Delete</button>
       <UButton type="submit" :disabled="saving">
         <Spinner v-if="saving" />
@@ -156,10 +156,6 @@ button[type="submit"] {
   height: 2rem;
   display: flex;
   justify-content: center;
-}
-
-.spacer {
-  flex-grow: 1;
 }
 
 /* Theming */

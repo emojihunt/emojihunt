@@ -30,7 +30,7 @@ const [focused, keydown] = useRovingTabIndex(props.rounds.length);
 <template>
   <header>
     <h1>🌊🎨🎡</h1>
-    <div class="spacer"></div>
+    <div class="flex-spacer"></div>
     <nav v-if="store.puzzleCount >= 42" @keydown="keydown" class="stop">
       <EmojiNav v-for="round of rounds" :round="round" :observer-fixup="observerFixup"
         :selected="round.id === rounds[focused.index].id" />
@@ -58,10 +58,6 @@ header {
 
 h1 {
   min-width: 33%;
-}
-
-.spacer {
-  flex-grow: 1;
 }
 
 nav {
