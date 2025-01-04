@@ -19,7 +19,9 @@ if (props.error.statusCode === 401) {
       <div class="details">
         <div class="message">{{ error.message }}</div>
         <pre v-if="stack">{{ stack }}</pre>
-        <NuxtLink to="/">Return to Home</NuxtLink>
+        <div class="link">
+          <NuxtLink to="/">Return to Home</NuxtLink>
+        </div>
       </div>
     </div>
   </main>
@@ -52,7 +54,7 @@ h1 {
   padding-left: 2.2rem;
 }
 
-a {
+.link {
   display: block;
   margin: 1.8rem 0;
 
