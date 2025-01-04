@@ -172,34 +172,7 @@ form.round div:first-child :deep(input) {
 }
 
 /* Theming */
-form button,
-.hue :deep(span) {
-  background-color: oklch(71% 0.18 v-bind(hue)) !important;
-}
-
-form button:hover {
-  filter: brightness(90%);
-}
-
-form button:focus {
-  outline-color: oklch(71% 0.18 v-bind(hue));
-}
-
-form :deep(input):focus,
-form :deep(button):focus {
-  --tw-ring-color: oklch(71% 0.18 v-bind(hue));
-}
-
-.hue :deep(input),
-.checkbox :deep(input) {
-  color: oklch(71% 0.18 v-bind(hue));
-}
-
-:deep(.emoji-mart-category-label) {
-  color: oklch(60% 0.18 v-bind(hue));
-}
-
-:deep(.emoji-mart-emoji) {
-  outline-color: oklch(71% 0.18 v-bind(hue));
+form {
+  --form-hue: v-bind(hue);
 }
 </style>

@@ -23,7 +23,7 @@
   height: 100%;
   border-radius: 50%;
   background-color: oklch(33% 0 0deg);
-  opacity: 0.6;
+  opacity: 60%;
   position: absolute;
   top: 0;
   left: 0;

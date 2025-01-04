@@ -24,7 +24,7 @@
 .emoji-mart-emoji {
   padding: 4px;
   border-radius: 100%;
-  outline-offset: -1px;
+  outline-offset: -1px !important;
   position: relative;
   display: inline-block;
 }
@@ -163,6 +163,7 @@
 .emoji-mart-category-label {
   position: sticky;
   top: 0;
+  color: oklch(60% 0.19 var(--form-hue))
 }
 
 .emoji-mart-static .emoji-mart-category-label {

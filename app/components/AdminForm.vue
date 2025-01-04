@@ -92,11 +92,11 @@ const test = async (e: Event) => {
     <UInput v-model="data.websocket_token" placeholder="WebSocket Token" />
     <fieldset>
       <div class="flex-spacer"></div>
-      <button type="submit" class="test" @click="test"
+      <UButton variant="ghost" type="submit" class="test" @click="test"
         :disabled="saving || testing === true || !data.puzzles_url">
         <Spinner v-if="testing === true" />
         <span v-else>Test</span>
-      </button>
+      </UButton>
       <UButton type="button" :disabled="saving || testing === true" @click="submit">
         <Spinner v-if="saving" />
         <span v-else>Update</span>
@@ -133,23 +133,6 @@ fieldset {
   grid-column: 2;
   display: flex;
   gap: 1rem;
-  align-items: center;
-  justify-content: space-between;
-}
-
-button {
-  width: 4.75rem;
-  height: 2rem;
-
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-
-button.test {
-  width: 3rem;
-  padding: 0.25rem;
-  border-radius: 2px;
 }
 
 section {
@@ -163,18 +146,8 @@ h1 {
   font-weight: 600;
 }
 
-button.test {
-  font-weight: 500;
-  font-size: 0.9rem;
-  color: oklch(65% 0.19 150deg);
-}
-
-button.test:hover {
-  color: oklch(45% 0.19 150deg);
-}
-
-button.test[disabled] {
-  color: oklch(65% 0.05 150deg);
+form {
+  --form-hue: 150deg;
 }
 
 li {

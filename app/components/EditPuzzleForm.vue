@@ -166,10 +166,12 @@ const hue = computed(() => store.rounds.find((r) => r.id === parseInt(edits.roun
       <UInput v-model="edits.rtime" id="puzzle-reminder-time" type="time" />
     </div>
     <fieldset>
-      <UCheckbox v-model="edits.meta" label="Meta" class="checkbox"
+      <UCheckbox v-model="edits.meta" label="Meta"
         :class="'meta' in modified && 'modified'" />
       <div class="flex-spacer"></div>
-      <button class="delete" type="button" @click="del">Delete</button>
+      <UButton color="red" variant="ghost" @click="del">
+        Delete
+      </UButton>
       <UButton type="submit" :disabled="saving">
         <Spinner v-if="saving" />
         <span v-else>Update</span>
@@ -206,13 +208,14 @@ fieldset {
   grid-column: 2;
   display: flex;
   gap: 1rem;
-  align-items: center;
-  justify-content: space-between;
+}
+
+fieldset>:first-child {
+  align-self: center;
 }
 
 button[type="submit"] {
   width: 4.75rem;
-  height: 2rem;
   display: flex;
   justify-content: center;
 }
@@ -223,56 +226,13 @@ h1 {
   font-weight: 600;
 }
 
+form {
+  --form-hue: v-bind(hue);
+}
+
 label {
   font-size: 0.85rem;
   user-select: none;
-}
-
-label.modified {
-  font-weight: 600;
-  color: oklch(60% 0.18 v-bind(hue));
-}
-
-.checkbox.modified :deep(label) {
-  color: oklch(60% 0.18 v-bind(hue)) !important;
-}
-
-form button.delete {
-  font-weight: 500;
-  font-size: 0.9rem;
-  padding: 0.25rem;
-
-  color: oklch(60% 0.15 30deg);
-  background: none !important;
-  border-radius: 2px;
-}
-
-form button.delete:hover {
-  color: oklch(45% 0.15 30deg);
-  filter: none;
-}
-
-form button {
-  background-color: oklch(71% 0.18 v-bind(hue)) !important;
-}
-
-form button:hover {
-  filter: brightness(90%);
-}
-
-form button:focus,
-form select:focus {
-  outline-color: oklch(71% 0.18 v-bind(hue));
-}
-
-form :deep(input):focus,
-form :deep(button):focus,
-form :deep(select):focus {
-  --tw-ring-color: oklch(71% 0.18 v-bind(hue));
-}
-
-.checkbox :deep(input) {
-  color: oklch(71% 0.18 v-bind(hue));
 }
 
 :deep(input#puzzle-answer) {

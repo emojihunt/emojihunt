@@ -97,6 +97,45 @@ button:focus-visible {
   outline-color: black !important;
 }
 
+form .focus\:ring-primary-500:focus,
+form .focus-visible\:ring-primary-500:focus-visible,
+form .focus-visible\:outline-primary-500:focus-visible,
+form .emoji-mart button {
+  --tw-ring-color: oklch(72% 0.19 var(--form-hue));
+}
+
+form .text-primary-500 {
+  color: oklch(72% 0.19 var(--form-hue));
+}
+
+form .bg-primary-500 {
+  background-color: oklch(72% 0.19 var(--form-hue));
+}
+
+form .hover\:bg-primary-600:hover {
+  background-color: oklch(66% 0.19 var(--form-hue));
+}
+
+form .disabled\:bg-primary-500:disabled {
+  background-color: oklch(72% 0.19 var(--form-hue));
+  opacity: 50%;
+}
+
+form a:focus-visible,
+form button:focus-visible {
+  outline-offset: 2px;
+  outline-color: var(--tw-ring-color) !important;
+}
+
+form label.modified,
+form .modified label {
+  color: oklch(60% 0.18 var(--form-hue)) !important;
+}
+
+form div[aria-haspopup="listbox"] button {
+  outline: none !important
+}
+
 .flex-spacer {
   flex-grow: 1;
 }
@@ -128,7 +167,7 @@ button:focus-visible {
 @keyframes blink {
 
   50% {
-    opacity: 1;
+    opacity: 100%;
   }
 }
 

@@ -80,7 +80,7 @@ onMounted(() => nextTick(ready));
   width: 0;
   overflow: hidden;
   flex-shrink: 0;
-  opacity: 0;
+  opacity: 0%;
 
   display: flex;
   gap: 0.25rem
@@ -89,7 +89,7 @@ onMounted(() => nextTick(ready));
 .pill:hover .buttons,
 .buttons:focus-within {
   width: auto;
-  opacity: 1;
+  opacity: 100%;
 }
 
 .spaces {

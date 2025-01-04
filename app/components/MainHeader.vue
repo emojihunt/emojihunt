@@ -94,6 +94,6 @@ h1 {
   /* https://stackoverflow.com/a/16344389 */
   animation: blink 1.5s step-start infinite;
   animation-delay: 2.5s;
-  opacity: 0;
+  opacity: 0%;
 }
 </style>
