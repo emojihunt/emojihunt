@@ -19,6 +19,11 @@ type DiscoveryParams struct {
 	PuzzleItemSelector string `form:"puzzle_item_selector"`
 	WebsocketURL       string `form:"websocket_url"`
 	WebsocketToken     string `form:"websocket_token"`
+
+	HuntName        string `form:"hunt_name"`
+	HuntURL         string `form:"hunt_url"`
+	HuntCredentials string `form:"hunt_credentials"`
+	LogisticsURL    string `form:"logistics_url"`
 }
 
 func (s *Server) GetDiscovery(c echo.Context) error {

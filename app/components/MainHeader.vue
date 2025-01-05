@@ -2,11 +2,10 @@
 const props = defineProps<{
   connected: boolean;
 }>();
-const config = useAppConfig();
 const store = usePuzzles();
 
 const [discordBase, discordTarget] = useDiscordBase();
-const discordURL = computed(() => !store.discordGuild && store.hangingOut ?
+const discordURL = computed(() => store.discordGuild && store.hangingOut ?
   `${discordBase}/channels/${store.discordGuild}/${store.hangingOut}` : '');;
 </script>
 
@@ -15,15 +14,15 @@ const discordURL = computed(() => !store.discordGuild && store.hangingOut ?
     <div class="flex-spacer"></div>
     <section>
       <div class="row">
-        <ETooltip text="emojihunt / samplepassword" placement="bottom"
+        <ETooltip :text="store.huntCredentials || ''" placement="bottom"
           :offset-distance="4">
-          <NuxtLink :to="config.huntURL" target="_blank" class="hunt">
-            Mystery Hunt 2025
+          <NuxtLink :to="store.huntURL" target="_blank" class="hunt">
+            {{ store.huntName || 'Mystery Hunt' }}
           </NuxtLink>
         </ETooltip>
         <p class="dot"></p>
         <ETooltip text="Big Logistics Email" placement="bottom" :offset-distance="8">
-          <NuxtLink to="#" target="_blank">
+          <NuxtLink :to="store.logisticsURL" target="_blank">
             <UIcon name="i-heroicons-question-mark-circle" size="16px" />
           </NuxtLink>
         </ETooltip>

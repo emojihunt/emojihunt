@@ -70,18 +70,22 @@ func (c *Client) ListPuzzles(ctx context.Context) ([]Puzzle, error) {
 	return puzzles, nil
 }
 
-func (c *Client) ListHome(ctx context.Context) ([]Puzzle, []Round, int64, error) {
+func (c *Client) ListHome(ctx context.Context) ([]Puzzle, []Round, int64, DiscoveryConfig, error) {
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
 	puzzles, err := c.ListPuzzles(ctx)
 	if err != nil {
-		return nil, nil, 0, err
+		return nil, nil, 0, DiscoveryConfig{}, err
 	}
 	rounds, err := c.ListRounds(ctx)
 	if err != nil {
-		return nil, nil, 0, err
+		return nil, nil, 0, DiscoveryConfig{}, err
 	}
-	return puzzles, rounds, c.changeID, nil
+	discovery, err := c.DiscoveryConfig(ctx)
+	if err != nil {
+		return nil, nil, 0, DiscoveryConfig{}, err
+	}
+	return puzzles, rounds, c.changeID, discovery, nil
 }
 
 func (c *Client) ListVoiceRoomInfo(ctx context.Context) ([]VoiceInfo, error) {

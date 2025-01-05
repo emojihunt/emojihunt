@@ -3,7 +3,6 @@ const prod = import.meta.env.NODE_ENV === "production";
 export default defineNuxtConfig({
   appConfig: {
     clientID: prod ? "794725034152689664" : "1058094051586490368",
-    huntURL: "https://www.mitmh2025.com/",
   },
   build: {
     transpile: ["emoji-mart-vue-fast"],

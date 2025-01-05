@@ -90,6 +90,10 @@ const test = async (e: Event) => {
     <UInput v-model="data.puzzle_item_selector" placeholder="Puzzle Item Selector" />
     <UInput v-model="data.websocket_url" placeholder="WebSocket URL" />
     <UInput v-model="data.websocket_token" placeholder="WebSocket Token" />
+    <UInput v-model="data.hunt_name" placeholder="Hunt Name" />
+    <UInput v-model="data.hunt_url" placeholder="Hunt URL" />
+    <UInput v-model="data.hunt_credentials" placeholder="Hunt Credentials" />
+    <UInput v-model="data.logistics_url" placeholder="Logistics Email URL" />
     <fieldset>
       <div class="flex-spacer"></div>
       <UButton variant="ghost" type="submit" class="test" @click="test"

@@ -3,7 +3,6 @@ const emit = defineEmits<{
   (e: "click", kind: "round" | "puzzle" | "admin"): void;
 }>();
 const store = usePuzzles();
-const config = useAppConfig();
 
 const display = ref<string | undefined>();
 const recalculate = () => {
@@ -53,7 +52,7 @@ defineExpose({ focus });
 
 <template>
   <section v-if="!store.rounds.length">
-    <NuxtLink :to="display ? 'https://www.isithuntyet.info' : config.huntURL">
+    <NuxtLink :to="display ? 'https://www.isithuntyet.info' : store.huntURL">
       <template v-if="display">
         ⏳&hairsp; <span>Hunt begins in {{ display }}</span>
       </template>

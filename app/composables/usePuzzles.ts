@@ -51,6 +51,10 @@ export default defineStore("puzzles", {
     _initialChangeId: 0,
     discordGuild: undefined as string | undefined,
     hangingOut: undefined as string | undefined,
+    huntName: undefined as string | undefined,
+    huntURL: undefined as string | undefined,
+    huntCredentials: undefined as string | undefined,
+    logisticsURL: undefined as string | undefined,
     nextHunt: undefined as Date | undefined,
     voiceRooms: {} as Record<string, string>,
 
@@ -159,6 +163,10 @@ export default defineStore("puzzles", {
       this._initialChangeId = data.value?.change_id || 0;
       this.discordGuild = data.value?.discord_guild;
       this.hangingOut = data.value?.hanging_out;
+      this.huntName = data.value?.hunt_name;
+      this.huntURL = data.value?.hunt_url;
+      this.huntCredentials = data.value?.hunt_credentials;
+      this.logisticsURL = data.value?.logistics_url;
       this.nextHunt = data.value?.next_hunt ?
         new Date(data.value.next_hunt) : undefined;
       this.voiceRooms = data.value?.voice_rooms || {};

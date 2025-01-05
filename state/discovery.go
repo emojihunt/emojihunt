@@ -63,6 +63,12 @@ type DiscoveryConfig struct {
 
 	// Token to send in the AUTH message (optional)
 	WebsocketToken string `json:"websocket_token"`
+
+	// Honestly, these fields should live somewhere else
+	HuntName        string `json:"hunt_name"`
+	HuntURL         string `json:"hunt_url"`
+	HuntCredentials string `json:"hunt_credentials"`
+	LogisticsURL    string `json:"logistics_url"`
 }
 
 func (c *Client) DiscoveryConfig(ctx context.Context) (DiscoveryConfig, error) {

@@ -9,19 +9,23 @@ import (
 )
 
 func (s *Server) ListHome(c echo.Context) error {
-	puzzles, rounds, changeID, err := s.state.ListHome(c.Request().Context())
+	puzzles, rounds, changeID, discovery, err := s.state.ListHome(c.Request().Context())
 	if err != nil {
 		return err
 	}
 	next, _ := huntyet.NextHunt(time.Now())
 	voiceRooms := s.discord.ListVoiceChannels()
 	return c.JSON(http.StatusOK, map[string]interface{}{
-		"puzzles":       puzzles,
-		"rounds":        rounds,
-		"change_id":     changeID,
-		"discord_guild": s.discord.Guild.ID,
-		"hanging_out":   s.discord.HangingOutChannel.ID,
-		"next_hunt":     next,
-		"voice_rooms":   voiceRooms,
+		"puzzles":          puzzles,
+		"rounds":           rounds,
+		"change_id":        changeID,
+		"discord_guild":    s.discord.Guild.ID,
+		"hanging_out":      s.discord.HangingOutChannel.ID,
+		"hunt_name":        discovery.HuntName,
+		"hunt_url":         discovery.HuntURL,
+		"hunt_credentials": discovery.HuntCredentials,
+		"logistics_url":    discovery.LogisticsURL,
+		"next_hunt":        next,
+		"voice_rooms":      voiceRooms,
 	})
 }

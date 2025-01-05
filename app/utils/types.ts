@@ -116,6 +116,10 @@ export type HomeResponse = {
   change_id: number;
   discord_guild: string;
   hanging_out: string;
+  hunt_name: string;
+  hunt_url: string;
+  hunt_credentials: string;
+  logistics_url: string;
   next_hunt: string | undefined;
   voice_rooms: Record<string, string>;
 };
@@ -131,6 +135,10 @@ export type DiscoveryConfig = {
   puzzle_item_selector: string;
   websocket_url: string;
   websocket_token: string;
+  hunt_name: string;
+  hunt_url: string;
+  hunt_credentials: string;
+  logistics_url: string;
 };
 
 export type ScrapedPuzzle = {
