@@ -3,6 +3,7 @@ const props = defineProps<{
   rounds: AnnotatedRound[];
   observer: IntersectionObserver | undefined;
 }>();
+const state = usePuzzles();
 const url = useRequestURL();
 
 // Navigate to anchors without changing the fragment
@@ -48,6 +49,11 @@ const keydown = (e: KeyboardEvent): void => {
 
 <template>
   <nav ref="nav" @keydown="keydown">
+    <UTooltip text="Puzzles Open" :open-delay="250" class="stats"
+      :popper="{ placement: 'right', offsetDistance: -5 }">
+      {{ String(state.puzzleCount - state.solvedPuzzleCount).padStart(3, '0') }}
+    </UTooltip>
+    <p class="dot"></p>
     <UTooltip v-for="round of rounds" :text="round.name" :open-delay="250"
       :popper="{ placement: 'right', offsetDistance: -5 }">
       <a :href="`#${round.anchor}`" @click="(e) => (e.preventDefault(), goto(round))"
@@ -55,6 +61,11 @@ const keydown = (e: KeyboardEvent): void => {
         :aria-label="`To ${round.name}`" :style="`--hue: ${round.hue}deg;`">
         <span :class="round.complete && 'complete'">{{ round.emoji }}&#xfe0f;</span>
       </a>
+    </UTooltip>
+    <p class="dot"></p>
+    <UTooltip text="Puzzles Solved" :open-delay="250" class="stats"
+      :popper="{ placement: 'right', offsetDistance: -5 }">
+      {{ String(state.solvedPuzzleCount).padStart(3, '0') }}
     </UTooltip>
   </nav>
 </template>
@@ -88,10 +99,35 @@ a {
   padding: 3px;
 }
 
+p,
+.stats {
+  display: block;
+  text-align: center;
+  height: 1em;
+}
+
+p.dot {
+  margin: -1px 0;
+}
+
 /* Theming */
 nav {
   background-color: white;
   border-right: 1px solid oklch(95% 0.03 275deg);
+}
+
+p,
+.stats {
+  font-weight: 600;
+  font-size: 0.7rem;
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'ss01', 'zero';
+  color: oklch(33% 0 0deg);
+  cursor: default;
+}
+
+p.dot:before {
+  content: "\00b7";
 }
 
 a {

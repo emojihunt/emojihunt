@@ -126,12 +126,11 @@ export default defineStore("puzzles", {
       return grouped;
     },
     puzzleCount(): number {
-      let count = 0;
-      for (const [_round, puzzles] of this.puzzlesByRound) {
-        count += puzzles.length;
-      }
-      return count;
+      return this.rounds.reduce((v, r) => v + r.total, 0);
     },
+    solvedPuzzleCount(): number {
+      return this.rounds.reduce((v, r) => v + r.solved, 0);
+    }
   },
   actions: {
     async refresh() {
