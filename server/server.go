@@ -90,6 +90,7 @@ func Start(ctx context.Context, prod bool, ably *ably.Realtime,
 		return c.String(http.StatusOK, "User-agent: *\nDisallow: /\n")
 	})
 	e.POST("/authenticate", s.Authenticate)
+	e.POST("/logout", s.Logout)
 
 	var pg = e.Group("/puzzles", s.AuthenticationMiddleware)
 	pg.GET("", s.ListPuzzles)

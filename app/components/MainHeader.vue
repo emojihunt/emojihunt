@@ -7,6 +7,21 @@ const store = usePuzzles();
 const [discordBase, discordTarget] = useDiscordBase();
 const discordURL = computed(() => store.discordGuild && store.hangingOut ?
   `${discordBase}/channels/${store.discordGuild}/${store.hangingOut}` : '');;
+
+const logout = async (e: MouseEvent) => {
+  e.preventDefault();
+  const res = await fetch("/api/logout", { method: "POST" });
+  if (res.status === 200) {
+    navigateTo("/", { external: true }); // full-page reload
+  } else {
+    const data = await res.text();
+    throw createError({
+      fatal: true,
+      statusCode: res.status,
+      data,
+    });
+  }
+};
 </script>
 
 <template>
@@ -34,7 +49,7 @@ const discordURL = computed(() => store.discordGuild && store.hangingOut ?
         </ETooltip>
         <p class="dot"></p>
         <ETooltip text="Log Out" placement="bottom" :offset-distance="8">
-          <NuxtLink to="/">
+          <NuxtLink to="/" @click="logout">
             <UIcon name="i-heroicons-arrow-right-start-on-rectangle" size="16px" />
           </NuxtLink>
         </ETooltip>

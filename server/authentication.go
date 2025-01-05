@@ -130,3 +130,16 @@ func (s *Server) oauth2TokenExchange(code, devRedirectURI string) (string, error
 		return token, nil
 	}
 }
+
+func (s *Server) Logout(c echo.Context) error {
+	c.SetCookie(&http.Cookie{
+		Name:     CookieName,
+		Value:    "",
+		Expires:  time.Unix(0, 0),
+		Path:     "/",
+		Secure:   true,
+		HttpOnly: true,
+		SameSite: http.SameSiteLaxMode,
+	})
+	return c.NoContent(http.StatusOK)
+}
