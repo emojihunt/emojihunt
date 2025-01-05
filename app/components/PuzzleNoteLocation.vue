@@ -47,10 +47,9 @@ const save = (updated: string) => {
 
 <template>
   <div class="cell" :class="field">
-    <UTooltip v-if="tooltip" :text="tooltip.text" :open-delay="250"
-      :popper="{ placement: 'right', offsetDistance: 0 }">
+    <ETooltip v-if="tooltip" :text="tooltip.text">
       <span class="emoji">{{ tooltip.emoji }}</span>
-    </UTooltip>
+    </ETooltip>
     <EditableSpan :value="puzzle[field]" :tabindex="tabindex" @save="save"
       :placeholder="tooltip?.placeholder" />
     <Spinner v-if="saving" class="spinner" />

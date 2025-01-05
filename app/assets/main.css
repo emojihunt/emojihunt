@@ -70,10 +70,6 @@
   color: highlighttext !important;
 }
 
-div[data-popper-placement] {
-  z-index: 8;
-}
-
 button,
 fieldset,
 hr,

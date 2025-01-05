@@ -114,11 +114,10 @@ const hue = computed(() => props.kind === "round" ? data.hue : data.round?.hue);
       </USelectMenu>
       <UInput v-model="data.name" placeholder="Puzzle Name" />
       <UInput v-model="data.url" placeholder="Puzzle URL" class="url" @blur="urlBlur" />
-      <UTooltip text="Create spreadsheet and Discord channel" :open-delay="500"
-        :popper="{ placement: 'top', offsetDistance: 0, strategy: 'absolute' }"
-        class="checkbox">
+      <ETooltip text="Create spreadsheet and Discord channel" placement="top"
+        strategy="absolute" class="checkbox">
         <UCheckbox v-model="data.create" />
-      </UTooltip>
+      </ETooltip>
     </template>
     <UButton type="submit" :disabled="saving">
       <Spinner v-if="saving" />

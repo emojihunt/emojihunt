@@ -47,24 +47,21 @@ const keydown = (e: KeyboardEvent): void => {
 
 <template>
   <nav ref="nav" @keydown="keydown">
-    <UTooltip text="Puzzles Open" :open-delay="250" class="stats"
-      :popper="{ placement: 'right', offsetDistance: -5 }">
+    <ETooltip text="Puzzles Open" :offset-distance="-5" class="stats">
       {{ String(state.puzzleCount - state.solvedPuzzleCount).padStart(3, '0') }}
-    </UTooltip>
+    </ETooltip>
     <p class="dot"></p>
-    <UTooltip v-for="round of rounds" :text="round.name" :open-delay="250"
-      :popper="{ placement: 'right', offsetDistance: -5 }">
+    <ETooltip v-for="round of rounds" :text="round.name" :offset-distance="-5">
       <a :href="`#${round.anchor}`" @click="(e) => (e.preventDefault(), goto(round))"
         :tabindex="round.id == rounds[focused.index].id ? 0 : -1"
         :aria-label="`To ${round.name}`" :style="`--hue: ${round.hue}deg;`">
         <span :class="round.complete && 'complete'">{{ round.emoji }}&#xfe0f;</span>
       </a>
-    </UTooltip>
+    </ETooltip>
     <p class="dot"></p>
-    <UTooltip text="Puzzles Solved" :open-delay="250" class="stats"
-      :popper="{ placement: 'right', offsetDistance: -5 }">
+    <ETooltip text="Puzzles Solved" :offset-distance="-5" class="stats">
       {{ String(state.solvedPuzzleCount).padStart(3, '0') }}
-    </UTooltip>
+    </ETooltip>
   </nav>
 </template>
 
@@ -84,7 +81,6 @@ nav {
 
   /* tooltip needs to appear above round pills */
   z-index: 25;
-  overflow: hidden;
 }
 
 nav>div {

@@ -6,10 +6,10 @@ const props = defineProps<{
 
 <template>
   <header>
-    <UTooltip class="ably" text="Live updates paused. Connecting..." :open-delay="250"
-      :popper="{ placement: 'auto-end', offsetDistance: 0 }" v-if="!connected">
+    <ETooltip v-if="!connected" text="Live updates paused. Connecting..."
+      placement="auto-end" class="ably">
       <Icon name="i-heroicons-signal-slash" />
-    </UTooltip>
+    </ETooltip>
   </header>
 </template>
 

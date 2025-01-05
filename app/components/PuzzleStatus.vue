@@ -53,13 +53,12 @@ const cancel = () => answering.value && (answering.value = null, open.value = fa
     <div v-if="puzzle.answer || answering" class="answer">
       <EditableSpan ref="input" :value="puzzle.answer" :tabindex="tabIndex(focused, 5)"
         :sticky="!!answering" @save="save" @cancel="cancel" />
-      <UTooltip :text="answering || puzzle.status" :open-delay="400"
-        :popper="{ placement: 'left', offsetDistance: 0 }">
+      <ETooltip :text="answering || puzzle.status" placement="left">
         <button :tabindex="tabIndex(focused, 6)"
           @click="() => answering ? (answering = null, open = true) : (open = !open)">
           {{ StatusEmoji(answering || puzzle.status) }}
         </button>
-      </UTooltip>
+      </ETooltip>
       <div v-if="answering" class="hint">🎉 Press Enter to record answer</div>
       <Spinner v-if="saving" />
     </div>
