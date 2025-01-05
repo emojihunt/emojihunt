@@ -3,15 +3,13 @@ const config = useAppConfig();
 const props = defineProps<{
   puzzle: Puzzle; focused: FocusInfo;
 }>();
-const discord = useCookie("discord");
+const [discordBase, discordTarget] = useDiscordBase();
 
 const puzzleURL = computed(() => props.puzzle.puzzle_url || "");
 const spreadsheetURL = computed(() => props.puzzle.spreadsheet_id ?
   `https://docs.google.com/spreadsheets/d/${props.puzzle.spreadsheet_id}` : '');
-const discordURL = computed(() => props.puzzle.discord_channel ? discord.value == "app"
-  ? `discord:///channels/${config.discordGuild}/${props.puzzle.discord_channel}`
-  : `https://discord.com/channels/${config.discordGuild}/${props.puzzle.discord_channel}`
-  : '');
+const discordURL = computed(() =>
+  `${discordBase}/channels/${config.discordGuild}/${props.puzzle.discord_channel}`);
 </script>
 
 <template>
@@ -48,7 +46,7 @@ const discordURL = computed(() => props.puzzle.discord_channel ? discord.value =
           d="M5.25 5.25a3 3 0 0 0-3 3v10.5a3 3 0 0 0 3 3h10.5a3 3 0 0 0 3-3V13.5a.75.75 0 0 0-1.5 0v5.25a1.5 1.5 0 0 1-1.5 1.5H5.25a1.5 1.5 0 0 1-1.5-1.5V8.25a1.5 1.5 0 0 1 1.5-1.5h5.25a.75.75 0 0 0 0-1.5H5.25Z" />
       </svg>
     </NuxtLink>
-    <NuxtLink :to="discordURL || '#'" :target="discord ? '_blank' : ''" :ok="!!discordURL"
+    <NuxtLink :to="discordURL || '#'" :target="discordTarget" :ok="!!discordURL"
       :tabindex="tabIndex(focused, 2)" style="--hue: 282deg;">
       <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
         stroke="currentColor">
