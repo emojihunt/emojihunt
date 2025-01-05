@@ -9,13 +9,11 @@ const url = useRequestURL();
 // Navigate to anchors without changing the fragment
 const goto = (round: AnnotatedRound) => {
   const id = (new URL(`#${round.anchor}`, url)).hash; // escaping
-  if (round.id == props.rounds[0].id) {
-    // Sometimes scrolling to the first anchor doesn't work.
-    window.scrollTo({ top: 0 });
-  } else {
-    document.querySelector(id)?.scrollIntoView();
-  }
   document.querySelector<HTMLElement>(`${id} ~ .row [tabIndex='0']`)?.focus();
+
+  // Workaround: sometimes scrolling to the first anchor doesn't work.
+  if (round.id == props.rounds[0].id) window.scrollTo({ top: 0 });
+  else document.querySelector(id)?.scrollIntoView();
 
   // IntersectionObserver doesn't fire with scrollIntoView, so fix up the
   // `stuck` classes manually.
