@@ -49,6 +49,8 @@ export default defineStore("puzzles", {
     _rounds: new Map<number, Round>(),
     _puzzles: new Map<number, Puzzle>(),
     _initialChangeId: 0,
+    discordGuild: undefined as string | undefined,
+    hangingOut: undefined as string | undefined,
     nextHunt: undefined as Date | undefined,
     voiceRooms: {} as Record<string, string>,
 
@@ -155,6 +157,8 @@ export default defineStore("puzzles", {
       (data.value?.rounds || []).forEach((r: any) => this._rounds.set(r.id, r));
       (data.value?.puzzles || []).forEach((p: any) => this._puzzles.set(p.id, { ...p, round: p.round.id }));
       this._initialChangeId = data.value?.change_id || 0;
+      this.discordGuild = data.value?.discord_guild;
+      this.hangingOut = data.value?.hanging_out;
       this.nextHunt = data.value?.next_hunt ?
         new Date(data.value.next_hunt) : undefined;
       this.voiceRooms = data.value?.voice_rooms || {};

@@ -114,6 +114,8 @@ export type HomeResponse = {
   puzzles: ServerPuzzle[];
   rounds: Round[];
   change_id: number;
+  discord_guild: string;
+  hanging_out: string;
   next_hunt: string | undefined;
   voice_rooms: Record<string, string>;
 };

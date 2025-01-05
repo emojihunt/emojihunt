@@ -3,9 +3,11 @@ const props = defineProps<{
   connected: boolean;
 }>();
 const config = useAppConfig();
+const store = usePuzzles();
 
 const [discordBase, discordTarget] = useDiscordBase();
-const discordURL = computed(() => `${discordBase}/channels/${config.discordGuild}`);
+const discordURL = computed(() => !store.discordGuild && store.hangingOut ?
+  `${discordBase}/channels/${store.discordGuild}/${store.hangingOut}` : '');;
 </script>
 
 <template>
