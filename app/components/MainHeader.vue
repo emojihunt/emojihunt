@@ -22,6 +22,11 @@ const logout = async (e: MouseEvent) => {
     });
   }
 };
+
+const filter = ref(false);
+const color = computed(() =>
+  filter.value ? "oklch(78% 0.19 245deg)" : "oklch(92% 0.006 265deg)");
+defineExpose({ filter });
 </script>
 
 <template>
@@ -56,6 +61,12 @@ const logout = async (e: MouseEvent) => {
         <p class="dot"></p>
         <span class="emoji">🌊🎨🎡</span>
       </div>
+      <div class="row" v-if="store.puzzleCount >= 21">
+        <div class="flex-spacer"></div>
+        <UFormGroup name="toggle" class="toggle" label="Unsolved">
+          <UToggle v-model="filter" />
+        </UFormGroup>
+      </div>
       <div class="flex-spacer"></div>
       <div class="ably">
         <ETooltip v-if="!connected" text="Live updates paused. Connecting..."
@@ -83,6 +94,7 @@ header {
 section {
   display: flex;
   flex-direction: column;
+  gap: 0.33rem;
 }
 
 section>div {
@@ -100,6 +112,29 @@ section>div {
 p.dot {
   width: 0.75rem;
   text-align: center;
+}
+
+.toggle {
+  display: flex;
+  gap: 0.5rem;
+}
+
+:deep(.toggle >div) {
+  margin: 0;
+  display: flex;
+  align-items: center;
+}
+
+.toggle :deep(button) {
+  position: unset;
+  height: 1rem;
+  width: calc(2rem + 2px);
+}
+
+.toggle :deep(button span) {
+  height: calc(1rem - 4px);
+  width: calc(1rem - 4px);
+  margin: 2px 3px;
 }
 
 .ably {
@@ -132,6 +167,27 @@ p.dot:before {
   letter-spacing: 0.166em;
   opacity: 70%;
   cursor: default;
+}
+
+.toggle :deep(label) {
+  font-size: 0.8125rem;
+  line-height: 1.65em;
+  font-weight: 450;
+  color: v-bind(color);
+  user-select: none;
+}
+
+.toggle :deep(button) {
+  transform: rotate(180deg);
+}
+
+.toggle :deep(.focus-visible\:ring-2:focus-visible) {
+  box-shadow: none;
+  outline-color: white !important;
+}
+
+.toggle :deep(button.bg-primary-500) {
+  background-color: oklch(72% 0.19 245deg);
 }
 
 /* Animation */

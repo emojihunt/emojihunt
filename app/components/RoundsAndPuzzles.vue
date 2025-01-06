@@ -1,5 +1,6 @@
 <script setup lang="ts">
 const props = defineProps<{
+  filter: boolean;
   observer: IntersectionObserver | undefined;
 }>();
 const emit = defineEmits<{

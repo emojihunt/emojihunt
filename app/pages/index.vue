@@ -51,16 +51,18 @@ onMounted(() => window.addEventListener("keydown",
 
 const showNav = computed(() => store.puzzleCount >= 42);
 const navMargin = computed(() => store.puzzleCount >= 42 ? "3.5rem" : "2vw");
+
+const header = useTemplateRef("header");
 </script>
 
 <template>
-  <MainHeader :connected="!!connected" />
+  <MainHeader ref="header" :connected="!!connected" />
   <main>
     <EmojiNav v-if="showNav" :observer="observer" />
     <div class="rule first"></div>
     <div class="rule"></div>
     <div class="rule"></div>
-    <RoundsAndPuzzles :observer="observer"
+    <RoundsAndPuzzles :filter="!!header?.filter" :observer="observer"
       @edit="(kind, id) => { editing = { kind, id }; }" />
     <WelcomeAndAdminBar ref="welcome" @click="click" />
     <Modal v-if="!!editing" @close="close">
