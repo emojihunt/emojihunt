@@ -1,6 +1,7 @@
 <script setup lang="ts">
 const props = defineProps<{
-  round: AnnotatedRound,
+  round: AnnotatedRound;
+  filtered: boolean;
   timeline: string;
   nextTimeline: string | undefined;
   observer: IntersectionObserver | undefined;
@@ -37,7 +38,9 @@ onMounted(() => nextTick(ready));
         <UIcon name="i-heroicons-pencil" size="1rem" />
       </button>
     </div>
-    <div class="progress">{{ round.solved }}/{{ round.total }}</div>
+    <div class="progress" v-if="!filtered">
+      {{ round.solved }}/{{ round.total }}
+    </div>
   </header>
   <header ref="titles"
     :class="['titles', round.total && 'show', props.nextTimeline ? 'next' : '']">
@@ -163,6 +166,7 @@ button:hover {
 .progress {
   font-variant-numeric: diagonal-fractions;
   color: oklch(50% 0.21 calc(v-bind(hue) + 20));
+  opacity: 90%;
   user-select: none;
 }
 

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 const props = defineProps<{
-  filter: boolean;
+  filtered: boolean;
   observer: IntersectionObserver | undefined;
 }>();
 const emit = defineEmits<{
@@ -67,22 +67,32 @@ const copy = async (id: number): Promise<void> => {
     icon: "i-heroicons-clipboard-document-check",
   });
 };
+
+const roundToSequence = computed(() =>
+  new Map(
+    (props.filtered ? store.rounds.filter((r) => !r.complete) : store.rounds).map((r, i) => [r.id, i]))
+);
 </script>
 
 <template>
   <section @keydown="keydown">
-    <template v-for="[i, round] of store.rounds.entries()">
-      <RoundHeader :round="round" :timeline="timelineFromSequence(i)"
-        :next-timeline="i < store.rounds.length - 1 ? timelineFromSequence(i + 1) : undefined"
-        :observer="observer" @copy="() => copy(round.id)"
-        @edit="() => emit('edit', 'round', round.id)" />
-      <Puzzle v-for="puzzle in store.puzzlesByRound.get(round.id)" ref="puzzles"
-        :puzzle="puzzle" :round="round" :focused="focused"
-        @edit="() => emit('edit', 'puzzle', puzzle.id)" />
-      <div class="empty" v-if="!round.total">
-        🫙&hairsp; No Puzzles
-      </div>
-      <hr>
+    <template v-for="round of store.rounds">
+      <template v-if="!filtered || !round.complete">
+        <RoundHeader :round="round" :filtered="filtered"
+          :timeline="timelineFromSequence(roundToSequence.get(round.id)!)"
+          :next-timeline="roundToSequence.get(round.id)! < store.rounds.length - 1 ? timelineFromSequence(roundToSequence.get(round.id)! + 1) : undefined"
+          :observer="observer" @copy="() => copy(round.id)"
+          @edit="() => emit('edit', 'round', round.id)" />
+        <template v-for="puzzle in store.puzzlesByRound.get(round.id)">
+          <Puzzle v-if="!filtered || !puzzle.answer" ref="puzzles" :puzzle="puzzle"
+            :round="round" :focused="focused"
+            @edit="() => emit('edit', 'puzzle', puzzle.id)" />
+        </template>
+        <div class="empty" v-if="!round.total">
+          🫙&hairsp; No Puzzles
+        </div>
+        <hr>
+      </template>
     </template>
   </section>
 </template>

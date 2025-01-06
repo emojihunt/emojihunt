@@ -63,7 +63,7 @@ defineExpose({ filter });
       </div>
       <div class="row" v-if="store.puzzleCount >= 21">
         <div class="flex-spacer"></div>
-        <UFormGroup name="toggle" class="toggle" label="Unsolved">
+        <UFormGroup name="toggle" class="toggle" label="Priority">
           <UToggle v-model="filter" />
         </UFormGroup>
       </div>
