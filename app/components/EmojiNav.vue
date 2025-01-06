@@ -81,6 +81,7 @@ nav {
 
   /* tooltip needs to appear above round pills */
   z-index: 25;
+  overflow: hidden;
 }
 
 nav>div {

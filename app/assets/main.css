@@ -59,9 +59,16 @@
   font-optical-sizing: auto;
 
   --default-border-radius: 2px;
-  --header-height: 6rem;
+  --header-height: 5rem;
   --header-height-outer: calc(var(--header-height) + 1px);
-  --header-stop: calc(var(--header-height) - 1.4rem);
+  --header-stop: calc(var(--header-height) - 1.5rem);
+
+  --pill-height: 2.5rem;
+  --pill-border: 2.5px;
+  --pill-height-outer: calc(var(--pill-height) + (2 * var(--pill-border)));
+  --scroll-fudge: 8px;
+
+  scroll-padding-top: calc(var(--header-stop) + var(--pill-height-outer) + var(--scroll-fudge));
 }
 
 :root ::selection {

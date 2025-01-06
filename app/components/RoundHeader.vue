@@ -24,7 +24,7 @@ onMounted(() => nextTick(ready));
 </script>
 
 <template>
-  <span class="spacer" :id="round.anchor"></span>
+  <span class="spacer"></span>
   <header ref="pill" :id="round.anchor"
     :class="['pill', props.nextTimeline ? 'next' : '']">
     <div class="emoji">{{ round.emoji }}&#xfe0f;</div>
@@ -53,7 +53,6 @@ onMounted(() => nextTick(ready));
 /* Layout */
 .spacer {
   height: 1.75rem;
-  scroll-margin-block-start: 2.845rem;
 }
 
 .spacer:first-of-type {
@@ -67,13 +66,15 @@ onMounted(() => nextTick(ready));
   display: flex;
   gap: 0.6rem;
 
-  height: 2.5rem;
+  height: var(--pill-height);
   line-height: 2.35rem;
 
   position: sticky;
   top: var(--header-stop);
 
   z-index: 20;
+
+  scroll-margin-top: calc(-1 * (var(--pill-height-outer) + var(--scroll-fudge)));
 }
 
 .buttons {
@@ -131,7 +132,7 @@ onMounted(() => nextTick(ready));
       oklch(80% 0.10 calc(v-bind(hue) - 10)),
       oklch(65% 0.21 calc(v-bind(hue) + 20))) border-box;
 
-  border: 2.5px solid transparent;
+  border: var(--pill-border) solid transparent;
   border-radius: 7px;
   filter: drop-shadow(0 -1px 1px oklch(70% 0.07 v-bind(hue) / 20%));
 
