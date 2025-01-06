@@ -2,8 +2,8 @@
 const props = defineProps<{ puzzle: Puzzle; round: Round, focused: FocusInfo; }>();
 const store = usePuzzles();
 
-const input = ref();
-const button = ref<HTMLButtonElement>();
+const input = useTemplateRef("input");
+const button = useTemplateRef("button");
 
 const open = ref(false);
 const saving = ref(false);
@@ -23,7 +23,7 @@ const select = (status: Status) => {
       .finally(() => (saving.value = false));
   } else {
     answering.value = status;
-    nextTick(() => input.value.focus());
+    nextTick(() => input.value?.focus());
   }
 };
 

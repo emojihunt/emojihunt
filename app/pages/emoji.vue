@@ -3,7 +3,7 @@
 // Update URL: https://github.com/googlefonts/emoji-metadata
 import data from "~/assets/emoji-metadata.json";
 
-const computers = ref();
+const computers = useTemplateRef<any>("computers");
 const click = () => {
   if (!computers.value) return;
   const lines = ["["];

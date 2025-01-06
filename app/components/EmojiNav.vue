@@ -28,7 +28,7 @@ const goto = (round: AnnotatedRound) => {
   }
 };
 
-const nav = useTemplateRef<HTMLElement>("nav");
+const nav = useTemplateRef("nav");
 const [focused, _] = useRovingTabIndex(props.rounds.length);
 const keydown = (e: KeyboardEvent): void => {
   if (e.key === "ArrowUp" || e.key === "ArrowLeft") {

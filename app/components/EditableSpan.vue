@@ -13,7 +13,7 @@ const emit = defineEmits<{
 }>();
 
 const editing = ref(false);
-const span = ref<HTMLSpanElement>();
+const span = useTemplateRef("span");
 
 // Vue doesn't properly apply reactive updates because it can't track the
 // changing state of the contenteditable. Instead, have Vue render the component

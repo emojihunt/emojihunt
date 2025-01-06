@@ -57,7 +57,7 @@ const modified = computed(() => {
   return modified;
 });
 
-const form = ref<HTMLFormElement>();
+const form = useTemplateRef("form");
 watch([props], () => {
   if (props.id) nextTick(() => form.value?.querySelector("input")?.focus());
   const updated = initial();

@@ -51,7 +51,7 @@ const keydown = (e: KeyboardEvent) => {
   }
 };
 
-const welcome = ref();
+const welcome = useTemplateRef("welcome");
 const editing = ref<
   { kind: "round" | "puzzle" | "admin"; id?: void; } |
   { kind: "round" | "puzzle", id: number; }

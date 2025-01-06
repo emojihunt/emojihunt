@@ -39,9 +39,9 @@ onMounted(() => {
   }
 });
 
-const round = ref();
-const puzzle = ref();
-const admin = ref();
+const round = useTemplateRef("round");
+const puzzle = useTemplateRef("puzzle");
+const admin = useTemplateRef("admin");
 const focus = (kind: "round" | "puzzle" | "admin") => nextTick(() => {
   if (kind === "round") round.value?.focus();
   else if (kind === "puzzle") puzzle.value?.focus();

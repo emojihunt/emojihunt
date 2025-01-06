@@ -66,7 +66,7 @@ const submit = (e: Event) => {
   }, 500);
 };
 
-const form = ref<HTMLFormElement>();
+const form = useTemplateRef("form");
 const emoji = (e: any) => {
   if (data.emoji === e.native) {
     data.emoji = "";

@@ -9,8 +9,8 @@ const emit = defineEmits<{ (e: "copy"): void; (e: "edit"): void; }>();
 const hue = computed(() => props.round.hue);
 
 let registered = false;
-const pill = ref<HTMLElement>();
-const titles = ref<HTMLElement>();
+const pill = useTemplateRef("pill");
+const titles = useTemplateRef("titles");
 const ready = () => {
   pill.value?.classList.add("ready");
   titles.value?.classList.add("ready");

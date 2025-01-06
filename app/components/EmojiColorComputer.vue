@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import Color from "colorjs.io";
 const props = defineProps<{ emoji: string; alternates: string[]; }>();
-const canvas = ref<HTMLCanvasElement>();
+const canvas = useTemplateRef("canvas");
 const median = ref(-1);
 const result = ref<any[]>([]);
 defineExpose({ result });
