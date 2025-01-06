@@ -29,7 +29,7 @@ onMounted(() => nextTick(ready));
   <header ref="pill" :class="['pill', props.nextTimeline ? 'next' : '']">
     <div class="emoji">{{ round.emoji }}&#xfe0f;</div>
     <div class="round">{{ round.name }}</div>
-    <div class="spaces"></div>
+    <div class="flex-spacer"></div>
     <div class="buttons">
       <button @click="() => emit('copy')">
         <UIcon name="i-heroicons-clipboard-document-list" size="1rem" />
@@ -92,10 +92,6 @@ onMounted(() => nextTick(ready));
 .buttons:focus-within {
   width: auto;
   opacity: 100%;
-}
-
-.spaces {
-  flex-grow: 1;
 }
 
 .titles {
