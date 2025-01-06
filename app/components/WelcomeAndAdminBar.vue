@@ -118,7 +118,7 @@ button {
 /* Theming */
 a {
   font-weight: 500;
-  font-size: 0.95rem;
+  font-size: 0.9375rem;
   color: oklch(60% 0.15 245deg);
   text-decoration: none;
 }
@@ -137,7 +137,7 @@ a:hover span {
 
 button {
   font-weight: 350;
-  font-size: 0.85rem;
+  font-size: 0.875rem;
   color: oklch(60% 0.15 245deg);
 }
 

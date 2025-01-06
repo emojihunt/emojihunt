@@ -71,7 +71,7 @@ const save = (updated: string) => {
 /* Theming */
 .cell {
   font-weight: 400;
-  font-size: 0.8rem;
+  font-size: 0.8125rem;
 }
 
 .emoji {

@@ -19,7 +19,7 @@ const hue = computed(() => props.round.hue);
 /* Theming */
 .cell {
   font-weight: 430;
-  font-size: 0.9rem;
+  font-size: 0.875rem;
   color: oklch(25% 0 0deg);
 }
 
@@ -48,14 +48,14 @@ button {
   width: 0;
   padding: 0;
 
-  font-size: 0.8rem;
+  font-size: 0.8125rem;
   line-height: 1.76rem;
   align-self: flex-start;
   color: oklch(60% 0.15 245deg);
 }
 
 .meta button {
-  color: oklch(60% 0.14 calc(v-bind(hue)))
+  color: oklch(60% 0.14 calc(v-bind(hue)));
 }
 
 .cell:hover button,

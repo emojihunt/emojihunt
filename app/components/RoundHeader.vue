@@ -167,7 +167,7 @@ button:hover {
 }
 
 .titles {
-  font-size: 0.8rem;
+  font-size: 0.78125rem;
   font-weight: 430;
   color: oklch(55% 0.03 275deg);
 

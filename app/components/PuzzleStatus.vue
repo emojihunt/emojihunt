@@ -118,7 +118,7 @@ const cancel = () => answering.value && (answering.value = null, open.value = fa
 
 /* Theming */
 .cell {
-  font-size: 0.87rem;
+  font-size: 0.875rem;
 }
 
 .answer span {
@@ -156,7 +156,7 @@ const cancel = () => answering.value && (answering.value = null, open.value = fa
 }
 
 .hint {
-  font-size: 0.76rem;
+  font-size: 0.75rem;
   text-align: right;
   color: oklch(55% 0 0deg);
 }

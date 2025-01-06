@@ -30,7 +30,7 @@ fieldset button {
 
 /* Theming */
 fieldset {
-  font-size: 0.8rem;
+  font-size: 0.8125rem;
 }
 
 fieldset button {

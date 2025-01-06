@@ -115,7 +115,7 @@ header {
 }
 
 section {
-  font-size: 0.85rem;
+  font-size: 0.875rem;
   line-height: 1.65em;
   text-align: right;
 }

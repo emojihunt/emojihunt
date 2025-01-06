@@ -108,7 +108,7 @@ hr {
 
 /* Theming */
 .empty {
-  font-size: 0.9rem;
+  font-size: 0.875rem;
   opacity: 50%;
   user-select: none;
 }
