@@ -81,7 +81,8 @@ export default defineStore("puzzles", {
         annotated.push({
           ...base,
           anchor: base.name.trim().toLowerCase().replaceAll(/[^A-Za-z0-9]+/g, "-"),
-          complete: (metas.length === 0 ? puzzles : metas).filter((p => !p.answer)).length === 0,
+          complete: puzzles.length > 0 &&
+            (metas.length === 0 ? puzzles : metas).filter((p => !p.answer)).length === 0,
           displayName: `${base.emoji}\uFE0F ${base.name}`,
           solved: puzzles.filter((p) => !!p.answer).length,
           total: puzzles.length,

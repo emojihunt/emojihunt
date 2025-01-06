@@ -1,9 +1,8 @@
 <script setup lang="ts">
 const props = defineProps<{
-  rounds: AnnotatedRound[];
   observer: IntersectionObserver | undefined;
 }>();
-const state = usePuzzles();
+const store = usePuzzles();
 const url = useRequestURL();
 
 // Navigate to anchors without changing the fragment
@@ -12,7 +11,7 @@ const goto = (round: AnnotatedRound) => {
   document.querySelector<HTMLElement>(`${id} ~ .row [tabIndex='0']`)?.focus();
 
   // Workaround: sometimes scrolling to the first anchor doesn't work.
-  if (round.id == props.rounds[0].id) window.scrollTo({ top: 0 });
+  if (round.id == store.rounds[0].id) window.scrollTo({ top: 0 });
   else document.querySelector(id)?.scrollIntoView();
 
   // IntersectionObserver doesn't fire with scrollIntoView, so fix up the
@@ -29,12 +28,12 @@ const goto = (round: AnnotatedRound) => {
 };
 
 const nav = useTemplateRef("nav");
-const [focused, _] = useRovingTabIndex(props.rounds.length);
+const focused = reactive({ index: 0 });
 const keydown = (e: KeyboardEvent): void => {
   if (e.key === "ArrowUp" || e.key === "ArrowLeft") {
     if (focused.index > 0) focused.index -= 1;
   } else if (e.key === "ArrowDown" || e.key == "ArrowRight") {
-    if (focused.index < props.rounds.length - 1) focused.index += 1;
+    if (focused.index < store.rounds.length - 1) focused.index += 1;
   } else {
     return;
   }
@@ -48,19 +47,19 @@ const keydown = (e: KeyboardEvent): void => {
 <template>
   <nav ref="nav" @keydown="keydown">
     <ETooltip text="Puzzles Open" :offset-distance="-5" class="stats">
-      {{ String(state.puzzleCount - state.solvedPuzzleCount).padStart(3, '0') }}
+      {{ String(store.puzzleCount - store.solvedPuzzleCount).padStart(3, '0') }}
     </ETooltip>
     <p class="dot"></p>
-    <ETooltip v-for="round of rounds" :text="round.name" :offset-distance="-5">
+    <ETooltip v-for="round of store.rounds" :text="round.name" :offset-distance="-5">
       <a :href="`#${round.anchor}`" @click="(e) => (e.preventDefault(), goto(round))"
-        :tabindex="round.id == rounds[focused.index].id ? 0 : -1"
+        :tabindex="round.id == store.rounds[focused.index].id ? 0 : -1"
         :aria-label="`To ${round.name}`" :style="`--hue: ${round.hue}deg;`">
         <span :class="round.complete && 'complete'">{{ round.emoji }}&#xfe0f;</span>
       </a>
     </ETooltip>
     <p class="dot"></p>
     <ETooltip text="Puzzles Solved" :offset-distance="-5" class="stats">
-      {{ String(state.solvedPuzzleCount).padStart(3, '0') }}
+      {{ String(store.solvedPuzzleCount).padStart(3, '0') }}
     </ETooltip>
   </nav>
 </template>

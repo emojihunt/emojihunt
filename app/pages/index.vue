@@ -75,7 +75,6 @@ const close = () => {
 onMounted(() => window.addEventListener("keydown",
   (e) => (e.key === "Escape") && close()));
 
-const rounds = computed(() => store.rounds);
 const showNav = computed(() => store.puzzleCount >= 42);
 const navMargin = computed(() => store.puzzleCount >= 42 ? "3.5rem" : "2vw");
 </script>
@@ -83,12 +82,12 @@ const navMargin = computed(() => store.puzzleCount >= 42 ? "3.5rem" : "2vw");
 <template>
   <MainHeader :connected="connected" />
   <main @keydown="keydown">
-    <EmojiNav v-if="showNav" :rounds="rounds" :observer="observer" />
+    <EmojiNav v-if="showNav" :observer="observer" />
     <div class="rule first"></div>
     <div class="rule"></div>
     <div class="rule"></div>
-    <RoundAndPuzzles v-for="[i, round] of rounds.entries()" :round="round" :sequence="i"
-      :focused="focused" :observer="observer"
+    <RoundAndPuzzles v-for="[i, round] of store.rounds.entries()" :round="round"
+      :sequence="i" :focused="focused" :observer="observer"
       @edit="(kind, id) => { editing = { kind, id }; }" />
     <WelcomeAndAdminBar ref="welcome" @click="click" />
     <Modal v-if="!!editing" @close="close">
