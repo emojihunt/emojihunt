@@ -20,7 +20,7 @@ const hue = computed(() => props.round.hue);
 .cell {
   font-weight: 430;
   font-size: 0.9rem;
-  color: oklch(25% 0.10 275deg);
+  color: oklch(25% 0 0deg);
 }
 
 button {
