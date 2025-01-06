@@ -15,7 +15,7 @@ const modified = computed(() => {
     let value = edits[key] || "";
     if (value === "-") value = "";
     // @ts-ignore
-    if (value != original[key]) modified[key] = value;
+    if (value !== original[key]) modified[key] = value;
   }
   return modified;
 });

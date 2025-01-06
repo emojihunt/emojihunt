@@ -32,7 +32,7 @@ const focused = reactive({ index: 0 });
 const keydown = (e: KeyboardEvent): void => {
   if (e.key === "ArrowUp" || e.key === "ArrowLeft") {
     if (focused.index > 0) focused.index -= 1;
-  } else if (e.key === "ArrowDown" || e.key == "ArrowRight") {
+  } else if (e.key === "ArrowDown" || e.key === "ArrowRight") {
     if (focused.index < store.rounds.length - 1) focused.index += 1;
   } else {
     return;
@@ -51,7 +51,7 @@ const keydown = (e: KeyboardEvent): void => {
     <p class="dot"></p>
     <ETooltip v-for="round of store.rounds" :text="round.name" :offset-distance="-5">
       <a :href="`#${round.anchor}`" @click="(e) => (e.preventDefault(), goto(round))"
-        :tabindex="round.id == store.rounds[focused.index].id ? 0 : -1"
+        :tabindex="round.id === store.rounds[focused.index].id ? 0 : -1"
         :aria-label="`To ${round.name}`" :style="`--hue: ${round.hue}deg;`">
         <span :class="round.complete && 'complete'">{{ round.emoji }}&#xfe0f;</span>
       </a>

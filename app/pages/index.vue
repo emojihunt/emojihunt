@@ -54,7 +54,7 @@ const navMargin = computed(() => store.puzzleCount >= 42 ? "3.5rem" : "2vw");
 </script>
 
 <template>
-  <MainHeader :connected="connected" />
+  <MainHeader :connected="!!connected" />
   <main>
     <EmojiNav v-if="showNav" :observer="observer" />
     <div class="rule first"></div>
