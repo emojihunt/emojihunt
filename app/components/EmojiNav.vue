@@ -8,10 +8,10 @@ const url = useRequestURL();
 // Navigate to anchors without changing the fragment
 const goto = (round: AnnotatedRound) => {
   const id = (new URL(`#${round.anchor}`, url)).hash; // escaping
-  document.querySelector<HTMLElement>(`${id} ~ .row [tabIndex='0']`)?.focus();
+  document.querySelector<HTMLElement>(`${id} ~ .puzzle [tabIndex='0']`)?.focus();
 
   // Workaround: sometimes scrolling to the first anchor doesn't work.
-  if (round.id == store.rounds[0].id) window.scrollTo({ top: 0 });
+  if (round.id === store.rounds[0].id) window.scrollTo({ top: 0 });
   else document.querySelector(id)?.scrollIntoView();
 
   // IntersectionObserver doesn't fire with scrollIntoView, so fix up the
@@ -37,8 +37,7 @@ const keydown = (e: KeyboardEvent): void => {
   } else {
     return;
   }
-  // @ts-ignore
-  nextTick(() => nav.value.querySelector("[tabindex='0']")?.focus());
+  nextTick(() => nav.value?.querySelector<HTMLElement>("[tabindex='0']")?.focus());
   e.preventDefault();
   e.stopPropagation();
 };

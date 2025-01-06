@@ -4,8 +4,8 @@ const props = defineProps<{
 }>();
 const emit = defineEmits<{ (e: "edit"): void; }>();
 
-// @ts-ignore
-const focus = () => nextTick(() => row.value?.querySelector("[tabindex='0']")?.focus());
+const focus = () => nextTick(() =>
+  row.value?.querySelector<HTMLElement>("[tabindex='0']")?.focus());
 defineExpose({
   id: props.puzzle.id, focus
 });
