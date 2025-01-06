@@ -25,32 +25,6 @@ onMounted(() => document.location.hash && history.pushState(
   "", document.title, window.location.pathname + window.location.search,
 ));
 
-const [focused, tabKeydown] = useRovingTabIndex(9, 3);
-const keydown = (e: KeyboardEvent) => {
-  let sibling;
-
-  const row = getStopParent(document.activeElement);
-  if (e.key === "ArrowUp") {
-    sibling = row?.previousElementSibling;
-    while (sibling && !sibling.classList.contains("stop")) {
-      sibling = sibling?.previousElementSibling;
-    }
-  } else if (e.key === "ArrowDown") {
-    sibling = row?.nextElementSibling;
-    while (sibling && !sibling.classList.contains("stop")) {
-      sibling = sibling?.nextElementSibling;
-    }
-  }
-
-  if (sibling) {
-    // @ts-ignore
-    sibling.querySelector("[tabindex='0']")?.focus();
-    e.preventDefault();
-  } else {
-    tabKeydown(e);
-  }
-};
-
 const welcome = useTemplateRef("welcome");
 const editing = ref<
   { kind: "round" | "puzzle" | "admin"; id?: void; } |
@@ -81,13 +55,12 @@ const navMargin = computed(() => store.puzzleCount >= 42 ? "3.5rem" : "2vw");
 
 <template>
   <MainHeader :connected="connected" />
-  <main @keydown="keydown">
+  <main>
     <EmojiNav v-if="showNav" :observer="observer" />
     <div class="rule first"></div>
     <div class="rule"></div>
     <div class="rule"></div>
-    <RoundAndPuzzles v-for="[i, round] of store.rounds.entries()" :round="round"
-      :sequence="i" :focused="focused" :observer="observer"
+    <RoundsAndPuzzles :observer="observer"
       @edit="(kind, id) => { editing = { kind, id }; }" />
     <WelcomeAndAdminBar ref="welcome" @click="click" />
     <Modal v-if="!!editing" @close="close">

@@ -3,10 +3,30 @@ const props = defineProps<{
   puzzle: Puzzle; round: AnnotatedRound; focused: FocusInfo;
 }>();
 const emit = defineEmits<{ (e: "edit"): void; }>();
+
+// @ts-ignore
+const focus = () => nextTick(() => row.value?.querySelector("[tabindex='0']")?.focus());
+defineExpose({
+  id: props.puzzle.id, focus
+});
+
+const row = useTemplateRef("row");
+const keydown = (e: KeyboardEvent) => {
+  if (e.key === "ArrowRight") {
+    if (props.focused.index < 8) props.focused.index += 1;
+  } else if (e.key === "ArrowLeft") {
+    if (props.focused.index > 0) props.focused.index -= 1;
+  } else {
+    return;
+  }
+  focus();
+  e.preventDefault();
+  e.stopPropagation();
+};
 </script>
 
 <template>
-  <span class="row stop">
+  <span ref="row" class="puzzle" :data-puzzle="puzzle.id" @keydown="keydown">
     <PuzzleButtons :puzzle="puzzle" :focused="focused" />
     <span class="data">
       <PuzzleName :puzzle="puzzle" :round="round" :focused="focused"
@@ -24,7 +44,7 @@ const emit = defineEmits<{ (e: "edit"): void; }>();
 
 <style scoped>
 /* Layout */
-.row {
+.puzzle {
   grid-column: 1 / 6;
   display: grid;
   grid-template-columns: subgrid;
@@ -42,7 +62,7 @@ const emit = defineEmits<{ (e: "edit"): void; }>();
   border-bottom: 1px solid transparent;
 }
 
-.row:hover .data {
+.puzzle:hover .data {
   border-color: oklch(86% 0 0deg);
 }
 </style>
