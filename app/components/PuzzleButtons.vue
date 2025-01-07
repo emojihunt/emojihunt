@@ -4,7 +4,7 @@ const store = usePuzzles();
 const [discordBase, discordTarget] = useDiscordBase();
 
 const spreadsheetURL = computed(() => props.puzzle.spreadsheet_id ?
-  `https://docs.google.com/spreadsheets/d/${props.puzzle.spreadsheet_id}` : "");
+  `/${props.puzzle.id}` : "");
 const discordURL = computed(() => props.puzzle.discord_channel ?
   `${discordBase}/channels/${store.discordGuild}/${props.puzzle.discord_channel}` : "");
 </script>
