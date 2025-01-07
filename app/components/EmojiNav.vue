@@ -45,11 +45,11 @@ const keydown = (e: KeyboardEvent): void => {
 
 <template>
   <nav ref="nav" @keydown="keydown">
-    <ETooltip text="Puzzles Open" :offset-distance="-5" class="stats">
+    <ETooltip text="Puzzles Open" :offset-distance="-3" class="stats">
       {{ String(store.puzzleCount - store.solvedPuzzleCount).padStart(3, '0') }}
     </ETooltip>
     <p class="dot"></p>
-    <ETooltip v-for="round of store.rounds" :text="round.name" :offset-distance="-5">
+    <ETooltip v-for="round of store.rounds" :text="round.name" :offset-distance="-3">
       <a :href="`#${round.anchor}`" @click="(e) => (e.preventDefault(), goto(round))"
         :tabindex="round.id === store.rounds[focused.index].id ? 0 : -1"
         :aria-label="`To ${round.name}`" :style="`--hue: ${round.hue}deg;`">
@@ -57,7 +57,7 @@ const keydown = (e: KeyboardEvent): void => {
       </a>
     </ETooltip>
     <p class="dot"></p>
-    <ETooltip text="Puzzles Solved" :offset-distance="-5" class="stats">
+    <ETooltip text="Puzzles Solved" :offset-distance="-3" class="stats">
       {{ String(store.solvedPuzzleCount).padStart(3, '0') }}
     </ETooltip>
   </nav>
@@ -66,11 +66,12 @@ const keydown = (e: KeyboardEvent): void => {
 <style scoped>
 /* Layout */
 nav {
-  width: 2.75rem;
+  width: 3.75rem;
   height: calc(100vh - var(--header-height));
   position: sticky;
   top: var(--header-height);
   margin: 0 0 -100vh calc(-1 * var(--nav-margin));
+  padding: 0 1rem 0 0.5rem;
 
   display: flex;
   flex-direction: column;

@@ -50,7 +50,7 @@ onMounted(() => window.addEventListener("keydown",
   (e) => (e.key === "Escape") && close()));
 
 const showNav = computed(() => store.puzzleCount >= 42);
-const navMargin = computed(() => store.puzzleCount >= 42 ? "3.5rem" : "2vw");
+const navMargin = computed(() => store.puzzleCount >= 42 ? "4.5rem" : "2vw");
 
 const header = useTemplateRef("header");
 </script>
