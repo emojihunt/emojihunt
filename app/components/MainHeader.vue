@@ -59,7 +59,9 @@ defineExpose({ filter });
           </NuxtLink>
         </ETooltip>
         <p class="dot"></p>
-        <span class="emoji">🌊🎨🎡</span>
+        <NuxtLink to="/" :external="true" class="logo">
+          <span>🌊🎨🎡</span>
+        </NuxtLink>
       </div>
       <div class="row" v-if="store.puzzleCount >= 21">
         <div class="flex-spacer"></div>
@@ -163,7 +165,7 @@ p.dot:before {
   font-weight: 550;
 }
 
-.emoji {
+.logo {
   letter-spacing: 0.166em;
   opacity: 70%;
   cursor: default;
