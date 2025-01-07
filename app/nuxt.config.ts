@@ -43,7 +43,6 @@ export default defineNuxtConfig({
         "X-Content-Type-Options": "nosniff",
         "Referrer-Policy": "origin",
         "Cross-Origin-Opener-Policy": "same-origin",
-        "Cross-Origin-Embedder-Policy": "require-corp",
         "Cross-Origin-Resource-Policy": "same-site",
       },
     },
