@@ -1,6 +1,6 @@
 <script setup lang="ts">
 const props = defineProps<{
-  filtered: boolean;
+  filter: boolean;
   observer: IntersectionObserver | undefined;
 }>();
 const emit = defineEmits<{
@@ -70,21 +70,21 @@ const copy = async (id: number): Promise<void> => {
 
 const roundToSequence = computed(() =>
   new Map(
-    (props.filtered ? store.rounds.filter((r) => !r.complete) : store.rounds).map((r, i) => [r.id, i]))
+    (props.filter ? store.rounds.filter((r) => !r.complete) : store.rounds).map((r, i) => [r.id, i]))
 );
 </script>
 
 <template>
   <section @keydown="keydown">
     <template v-for="round of store.rounds">
-      <template v-if="!filtered || !round.complete">
-        <RoundHeader :round="round" :filtered="filtered"
+      <template v-if="!filter || !round.complete">
+        <RoundHeader :round="round" :filter="filter"
           :timeline="timelineFromSequence(roundToSequence.get(round.id)!)"
           :next-timeline="roundToSequence.get(round.id)! < store.rounds.length - 1 ? timelineFromSequence(roundToSequence.get(round.id)! + 1) : undefined"
           :observer="observer" @copy="() => copy(round.id)"
           @edit="() => emit('edit', 'round', round.id)" />
         <template v-for="puzzle in store.puzzlesByRound.get(round.id)">
-          <Puzzle v-if="!filtered || !puzzle.answer" ref="puzzles" :puzzle="puzzle"
+          <Puzzle v-if="!filter || !puzzle.answer" ref="puzzles" :puzzle="puzzle"
             :round="round" :focused="focused"
             @edit="() => emit('edit', 'puzzle', puzzle.id)" />
         </template>

@@ -62,7 +62,7 @@ const header = useTemplateRef("header");
     <div class="rule first"></div>
     <div class="rule"></div>
     <div class="rule"></div>
-    <RoundsAndPuzzles :filtered="!!header?.filter" :observer="observer"
+    <RoundsAndPuzzles :filter="!!header?.filter" :observer="observer"
       @edit="(kind, id) => { editing = { kind, id }; }" />
     <WelcomeAndAdminBar ref="welcome" @click="click" />
     <Modal v-if="!!editing" @close="close">

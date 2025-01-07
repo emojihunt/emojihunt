@@ -1,7 +1,7 @@
 <script setup lang="ts">
 const props = defineProps<{
   round: AnnotatedRound;
-  filtered: boolean;
+  filter: boolean;
   timeline: string;
   nextTimeline: string | undefined;
   observer: IntersectionObserver | undefined;
@@ -38,7 +38,7 @@ onMounted(() => nextTick(ready));
         <UIcon name="i-heroicons-pencil" size="1rem" />
       </button>
     </div>
-    <div class="progress" v-if="!filtered">
+    <div class="progress" v-if="!filter">
       {{ round.solved }}/{{ round.total }}
     </div>
   </header>
