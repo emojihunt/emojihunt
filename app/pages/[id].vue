@@ -51,6 +51,19 @@ const data = computed(() => {
   </iframe>
   <nav>
     <section>
+      <ETooltip text="Click to set status to ✍️ Working" placement="top"
+        :offset-distance="4" v-if="data.puzzle.status === Status.NotStarted">
+        <button
+          @click="() => store.updatePuzzleOptimistic(data.puzzle.id, { status: Status.Working })">
+          ‼️
+        </button>
+      </ETooltip>
+      <ETooltip :text="`Status: ${StatusLabel(data.puzzle.status)}`" placement="top"
+        :offset-distance="4" v-else>
+        {{ StatusEmoji(data.puzzle.status) }}
+      </ETooltip>
+    </section>
+    <section>
       <ETooltip text="Puzzle Page" placement="top" :offset-distance="4">
         <NuxtLink :to="data.puzzle.puzzle_url" target="TODO"
           :ok="!!data.puzzle.puzzle_url">
