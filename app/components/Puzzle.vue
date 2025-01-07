@@ -4,29 +4,16 @@ const props = defineProps<{
 }>();
 const emit = defineEmits<{ (e: "edit"): void; }>();
 
+const row = useTemplateRef("row");
 const focus = () => nextTick(() =>
   row.value?.querySelector<HTMLElement>("[tabindex='0']")?.focus());
 defineExpose({
   id: props.puzzle.id, focus
 });
-
-const row = useTemplateRef("row");
-const keydown = (e: KeyboardEvent) => {
-  if (e.key === "ArrowRight") {
-    if (props.focused.index < 8) props.focused.index += 1;
-  } else if (e.key === "ArrowLeft") {
-    if (props.focused.index > 0) props.focused.index -= 1;
-  } else {
-    return;
-  }
-  focus();
-  e.preventDefault();
-  e.stopPropagation();
-};
 </script>
 
 <template>
-  <span ref="row" class="puzzle" :data-puzzle="puzzle.id" @keydown="keydown">
+  <span ref="row" class="puzzle" :data-puzzle="puzzle.id">
     <PuzzleButtons :puzzle="puzzle" :focused="focused" />
     <span class="data">
       <PuzzleName :puzzle="puzzle" :round="round" :focused="focused"

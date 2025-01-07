@@ -13,11 +13,20 @@ const focused = reactive({ index: 3 });
 
 const puzzles = useTemplateRef("puzzles");
 const keydown = (e: KeyboardEvent) => {
-  let delta;
-  if (!puzzles.value || !e.target) return;
-  else if (e.key === "ArrowUp") delta = -1;
-  else if (e.key === "ArrowDown") delta = 1;
-  else return;
+  let delta = 0;
+  if (!puzzles.value || !e.target) {
+    return;
+  } else if (e.key === "ArrowUp") {
+    delta = -1;
+  } else if (e.key === "ArrowDown") {
+    delta = 1;
+  } else if (e.key === "ArrowRight") {
+    if (focused.index < 8) focused.index += 1;
+  } else if (e.key === "ArrowLeft") {
+    if (focused.index > 0) focused.index -= 1;
+  } else {
+    return;
+  }
 
   // @ts-ignore
   const current = e.target.closest(".puzzle");
