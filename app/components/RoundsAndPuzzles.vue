@@ -27,8 +27,9 @@ const keydown = (e: KeyboardEvent) => {
     e.stopPropagation();
     return;
   }
+  const currentID = parseInt(current.dataset.puzzle);
 
-  const i = puzzles.value.findIndex((p: any) => p.id === current.dataset.puzzle) + delta;
+  const i = puzzles.value.findIndex((p: any) => p.id === currentID) + delta;
   if (i === undefined || i < 0 || i >= puzzles.value.length) {
     // Focus is in first or last puzzle. Pass through event to scroll page.
     return;
