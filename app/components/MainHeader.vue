@@ -27,6 +27,9 @@ const filter = ref(false);
 const color = computed(() =>
   filter.value ? "oklch(78% 0.19 245deg)" : "oklch(92% 0.006 265deg)");
 defineExpose({ filter });
+
+const ably = useTemplateRef("ably");
+onMounted(() => setTimeout(() => ably.value?.classList.add("ready"), 2500));
 </script>
 
 <template>
@@ -70,7 +73,7 @@ defineExpose({ filter });
         </UFormGroup>
       </div>
       <div class="flex-spacer"></div>
-      <div class="ably">
+      <div class="ably" ref="ably">
         <ETooltip v-if="!connected" text="Live updates paused. Connecting..."
           placement="left" :offset-distance="4" class="ably">
           <Icon name="i-heroicons-signal-slash" />
@@ -194,9 +197,11 @@ p.dot:before {
 
 /* Animation */
 .ably span {
+  opacity: 0%;
+}
+
+.ably.ready span {
   /* https://stackoverflow.com/a/16344389 */
   animation: blink 1.5s step-start infinite;
-  animation-delay: 2.5s;
-  opacity: 0%;
 }
 </style>
