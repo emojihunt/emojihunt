@@ -34,11 +34,15 @@ const rerender = () => {
   span.value.tabIndex = props.tabindex || 0;
 };
 onMounted(() => rerender());
-watch([props], () => {
+watch(() => [props.value, props.placeholder], () => {
   if (editing.value) console.log("Props update!",
     props.value, span.value?.innerText);
   editing.value = false;
   rerender();
+});
+watch(() => props.tabindex, () => {
+  if (!span.value) return;
+  span.value.tabIndex = props.tabindex || 0;
 });
 
 defineExpose({
