@@ -1,6 +1,5 @@
 import { defineStore } from 'pinia';
 import { parseReminder } from '~/utils/types';
-import type { HomeResponse } from '~/utils/types';
 
 type Optimistic = (
   ({ type: "round"; } & Partial<Round>) |
@@ -56,7 +55,7 @@ export default defineStore("puzzles", {
     huntCredentials: undefined as string | undefined,
     logisticsURL: undefined as string | undefined,
     nextHunt: undefined as Date | undefined,
-    voiceRooms: {} as Record<string, string>,
+    voiceRooms: new Map<string, VoiceRoom>(),
 
     // Writes not yet received from Ably. Committed writes first (earlier, by
     // change ID); pending writes second (later, by local ID).
@@ -170,7 +169,18 @@ export default defineStore("puzzles", {
       this.logisticsURL = data.value?.logistics_url;
       this.nextHunt = data.value?.next_hunt ?
         new Date(data.value.next_hunt) : undefined;
-      this.voiceRooms = data.value?.voice_rooms || {};
+      this.voiceRooms.clear();
+      Object.entries(data.value?.voice_rooms || {}).forEach(([id, raw]) => {
+        // We expect the channel's emoji to go at the end
+        const p = raw.split(" ");
+        if ([...p[p.length - 1]].length === 1) {
+          const name = p.slice(0, p.length - 1).join(" ");
+          const emoji = p[p.length - 1];
+          this.voiceRooms.set(id, { id, name, emoji });
+        } else {
+          this.voiceRooms.set(id, { id, name: raw, emoji: "📻" });
+        }
+      });
     },
     async addRound(data: NewRound) {
       const [round, changeId] = await updateRequest<Round>("/rounds", data);

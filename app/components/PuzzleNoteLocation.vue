@@ -11,20 +11,9 @@ const tooltip = computed(() => {
   if (props.field === "location") {
     const id = props.puzzle.voice_room;
     if (!id) return;
-    const channel = store.voiceRooms[id];
+    const channel = store.voiceRooms.get(id);
     if (!channel) return;
-    // We expect the channel's emoji to go at the end
-    const p = channel.split(" ");
-    if ([...p[p.length - 1]].length === 1) {
-      const text = p.slice(0, p.length - 1).join(" ");
-      return {
-        emoji: p[p.length - 1],
-        placeholder: text,
-        text: `in ${text}`,
-      };
-    } else {
-      return { emoji: "📻", placeholder: channel, text: `in ${channel}` };
-    }
+    return { emoji: channel.emoji, placeholder: channel.name, text: `in ${channel.name}` };
   } else {
     const reminder = parseReminder(props.puzzle);
     if (!reminder) return;

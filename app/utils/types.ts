@@ -147,6 +147,12 @@ export type ScrapedPuzzle = {
   puzzle_url: string;
 };
 
+export type VoiceRoom = {
+  id: string;
+  emoji: string;
+  name: string;
+};
+
 export type AblyWorkerMessage =
   { name: "sync"; data: SyncMessage; } |
   { name: "client"; state: ConnectionState; };
