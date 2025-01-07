@@ -23,6 +23,10 @@ const {
 </template>
 
 <style scoped>
+div {
+  user-select: none;
+}
+
 :deep(div[data-popper-placement]) {
   z-index: 8;
 }
