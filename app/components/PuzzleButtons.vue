@@ -5,18 +5,17 @@ const props = defineProps<{
 const store = usePuzzles();
 const [discordBase, discordTarget] = useDiscordBase();
 
-const puzzleURL = computed(() => props.puzzle.puzzle_url || "");
 const spreadsheetURL = computed(() => props.puzzle.spreadsheet_id ?
-  `https://docs.google.com/spreadsheets/d/${props.puzzle.spreadsheet_id}` : '');
-const discordURL = computed(() =>
-  `${discordBase}/channels/${store.discordGuild}/${props.puzzle.discord_channel}`);
+  `https://docs.google.com/spreadsheets/d/${props.puzzle.spreadsheet_id}` : "");
+const discordURL = computed(() => props.puzzle.discord_channel ?
+  `${discordBase}/channels/${store.discordGuild}/${props.puzzle.discord_channel}` : "");
 </script>
 
 <template>
   <nav>
     <!-- Icons from Heroicons, https://heroicons.com. -->
     <ETooltip text="Puzzle Page" :open-delay="750">
-      <NuxtLink :to="puzzleURL || '#'" target="_blank" :ok="!!puzzleURL"
+      <NuxtLink :to="puzzle.puzzle_url" target="_blank" :ok="!!puzzle.puzzle_url"
         :tabindex="tabIndex(focused, 0)" style="--hue: 238deg;">
         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
           stroke="currentColor">
@@ -31,7 +30,7 @@ const discordURL = computed(() =>
       </NuxtLink>
     </ETooltip>
     <ETooltip text="Google Spreadsheet" :open-delay="750">
-      <NuxtLink :to="spreadsheetURL || '#'" target="_blank" :ok="!!spreadsheetURL"
+      <NuxtLink :to="spreadsheetURL" target="_blank" :ok="!!spreadsheetURL"
         :tabindex="tabIndex(focused, 1)" style="--hue: 148deg;">
         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
           stroke="currentColor">
@@ -47,7 +46,7 @@ const discordURL = computed(() =>
       </NuxtLink>
     </ETooltip>
     <ETooltip text="Discord Channel" :open-delay="750">
-      <NuxtLink :to="discordURL || '#'" :target="discordTarget" :ok="!!discordURL"
+      <NuxtLink :to="discordURL" :target="discordTarget" :ok="!!discordURL"
         :tabindex="tabIndex(focused, 2)" style="--hue: 282deg;">
         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
           stroke="currentColor">
