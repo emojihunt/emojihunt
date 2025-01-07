@@ -54,14 +54,6 @@
 }
 
 /* Defaults */
-html,
-body,
-#__nuxt,
-#__nuxt>div {
-  width: 100%;
-  height: 100%;
-}
-
 :root {
   font-family: "Inter Variable", "Noto Color Emoji", sans-serif;
   font-optical-sizing: auto;
