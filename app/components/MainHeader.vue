@@ -91,7 +91,7 @@ header {
   position: fixed;
   z-index: 15;
 
-  padding: 0.75rem 1rem 6px;
+  padding: 0.75rem max(env(safe-area-inset-right), 1rem) 6px;
 
   display: flex;
 }

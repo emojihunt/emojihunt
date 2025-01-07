@@ -2,6 +2,10 @@
 useHead({
   htmlAttrs: { lang: "en" },
   title: "Puzzle Tracker",
+  meta: [
+    { name: "viewport", content: "width=device-width, initial-scale=1, viewport-fit=cover" },
+    { name: "theme-color", content: "oklch(30% 0 0deg)" },
+  ]
 });
 const store = usePuzzles();
 await store.refresh();
@@ -81,7 +85,7 @@ const header = useTemplateRef("header");
 main {
   --nav-margin: v-bind(navMargin);
 
-  padding: var(--header-stop) 0.5vw 0.5rem var(--nav-margin);
+  padding: var(--header-stop) 0.5vw 0.5rem calc(env(safe-area-inset-left) + var(--nav-margin));
   min-width: 1024px;
   display: grid;
   grid-template-columns: 8rem 6fr 5fr 4fr 8fr;
@@ -90,10 +94,10 @@ main {
 
 .rule {
   width: 0;
-  height: calc(100vh - var(--header-height-outer));
+  height: calc(100dvh - var(--header-height-outer));
   position: sticky;
   top: var(--header-height-outer);
-  margin: 0 0 -100vh -0.33rem;
+  margin: 0 0 -100dvh -0.33rem;
 
   z-index: 12;
 }
@@ -110,5 +114,16 @@ main {
 /* Animation */
 main {
   timeline-scope: v-bind(timelines);
+}
+
+/* Media Queries */
+@media (max-width: 768px) {
+  main {
+    padding-left: 2vw;
+  }
+
+  nav {
+    display: none;
+  }
 }
 </style>

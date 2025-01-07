@@ -66,6 +66,9 @@ body,
   font-family: "Inter Variable", "Noto Color Emoji", sans-serif;
   font-optical-sizing: auto;
 
+  /* header gradient on black produces a bad effect */
+  overscroll-behavior-x: none;
+
   --default-border-radius: 2px;
   --header-height: 6rem;
   --header-height-outer: calc(var(--header-height) + 1px);

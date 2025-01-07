@@ -67,10 +67,10 @@ const keydown = (e: KeyboardEvent): void => {
 /* Layout */
 nav {
   width: 3.75rem;
-  height: calc(100vh - var(--header-height));
+  height: calc(100dvh - var(--header-height));
   position: sticky;
   top: var(--header-height);
-  margin: 0 0 -100vh calc(-1 * var(--nav-margin));
+  margin: 0 0 -100dvh calc(-1 * var(--nav-margin));
   padding: 0 1rem 0 0.5rem;
 
   display: flex;
@@ -80,13 +80,23 @@ nav {
 
   /* tooltip needs to appear above round pills */
   z-index: 25;
-  overflow: hidden;
+  overflow-y: scroll;
 }
 
 nav>div {
   display: flex;
   flex-direction: column;
   align-items: center;
+}
+
+.stats:first-child {
+  padding-top: 2em;
+  height: 3em;
+}
+
+.stats:last-child {
+  padding-bottom: 2em;
+  height: 3em;
 }
 
 a {
@@ -108,6 +118,10 @@ p.dot {
 nav {
   background-color: white;
   border-right: 1px solid oklch(95% 0.03 275deg);
+}
+
+::-webkit-scrollbar {
+  display: none;
 }
 
 p,
