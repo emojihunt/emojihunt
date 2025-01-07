@@ -1,7 +1,5 @@
 <script setup lang="ts">
-const props = defineProps<{
-  puzzle: Puzzle; focused: FocusInfo;
-}>();
+const props = defineProps<{ puzzle: Puzzle; }>();
 const store = usePuzzles();
 const [discordBase, discordTarget] = useDiscordBase();
 
@@ -16,7 +14,7 @@ const discordURL = computed(() => props.puzzle.discord_channel ?
     <!-- Icons from Heroicons, https://heroicons.com. -->
     <ETooltip text="Puzzle Page" :open-delay="750">
       <NuxtLink :to="puzzle.puzzle_url" target="_blank" :ok="!!puzzle.puzzle_url"
-        :tabindex="tabIndex(focused, 0)" style="--hue: 238deg;">
+        data-tabsequence="0" style="--hue: 238deg;">
         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
           stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round"
@@ -31,7 +29,7 @@ const discordURL = computed(() => props.puzzle.discord_channel ?
     </ETooltip>
     <ETooltip text="Google Spreadsheet" :open-delay="750">
       <NuxtLink :to="spreadsheetURL" target="_blank" :ok="!!spreadsheetURL"
-        :tabindex="tabIndex(focused, 1)" style="--hue: 148deg;">
+        data-tabsequence="1" style="--hue: 148deg;">
         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
           stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round"
@@ -47,7 +45,7 @@ const discordURL = computed(() => props.puzzle.discord_channel ?
     </ETooltip>
     <ETooltip text="Discord Channel" :open-delay="750">
       <NuxtLink :to="discordURL" :target="discordTarget" :ok="!!discordURL"
-        :tabindex="tabIndex(focused, 2)" style="--hue: 282deg;">
+        data-tabsequence="2" style="--hue: 282deg;">
         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
           stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round"

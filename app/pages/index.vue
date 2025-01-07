@@ -29,7 +29,12 @@ onMounted(() => document.location.hash && history.pushState(
   "", document.title, window.location.pathname + window.location.search,
 ));
 
+const header = useTemplateRef<any>("header");
+const filter = computed(() => header.value?.filter);
+
+const table = useTemplateRef("table");
 const welcome = useTemplateRef("welcome");
+
 const editing = ref<
   { kind: "round" | "puzzle" | "admin"; id?: void; } |
   { kind: "round" | "puzzle", id: number; }
@@ -42,8 +47,12 @@ const click = (kind: "round" | "puzzle" | "admin") => {
   }
 };
 const close = () => {
-  if (editing.value && !editing.value.id) {
+  if (editing.value === undefined) {
+    return;
+  } else if (!editing.value.id) {
     welcome.value?.focus(editing.value.kind);
+  } else if (editing.value.kind === "puzzle") {
+    table.value?.focus(editing.value.id);
   }
   editing.value = undefined;
 };
@@ -55,8 +64,6 @@ onMounted(() => window.addEventListener("keydown",
 
 const showNav = computed(() => store.puzzleCount >= 42);
 const navMargin = computed(() => store.puzzleCount >= 42 ? "4.5rem" : "2vw");
-
-const header = useTemplateRef("header");
 </script>
 
 <template>
@@ -66,7 +73,7 @@ const header = useTemplateRef("header");
     <div class="rule first"></div>
     <div class="rule"></div>
     <div class="rule"></div>
-    <RoundsAndPuzzles :filter="!!header?.filter" :observer="observer"
+    <RoundsAndPuzzles ref="table" :filter="!!filter" :observer="observer"
       @edit="(kind, id) => { editing = { kind, id }; }" />
     <WelcomeAndAdminBar ref="welcome" @click="click" />
     <Modal v-if="!!editing" @close="close">

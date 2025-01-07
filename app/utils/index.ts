@@ -8,7 +8,4 @@ export const highlightContents = (element: HTMLElement): void => {
   selection?.addRange(range);
 };
 
-export const tabIndex = (focused: FocusInfo, target: number): number =>
-  focused.index === target ? 0 : -1;
-
 export const timelineFromSequence = (id: number): string => `--round-${id}`;

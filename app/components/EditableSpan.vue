@@ -1,10 +1,10 @@
 <script setup lang="ts">
 const props = withDefaults(defineProps<{
   value: string;
+  tabsequence: number;
   placeholder?: string;
   readonly?: boolean;
   sticky?: boolean;
-  tabindex?: number;
 }>(), { placeholder: "-" });
 
 const emit = defineEmits<{
@@ -31,7 +31,6 @@ const rerender = () => {
   if (span.value.innerText !== updated) {
     span.value.innerText = updated;
   }
-  span.value.tabIndex = props.tabindex || 0;
 };
 onMounted(() => rerender());
 watch(() => [props.value, props.placeholder], () => {
@@ -39,10 +38,6 @@ watch(() => [props.value, props.placeholder], () => {
     props.value, span.value?.innerText);
   editing.value = false;
   rerender();
-});
-watch(() => props.tabindex, () => {
-  if (!span.value) return;
-  span.value.tabIndex = props.tabindex || 0;
 });
 
 defineExpose({
@@ -111,8 +106,9 @@ const keydown = (e: KeyboardEvent) => {
 </script>
 
 <template>
-  <span v-once ref="span" :readonly="readonly" @click="click" @blur="blur"
-    @keydown="keydown" spellcheck="false" :class="!value && 'placeholder'">{{ value ||
+  <span v-once ref="span" :readonly="readonly" :data-tabsequence="tabsequence"
+    @click="click" @blur="blur" @keydown="keydown" spellcheck="false"
+    :class="!value && 'placeholder'">{{ value ||
       placeholder }}</span>
 </template>
 

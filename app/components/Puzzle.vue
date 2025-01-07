@@ -5,25 +5,27 @@ const props = defineProps<{
 const emit = defineEmits<{ (e: "edit"): void; }>();
 
 const row = useTemplateRef("row");
-const focus = () => nextTick(() =>
-  row.value?.querySelector<HTMLElement>("[tabindex='0']")?.focus());
 defineExpose({
-  id: props.puzzle.id, focus
+  id: props.puzzle.id,
+  focus() {
+    nextTick(() =>
+      row.value?.querySelector<HTMLElement>("[tabindex='0']")?.focus());
+  }
 });
 </script>
 
 <template>
   <span ref="row" class="puzzle" :data-puzzle="puzzle.id">
-    <PuzzleButtons :puzzle="puzzle" :focused="focused" />
+    <PuzzleButtons :puzzle="puzzle" />
     <span class="data">
-      <PuzzleName :puzzle="puzzle" :round="round" :focused="focused"
+      <PuzzleName :puzzle="puzzle" :round="round"
         @focusin="() => (focused.index !== 4) && (focused.index = 3)"
         @edit="() => emit('edit')" />
-      <PuzzleStatus :puzzle="puzzle" :round="round" :focused="focused"
+      <PuzzleStatus :puzzle="puzzle" :round="round"
         @focusin="() => (focused.index !== 6) && (focused.index = 5)" />
-      <PuzzleNoteLocation :puzzle="puzzle" field="location"
-        :tabindex="tabIndex(focused, 7)" @focusin="() => (focused.index = 7)" />
-      <PuzzleNoteLocation :puzzle="puzzle" field="note" :tabindex="tabIndex(focused, 8)"
+      <PuzzleNoteLocation :puzzle="puzzle" field="location" :tabsequence="7"
+        @focusin="() => (focused.index = 7)" />
+      <PuzzleNoteLocation :puzzle="puzzle" field="note" :tabsequence="8"
         @focusin="() => (focused.index = 8)" />
     </span>
   </span>

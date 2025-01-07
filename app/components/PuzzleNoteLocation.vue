@@ -2,7 +2,7 @@
 const props = defineProps<{
   puzzle: Puzzle;
   field: "location" | "note";
-  tabindex: number;
+  tabsequence: number;
 }>();
 const store = usePuzzles();
 const saving = ref(false);
@@ -50,7 +50,7 @@ const save = (updated: string) => {
     <ETooltip v-if="tooltip" :text="tooltip.text">
       <span class="emoji">{{ tooltip.emoji }}</span>
     </ETooltip>
-    <EditableSpan :value="puzzle[field]" :tabindex="tabindex" @save="save"
+    <EditableSpan :value="puzzle[field]" :tabsequence="tabsequence" @save="save"
       :placeholder="tooltip?.placeholder" />
     <Spinner v-if="saving" class="spinner" />
   </div>
