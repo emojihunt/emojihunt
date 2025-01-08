@@ -17,7 +17,8 @@ defineExpose({
 </script>
 
 <template>
-  <span ref="row" class="puzzle" :data-puzzle="puzzle.id">
+  <span ref="row" class="puzzle" :data-puzzle="puzzle.id"
+    :class="(round.complete || puzzle.answer) && 'filterable'">
     <PuzzleButtons :puzzle="puzzle" />
     <span class="data">
       <PuzzleName :puzzle="puzzle" :round="round"
@@ -39,6 +40,10 @@ defineExpose({
   grid-column: 1 / 6;
   display: grid;
   grid-template-columns: subgrid;
+}
+
+:global(.filter .puzzle.filterable) {
+  display: none;
 }
 
 .data {

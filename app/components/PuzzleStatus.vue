@@ -67,7 +67,7 @@ const cancel = () => answering.value && (answering.value = null, open.value = fa
     </div>
     <button v-else ref="button" class="status" :data-tabsequence="56"
       @click="() => (open = !open)">
-      <span class="highlight">
+      <span class="highlight" :class="puzzle.meta && 'meta'">
         {{ StatusEmoji(puzzle.status) }} {{ StatusLabel(puzzle.status) }}
       </span>
       <Spinner v-if="saving" />
@@ -157,7 +157,7 @@ const cancel = () => answering.value && (answering.value = null, open.value = fa
       oklch(91% 0.10 v-bind(hue) / 0%));
 }
 
-:global(.filter .highlight) {
+:global(.filter .highlight:not(.meta)) {
   background-image: linear-gradient(90deg,
       oklch(85% 0 0deg / 10%),
       oklch(91% 0 0deg / 70%) 4%,

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 const props = defineProps<{
   round: AnnotatedRound;
+  first: boolean;
   filter: boolean;
   timeline: string;
   nextTimeline: string | undefined;
@@ -59,7 +60,7 @@ const copy = async (): Promise<void> => {
 </script>
 
 <template>
-  <span class="spacer" :id="round.anchor"></span>
+  <span class="spacer" :id="round.anchor" v-if="!first"></span>
   <header ref="pill" :class="['pill', props.nextTimeline ? 'next' : '']">
     <div class="group">
       <div class="emoji">{{ round.emoji }}&#xfe0f;</div>
@@ -95,10 +96,6 @@ const copy = async (): Promise<void> => {
 .spacer {
   height: 1.75rem;
   scroll-margin-top: calc(-1 * (var(--pill-height-outer) + var(--scroll-fudge) + 1.75rem));
-}
-
-.spacer:first-of-type {
-  display: none;
 }
 
 .pill {
