@@ -136,6 +136,7 @@ const cancel = () => answering.value && (answering.value = null, open.value = fa
 .answer button {
   line-height: calc(1.75rem - 1px);
   filter: opacity(90%);
+  border-radius: 0;
 }
 
 .answer button:hover {
