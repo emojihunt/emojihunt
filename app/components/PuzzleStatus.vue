@@ -59,7 +59,7 @@ const cancel = () => answering.value && (answering.value = null, open.value = fa
       <ETooltip :text="answering || puzzle.status" placement="left">
         <button :data-tabsequence="6"
           @click="() => answering ? (answering = null, open = true) : (open = !open)">
-          {{ StatusEmoji(answering || puzzle.status) }}
+          <span>{{ StatusEmoji(answering || puzzle.status) }}</span>
         </button>
       </ETooltip>
       <div v-if="answering" class="hint">🎉 Press Enter to record answer</div>
@@ -95,6 +95,10 @@ const cancel = () => answering.value && (answering.value = null, open.value = fa
   flex-grow: 1;
   text-align: center;
   align-self: flex-start;
+}
+
+.answer button span {
+  display: inline-block;
 }
 
 .status {
@@ -135,9 +139,12 @@ const cancel = () => answering.value && (answering.value = null, open.value = fa
 }
 
 .answer button:hover {
+  filter: none;
+}
+
+.answer button:hover span {
   transform: scale(110%);
   filter: drop-shadow(0 1px 1px oklch(85% 0 0deg));
-  /* also clears prior opacity() filter */
 }
 
 .status {
