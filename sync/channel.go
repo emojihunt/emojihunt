@@ -13,7 +13,7 @@ import (
 )
 
 const (
-	locationDefaultMsg = "Use `/puzzle voice` to assign a voice room"
+	locationDefaultMsg = "Use `/puzzle voice` to assign a voice room."
 )
 
 // CreateDiscordChannel creates a new Discord channel and returns its ID.

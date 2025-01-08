@@ -12,11 +12,14 @@ import (
 	"golang.org/x/xerrors"
 )
 
+const ServerURL = "https://www.emojihunt.org"
+
 type DiscordPinFields struct {
 	RoundName  string
 	RoundEmoji string
 	RoundHue   int64
 
+	PuzzleID       int64
 	PuzzleName     string
 	Status         status.Status
 	Note           string
@@ -32,6 +35,7 @@ func NewDiscordPinFields(puzzle state.Puzzle) DiscordPinFields {
 		RoundName:      puzzle.Round.Name,
 		RoundEmoji:     puzzle.Round.Emoji,
 		RoundHue:       puzzle.Round.Hue,
+		PuzzleID:       puzzle.ID,
 		PuzzleName:     puzzle.Name,
 		Status:         puzzle.Status,
 		Note:           puzzle.Note,
@@ -75,8 +79,8 @@ func (c *Client) UpdateDiscordPin(ctx context.Context, fields DiscordPinFields) 
 				Inline: true,
 			},
 			{
-				Name:   "Puzzle",
-				Value:  fmt.Sprintf("[Link](%s)", fields.PuzzleURL),
+				Name:   "Links",
+				Value:  fmt.Sprintf("[Puzzle](%s)", fields.PuzzleURL),
 				Inline: true,
 			},
 		},
@@ -84,9 +88,11 @@ func (c *Client) UpdateDiscordPin(ctx context.Context, fields DiscordPinFields) 
 
 	if fields.SpreadsheetID != "" {
 		embed.Fields = append(embed.Fields, &discordgo.MessageEmbedField{
-			Name: "Sheet",
-			Value: fmt.Sprintf("[Link](https://docs.google.com/spreadsheets/d/%s)",
-				fields.SpreadsheetID),
+			Name: "—",
+			Value: fmt.Sprintf(
+				"[Sheet](%s/%d)  ·  [Backup](https://docs.google.com/spreadsheets/d/%s)",
+				ServerURL, fields.PuzzleID, fields.SpreadsheetID,
+			),
 			Inline: true,
 		})
 	}
