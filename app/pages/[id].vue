@@ -32,23 +32,27 @@ const data = computed(() => {
       statusCode: 404,
     });
   }
-  useHead({
-    title: puzzle.name,
-    link: [{ rel: "icon", href: `https://emojicdn.elk.sh/${round.emoji}?style=google` }],
-  });
+
+
+  const voiceRoom = puzzle.voice_room && store.voiceRooms.get(puzzle.voice_room);
   const spreadsheetURL = puzzle.spreadsheet_id ?
     `https://docs.google.com/spreadsheets/d/${puzzle.spreadsheet_id}` : "";
   const discordURL =
     `${discordBase}/channels/${store.discordGuild}/${puzzle.discord_channel}`;
-  return { puzzle, round, discordURL, spreadsheetURL };
+  return { puzzle, round, voiceRoom, discordURL, spreadsheetURL };
 });
+
+const setHead = () => useHead({
+  title: data.value.puzzle.name,
+  link: [{ rel: "icon", key: "icon", href: `https://emojicdn.elk.sh/${data.value.round.emoji}?style=google` }],
+});
+onMounted(setHead);
+watch(() => [data.value.puzzle.name, data.value.round], setHead);
+
 </script>
 
 <template>
-  <iframe :src="data?.spreadsheetURL || ''">
-    Spreadsheet failed to load.
-    <NuxtLink :to="data?.spreadsheetURL">Go to Google Sheets</NuxtLink>.
-  </iframe>
+  <iframe :src="data?.spreadsheetURL || ''"></iframe>
   <nav>
     <section>
       <ETooltip text="Click to set status to ✍️ Working" placement="top"
@@ -61,6 +65,10 @@ const data = computed(() => {
       <ETooltip :text="`Status: ${StatusLabel(data.puzzle.status)}`" placement="top"
         :offset-distance="4" v-else>
         {{ StatusEmoji(data.puzzle.status) }}
+      </ETooltip>
+      <ETooltip :text="`Voice Room: ${data.voiceRoom.name}`" placement="top"
+        :offset-distance="4" v-if="data.voiceRoom">
+        {{ data.voiceRoom.emoji }}
       </ETooltip>
     </section>
     <section>

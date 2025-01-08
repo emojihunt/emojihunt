@@ -12,8 +12,8 @@ useHead({
   htmlAttrs: { lang: "en" },
   title: "Puzzle Tracker",
   // @ts-ignore
-  link: [inter, plex, noto].map((href) =>
-    ({ rel: "preload", href, as: "font", type: "font/woff2", crossorigin: true })),
+  link: [inter, plex, noto].map((href, i) =>
+    ({ rel: "preload", href, as: "font", type: "font/woff2", crossorigin: true, key: `preload-${i}` })),
 });
 useSeoMeta({
   description: "Welcome to the 🌊🎨🎡 puzzle tracker! Please log in.",
