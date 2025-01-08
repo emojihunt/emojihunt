@@ -13,6 +13,7 @@
 .spinner {
   width: 1.25em;
   height: 1.25em;
+  flex-shrink: 0;
   position: relative;
   animation: sk-fade 500ms forwards ease-in;
 }
