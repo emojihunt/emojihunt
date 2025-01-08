@@ -1,12 +1,16 @@
 <script setup lang="ts">
-import type { NuxtError } from 'nuxt/app';
-
-const props = defineProps<{ error: NuxtError; }>();
-const stack = import.meta.dev && props.error.stack;
-if (props.error.statusCode === 401) {
-  navigateTo("/login");
+const error = useError();
+const stack = import.meta.dev && error.value?.stack;
+if (error.value?.statusCode === 401) {
+  if ('url' in error.value && error.value.url !== "/") {
+    const params = new URLSearchParams();
+    params.set("return", error.value.url as string);
+    navigateTo(`/login?${params.toString()}`);
+  } else {
+    navigateTo("/login");
+  }
 } else {
-  console.error(props.error);
+  console.error(error.value);
 }
 </script>
 
@@ -17,7 +21,7 @@ if (props.error.statusCode === 401) {
         <span class="emoji">🔥</span>Site Error
       </h1>
       <div class="details">
-        <div class="message">{{ error.message }}</div>
+        <div class="message">{{ error?.message }}</div>
         <pre v-if="stack">{{ stack }}</pre>
         <div class="link">
           <NuxtLink to="/">Return to Home</NuxtLink>

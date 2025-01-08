@@ -29,6 +29,7 @@ const discord = useCookie("discord", {
 
 const url = useRequestURL();
 const code = url.searchParams.get("code");
+const ret = url.searchParams.get("return");
 const state = url.searchParams.get("state");
 
 const config = useAppConfig();
@@ -37,6 +38,7 @@ params.set("client_id", config.clientID);
 params.set("redirect_uri", useRedirectURI());
 params.set("response_type", "code");
 params.set("scope", "identify");
+params.set("state", ret || "");
 
 const authorize = `oauth2/authorize?${params.toString()}`;
 
@@ -69,8 +71,8 @@ if (url.searchParams.has("error")) {
   });
 
   if (data.value) {
-    discord.value = state;
-    await navigateTo("/"); // success!
+    discord.value = state?.endsWith("A") ? "app" : "web";
+    await navigateTo(state?.slice(0, -1) || "/"); // success!
   } else if (error.value?.statusCode === 403) {
     // The /authenticate endpoint returns HTTP 403 if the code fails to verify.
     // All other errors are hard errors.
@@ -96,7 +98,7 @@ if (url.searchParams.has("error")) {
       <h2>Log in</h2>
       <ul>
         <li>
-          <NuxtLink :to="`discord:///${authorize}&state=app`">
+          <NuxtLink :to="`discord:///${authorize}A`">
             📱 <span class="link">via Discord app</span>
           </NuxtLink>
           <NuxtLink to="https://discord.com/download" id="download"
@@ -105,7 +107,7 @@ if (url.searchParams.has("error")) {
           </NuxtLink>
         </li>
         <li>
-          <NuxtLink :to="`https://discord.com/${authorize}&state=web`">
+          <NuxtLink :to="`https://discord.com/${authorize}W`">
             🌐 <span class="link">via discord.com</span>
           </NuxtLink>
         </li>
