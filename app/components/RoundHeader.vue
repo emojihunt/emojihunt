@@ -6,7 +6,10 @@ const props = defineProps<{
   nextTimeline: string | undefined;
   observer: IntersectionObserver | undefined;
 }>();
-const emit = defineEmits<{ (e: "copy"): void; (e: "edit"): void; }>();
+const emit = defineEmits<{ (e: "edit"): void; }>();
+const store = usePuzzles();
+const toast = useToast();
+
 const hue = computed(() => props.round.hue);
 
 let registered = false;
@@ -22,6 +25,36 @@ const ready = () => {
 };
 watch([props], () => nextTick(ready));
 onMounted(() => nextTick(ready));
+
+const copy = async (): Promise<void> => {
+  const puzzles = store.puzzlesByRound.get(props.round.id);
+  if (!puzzles) {
+    toast.add({
+      title: "No puzzles to copy",
+      color: "red",
+      icon: "i-heroicons-exclamation-triangle",
+    });
+    return;
+  };
+
+  const data = puzzles.map((p) =>
+    [p.name, p.answer ? `<b>${p.answer}</b>` : `${StatusEmoji(p.status)} ${StatusLabel(p.status)}`]);
+  const text = data.map(([a, b]) => `${a}, ${b}`).join("\n");
+  const html = "<table style='font-family: \"Consolas\";'>\n" + data.map(([a, b]) =>
+    `<tr><td>${a}</td><td>${b}</td></tr>`
+  ).join("\n") + "</table>";
+  await navigator.clipboard.write([
+    new ClipboardItem({
+      "text/plain": new Blob([text], { type: "text/plain" }),
+      "text/html": new Blob([html], { type: "text/html" }),
+    }),
+  ]);
+  toast.add({
+    title: "Copied",
+    color: "green",
+    icon: "i-heroicons-clipboard-document-check",
+  });
+};
 </script>
 
 <template>
@@ -31,7 +64,7 @@ onMounted(() => nextTick(ready));
     <div class="round">{{ round.name }}</div>
     <div class="flex-spacer"></div>
     <div class="buttons">
-      <button @click="() => emit('copy')">
+      <button @click="copy">
         <UIcon name="i-heroicons-clipboard-document-list" size="1rem" />
       </button>
       <button @click="() => emit('edit')">

@@ -7,7 +7,6 @@ const emit = defineEmits<{
   (e: "edit", kind: "puzzle" | "round", id: number): void;
 }>();
 const store = usePuzzles();
-const toast = useToast();
 
 const focused = reactive({ index: 3 });
 const puzzles = useTemplateRef("puzzles");
@@ -75,36 +74,6 @@ onMounted(() => {
   setTabIndex(56, false);
 });
 
-const copy = async (id: number): Promise<void> => {
-  const puzzles = store.puzzlesByRound.get(id);
-  if (!puzzles) {
-    toast.add({
-      title: "No puzzles to copy",
-      color: "red",
-      icon: "i-heroicons-exclamation-triangle",
-    });
-    return;
-  };
-
-  const data = puzzles.map((p) =>
-    [p.name, p.answer || `${StatusEmoji(p.status)} ${StatusLabel(p.status)}`]);
-  const text = data.map(([a, b]) => `${a}, ${b}`).join("\n");
-  const html = "<table>\n" + data.map(([a, b]) =>
-    `<tr><td>${a}</td><td>${b}</td></tr>`
-  ).join("\n") + "</table>";
-  await navigator.clipboard.write([
-    new ClipboardItem({
-      "text/plain": new Blob([text], { type: "text/plain" }),
-      "text/html": new Blob([html], { type: "text/html" }),
-    }),
-  ]);
-  toast.add({
-    title: "Copied",
-    color: "green",
-    icon: "i-heroicons-clipboard-document-check",
-  });
-};
-
 const roundToSequence = computed(() =>
   new Map(
     (props.filter ? store.rounds.filter((r) => !r.complete) : store.rounds).map((r, i) => [r.id, i]))
@@ -124,8 +93,7 @@ defineExpose({
         <RoundHeader :round="round" :filter="filter"
           :timeline="timelineFromSequence(roundToSequence.get(round.id)!)"
           :next-timeline="roundToSequence.get(round.id)! < store.rounds.length - 1 ? timelineFromSequence(roundToSequence.get(round.id)! + 1) : undefined"
-          :observer="observer" @copy="() => copy(round.id)"
-          @edit="() => emit('edit', 'round', round.id)" />
+          :observer="observer" @edit="() => emit('edit', 'round', round.id)" />
         <template v-for="puzzle in store.puzzlesByRound.get(round.id)">
           <Puzzle v-if="!filter || !puzzle.answer" ref="puzzles" :puzzle="puzzle"
             :round="round" :focused="focused"
