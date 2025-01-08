@@ -3,7 +3,6 @@ const props = defineProps<{
   puzzle: Puzzle;
   round: AnnotatedRound;
   focused: FocusInfo;
-  filter: boolean;
 }>();
 const emit = defineEmits<{ (e: "edit"): void; }>();
 
@@ -24,7 +23,7 @@ defineExpose({
       <PuzzleName :puzzle="puzzle" :round="round"
         @focusin="() => (focused.index !== 4) && (focused.index = 3)"
         @edit="() => emit('edit')" />
-      <PuzzleStatus :puzzle="puzzle" :round="round" :filter="filter"
+      <PuzzleStatus :puzzle="puzzle" :round="round"
         @focusin="() => (focused.index !== 6) && (focused.index = 5)" />
       <PuzzleNoteLocation :puzzle="puzzle" field="location" :tabsequence="7"
         @focusin="() => (focused.index = 7)" />

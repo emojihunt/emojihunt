@@ -88,13 +88,13 @@ defineExpose({
 
 <template>
   <section @keydown="keydown">
-    <template v-for="round of store.rounds">
+    <template v-for="round of store.rounds" :key="round.id">
       <template v-if="!filter || !round.complete">
         <RoundHeader :round="round" :filter="filter"
           :timeline="timelineFromSequence(roundToSequence.get(round.id)!)"
           :next-timeline="roundToSequence.get(round.id)! < store.rounds.length - 1 ? timelineFromSequence(roundToSequence.get(round.id)! + 1) : undefined"
           :observer="observer" @edit="() => emit('edit', 'round', round.id)" />
-        <template v-for="puzzle in store.puzzlesByRound.get(round.id)">
+        <template v-for="puzzle in store.puzzlesByRound.get(round.id)" :key="puzzle.id">
           <Puzzle v-if="!filter || !puzzle.answer" ref="puzzles" :puzzle="puzzle"
             :round="round" :focused="focused" :filter="filter"
             @edit="() => emit('edit', 'puzzle', puzzle.id)" />

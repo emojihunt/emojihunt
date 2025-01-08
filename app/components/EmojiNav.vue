@@ -49,7 +49,8 @@ const keydown = (e: KeyboardEvent): void => {
       {{ String(store.puzzleCount - store.solvedPuzzleCount).padStart(3, '0') }}
     </ETooltip>
     <p class="dot"></p>
-    <ETooltip v-for="round of store.rounds" :text="round.name" :offset-distance="-3">
+    <ETooltip v-for="round of store.rounds" :key="round.id" :text="round.name"
+      :offset-distance="-3">
       <a :href="`#${round.anchor}`" @click="(e) => (e.preventDefault(), goto(round))"
         :tabindex="round.id === store.rounds[focused.index].id ? 0 : -1"
         :aria-label="`To ${round.name}`" :style="`--hue: ${round.hue}deg;`">
