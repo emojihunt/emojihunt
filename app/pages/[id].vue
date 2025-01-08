@@ -50,10 +50,31 @@ onMounted(setHead);
 watch(() => [data.value.puzzle.name, data.value.round], setHead);
 
 onBeforeMount(() => document.body.classList.add("fullscreen"));
+
+const puzzleURL = ref("");
+const puzzleDisplay = ref("none");
+const togglePuzzle = (e: MouseEvent) => {
+  if (!data.value?.puzzle.puzzle_url) return;
+  if (e.metaKey || e.ctrlKey) return; // open in new tab
+
+  e.preventDefault();
+  if (!puzzleURL.value) {
+    // Lazy-load the puzzle frame
+    puzzleURL.value = data.value.puzzle.puzzle_url;
+  }
+  if (puzzleDisplay.value === "unset") {
+    puzzleDisplay.value = "none";
+  } else {
+    puzzleDisplay.value = "unset";
+  }
+};
 </script>
 
 <template>
-  <iframe :src="data?.spreadsheetURL || ''"></iframe>
+  <main>
+    <iframe :src="data?.spreadsheetURL || ''"></iframe>
+    <iframe :src="puzzleURL" class="puzzle"></iframe>
+  </main>
   <nav>
     <section>
       <ETooltip text="Click to set status to ✍️ Working" placement="top"
@@ -75,8 +96,8 @@ onBeforeMount(() => document.body.classList.add("fullscreen"));
     </section>
     <section>
       <ETooltip text="Puzzle Page" placement="top" :offset-distance="4">
-        <NuxtLink :to="data.puzzle.puzzle_url" target="TODO"
-          :ok="!!data.puzzle.puzzle_url">
+        <NuxtLink :to="data.puzzle.puzzle_url" :ok="!!data.puzzle.puzzle_url"
+          target="_blank" @click="togglePuzzle">
           🌎
         </NuxtLink>
       </ETooltip>
@@ -101,9 +122,20 @@ onBeforeMount(() => document.body.classList.add("fullscreen"));
 </template>
 
 <style scoped>
+main {
+  width: 100%;
+  height: 100%;
+
+  display: flex;
+}
+
 iframe {
   width: 100%;
   height: 100%;
+}
+
+.puzzle {
+  display: v-bind(puzzleDisplay);
 }
 
 nav {
@@ -111,7 +143,7 @@ nav {
   bottom: 0;
   right: 0;
 
-  height: 37px;
+  height: 37.5px;
   max-width: 75%;
   padding: 1px 0.5em 0;
 
@@ -130,8 +162,11 @@ section {
 /* Theming */
 nav {
   font-size: 15px;
+  background-color: rgb(249 251 253 / 66%);
+
   border-left: 1px solid #e1e3e1;
-  background-color: rgb(249 251 253 / 50%);
+  border-top: 1px solid #e1e3e1;
+  border-top-left-radius: 6px;
 
   user-select: none;
 }
