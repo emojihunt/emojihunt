@@ -160,6 +160,10 @@ section {
 }
 
 /* Theming */
+main {
+  user-select: none;
+}
+
 nav {
   font-size: 15px;
   background-color: rgb(249 251 253 / 66%);
