@@ -96,7 +96,7 @@ defineExpose({
           :observer="observer" @edit="() => emit('edit', 'round', round.id)" />
         <template v-for="puzzle in store.puzzlesByRound.get(round.id)">
           <Puzzle v-if="!filter || !puzzle.answer" ref="puzzles" :puzzle="puzzle"
-            :round="round" :focused="focused"
+            :round="round" :focused="focused" :filter="filter"
             @edit="() => emit('edit', 'puzzle', puzzle.id)" />
         </template>
         <div class="empty" v-if="!round.total">

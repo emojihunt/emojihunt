@@ -11,6 +11,7 @@ const store = usePuzzles();
 const toast = useToast();
 
 const hue = computed(() => props.round.hue);
+const grayscale = computed(() => props.filter ? "grayscale(100%)" : "");
 
 let registered = false;
 const pill = useTemplateRef("pill");
@@ -60,19 +61,24 @@ const copy = async (): Promise<void> => {
 <template>
   <span class="spacer" :id="round.anchor"></span>
   <header ref="pill" :class="['pill', props.nextTimeline ? 'next' : '']">
-    <div class="emoji">{{ round.emoji }}&#xfe0f;</div>
-    <div class="round">{{ round.name }}</div>
-    <div class="flex-spacer"></div>
-    <div class="buttons">
-      <button @click="copy">
-        <UIcon name="i-heroicons-clipboard-document-list" size="1rem" />
-      </button>
-      <button @click="() => emit('edit')">
-        <UIcon name="i-heroicons-pencil" size="1rem" />
-      </button>
+    <div class="group">
+      <div class="emoji">{{ round.emoji }}&#xfe0f;</div>
+      <div class="round">{{ round.name }}</div>
+      <div class="flex-spacer"></div>
+      <div class="buttons">
+        <button @click="copy" v-if="!filter">
+          <UIcon name="i-heroicons-clipboard-document-list" size="1rem" />
+        </button>
+        <button @click="() => emit('edit')">
+          <UIcon name="i-heroicons-pencil" size="1rem" />
+        </button>
+      </div>
+      <div class="progress">
+        <template v-if="!filter">{{ round.solved }}/{{ round.total }}</template>
+      </div>
     </div>
-    <div class="progress" v-if="!filter">
-      {{ round.solved }}/{{ round.total }}
+    <div class="asterisk" v-if="filter">
+      *
     </div>
   </header>
   <header ref="titles"
@@ -99,16 +105,19 @@ const copy = async (): Promise<void> => {
   grid-column: 1 / 3;
   width: 92.5%;
   margin: 0 0 0.8rem;
-  display: flex;
-  gap: 0.6rem;
-
-  height: var(--pill-height);
-  line-height: 2.35rem;
 
   position: sticky;
   top: var(--header-stop);
 
   z-index: 20;
+}
+
+.group {
+  display: flex;
+  gap: 0.6rem;
+
+  height: var(--pill-height);
+  line-height: 2.35rem;
 }
 
 .buttons {
@@ -118,13 +127,26 @@ const copy = async (): Promise<void> => {
   opacity: 0%;
 
   display: flex;
-  gap: 0.25rem
+  gap: 0.25rem;
 }
 
 .pill:hover .buttons,
 .buttons:focus-within {
   width: auto;
   opacity: 100%;
+}
+
+.progress {
+  width: 1.375rem;
+  margin-left: -0.35rem;
+  text-align: right;
+}
+
+.asterisk {
+  height: 0;
+  position: relative;
+  top: calc(-2rem + 2px);
+  left: calc(-1.2rem - 4px);
 }
 
 .titles {
@@ -152,7 +174,7 @@ const copy = async (): Promise<void> => {
 }
 
 /* Theming */
-.pill {
+.group {
   font-size: 1rem;
   padding: 0 1.2rem;
 
@@ -164,7 +186,7 @@ const copy = async (): Promise<void> => {
 
   border: var(--pill-border) solid transparent;
   border-radius: 7px;
-  filter: drop-shadow(0 -1px 1px oklch(70% 0.07 v-bind(hue) / 20%));
+  filter: drop-shadow(0 -1px 1px oklch(70% 0.07 v-bind(hue) / 20%)) v-bind(grayscale);
 
   cursor: default;
 }
@@ -197,6 +219,14 @@ button:hover {
   color: oklch(50% 0.21 calc(v-bind(hue) + 20));
   opacity: 90%;
   user-select: none;
+}
+
+.asterisk {
+  text-align: right;
+  font-feature-settings: "case";
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: oklch(72% 0.19 245deg / 85%);
 }
 
 .titles {

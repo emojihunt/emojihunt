@@ -1,5 +1,9 @@
 <script setup lang="ts">
-const props = defineProps<{ puzzle: Puzzle; round: Round; }>();
+const props = defineProps<{
+  puzzle: Puzzle;
+  round: Round;
+  filter: boolean;
+}>();
 const store = usePuzzles();
 
 const input = useTemplateRef("input");
@@ -64,7 +68,7 @@ const cancel = () => answering.value && (answering.value = null, open.value = fa
     </div>
     <button v-else ref="button" class="status" :data-tabsequence="56"
       @click="() => (open = !open)">
-      <span class="highlight">
+      <span class="highlight" :class="filter && !puzzle.meta && 'filter'">
         {{ StatusEmoji(puzzle.status) }} {{ StatusLabel(puzzle.status) }}
       </span>
       <Spinner v-if="saving" />
@@ -152,6 +156,14 @@ const cancel = () => answering.value && (answering.value = null, open.value = fa
       oklch(91% 0.10 v-bind(hue) / 70%) 4%,
       oklch(91% 0.15 v-bind(hue) / 30%) 92%,
       oklch(91% 0.10 v-bind(hue) / 0%));
+}
+
+.highlight.filter {
+  background-image: linear-gradient(90deg,
+      oklch(85% 0 0deg / 10%),
+      oklch(91% 0 0deg / 70%) 4%,
+      oklch(91% 0 0deg / 30%) 92%,
+      oklch(91% 0 0deg / 0%));
 }
 
 .hint {
