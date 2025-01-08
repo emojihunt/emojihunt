@@ -54,7 +54,7 @@ const save = (updated: string) => {
 
 .spinner {
   right: 0.33rem;
-  top: calc((1.8rem - 1em) / 2);
+  top: 6px;
 }
 
 /* Theming */

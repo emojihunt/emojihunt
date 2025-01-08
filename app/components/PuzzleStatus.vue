@@ -102,14 +102,14 @@ const cancel = () => answering.value && (answering.value = null, open.value = fa
 }
 
 .status {
-  line-height: 1.8rem;
+  line-height: 1.75rem;
   padding: 0 0.33rem;
   text-align: left;
 }
 
 .spinner {
   position: absolute;
-  top: calc(1em - 0.5rem);
+  top: 5px;
   right: 0.4rem;
 }
 
@@ -134,7 +134,7 @@ const cancel = () => answering.value && (answering.value = null, open.value = fa
 }
 
 .answer button {
-  line-height: 1.75rem;
+  line-height: calc(1.75rem - 1px);
   filter: opacity(90%);
 }
 

@@ -116,8 +116,8 @@ const keydown = (e: KeyboardEvent) => {
 /* Layout */
 span {
   flex-grow: 1;
-  line-height: 1.25rem;
-  padding: 0.25rem 0.33rem;
+  line-height: 22px;
+  padding: 3px 0.33rem;
   overflow: hidden;
 }
 
