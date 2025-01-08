@@ -57,10 +57,11 @@ onBeforeMount(() => document.body.classList.add("fullscreen"));
   <nav>
     <section>
       <ETooltip text="Click to set status to ✍️ Working" placement="top"
-        :offset-distance="4" v-if="data.puzzle.status === Status.NotStarted">
+        :offset-distance="4"
+        v-if="data.puzzle.status === Status.NotStarted || data.puzzle.status === Status.Abandoned">
         <button
           @click="() => store.updatePuzzleOptimistic(data.puzzle.id, { status: Status.Working })">
-          ‼️
+          {{ StatusEmoji(data.puzzle.status) || "‼️" }}
         </button>
       </ETooltip>
       <ETooltip :text="`Status: ${StatusLabel(data.puzzle.status)}`" placement="top"
