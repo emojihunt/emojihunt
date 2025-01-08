@@ -49,6 +49,7 @@ const setHead = () => useHead({
 onMounted(setHead);
 watch(() => [data.value.puzzle.name, data.value.round], setHead);
 
+onBeforeMount(() => document.body.classList.add("fullscreen"));
 </script>
 
 <template>
@@ -97,16 +98,6 @@ watch(() => [data.value.puzzle.name, data.value.round], setHead);
     </section>
   </nav>
 </template>
-
-<style>
-html,
-body,
-#__nuxt,
-#__nuxt>div {
-  width: 100%;
-  height: 100%;
-}
-</style>
 
 <style scoped>
 iframe {
