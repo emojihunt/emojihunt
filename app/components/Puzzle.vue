@@ -2,7 +2,6 @@
 const props = defineProps<{
   puzzle: Puzzle;
   round: AnnotatedRound;
-  focused: FocusInfo;
 }>();
 const emit = defineEmits<{ (e: "edit"): void; }>();
 

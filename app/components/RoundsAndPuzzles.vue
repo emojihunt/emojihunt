@@ -8,15 +8,16 @@ const emit = defineEmits<{
 }>();
 const store = usePuzzles();
 
-const focused = reactive({ index: 3 });
+const focused = ref(3);
 const puzzles = useTemplateRef("puzzles");
-const updateTabIndex = () => {
+const updateTabIndex = (i: number) => {
+  focused.value = i;
   document.querySelectorAll("[data-tabsequence]").forEach(
     (el) => el.setAttribute("tabIndex", "-1")
   );
-  document.querySelectorAll(`[data-tabsequence="${focused.index}"]`).forEach(
+  document.querySelectorAll(`[data-tabsequence="${i}"]`).forEach(
     (el) => el.setAttribute("tabIndex", "0"));
-  if (focused.index === 5 || focused.index === 6) {
+  if (i === 5 || i === 6) {
     document.querySelectorAll(`[data-tabsequence="56"]`).forEach(
       (el) => el.setAttribute("tabIndex", "0"));
   }
@@ -27,14 +28,12 @@ const keydown = (e: KeyboardEvent) => {
   else if (e.key === "ArrowUp") delta = -1;
   else if (e.key === "ArrowDown") delta = 1;
   else if (e.key === "ArrowRight") {
-    if (focused.index < 8) {
-      focused.index += 1;
-      updateTabIndex();
+    if (focused.value < 8) {
+      updateTabIndex(focused.value + 1);
     }
   } else if (e.key === "ArrowLeft") {
-    if (focused.index > 0) {
-      focused.index -= 1;
-      updateTabIndex();
+    if (focused.value > 0) {
+      updateTabIndex(focused.value - 1);
     }
   } else return;
 
@@ -69,14 +68,13 @@ const focusin = (e: FocusEvent) => {
   if (!index) return;
   let target;
   if (index === "56") {
-    if (focused.index === 5 || focused.index === 6) return;
+    if (focused.value === 5 || focused.value === 6) return;
     target = 5;
   } else {
-    if (parseInt(index) === focused.index) return;
+    if (parseInt(index) === focused.value) return;
     target = parseInt(index);
   }
-  focused.index = target;
-  updateTabIndex();
+  updateTabIndex(target);
   e.preventDefault();
   e.stopPropagation();
 };
@@ -91,6 +89,10 @@ defineExpose({
   focus(id: number) {
     puzzles.value?.find((p: any) => p.id === id)?.focus();
   },
+  navigate() {
+    // When using the emoji nav, reset tabindex to puzzle name.
+    updateTabIndex(3);
+  }
 });
 </script>
 
@@ -104,7 +106,7 @@ defineExpose({
         :observer="observer" @edit="() => emit('edit', 'round', round.id)"
         :key="round.id" />
       <Puzzle v-for="puzzle in store.puzzlesByRound.get(round.id)" :key="puzzle.id"
-        ref="puzzles" :puzzle="puzzle" :round="round" :focused="focused"
+        ref="puzzles" :puzzle="puzzle" :round="round"
         @edit="() => emit('edit', 'puzzle', puzzle.id)" />
       <div class="empty" v-if="(!filter || !round.complete) && !round.total">
         🫙&hairsp; No Puzzles

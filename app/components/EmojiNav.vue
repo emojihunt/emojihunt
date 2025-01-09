@@ -2,12 +2,16 @@
 const props = defineProps<{
   observer: IntersectionObserver | undefined;
 }>();
+const emit = defineEmits<{
+  (e: "navigate"): void;
+}>();
 const store = usePuzzles();
 const url = useRequestURL();
 
 // Navigate to anchors without changing the fragment
 const goto = (round: AnnotatedRound) => {
   const id = (new URL(`#${round.anchor}`, url)).hash; // escaping
+  emit("navigate");
   document.querySelector<HTMLElement>(`${id} ~ .puzzle [tabIndex='0']`)?.focus();
 
   // Workaround: sometimes scrolling to the first anchor doesn't work.

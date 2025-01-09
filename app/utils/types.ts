@@ -166,5 +166,3 @@ export type SyncMessage = {
   round?: Round;
   reminder_fix?: string;
 };
-
-export type FocusInfo = { index: number; };
