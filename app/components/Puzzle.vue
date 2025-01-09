@@ -21,15 +21,10 @@ defineExpose({
     :class="(round.complete || puzzle.answer) && 'filterable'">
     <PuzzleButtons :puzzle="puzzle" />
     <span class="data">
-      <PuzzleName :puzzle="puzzle" :round="round"
-        @focusin="() => (focused.index !== 4) && (focused.index = 3)"
-        @edit="() => emit('edit')" />
-      <PuzzleStatus :puzzle="puzzle" :round="round"
-        @focusin="() => (focused.index !== 6) && (focused.index = 5)" />
-      <PuzzleNoteLocation :puzzle="puzzle" field="location" :tabsequence="7"
-        @focusin="() => (focused.index = 7)" />
-      <PuzzleNoteLocation :puzzle="puzzle" field="note" :tabsequence="8"
-        @focusin="() => (focused.index = 8)" />
+      <PuzzleName :puzzle="puzzle" :round="round" @edit="() => emit('edit')" />
+      <PuzzleStatus :puzzle="puzzle" :round="round" />
+      <PuzzleNoteLocation :puzzle="puzzle" field="location" :tabsequence="7" />
+      <PuzzleNoteLocation :puzzle="puzzle" field="note" :tabsequence="8" />
     </span>
   </span>
 </template>

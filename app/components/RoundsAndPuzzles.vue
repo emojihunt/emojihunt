@@ -10,24 +10,31 @@ const store = usePuzzles();
 
 const focused = reactive({ index: 3 });
 const puzzles = useTemplateRef("puzzles");
-const setTabIndex = (i: number, focused: boolean) =>
-  document.querySelectorAll(`[data-tabsequence="${i}"]`).forEach(
-    (el) => el.setAttribute("tabIndex", focused ? "0" : "-1"));
+const updateTabIndex = () => {
+  document.querySelectorAll("[data-tabsequence]").forEach(
+    (el) => el.setAttribute("tabIndex", "-1")
+  );
+  document.querySelectorAll(`[data-tabsequence="${focused.index}"]`).forEach(
+    (el) => el.setAttribute("tabIndex", "0"));
+  if (focused.index === 5 || focused.index === 6) {
+    document.querySelectorAll(`[data-tabsequence="56"]`).forEach(
+      (el) => el.setAttribute("tabIndex", "0"));
+  }
+};
 const keydown = (e: KeyboardEvent) => {
   let delta = 0;
-  let previous;
   if (!puzzles.value || !e.target) return;
   else if (e.key === "ArrowUp") delta = -1;
   else if (e.key === "ArrowDown") delta = 1;
   else if (e.key === "ArrowRight") {
     if (focused.index < 8) {
-      previous = focused.index;
       focused.index += 1;
+      updateTabIndex();
     }
   } else if (e.key === "ArrowLeft") {
     if (focused.index > 0) {
-      previous = focused.index;
       focused.index -= 1;
+      updateTabIndex();
     }
   } else return;
 
@@ -51,28 +58,29 @@ const keydown = (e: KeyboardEvent) => {
     return;
   }
 
-  if (previous !== undefined) {
-    console.warn(previous, focused);
-    setTabIndex(previous, false);
-    setTabIndex(focused.index, true);
-    // Handle combined status/answer element
-    if (focused.index === 5 || focused.index === 6) {
-      setTabIndex(56, true);
-    } else if (previous === 5 || previous === 6) {
-      setTabIndex(56, false);
-    }
-  }
-
   puzzles.value[i]?.focus();
   e.preventDefault();
   e.stopPropagation();
 };
-onMounted(() => {
-  for (var i = 0; i < 9; i++) {
-    setTabIndex(i, i == focused.index);
+const focusin = (e: FocusEvent) => {
+  if (!(e.target instanceof HTMLElement)) return;
+  const cell = e.target.closest<HTMLElement>("[data-tabsequence]");
+  const index = cell?.dataset.tabsequence;
+  if (!index) return;
+  let target;
+  if (index === "56") {
+    if (focused.index === 5 || focused.index === 6) return;
+    target = 5;
+  } else {
+    if (parseInt(index) === focused.index) return;
+    target = parseInt(index);
   }
-  setTabIndex(56, false);
-});
+  focused.index = target;
+  updateTabIndex();
+  e.preventDefault();
+  e.stopPropagation();
+};
+onMounted(() => updateTabIndex);
 
 const roundToSequence = computed(() =>
   new Map(
@@ -87,7 +95,7 @@ defineExpose({
 </script>
 
 <template>
-  <section @keydown="keydown">
+  <section @keydown="keydown" @focusin="focusin">
     <template v-for="round of store.rounds">
       <RoundHeader v-if="!filter || !round.complete" :round="round"
         :first="roundToSequence.get(round.id) === 0" :filter="filter"
