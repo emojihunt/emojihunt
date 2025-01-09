@@ -69,7 +69,7 @@
   --pill-height: 2.5rem;
   --pill-border: 2.5px;
   --pill-height-outer: calc(var(--pill-height) + (2 * var(--pill-border)));
-  --scroll-fudge: 8px;
+  --scroll-fudge: 8.5px;
 
   scroll-padding-top: calc(var(--header-stop) + var(--pill-height-outer) + var(--scroll-fudge));
 }
