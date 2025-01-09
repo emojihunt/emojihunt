@@ -1,5 +1,6 @@
 <script setup lang="ts">
 const props = defineProps<{
+  filter: boolean;
   observer: IntersectionObserver | undefined;
 }>();
 const emit = defineEmits<{
@@ -14,9 +15,14 @@ const goto = (round: AnnotatedRound) => {
   emit("navigate");
   document.querySelector<HTMLElement>(`${id} ~ .puzzle [tabIndex='0']`)?.focus();
 
-  // Workaround: sometimes scrolling to the first anchor doesn't work.
-  if (round.id === store.rounds[0].id) window.scrollTo({ top: 0 });
-  else document.querySelector(id)?.scrollIntoView();
+  // Workaround: the first round doesn't have an anchor.
+  const rounds = props.filter ? store.rounds.filter((r) => !r.complete) : store.rounds;
+  if (round.id === rounds[0].id) {
+    window.scrollTo({ top: 0 });
+  }
+  else {
+    document.querySelector(id)?.scrollIntoView();
+  }
 
   // IntersectionObserver doesn't fire with scrollIntoView, so fix up the
   // `stuck` classes manually.

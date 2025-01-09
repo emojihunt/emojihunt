@@ -69,7 +69,8 @@ const navMargin = computed(() => store.puzzleCount >= 42 ? "4.5rem" : "2vw");
 <template>
   <MainHeader ref="header" :connected="!!connected" />
   <main :class="filter && 'filter'">
-    <EmojiNav v-if="showNav" :observer="observer" @navigate="() => table?.navigate()" />
+    <EmojiNav v-if="showNav" :filter="!!filter" :observer="observer"
+      @navigate="() => table?.navigate()" />
     <div class="rule first"></div>
     <div class="rule"></div>
     <div class="rule"></div>
