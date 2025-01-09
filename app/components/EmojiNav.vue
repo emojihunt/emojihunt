@@ -45,6 +45,7 @@ const keydown = (e: KeyboardEvent): void => {
 
 <template>
   <nav ref="nav" @keydown="keydown">
+    <div class="spacer"></div>
     <ETooltip text="Puzzles Open" :offset-distance="-3" class="stats">
       {{ String(store.puzzleCount - store.solvedPuzzleCount).padStart(3, '0') }}
     </ETooltip>
@@ -61,6 +62,7 @@ const keydown = (e: KeyboardEvent): void => {
     <ETooltip text="Puzzles Solved" :offset-distance="-3" class="stats">
       {{ String(store.solvedPuzzleCount).padStart(3, '0') }}
     </ETooltip>
+    <div class="spacer"></div>
   </nav>
 </template>
 
@@ -90,14 +92,9 @@ nav>div {
   align-items: center;
 }
 
-.stats:first-child {
-  padding-top: 2em;
-  height: 3em;
-}
-
-.stats:last-child {
-  padding-bottom: 2em;
-  height: 3em;
+.spacer {
+  height: 1rem;
+  flex-shrink: 0;
 }
 
 a {
