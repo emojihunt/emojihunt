@@ -7,7 +7,7 @@ export default function (): Ref<boolean> {
   let poisoned = false;
   onMounted(() => {
     // SharedWorker is only available on the client.
-    const worker = new AblyWorker();
+    const worker = new AblyWorker({ name: "Ably Worker" });
     worker.port.addEventListener("message", (e: MessageEvent<AblyWorkerMessage>) => {
       if (e.data.name === "sync") {
         store.handleDelta(e.data.data);
