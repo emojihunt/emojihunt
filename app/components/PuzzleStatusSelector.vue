@@ -1,15 +1,15 @@
 <script setup lang="ts">
-const props = defineProps<{ puzzle: Puzzle; }>();
+const { puzzle } = defineProps<{ puzzle: Puzzle; }>();
 const emit = defineEmits<{ (e: "select", s: Status): void; }>();
 
 const statuses = computed(() =>
-  Object.values(Status).filter((s) => s !== props.puzzle.status)
+  Object.values(Status).filter((s) => s !== puzzle.status)
 );
 </script>
 
 <template>
   <fieldset>
-    <button v-for="status of statuses" @click="() => $emit('select', status)">
+    <button v-for="status of statuses" @click="() => emit('select', status)">
       {{ StatusEmoji(status) }} {{ StatusLabel(status) }}
     </button>
   </fieldset>

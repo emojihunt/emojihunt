@@ -1,5 +1,5 @@
 <script setup lang="ts">
-const props = defineProps<{
+const { round, first, filter, timeline, nextTimeline, observer } = defineProps<{
   round: AnnotatedRound;
   first: boolean;
   filter: boolean;
@@ -11,7 +11,7 @@ const emit = defineEmits<{ (e: "edit"): void; }>();
 const store = usePuzzles();
 const toast = useToast();
 
-const hue = computed(() => props.round.hue);
+const hue = computed(() => round.hue);
 
 let registered = false;
 const pill = useTemplateRef("pill");
@@ -19,16 +19,16 @@ const titles = useTemplateRef("titles");
 const ready = () => {
   pill.value?.classList.add("ready");
   titles.value?.classList.add("ready");
-  if (!registered && props.observer) {
-    props.observer.observe(titles.value!);
+  if (!registered && observer) {
+    observer.observe(titles.value!);
     registered = true;
   }
 };
-watch([props], () => nextTick(ready));
+watchEffect(() => nextTick(ready));
 onMounted(() => nextTick(ready));
 
 const copy = async (): Promise<void> => {
-  const puzzles = store.puzzlesByRound.get(props.round.id);
+  const puzzles = store.puzzlesByRound.get(round.id);
   if (!puzzles) {
     toast.add({
       title: "No puzzles to copy",
@@ -60,7 +60,7 @@ const copy = async (): Promise<void> => {
 
 <template>
   <span class="spacer" :id="round.anchor" v-if="!first"></span>
-  <header ref="pill" :class="['pill', props.nextTimeline && 'next', filter && 'filter']">
+  <header ref="pill" :class="['pill', nextTimeline && 'next', filter && 'filter']">
     <div class="emoji">{{ round.emoji }}&#xfe0f;</div>
     <div class="round">{{ round.name }}</div>
     <div class="flex-spacer"></div>
@@ -80,7 +80,7 @@ const copy = async (): Promise<void> => {
     </div>
   </header>
   <header ref="titles"
-    :class="['titles', round.total && 'show', props.nextTimeline ? 'next' : '']">
+    :class="['titles', round.total && 'show', nextTimeline ? 'next' : '']">
     <span>Status &bull;
       Answer</span>
     <span>Location</span>

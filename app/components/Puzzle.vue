@@ -1,5 +1,5 @@
 <script setup lang="ts">
-const props = defineProps<{
+const { puzzle, round } = defineProps<{
   puzzle: Puzzle;
   round: AnnotatedRound;
 }>();
@@ -7,7 +7,7 @@ const emit = defineEmits<{ (e: "edit"): void; }>();
 
 const row = useTemplateRef("row");
 defineExpose({
-  id: props.puzzle.id,
+  id: puzzle.id,
   focus() {
     nextTick(() =>
       row.value?.querySelector<HTMLElement>("[tabindex='0']")?.focus());

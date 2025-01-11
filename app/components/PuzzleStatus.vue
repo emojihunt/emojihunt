@@ -1,5 +1,5 @@
 <script setup lang="ts">
-const props = defineProps<{
+const { puzzle, round } = defineProps<{
   puzzle: Puzzle;
   round: Round;
 }>();
@@ -17,12 +17,12 @@ const select = (status: Status) => {
   answering.value = null;
   if (!StatusNeedsAnswer(status)) {
     saving.value = true;
-    store.updatePuzzleOptimistic(props.puzzle.id, { status, answer: "" })
+    store.updatePuzzleOptimistic(puzzle.id, { status, answer: "" })
       .finally(() => (saving.value = false));
     nextTick(() => button.value?.focus());
-  } else if (props.puzzle.answer) {
+  } else if (puzzle.answer) {
     saving.value = true;
-    store.updatePuzzleOptimistic(props.puzzle.id, { status })
+    store.updatePuzzleOptimistic(puzzle.id, { status })
       .finally(() => (saving.value = false));
   } else {
     answering.value = status;
@@ -36,18 +36,18 @@ const save = (answer: string) => {
   if (answering.value) {
     // Answer with state change to "Solved", etc.
     saving.value = true;
-    store.updatePuzzleOptimistic(props.puzzle.id, { answer, status: answering.value, voice_room: "" })
+    store.updatePuzzleOptimistic(puzzle.id, { answer, status: answering.value, voice_room: "" })
       .finally(() => (saving.value = false));
     answering.value = null;
   } else {
     // Regular answer fixup
     saving.value = true;
-    store.updatePuzzleOptimistic(props.puzzle.id, { answer })
+    store.updatePuzzleOptimistic(puzzle.id, { answer })
       .finally(() => (saving.value = false));
   }
 };
 
-const hue = computed(() => props.round.hue);
+const hue = computed(() => round.hue);
 const cancel = () => answering.value && (answering.value = null, open.value = false);
 </script>
 

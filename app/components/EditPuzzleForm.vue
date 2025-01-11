@@ -1,5 +1,5 @@
 <script setup lang="ts">
-const props = defineProps<{ id?: number; }>();
+const { id } = defineProps<{ id?: number; }>();
 const emit = defineEmits<{ (event: "close"): void; }>();
 const store = usePuzzles();
 const toast = useToast();
@@ -25,7 +25,7 @@ const editState = (puzzle: Partial<Omit<Puzzle, "id">>): Partial<EditState> => {
 };
 
 const initial = (): Partial<Omit<Puzzle, "id">> =>
-  props.id ? { ...store.puzzles.get(props.id) } : {};
+  id ? { ...store.puzzles.get(id) } : {};
 const original = reactive(initial());
 const edits = reactive(editState(original));
 const modified = computed(() => {
@@ -58,8 +58,8 @@ const modified = computed(() => {
 });
 
 const form = useTemplateRef("form");
-watch([props], () => {
-  if (props.id) nextTick(() => form.value?.querySelector("input")?.focus());
+watch(() => id, () => {
+  if (id) nextTick(() => form.value?.querySelector("input")?.focus());
   const updated = initial();
   Object.assign(original, updated);
   Object.assign(edits, editState(updated));
@@ -85,10 +85,10 @@ let previous: string;
 const saving = ref(false);
 const submit = (e: Event) => {
   e.preventDefault();
-  if (!props.id) return;
+  if (!id) return;
   saving.value = true;
   if (previous) toast.remove(previous);
-  store.updatePuzzle(props.id, modified.value)
+  store.updatePuzzle(id, modified.value)
     .then(() => (
       toast.add({
         title: "Updated puzzle", color: "green",
@@ -105,10 +105,10 @@ const submit = (e: Event) => {
 
 const del = (e: MouseEvent) => {
   e.preventDefault();
-  if (!props.id) return;
+  if (!id) return;
   if (!confirm("Delete this puzzle?")) return;
   if (previous) toast.remove(previous);
-  store.deletePuzzle(props.id)
+  store.deletePuzzle(id)
     .then(() => (
       toast.add({
         title: "Deleted puzzle", color: "green", icon: "i-heroicons-trash",

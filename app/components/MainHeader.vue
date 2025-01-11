@@ -1,7 +1,5 @@
 <script setup lang="ts">
-const props = defineProps<{
-  connected: boolean;
-}>();
+const { connected } = defineProps<{ connected: boolean; }>();
 const store = usePuzzles();
 
 const [discordBase, discordTarget] = useDiscordBase();

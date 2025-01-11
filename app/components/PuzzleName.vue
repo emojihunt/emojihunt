@@ -1,10 +1,10 @@
 <script setup lang="ts">
-const props = defineProps<{
+const { puzzle, round } = defineProps<{
   puzzle: Puzzle;
   round: AnnotatedRound;
 }>();
 const emit = defineEmits<{ (e: "edit"): void; }>();
-const hue = computed(() => props.round.hue);
+const hue = computed(() => round.hue);
 </script>
 
 <template>

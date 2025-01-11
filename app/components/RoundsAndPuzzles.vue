@@ -1,5 +1,5 @@
 <script setup lang="ts">
-const props = defineProps<{
+const { filter, observer } = defineProps<{
   filter: boolean;
   observer: IntersectionObserver | undefined;
 }>();
@@ -82,7 +82,7 @@ onMounted(() => updateTabIndex);
 
 const roundToSequence = computed(() =>
   new Map(
-    (props.filter ? store.rounds.filter((r) => !r.complete) : store.rounds).map((r, i) => [r.id, i]))
+    (filter ? store.rounds.filter((r) => !r.complete) : store.rounds).map((r, i) => [r.id, i]))
 );
 
 defineExpose({

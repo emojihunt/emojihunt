@@ -1,5 +1,5 @@
 <script setup lang="ts">
-const props = defineProps<{
+const { puzzle, field, tabsequence } = defineProps<{
   puzzle: Puzzle;
   field: "location" | "note";
   tabsequence: number;
@@ -8,14 +8,14 @@ const store = usePuzzles();
 const saving = ref(false);
 
 const tooltip = computed(() => {
-  if (props.field === "location") {
-    const id = props.puzzle.voice_room;
+  if (field === "location") {
+    const id = puzzle.voice_room;
     if (!id) return;
     const channel = store.voiceRooms.get(id);
     if (!channel) return;
     return { emoji: channel.emoji, placeholder: channel.name, text: `in ${channel.name}` };
   } else {
-    const reminder = parseReminder(props.puzzle);
+    const reminder = parseReminder(puzzle);
     if (!reminder) return;
     const formatted = reminder.toLocaleString("en-US", {
       weekday: "long",
@@ -29,7 +29,7 @@ const tooltip = computed(() => {
 
 const save = (updated: string) => {
   saving.value = true;
-  store.updatePuzzleOptimistic(props.puzzle.id, { [props.field]: updated })
+  store.updatePuzzleOptimistic(puzzle.id, { [field]: updated })
     .finally(() => (saving.value = false));
 };
 </script>

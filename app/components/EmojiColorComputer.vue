@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import Color from "colorjs.io";
-const props = defineProps<{ emoji: string; alternates: string[]; }>();
+const { emoji, alternates } = defineProps<{ emoji: string; alternates: string[]; }>();
 const canvas = useTemplateRef("canvas");
 const median = ref(-1);
 const result = ref<any[]>([]);
@@ -13,7 +13,7 @@ onMounted(() => {
   ctx.font = `${cv.width / 2}px "Noto Color Emoji"`;
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
-  ctx.fillText(props.emoji + "\ufe0f", cv.width / 2, cv.height / 2);
+  ctx.fillText(emoji + "\ufe0f", cv.width / 2, cv.height / 2);
 
   setTimeout(() => {
     const { colorSpace, data } = ctx.getImageData(0, 0, cv.width, cv.height);
@@ -30,7 +30,7 @@ onMounted(() => {
       for (let i = 0; i < weight; i++) hues.push(hue);
     }
     median.value = Math.round(circularMean(hues));
-    result.value = [median.value, props.emoji, ...props.alternates];
+    result.value = [median.value, emoji, ...alternates];
   }, 0);
 });
 
@@ -50,62 +50,6 @@ function circularMean(inputs: number[]) {
     return circularMean;
   else
     return circularMean + period;
-}
-function arcMedian(list: number[]) {
-  list.sort();
-  let i;
-  var candidate = list[0];
-  var distanceSum = 0.0;
-  for (i = 1; i < list.length; ++i) {
-    if (list[i] >= candidate + period / 2)
-      break;
-    distanceSum += list[i] - candidate;
-  }
-  var leftCount = list.length - i;
-  var circleStart = i;
-  if (circleStart === list.length)
-    circleStart = 0;
-  else
-    for (; i < list.length; ++i)
-      distanceSum += candidate + period - list[i];
-  var previousCandidate = candidate;
-  var bestCandidates = [candidate];
-  var bestDistanceSum = distanceSum;
-  var equalityTolerance = period * 1e-10;
-  for (i = 1; i < list.length; ++i) {
-    candidate = list[i];
-    ++leftCount;
-    distanceSum += (2 * leftCount - list.length) * (candidate - previousCandidate);
-    if (i <= circleStart)
-      while (list[circleStart] < candidate + period / 2) {
-        --leftCount;
-        distanceSum += 2 * (list[circleStart] - candidate) - period;
-        ++circleStart;
-        if (circleStart === list.length) {
-          circleStart = 0;
-          break;
-        }
-      }
-    if (i > circleStart)
-      while (list[circleStart] < candidate - period / 2) {
-        --leftCount;
-        distanceSum += 2 * (list[circleStart] - candidate) + period;
-        ++circleStart;
-      }
-    if (distanceSum <= bestDistanceSum + equalityTolerance) {
-      if (distanceSum >= bestDistanceSum - equalityTolerance) {
-        bestDistanceSum = (bestCandidates.length * bestDistanceSum + distanceSum) / (bestCandidates.length + 1);
-      }
-      else {
-        bestDistanceSum = distanceSum;
-        bestCandidates = [];
-      }
-      bestCandidates.push(candidate);
-    }
-    previousCandidate = candidate;
-  }
-  if (bestCandidates.length === 1) return bestCandidates[0];
-  else return circularMean(bestCandidates);
 }
 </script>
 

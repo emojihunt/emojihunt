@@ -17,7 +17,7 @@ import emojihues from "~/assets/emoji-hues.json";
 
 const index = new EmojiIndex(emojifile, { recent: [] });
 
-const props = defineProps<{ kind: "round" | "puzzle"; }>();
+const { kind } = defineProps<{ kind: "round" | "puzzle"; }>();
 const emit = defineEmits<{ (event: "close"): void; }>();
 const store = usePuzzles();
 const toast = useToast();
@@ -36,7 +36,7 @@ const submit = (e: Event) => {
   if (previous) toast.remove(previous);
   setTimeout(() => {
     let request;
-    if (props.kind === "round") {
+    if (kind === "round") {
       request = store.addRound({
         name: data.name, emoji: data.emoji, hue: data.hue,
         drive_folder: "+", // *don't* add category yet, to avoid clutter
@@ -53,7 +53,7 @@ const submit = (e: Event) => {
     request.
       then(() => (
         toast.add({
-          title: `Added ${props.kind}`, color: "green",
+          title: `Added ${kind}`, color: "green",
           icon: "i-heroicons-check-badge",
         }),
         emit("close")
@@ -88,13 +88,13 @@ const urlBlur = () => {
 };
 
 // USelectMenu doesn't support autofocus
-const autofocus = () => (props.kind === "puzzle") &&
+const autofocus = () => (kind === "puzzle") &&
   nextTick(() => form.value?.querySelector("button")?.focus());
 onMounted(autofocus);
-watch([props], autofocus);
+watch(() => kind, autofocus);
 const select = () => form.value?.querySelector("input")?.focus();
 
-const hue = computed(() => props.kind === "round" ? data.hue : data.round?.hue);
+const hue = computed(() => kind === "round" ? data.hue : data.round?.hue);
 </script>
 
 <template>

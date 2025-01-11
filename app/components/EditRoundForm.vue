@@ -1,11 +1,11 @@
 <script setup lang="ts">
-const props = defineProps<{ id?: number; }>();
+const { id } = defineProps<{ id?: number; }>();
 const emit = defineEmits<{ (event: "close"): void; }>();
 const store = usePuzzles();
 const toast = useToast();
 
 const initial = (): Partial<Omit<Round, "id">> =>
-  props.id ? { ...store.rounds.find((r) => r.id === props.id) } : {};
+  id ? { ...store.rounds.find((r) => r.id === id) } : {};
 const original = reactive(initial());
 const edits = reactive({ ...original });
 const modified = computed(() => {
@@ -21,8 +21,8 @@ const modified = computed(() => {
 });
 
 const form = useTemplateRef("form");
-watch([props], () => {
-  if (props.id) nextTick(() => form.value?.querySelector("input")?.focus());
+watch(() => id, () => {
+  if (id) nextTick(() => form.value?.querySelector("input")?.focus());
   const updated = initial();
   Object.assign(original, updated);
   Object.assign(edits, updated);
@@ -44,10 +44,10 @@ let previous: string;
 const saving = ref(false);
 const submit = (e: Event) => {
   e.preventDefault();
-  if (!props.id) return;
+  if (!id) return;
   saving.value = true;
   if (previous) toast.remove(previous);
-  store.updateRound(props.id, modified.value)
+  store.updateRound(id, modified.value)
     .then(() => (
       toast.add({
         title: "Updated round", color: "green",
@@ -64,10 +64,10 @@ const submit = (e: Event) => {
 
 const del = (e: MouseEvent) => {
   e.preventDefault();
-  if (!props.id) return;
+  if (!id) return;
   if (!confirm("Delete this round?")) return;
   if (previous) toast.remove(previous);
-  store.deleteRound(props.id)
+  store.deleteRound(id)
     .then(() => (
       toast.add({
         title: "Deleted round", color: "green", icon: "i-heroicons-trash",
