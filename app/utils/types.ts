@@ -108,10 +108,8 @@ export const parseReminder = (puzzle: Puzzle): Date | null => {
   return date;
 };
 
-export type ServerPuzzle = Omit<Puzzle, "round"> & { round: Round; };
-
 export type HomeResponse = {
-  puzzles: ServerPuzzle[];
+  puzzles: Puzzle[];
   rounds: Round[];
   change_id: number;
   discord_guild: string;
@@ -162,7 +160,7 @@ export type ConnectionState = "disconnected" | "connected" | "broken";
 export type SyncMessage = {
   change_id: number;
   kind: "upsert" | "delete";
-  puzzle?: ServerPuzzle;
+  puzzle?: Puzzle;
   round?: Round;
   reminder_fix?: string;
 };

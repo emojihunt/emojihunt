@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/emojihunt/emojihunt/huntyet"
+	"github.com/emojihunt/emojihunt/state"
 	"github.com/labstack/echo/v4"
 )
 
@@ -13,10 +14,14 @@ func (s *Server) ListHome(c echo.Context) error {
 	if err != nil {
 		return err
 	}
+	var rawPuzzles = make([]state.RawPuzzle, len(puzzles))
+	for i, puzzle := range puzzles {
+		rawPuzzles[i] = puzzle.RawPuzzle()
+	}
 	next, _ := huntyet.NextHunt(time.Now())
 	voiceRooms := s.discord.ListVoiceChannels()
 	return c.JSON(http.StatusOK, map[string]interface{}{
-		"puzzles":          puzzles,
+		"puzzles":          rawPuzzles,
 		"rounds":           rounds,
 		"change_id":        changeID,
 		"discord_guild":    s.discord.Guild.ID,

@@ -42,7 +42,7 @@ func (s *Server) GetPuzzle(c echo.Context) error {
 	if err != nil {
 		return err
 	}
-	return c.JSON(http.StatusOK, puzzle)
+	return c.JSON(http.StatusOK, puzzle.RawPuzzle())
 }
 
 func (s *Server) CreatePuzzle(c echo.Context) error {
@@ -83,7 +83,7 @@ func (s *Server) CreatePuzzle(c echo.Context) error {
 		return err
 	}
 	SetChangeIDHeader(c, chid)
-	return c.JSON(http.StatusOK, puzzle)
+	return c.JSON(http.StatusOK, puzzle.RawPuzzle())
 }
 
 func (s *Server) UpdatePuzzle(c echo.Context) error {
@@ -101,7 +101,7 @@ func (s *Server) UpdatePuzzle(c echo.Context) error {
 		return err
 	}
 	SetChangeIDHeader(c, chid)
-	return c.JSON(http.StatusOK, updated)
+	return c.JSON(http.StatusOK, updated.RawPuzzle())
 }
 
 func (s *Server) DeletePuzzle(c echo.Context) error {
@@ -118,5 +118,5 @@ func (s *Server) DeletePuzzle(c echo.Context) error {
 		return err
 	}
 	SetChangeIDHeader(c, chid)
-	return c.JSON(http.StatusOK, puzzle)
+	return c.JSON(http.StatusOK, puzzle.RawPuzzle())
 }

@@ -96,11 +96,11 @@ const (
 )
 
 type AblyMessage struct {
-	ChangeID    int64         `json:"change_id"`
-	Kind        AblyKind      `json:"kind"`
-	Puzzle      *state.Puzzle `json:"puzzle,omitempty"`
-	Round       *state.Round  `json:"round,omitempty"`
-	ReminderFix string        `json:"reminder_fix,omitempty"`
+	ChangeID    int64            `json:"change_id"`
+	Kind        AblyKind         `json:"kind"`
+	Puzzle      *state.RawPuzzle `json:"puzzle,omitempty"`
+	Round       *state.Round     `json:"round,omitempty"`
+	ReminderFix string           `json:"reminder_fix,omitempty"`
 }
 
 func (c *Client) TriggerDiscoveryEnabled(ctx context.Context) error {
@@ -131,11 +131,13 @@ func (c *Client) TriggerPuzzle(ctx context.Context, change state.PuzzleChange) e
 	// Publish the update to Ably
 	var message = AblyMessage{ChangeID: change.ChangeID}
 	if change.After == nil {
+		var raw = state.Puzzle{ID: change.Before.ID}.RawPuzzle()
 		message.Kind = AblyKindDelete
-		message.Puzzle = &state.Puzzle{ID: change.Before.ID}
+		message.Puzzle = &raw
 	} else {
+		var raw = change.After.RawPuzzle()
 		message.Kind = AblyKindUpsert
-		message.Puzzle = change.After
+		message.Puzzle = &raw
 		// Ably incorrectly encodes time.Time
 		message.ReminderFix = change.After.Reminder.Format(time.RFC3339)
 	}

@@ -152,8 +152,8 @@ export default defineStore("puzzles", {
       this._rounds.clear();
       this._puzzles.clear();
       this._optimistic.clear();
-      (data.value?.rounds || []).forEach((r: any) => this._rounds.set(r.id, r));
-      (data.value?.puzzles || []).forEach((p: any) => this._puzzles.set(p.id, { ...p, round: p.round.id }));
+      (data.value?.rounds || []).forEach((r) => this._rounds.set(r.id, r));
+      (data.value?.puzzles || []).forEach((p) => this._puzzles.set(p.id, p));
       this._initialChangeId = data.value?.change_id || 0;
       this.discordGuild = data.value.discord_guild;
       this.hangingOut = data.value.hanging_out;
@@ -226,7 +226,7 @@ export default defineStore("puzzles", {
       if (kind === "upsert") {
         if (puzzle) {
           puzzle.reminder = reminder_fix!;
-          this._puzzles.set(puzzle.id, { ...puzzle, round: puzzle.round.id });
+          this._puzzles.set(puzzle.id, puzzle);
         }
         if (round) this._rounds.set(round.id, round);
       } else if (kind === "delete") {
