@@ -15,7 +15,7 @@ const connected = useAbly();
 // We want each round header to disappear when it's covered by the next. Use CSS
 // scroll-linked animations if supported and fall back to IntersectionObserver
 // if not.
-const timelines = computed(() => store.rounds.map((_, i) => timelineFromSequence(i)));
+const timelines = [...Array(50).keys()].map((i) => timelineFromSequence(i));
 const observer = ref<IntersectionObserver>();
 onMounted(() => {
   if (!CSS.supports("view-timeline", "--test")) {

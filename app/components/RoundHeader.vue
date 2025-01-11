@@ -1,10 +1,8 @@
 <script setup lang="ts">
-const { round, first, filter, timeline, nextTimeline, observer } = defineProps<{
+const { round, sequence, filter, observer } = defineProps<{
   round: AnnotatedRound;
-  first: boolean;
+  sequence: number;
   filter: boolean;
-  timeline: string;
-  nextTimeline: string | undefined;
   observer: IntersectionObserver | undefined;
 }>();
 const emit = defineEmits<{ (e: "edit"): void; }>();
@@ -12,6 +10,8 @@ const store = usePuzzles();
 const toast = useToast();
 
 const hue = computed(() => round.hue);
+const timeline = computed(() => timelineFromSequence(sequence));
+const nextTimeline = computed(() => timelineFromSequence(sequence + 1));
 
 let registered = false;
 const pill = useTemplateRef("pill");
@@ -59,8 +59,8 @@ const copy = async (): Promise<void> => {
 </script>
 
 <template>
-  <span class="spacer" :id="round.anchor" v-if="!first"></span>
-  <header ref="pill" :class="['pill', nextTimeline && 'next', filter && 'filter']">
+  <span class="spacer" :id="round.anchor" v-if="sequence > 0"></span>
+  <header ref="pill" :class="['pill', filter && 'filter']">
     <div class="emoji">{{ round.emoji }}&#xfe0f;</div>
     <div class="round">{{ round.name }}</div>
     <div class="flex-spacer"></div>
@@ -79,10 +79,8 @@ const copy = async (): Promise<void> => {
       ※
     </div>
   </header>
-  <header ref="titles"
-    :class="['titles', round.total && 'show', nextTimeline ? 'next' : '']">
-    <span>Status &bull;
-      Answer</span>
+  <header ref="titles" :class="['titles', round.total && 'show']">
+    <span>Status &bull; Answer</span>
     <span>Location</span>
     <span>Note</span>
   </header>
@@ -245,9 +243,9 @@ button:hover {
 
   /* FYI, if we use the `animation` shorthand propety, Nuxt may incorrectly
      re-order it with other `animation-*` properties. */
-  .pill.ready.next,
-  .titles.ready.next,
-  .titles.ready.next span {
+  .pill.ready,
+  .titles.ready,
+  .titles.ready span {
     animation-name: fade-out;
     animation-timing-function: ease-in;
     animation-fill-mode: both;
@@ -256,7 +254,7 @@ button:hover {
     animation-timeline: v-bind(nextTimeline);
   }
 
-  .titles.ready.next span {
+  .titles.ready span {
     animation-name: color-in;
     animation-timing-function: linear;
     animation-timeline: view();
