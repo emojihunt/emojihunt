@@ -21,10 +21,10 @@ if (error.value?.statusCode === 401) {
         <span class="emoji">🔥</span>Site Error
       </h1>
       <div class="details">
-        <div class="message">{{ error?.message }}</div>
-        <pre v-if="stack">{{ stack }}</pre>
+        <div>{{ error?.message }}</div>
+        <div v-html="stack" v-if="stack"></div>
         <div class="link">
-          <NuxtLink to="/">Return to Home</NuxtLink>
+          <NuxtLink to="/" :external="true">Return to Home</NuxtLink>
         </div>
       </div>
     </div>
@@ -56,6 +56,10 @@ h1 {
 
 .details {
   padding-left: 2.2rem;
+
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
 }
 
 .link {

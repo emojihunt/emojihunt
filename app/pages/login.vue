@@ -82,11 +82,7 @@ if (url.searchParams.has("error")) {
     }
     result.value = { status: "invalid_code" };
   } else {
-    throw createError({
-      fatal: true,
-      statusCode: error.value?.statusCode,
-      data: error.value?.data,
-    });
+    throw error.value;
   }
 }
 </script>

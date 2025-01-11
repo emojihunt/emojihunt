@@ -4,15 +4,8 @@ const toast = useToast();
 
 const data: DiscoveryConfig = await(async () => {
   const { data, error } = await useFetch<DiscoveryConfig>("/api/discovery");
-  if (error.value) {
-    throw createError({
-      fatal: true,
-      message: error.value.message,
-      statusCode: error.value.statusCode,
-      data: error.value.data,
-    });
-  }
-  return data.value!;
+  if (data.value) return data.value;
+  else throw error.value;
 })();
 
 let previous: string;

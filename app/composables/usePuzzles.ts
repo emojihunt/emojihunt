@@ -147,27 +147,21 @@ export default defineStore("puzzles", {
         });
       }
       const { data, error } = await useFetch<HomeResponse>("/api/home");
-      if (error.value) {
-        throw createError({
-          fatal: true,
-          message: error.value.message,
-          statusCode: error.value.statusCode,
-          data: error.value.data,
-        });
-      }
+      if (!data.value) throw error.value;
+
       this._rounds.clear();
       this._puzzles.clear();
       this._optimistic.clear();
       (data.value?.rounds || []).forEach((r: any) => this._rounds.set(r.id, r));
       (data.value?.puzzles || []).forEach((p: any) => this._puzzles.set(p.id, { ...p, round: p.round.id }));
       this._initialChangeId = data.value?.change_id || 0;
-      this.discordGuild = data.value?.discord_guild;
-      this.hangingOut = data.value?.hanging_out;
-      this.huntName = data.value?.hunt_name;
-      this.huntURL = data.value?.hunt_url;
-      this.huntCredentials = data.value?.hunt_credentials;
-      this.logisticsURL = data.value?.logistics_url;
-      this.nextHunt = data.value?.next_hunt ?
+      this.discordGuild = data.value.discord_guild;
+      this.hangingOut = data.value.hanging_out;
+      this.huntName = data.value.hunt_name;
+      this.huntURL = data.value.hunt_url;
+      this.huntCredentials = data.value.hunt_credentials;
+      this.logisticsURL = data.value.logistics_url;
+      this.nextHunt = data.value.next_hunt ?
         new Date(data.value.next_hunt) : undefined;
       this.voiceRooms.clear();
       Object.entries(data.value?.voice_rooms || {}).forEach(([id, raw]) => {
