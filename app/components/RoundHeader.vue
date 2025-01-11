@@ -146,6 +146,7 @@ const copy = async (): Promise<void> => {
   z-index: 20;
 
   visibility: hidden;
+  pointer-events: none;
 }
 
 .titles.show {

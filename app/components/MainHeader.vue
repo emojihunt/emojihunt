@@ -72,9 +72,9 @@ onMounted(() => setTimeout(() => ably.value?.classList.add("ready"), 2500));
       </div>
       <div class="flex-spacer"></div>
       <div class="ably" ref="ably">
-        <ETooltip v-if="!connected" text="Live updates paused. Connecting..."
-          placement="left" :offset-distance="4" class="ably">
-          <Icon name="i-heroicons-signal-slash" />
+        <ETooltip v-if="true" text="Live updates paused. Connecting..." placement="left"
+          :offset-distance="4" class="ably">
+          <Icon name="i-heroicons-bolt-slash" />
         </ETooltip>
       </div>
     </section>
@@ -89,7 +89,7 @@ header {
   position: fixed;
   z-index: 15;
 
-  padding: 0.75rem max(env(safe-area-inset-right), 1rem) 6px;
+  padding: 0.75rem max(env(safe-area-inset-right), 1rem) 0.5rem;
 
   display: flex;
 }
