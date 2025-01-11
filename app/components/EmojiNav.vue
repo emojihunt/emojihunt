@@ -13,7 +13,7 @@ const url = useRequestURL();
 const goto = (round: AnnotatedRound) => {
   const id = (new URL(`#${round.anchor}`, url)).hash; // escaping
   emit("navigate");
-  document.querySelector<HTMLElement>(`${id} ~ .puzzle [tabIndex='0']`)?.focus();
+  document.querySelector<HTMLElement>(`${id} ~ section .puzzle [tabIndex='0']`)?.focus();
 
   // Workaround: the first round doesn't have an anchor.
   const rounds = filter ? store.rounds.filter((r) => !r.complete) : store.rounds;

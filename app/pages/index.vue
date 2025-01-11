@@ -68,7 +68,7 @@ const navMargin = computed(() => store.puzzleCount >= 42 ? "4.5rem" : "2vw");
 
 <template>
   <MainHeader ref="header" :connected="!!connected" />
-  <main :class="filter && 'filter'">
+  <div :class="['content', filter && 'filter']">
     <EmojiNav v-if="showNav" :filter="!!filter" :observer="observer"
       @navigate="() => table?.navigate()" />
     <div class="rule first"></div>
@@ -85,12 +85,12 @@ const navMargin = computed(() => store.puzzleCount >= 42 ? "4.5rem" : "2vw");
       <EditPuzzleForm v-else-if="editing?.kind === 'puzzle'" :id="editing.id"
         @close="close" />
     </Modal>
-  </main>
+  </div>
 </template>
 
 <style scoped>
 /* Layout */
-main {
+.content {
   --nav-margin: v-bind(navMargin);
 
   padding: var(--header-stop) 0.5vw 0.5rem calc(env(safe-area-inset-left) + var(--nav-margin));
@@ -120,13 +120,13 @@ main {
 }
 
 /* Animation */
-main {
+.content {
   timeline-scope: v-bind(timelines);
 }
 
 /* Media Queries */
 @media (max-width: 768px) {
-  main {
+  .content {
     padding-left: 2vw;
   }
 

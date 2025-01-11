@@ -97,7 +97,7 @@ defineExpose({
 </script>
 
 <template>
-  <section @keydown="keydown" @focusin="focusin">
+  <main @keydown="keydown" @focusin="focusin">
     <template v-for="round of store.rounds">
       <RoundHeader v-if="!filter || !round.complete" :round="round"
         :first="roundToSequence.get(round.id) === 0" :filter="filter"
@@ -105,23 +105,31 @@ defineExpose({
         :next-timeline="roundToSequence.get(round.id)! < store.rounds.length - 1 ? timelineFromSequence(roundToSequence.get(round.id)! + 1) : undefined"
         :observer="observer" @edit="() => emit('edit', 'round', round.id)"
         :key="round.id" />
-      <Puzzle v-for="puzzle in store.puzzlesByRound.get(round.id)" :key="puzzle.id"
-        ref="puzzles" :puzzle="puzzle" :round="round"
-        @edit="() => emit('edit', 'puzzle', puzzle.id)" />
-      <div class="empty" v-if="(!filter || !round.complete) && !round.total">
-        🫙&hairsp; No Puzzles
-      </div>
-      <hr v-if="!filter || !round.complete">
+      <section :class="filter && round.complete && 'invisible'"
+        :style="`--round-hue: ${round.hue}`">
+        <Puzzle v-for="puzzle in store.puzzlesByRound.get(round.id)" :key="puzzle.id"
+          ref="puzzles" :puzzle="puzzle"
+          @edit="() => emit('edit', 'puzzle', puzzle.id)" />
+        <div class="empty" v-if="!round.total">
+          🫙&hairsp; No Puzzles
+        </div>
+        <hr>
+      </section>
     </template>
-  </section>
+  </main>
 </template>
 
 <style scoped>
 /* Layout */
+main,
 section {
   grid-column: 1 / 6;
   display: grid;
   grid-template-columns: subgrid;
+}
+
+.invisible {
+  display: none;
 }
 
 hr {

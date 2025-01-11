@@ -1,8 +1,5 @@
 <script setup lang="ts">
-const { puzzle, round } = defineProps<{
-  puzzle: Puzzle;
-  round: Round;
-}>();
+const { puzzle } = defineProps<{ puzzle: Puzzle; }>();
 const store = usePuzzles();
 
 const input = useTemplateRef("input");
@@ -47,7 +44,6 @@ const save = (answer: string) => {
   }
 };
 
-const hue = computed(() => round.hue);
 const cancel = () => answering.value && (answering.value = null, open.value = false);
 </script>
 
@@ -159,10 +155,10 @@ const cancel = () => answering.value && (answering.value = null, open.value = fa
   padding: 0.1em 1.0em 0.1em 0.8em;
   border-radius: 0.75em 0.3em;
   background-image: linear-gradient(90deg,
-      oklch(85% 0.10 v-bind(hue) / 10%),
-      oklch(91% 0.10 v-bind(hue) / 70%) 4%,
-      oklch(91% 0.15 v-bind(hue) / 30%) 92%,
-      oklch(91% 0.10 v-bind(hue) / 0%));
+      oklch(85% 0.10 var(--round-hue) / 10%),
+      oklch(91% 0.10 var(--round-hue) / 70%) 4%,
+      oklch(91% 0.15 var(--round-hue) / 30%) 92%,
+      oklch(91% 0.10 var(--round-hue) / 0%));
 }
 
 :global(.filter .highlight:not(.meta)) {

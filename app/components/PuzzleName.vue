@@ -1,10 +1,6 @@
 <script setup lang="ts">
-const { puzzle, round } = defineProps<{
-  puzzle: Puzzle;
-  round: AnnotatedRound;
-}>();
+const { puzzle } = defineProps<{ puzzle: Puzzle; }>();
 const emit = defineEmits<{ (e: "edit"): void; }>();
-const hue = computed(() => round.hue);
 </script>
 
 <template>
@@ -28,15 +24,15 @@ button {
 
 .meta:focus-within,
 .meta button:focus-visible {
-  outline-color: oklch(50% 0.24 v-bind(hue)) !important;
+  outline-color: oklch(50% 0.24 var(--round-hue)) !important;
 }
 
 .meta span {
   background:
     linear-gradient(68deg,
-      oklch(50% 0.24 calc(v-bind(hue))) 0%,
-      oklch(50% 0.24 calc(v-bind(hue) + 60)) 20%,
-      oklch(50% 0.24 calc(v-bind(hue) + 180)) 100%);
+      oklch(50% 0.24 var(--round-hue)) 0%,
+      oklch(50% 0.24 calc(var(--round-hue) + 60)) 20%,
+      oklch(50% 0.24 calc(var(--round-hue) + 180)) 100%);
   background-clip: text;
   -webkit-background-clip: text;
   color: transparent;
@@ -54,7 +50,7 @@ button {
 }
 
 .meta button {
-  color: oklch(60% 0.14 calc(v-bind(hue)));
+  color: oklch(60% 0.14 var(--round-hue));
 }
 
 .cell:hover button,

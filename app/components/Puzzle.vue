@@ -1,8 +1,5 @@
 <script setup lang="ts">
-const { puzzle, round } = defineProps<{
-  puzzle: Puzzle;
-  round: AnnotatedRound;
-}>();
+const { puzzle } = defineProps<{ puzzle: Puzzle; }>();
 const emit = defineEmits<{ (e: "edit"): void; }>();
 
 const row = useTemplateRef("row");
@@ -16,12 +13,11 @@ defineExpose({
 </script>
 
 <template>
-  <span ref="row" class="puzzle" :data-puzzle="puzzle.id"
-    :class="(round.complete || puzzle.answer) && 'filterable'">
+  <span ref="row" class="puzzle" :data-puzzle="puzzle.id">
     <PuzzleButtons :puzzle="puzzle" />
     <span class="data">
-      <PuzzleName :puzzle="puzzle" :round="round" @edit="() => emit('edit')" />
-      <PuzzleStatus :puzzle="puzzle" :round="round" />
+      <PuzzleName :puzzle="puzzle" @edit="() => emit('edit')" />
+      <PuzzleStatus :puzzle="puzzle" />
       <PuzzleNoteLocation :puzzle="puzzle" field="location" :tabsequence="7" />
       <PuzzleNoteLocation :puzzle="puzzle" field="note" :tabsequence="8" />
     </span>
@@ -34,10 +30,6 @@ defineExpose({
   grid-column: 1 / 6;
   display: grid;
   grid-template-columns: subgrid;
-}
-
-:global(.filter .puzzle.filterable) {
-  display: none;
 }
 
 .data {
