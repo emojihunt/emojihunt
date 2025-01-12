@@ -7,9 +7,9 @@ const puzzle = puzzles.get(id)!;
 const input = useTemplateRef("input");
 const button = useTemplateRef("button");
 
-const open = ref(false);
 const saving = ref(false);
 const answering = ref<Status | null>(null);
+const expanded = inject(ExpandedKey);
 
 const save = (answer: string) => {
   if (!answer) return;  // cannot be blank
@@ -27,7 +27,7 @@ const save = (answer: string) => {
       .finally(() => (saving.value = false));
   }
 };
-const cancel = () => answering.value && (answering.value = null, open.value = false);
+const cancel = () => answering.value && (answering.value = null, expanded && (expanded.value = 0));
 
 const options = computed(() =>
   Object.values(Status).filter((s) => s !== puzzle.status).map(
@@ -35,7 +35,7 @@ const options = computed(() =>
   )
 );
 const select = (status: Status) => {
-  open.value = false;
+  if (expanded) expanded.value = 0;
   answering.value = null;
   if (!StatusNeedsAnswer(status)) {
     saving.value = true;
@@ -60,7 +60,7 @@ const select = (status: Status) => {
         :sticky="!!answering" @save="save" @cancel="cancel" />
       <ETooltip :text="answering || puzzle.status" placement="left">
         <button :data-tabsequence="6"
-          @click="() => answering ? (answering = null, open = true) : (open = !open)">
+          @click="() => answering ? (answering = null, expanded = id) : expanded = (expanded === id ? 0 : id)">
           <span>{{ StatusEmoji(answering || puzzle.status) }}</span>
         </button>
       </ETooltip>
@@ -68,13 +68,13 @@ const select = (status: Status) => {
       <Spinner v-if="saving" />
     </div>
     <button v-else ref="button" class="status" :data-tabsequence="56"
-      @click="() => (open = !open)">
+      @click="() => expanded = (expanded === id ? 0 : id)">
       <span class="highlight" :class="puzzle.meta && 'meta'">
         {{ StatusEmoji(puzzle.status) }} {{ StatusLabel(puzzle.status) }}
       </span>
       <Spinner v-if="saving" />
     </button>
-    <OptionPane v-if="open" :options="options" @select="select" />
+    <OptionPane v-if="expanded === id" :options="options" @select="select" />
   </div>
 </template>
 

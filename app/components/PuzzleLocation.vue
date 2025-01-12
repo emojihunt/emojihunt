@@ -7,7 +7,7 @@ const room = computed(() => voiceRooms.get(puzzle.voice_room));
 
 const location = useTemplateRef("location");
 
-const open = ref(false);
+const expanded = inject(ExpandedKey);
 const savingText = ref(false);
 const savingRoom = ref(false);
 const answering = ref(false);
@@ -20,6 +20,7 @@ const saveLocation = (updated: string) => {
 };
 const cancelLocation = () => (answering.value = false);
 const saveRoom = (updated: string) => {
+  if (expanded) expanded.value = 0;
   savingRoom.value = true;
   updatePuzzleOptimistic(id, { voice_room: updated })
     .then(() => {
@@ -32,22 +33,21 @@ const options = computed(() =>
   [...voiceRooms.values(), { id: "", emoji: "+", name: "In-person" }]
 );
 const select = (option: string) => {
-  open.value = false;
   if (option) { // voice room
     saveRoom(option);
   } else { // "+ In-person"
+    if (expanded) expanded.value = 0;
     answering.value = true;
     nextTick(() => location.value?.focus());
   }
 };
-const clearRoom = () => (open.value = false, saveRoom(""));
 </script>
 
 <template>
   <div class="cell">
     <div class="row">
       <button :class="['room', !(puzzle.location || answering) && 'expand']"
-        :data-tabsequence="7" @click="() => open = !open">
+        :data-tabsequence="7" @click="() => expanded = (expanded === id ? 0 : id)">
         <template v-if="room">
           <ETooltip v-if="room" :text="`in ${room.name}`">
             <span class="emoji">{{ room.emoji }}</span>
@@ -62,11 +62,11 @@ const clearRoom = () => (open.value = false, saveRoom(""));
       <EditableSpan v-if="puzzle.location || answering" ref="location"
         :value="puzzle.location" :tabsequence="7" @save="saveLocation"
         @cancel="cancelLocation" />
-      <button class="clear" v-if="room && !savingRoom && !savingText" @click="clearRoom"
-        tabindex="-1">Clear</button>
+      <button class="clear" v-if="room && !savingRoom && !savingText"
+        @click="() => saveRoom('')" tabindex="-1">Clear</button>
       <Spinner v-if="savingText || savingRoom" class="spinner" />
     </div>
-    <OptionPane v-if="open" :options="options" @select="select" />
+    <OptionPane v-if="expanded === id" :options="options" @select="select" />
   </div>
 </template>
 

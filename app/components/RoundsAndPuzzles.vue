@@ -92,6 +92,8 @@ const roundToSequence = computed(() =>
   )
 );
 
+provide(ExpandedKey, ref(0));
+
 defineExpose({
   focus(id: number) {
     puzz.value?.find((p: any) => p.id === id)?.focus();

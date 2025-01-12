@@ -171,3 +171,5 @@ export type SyncMessage = {
 
 export const ObserverKey = Symbol() as
   InjectionKey<Ref<IntersectionObserver | undefined>>;
+
+export const ExpandedKey = Symbol() as InjectionKey<Ref<number>>;
