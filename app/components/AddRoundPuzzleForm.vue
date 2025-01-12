@@ -23,11 +23,10 @@ const emit = defineEmits<{ (event: "close"): void; }>();
 const { ordering, addPuzzle, addRound } = usePuzzles();
 const toast = useToast();
 
-const initial = () => ({
+const data = reactive({
   emoji: "", name: "", hue: 274, url: "", create: true,
   round: ordering.value.length ? ordering.value[0] : { id: 0, hue: 0 },
 });
-const data = reactive(initial());
 const saving = ref(false);
 
 let previous: string;

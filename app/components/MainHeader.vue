@@ -72,7 +72,7 @@ onMounted(() => setTimeout(() => ably.value?.classList.add("ready"), 2500));
       <div class="flex-spacer"></div>
       <div class="ably" ref="ably">
         <ETooltip v-if="!connected" text="Live updates paused. Connecting..."
-          placement="left" :offset-distance="4" class="ably">
+          placement="left" :offset-distance="4">
           <Icon name="i-heroicons-bolt-slash" />
         </ETooltip>
       </div>

@@ -16,12 +16,12 @@ const select = (status: Status) => {
   answering.value = null;
   if (!StatusNeedsAnswer(status)) {
     saving.value = true;
-    updatePuzzleOptimistic(puzzle.id, { status, answer: "" })
+    updatePuzzleOptimistic(id, { status, answer: "" })
       .finally(() => (saving.value = false));
     nextTick(() => button.value?.focus());
   } else if (puzzle.answer) {
     saving.value = true;
-    updatePuzzleOptimistic(puzzle.id, { status })
+    updatePuzzleOptimistic(id, { status })
       .finally(() => (saving.value = false));
   } else {
     answering.value = status;

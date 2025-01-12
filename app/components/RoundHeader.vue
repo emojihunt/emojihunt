@@ -147,6 +147,7 @@ const copy = async (): Promise<void> => {
   top: calc(var(--header-stop) + 0.1rem);
   z-index: 20;
 
+  pointer-events: none;
   visibility: hidden;
   pointer-events: none;
 }
