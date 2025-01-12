@@ -49,17 +49,25 @@ const keydown = (e: KeyboardEvent) => {
 
   // Note: we assume (unsafely?) that the `puzzles` array matches the order of
   // puzzles on the page.
-  const i = puzz.value.findIndex((p: any) => p.id === currentID) + delta;
-  if (i === undefined || i < 0 || i >= puzz.value.length) {
-    // Focus is in first or last puzzle. Make sure it's visible, then bubble up
-    // the event to make the page scroll.
-    current?.scrollIntoView();
-    return;
+  let i = puzz.value.findIndex((p: any) => p.id === currentID) + delta;
+  if (i === undefined) return;
+  while (true) {
+    if (i < 0 || i >= puzz.value.length) {
+      // Focus is in first or last puzzle. Make sure it's visible, then bubble up
+      // the event to make the page scroll.
+      current?.scrollIntoView();
+      return;
+    } else if (puzz.value[i]?.isVisible()) {
+      puzz.value[i]?.focus();
+      e.preventDefault();
+      e.stopPropagation();
+      return;
+    } else {
+      i += delta;
+    }
   }
 
-  puzz.value[i]?.focus();
-  e.preventDefault();
-  e.stopPropagation();
+
 };
 const focusin = (e: FocusEvent) => {
   if (!(e.target instanceof HTMLElement)) return;

@@ -13,6 +13,9 @@ defineExpose({
     nextTick(() =>
       row.value?.querySelector<HTMLElement>("[tabindex='0']")?.focus());
   },
+  isVisible(): boolean {
+    return !!row.value?.checkVisibility();
+  },
 });
 </script>
 
