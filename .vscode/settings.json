@@ -1,5 +1,15 @@
 {
     "editor.tabSize": 2,
+    "files.exclude": {
+        "**/.git": true,
+        "**/.svn": true,
+        "**/.hg": true,
+        "**/CVS": true,
+        "**/.DS_Store": true,
+        "**/Thumbs.db": true,
+        "app/assets/*.json": true,
+        "emojiname/*.json": true,
+    },
     "html.format.wrapLineLength": 90,
     "nuxtr.defaultPackageManager": "Bun",
     "nuxtr.vueFiles.style.alwaysScoped": true,
