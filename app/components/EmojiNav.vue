@@ -8,6 +8,7 @@ const url = useRequestURL();
 const { puzzleCount, solvedPuzzleCount, ordering } = usePuzzles();
 
 // Navigate to anchors without changing the fragment
+let lastTimeout: NodeJS.Timeout;
 const goto = (e: MouseEvent, round: AnnotatedRound) => {
   e.preventDefault();
   e.stopPropagation();
@@ -16,14 +17,20 @@ const goto = (e: MouseEvent, round: AnnotatedRound) => {
   emit("navigate");
 
   // Workaround: the first round doesn't have an anchor.
+  let selector;
   if (round.id === ordering.value.find((r) => !filter || !r.complete)?.id) {
-    window.scrollTo({ top: 0 });
-    document.querySelector<HTMLElement>(".puzzle [tabindex='0']")?.focus();
+    window.scrollTo({ top: 0, behavior: "smooth" });
+    selector = ".puzzle [tabindex='0']";
+  } else {
+    document.querySelector(id)?.scrollIntoView({
+      block: "start", inline: "nearest", behavior: "smooth",
+    });
+    selector = `${id} ~ section .puzzle [tabIndex='0']`;
   }
-  else {
-    document.querySelector(id)?.scrollIntoView();
-    document.querySelector<HTMLElement>(`${id} ~ section .puzzle [tabIndex='0']`)?.focus();
-  }
+
+  if (lastTimeout) clearTimeout(lastTimeout);
+  lastTimeout = setTimeout(() =>
+    document.querySelector<HTMLElement>(selector)?.focus(), 750);
 };
 
 const nav = useTemplateRef("nav");
