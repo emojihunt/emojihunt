@@ -168,8 +168,8 @@ export async function initializePuzzles(): Promise<State> {
     for (const [_, puzzles] of grouped) {
       puzzles.sort((a, b) => {
         if (a.meta !== b.meta) return a.meta ? 1 : -1;
-        const ra = parseReminder(a);
-        const rb = parseReminder(b);
+        const ra = parseTimestamp(a.reminder);
+        const rb = parseTimestamp(b.reminder);
         if (ra) {
           if (rb) return ra.getTime() - rb.getTime();
           if (rb) return a.name.localeCompare(b.name);
@@ -197,14 +197,11 @@ export async function initializePuzzles(): Promise<State> {
     });
   };
 
-  const onSync = ({ change_id, kind, puzzle, round, reminder_fix }: SyncMessage) => {
+  const onSync = ({ change_id, kind, puzzle, round }: SyncMessage) => {
     optimistic.delete(change_id);
     if (change_id <= initialChangeId) return;
     if (kind === "upsert") {
-      if (puzzle) {
-        puzzle.reminder = reminder_fix!;
-        _puzzles.set(puzzle.id, puzzle);
-      }
+      if (puzzle) _puzzles.set(puzzle.id, puzzle);
       if (round) _rounds.set(round.id, round);
     } else if (kind === "delete") {
       if (puzzle) _puzzles.delete(puzzle.id);
@@ -221,7 +218,7 @@ export async function initializePuzzles(): Promise<State> {
     settings.logisticsURL = msg.logistics_url;
     settings.discordGuild = msg.discord_guild;
     settings.hangingOut = msg.hanging_out;
-    settings.nextHunt = msg.next_hunt ? new Date(msg.next_hunt) : null;
+    settings.nextHunt = parseTimestamp(msg.next_hunt);
 
     Object.entries(msg.voice_rooms).forEach(([id, raw]) => {
       // We expect the channel's emoji to go at the end

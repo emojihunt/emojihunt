@@ -49,6 +49,7 @@ channel.subscribe("sync", (e) => {
   broadcast(e as any);
 });
 channel.subscribe("settings", (e) => {
+  console.log("Settings", e);
   broadcast(e as any);
 });
 

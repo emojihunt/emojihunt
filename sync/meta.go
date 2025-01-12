@@ -13,9 +13,9 @@ type Meta struct {
 	HuntCredentials string `json:"hunt_credentials"`
 	LogisticsURL    string `json:"logistics_url"`
 
-	DiscordGuild string     `json:"discord_guild"`
-	HangingOut   string     `json:"hanging_out"`
-	NextHunt     *time.Time `json:"next_hunt"`
+	DiscordGuild string `json:"discord_guild"`
+	HangingOut   string `json:"hanging_out"`
+	NextHunt     string `json:"next_hunt"` // work around Ably bug
 
 	VoiceRooms map[string]string `json:"voice_rooms"`
 }
@@ -30,7 +30,7 @@ func (c *Client) ComputeMeta(discovery state.DiscoveryConfig) Meta {
 
 		DiscordGuild: c.discord.Guild.ID,
 		HangingOut:   c.discord.HangingOutChannel.ID,
-		NextHunt:     nextHunt,
+		NextHunt:     nextHunt.Format(time.RFC3339),
 
 		VoiceRooms: c.discord.ListVoiceChannels(),
 	}

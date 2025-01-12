@@ -17,7 +17,7 @@ const tooltip = computed(() => {
     if (!channel) return;
     return { emoji: channel.emoji, placeholder: channel.name, text: `in ${channel.name}` };
   } else {
-    const reminder = parseReminder(puzzle);
+    const reminder = parseTimestamp(puzzle.reminder);
     if (!reminder) return;
     const formatted = reminder.toLocaleString("en-US", {
       weekday: "long",

@@ -80,3 +80,38 @@ func (p Puzzle) RawPuzzle() RawPuzzle {
 		Reminder:       p.Reminder,
 	}
 }
+
+// Works around an encoding bug involving time.Time
+type AblyPuzzle struct {
+	ID             int64         `json:"id"`
+	Name           string        `json:"name"`
+	Answer         string        `json:"answer"`
+	Round          int64         `json:"round"`
+	Status         status.Status `json:"status"`
+	Note           string        `json:"note"`
+	Location       string        `json:"location"`
+	PuzzleURL      string        `json:"puzzle_url"`
+	SpreadsheetID  string        `json:"spreadsheet_id"`
+	DiscordChannel string        `json:"discord_channel"`
+	Meta           bool          `json:"meta"`
+	VoiceRoom      string        `json:"voice_room"`
+	Reminder       string        `json:"reminder"`
+}
+
+func (p Puzzle) AblyPuzzle() AblyPuzzle {
+	return AblyPuzzle{
+		ID:             p.ID,
+		Name:           p.Name,
+		Answer:         p.Answer,
+		Round:          p.Round.ID,
+		Status:         p.Status,
+		Note:           p.Note,
+		Location:       p.Location,
+		PuzzleURL:      p.PuzzleURL,
+		SpreadsheetID:  p.SpreadsheetID,
+		DiscordChannel: p.DiscordChannel,
+		Meta:           p.Meta,
+		VoiceRoom:      p.VoiceRoom,
+		Reminder:       p.Reminder.Format(time.RFC3339),
+	}
+}

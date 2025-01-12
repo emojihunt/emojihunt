@@ -101,9 +101,9 @@ export const StatusNeedsAnswer = (status: Status): boolean => {
 
 export const DefaultReminder = "0001-01-01T00:00:00Z";
 
-export const parseReminder = (puzzle: Puzzle): Date | null => {
-  if (!puzzle.reminder) return null;
-  const date = new Date(puzzle.reminder);
+export const parseTimestamp = (timestamp: string): Date | null => {
+  if (!timestamp) return null;
+  const date = new Date(timestamp);
   if (date.getTime() < 1700000000000) return null;
   return date;
 };
@@ -167,7 +167,6 @@ export type SyncMessage = {
   kind: "upsert" | "delete";
   puzzle?: Puzzle;
   round?: Round;
-  reminder_fix?: string;
 };
 
 export const ObserverKey = Symbol() as

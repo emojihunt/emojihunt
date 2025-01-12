@@ -4,7 +4,6 @@ import (
 	"context"
 	"log"
 	"sync"
-	"time"
 
 	"github.com/ably/ably-go/ably"
 	"github.com/bwmarrin/discordgo"
@@ -97,11 +96,10 @@ const (
 )
 
 type AblySyncMessage struct {
-	ChangeID    int64            `json:"change_id"`
-	Kind        AblyKind         `json:"kind"`
-	Puzzle      *state.RawPuzzle `json:"puzzle,omitempty"`
-	Round       *state.Round     `json:"round,omitempty"`
-	ReminderFix string           `json:"reminder_fix,omitempty"`
+	ChangeID int64             `json:"change_id"`
+	Kind     AblyKind          `json:"kind"`
+	Puzzle   *state.AblyPuzzle `json:"puzzle,omitempty"`
+	Round    *state.Round      `json:"round,omitempty"`
 }
 
 func (c *Client) TriggerDiscovery(ctx context.Context) error {
@@ -137,15 +135,13 @@ func (c *Client) TriggerPuzzle(ctx context.Context, change state.PuzzleChange) e
 	// Publish the update to Ably
 	var message = AblySyncMessage{ChangeID: change.ChangeID}
 	if change.After == nil {
-		var raw = state.Puzzle{ID: change.Before.ID}.RawPuzzle()
+		var encoded = state.AblyPuzzle{ID: change.Before.ID}
 		message.Kind = AblyKindDelete
-		message.Puzzle = &raw
+		message.Puzzle = &encoded
 	} else {
-		var raw = change.After.RawPuzzle()
+		var encoded = change.After.AblyPuzzle()
 		message.Kind = AblyKindUpsert
-		message.Puzzle = &raw
-		// Ably incorrectly encodes time.Time
-		message.ReminderFix = change.After.Reminder.Format(time.RFC3339)
+		message.Puzzle = &encoded
 	}
 	err := c.ably.Publish(ctx, ablySyncEventTitle, message)
 	if err != nil {
