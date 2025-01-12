@@ -15,11 +15,12 @@ const { puzzleCount } = await initializePuzzles();
 // if not.
 const timelines = [...Array(50).keys()].map((i) => timelineFromSequence(i));
 const observer = ref<IntersectionObserver>();
+const observerLastJump = ref(0);
 provide(ObserverKey, observer);
 onMounted(() => {
   if (!CSS.supports("view-timeline", "--test")) {
     console.log("Falling back to IntersectionObserver...");
-    observer.value = useStickyIntersectionObserver(76);
+    observer.value = useStickyIntersectionObserver(76, observerLastJump);
   }
 });
 
@@ -30,6 +31,14 @@ onMounted(() => document.location.hash && history.pushState(
 
 const header = useTemplateRef<any>("header");
 const filter = computed(() => !!header.value?.filter);
+watch(filter, () => {
+  window.scrollTo({ top: 0 });
+  if (observer.value) {
+    document.querySelectorAll(".stuck")
+      .forEach((e) => e.classList.remove("stuck"));
+    observerLastJump.value = Date.now();
+  }
+});
 
 const table = useTemplateRef("table");
 const welcome = useTemplateRef("welcome");

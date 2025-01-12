@@ -5,8 +5,13 @@
 // Note: this helper does not work on Chrome if the element has a drop-shadow
 // filter. See: crbug.com/1358819.
 //
-export default function (margin: number): IntersectionObserver {
+export default function (margin: number, lastJump: Ref<number>): IntersectionObserver {
   const callback: IntersectionObserverCallback = (entries) => {
+    // When enabling and disabling the priority-puzzles filter, the page can
+    // jump around a bit. Bypassing the observer during this period prevents
+    // styles from being misapplied.
+    if (Date.now() - lastJump.value < 250) return;
+
     // We get events when the element touches or un-touches the header *and*
     // when it enters or exits the viewport from below. Check the
     // y-coordinate to disambiguate.
