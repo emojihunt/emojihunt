@@ -11,6 +11,29 @@ const open = ref(false);
 const saving = ref(false);
 const answering = ref<Status | null>(null);
 
+const save = (answer: string) => {
+  if (!answer) return;  // cannot be blank
+  answer = answer.toUpperCase();
+  if (answering.value) {
+    // Answer with state change to "Solved", etc.
+    saving.value = true;
+    updatePuzzleOptimistic(id, { answer, status: answering.value, voice_room: "" })
+      .finally(() => (saving.value = false));
+    answering.value = null;
+  } else {
+    // Regular answer fixup
+    saving.value = true;
+    updatePuzzleOptimistic(id, { answer })
+      .finally(() => (saving.value = false));
+  }
+};
+const cancel = () => answering.value && (answering.value = null, open.value = false);
+
+const options = computed(() =>
+  Object.values(Status).filter((s) => s !== puzzle.status).map(
+    (s) => ({ id: s, label: `${StatusEmoji(s)} ${StatusLabel(s)}` })
+  )
+);
 const select = (status: Status) => {
   open.value = false;
   answering.value = null;
@@ -28,25 +51,6 @@ const select = (status: Status) => {
     nextTick(() => input.value?.focus());
   }
 };
-
-const save = (answer: string) => {
-  if (!answer) return;  // cannot be blank
-  answer = answer.toUpperCase();
-  if (answering.value) {
-    // Answer with state change to "Solved", etc.
-    saving.value = true;
-    updatePuzzleOptimistic(id, { answer, status: answering.value, voice_room: "" })
-      .finally(() => (saving.value = false));
-    answering.value = null;
-  } else {
-    // Regular answer fixup
-    saving.value = true;
-    updatePuzzleOptimistic(id, { answer })
-      .finally(() => (saving.value = false));
-  }
-};
-
-const cancel = () => answering.value && (answering.value = null, open.value = false);
 </script>
 
 <template>
@@ -70,7 +74,7 @@ const cancel = () => answering.value && (answering.value = null, open.value = fa
       </span>
       <Spinner v-if="saving" />
     </button>
-    <PuzzleStatusSelector v-if="open" :status="puzzle.status" @select="select" />
+    <OptionPane v-if="open" :options="options" @select="select" />
   </div>
 </template>
 

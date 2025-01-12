@@ -1,16 +1,12 @@
-<script setup lang="ts">
-const { status } = defineProps<{ status: Status; }>();
-const emit = defineEmits<{ (e: "select", s: Status): void; }>();
-
-const statuses = computed(() =>
-  Object.values(Status).filter((s) => s !== status)
-);
+<script setup lang="ts" generic="T">
+const { options } = defineProps<{ options: { id: T, label: string; }[]; }>();
+const emit = defineEmits<{ (e: "select", id: T): void; }>();
 </script>
 
 <template>
   <fieldset>
-    <button v-for="status of statuses" @click="() => emit('select', status)">
-      {{ StatusEmoji(status) }} {{ StatusLabel(status) }}
+    <button v-for="option of options" @click="() => emit('select', option.id)">
+      {{ option.label }}
     </button>
   </fieldset>
 </template>
