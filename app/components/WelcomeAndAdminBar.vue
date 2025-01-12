@@ -51,7 +51,7 @@ defineExpose({ focus });
 
 <template>
   <section v-if="!rounds.size">
-    <NuxtLink :to="display ? 'https://www.isithuntyet.info' : settings.huntURL">
+    <NuxtLink :to="settings.huntURL">
       <template v-if="display">
         ⏳&hairsp; <span>Hunt begins in {{ display }}</span>
       </template>
