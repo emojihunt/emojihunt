@@ -14,14 +14,15 @@ const { puzzleCount, solvedPuzzleCount, ordering } = usePuzzles();
 const goto = (round: AnnotatedRound) => {
   const id = (new URL(`#${round.anchor}`, url)).hash; // escaping
   emit("navigate");
-  document.querySelector<HTMLElement>(`${id} ~ section .puzzle [tabIndex='0']`)?.focus();
 
   // Workaround: the first round doesn't have an anchor.
   if (round.id === ordering.value.find((r) => !filter || !r.complete)?.id) {
     window.scrollTo({ top: 0 });
+    document.querySelector<HTMLElement>(".puzzle [tabindex='0']")?.focus();
   }
   else {
     document.querySelector(id)?.scrollIntoView();
+    document.querySelector<HTMLElement>(`${id} ~ section .puzzle [tabIndex='0']`)?.focus();
   }
 
   // IntersectionObserver doesn't fire with scrollIntoView, so fix up the
