@@ -149,6 +149,50 @@ func (c *Client) handleScheduledEvent(
 	return nil
 }
 
+// Message Handling
+
+type AblyMessage struct {
+	ID        string          `json:"id"`
+	ChannelID string          `json:"ch"`
+	Author    AblyMessageUser `json:"u"`
+	Content   string          `json:"m"`
+}
+
+type AblyMessageUser struct {
+	ID     string `json:"id"`
+	Name   string `json:"n"`
+	Avatar string `json:"a"`
+}
+
+func (c *Client) handleMessageEvent(
+	ctx context.Context, e *discordgo.MessageCreate,
+) error {
+	ch, ok := c.GetChannel(e.ChannelID)
+	if !ok || ch.ParentID == c.TeamCategoryID {
+		return nil // skip messages to #hanging-out, etc. (load management)
+	}
+	if e.Message == nil || e.Message.Author == nil {
+		return nil // ???
+	}
+	if e.Message.Author.Bot {
+		return nil // skip bot messages (avoid loops)
+	}
+	if e.Message.Thread != nil {
+		return nil // skip messages in threads
+	}
+	var message = AblyMessage{
+		ID:        e.Message.ID,
+		ChannelID: e.ChannelID,
+		Author: AblyMessageUser{
+			ID:     e.Author.ID,
+			Name:   e.Author.GlobalName,
+			Avatar: e.Author.Avatar,
+		},
+		Content: e.Message.Content,
+	}
+	return c.ably.Publish(ctx, "discord", message)
+}
+
 // Rate Limit Tracking
 
 func (c *Client) CheckRateLimit(url string) *time.Time {

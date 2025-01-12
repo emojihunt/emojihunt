@@ -73,10 +73,6 @@ func main() {
 	var state = state.New(ctx, "db.sqlite")
 
 	// Set up clients
-	var discord = discord.Connect(ctx, *prod, state)
-	defer discord.Close()
-	var drive = drive.NewClient(ctx, *prod)
-
 	ablyKey, ok := os.LookupEnv("ABLY_API_KEY")
 	if !ok {
 		log.Panicf("ABLY_API_KEY is required")
@@ -86,6 +82,10 @@ func main() {
 		log.Panicf("ably.NewRealtime: %s", err)
 	}
 	defer ably.Close()
+
+	var discord = discord.Connect(ctx, *prod, state, ably)
+	defer discord.Close()
+	var drive = drive.NewClient(ctx, *prod)
 
 	// Start internal engines
 	var sync = sync.New(ably, discord, drive, state)

@@ -8,6 +8,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/ably/ably-go/ably"
 	"github.com/bwmarrin/discordgo"
 	"github.com/emojihunt/emojihunt/state"
 	"golang.org/x/xerrors"
@@ -40,6 +41,9 @@ var ProdConfig = Config{
 	TeamCategoryID:      "925929203537416293",
 }
 
+// For now, let's use the same channel as sync
+const ablyChannelName = "huntbot"
+
 type Client struct {
 	main  context.Context
 	s     *discordgo.Session
@@ -56,6 +60,7 @@ type Client struct {
 	botsByCommand map[string]*botRegistration
 
 	mutex                     sync.Mutex // hold while accessing everything below
+	ably                      *ably.RealtimeChannel
 	commandsRegistered        bool
 	channelCache              map[string]*discordgo.Channel
 	scheduledEventsCache      map[string]*discordgo.GuildScheduledEvent
@@ -63,7 +68,7 @@ type Client struct {
 	rateLimits                map[string]*time.Time // url -> retryAfter time
 }
 
-func Connect(ctx context.Context, prod bool, state *state.Client) *Client {
+func Connect(ctx context.Context, prod bool, state *state.Client, ably *ably.Realtime) *Client {
 	// Initialize discordgo client
 	token, ok := os.LookupEnv("DISCORD_TOKEN")
 	if !ok {
@@ -74,7 +79,9 @@ func Connect(ctx context.Context, prod bool, state *state.Client) *Client {
 		panic(err)
 	}
 	s.Identify.Intents = discordgo.IntentsGuilds |
-		discordgo.IntentsGuildScheduledEvents
+		discordgo.IntentsGuildScheduledEvents |
+		discordgo.IntentsGuildMessages |
+		discordgo.IntentMessageContent
 	s.Identify.Presence.Status = "invisible"
 	if err := s.Open(); err != nil {
 		log.Panicf("discordgo.Open: %s", err)
@@ -136,6 +143,7 @@ func Connect(ctx context.Context, prod bool, state *state.Client) *Client {
 		QMChannel:                 qmChannel,
 		TeamCategoryID:            config.TeamCategoryID,
 		QMRole:                    qmRole,
+		ably:                      ably.Channels.Get(ablyChannelName),
 		botsByCommand:             make(map[string]*botRegistration),
 		channelCache:              make(map[string]*discordgo.Channel),
 		scheduledEventsLastUpdate: time.Now().Add(-24 * time.Hour),
@@ -145,11 +153,13 @@ func Connect(ctx context.Context, prod bool, state *state.Client) *Client {
 	// Register handlers. Remember to register the necessary intents above!
 	s.AddHandler(WrapHandler(ctx, "bot.unknown", discord.handleCommand))
 	s.AddHandler(WrapHandler(ctx, "bot.unknown", discord.handleScheduledEvent))
+	s.AddHandler(WrapHandler(ctx, "message", discord.handleMessageEvent))
 	s.AddHandler(WrapHandler(ctx, "rate_limit", discord.handleRateLimit))
 
 	s.AddHandler(WrapHandler(ctx, "channel", discord.handleChannelCreate))
 	s.AddHandler(WrapHandler(ctx, "channel", discord.handleChannelUpdate))
 	s.AddHandler(WrapHandler(ctx, "channel", discord.handleChannelDelete))
+
 	if err := discord.refreshChannelCache(); err != nil {
 		log.Panicf("refreshChannelCache: %v", err)
 	}
