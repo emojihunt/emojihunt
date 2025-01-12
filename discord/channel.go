@@ -15,6 +15,9 @@ func (c *Client) handleChannelCreate(ctx context.Context, r *discordgo.ChannelCr
 	defer c.mutex.Unlock()
 	c.channelCache[r.ID] = r.Channel
 	log.Printf("discord: channel created: %q", r.Channel.Name)
+	if r.Type == discordgo.ChannelTypeGuildVoice {
+		c.state.DiscoveryChange <- true
+	}
 	return nil
 }
 
@@ -23,6 +26,9 @@ func (c *Client) handleChannelUpdate(ctx context.Context, r *discordgo.ChannelUp
 	defer c.mutex.Unlock()
 	c.channelCache[r.ID] = r.Channel
 	log.Printf("discord: channel updated: %q", r.Channel.Name)
+	if r.Type == discordgo.ChannelTypeGuildVoice {
+		c.state.DiscoveryChange <- true
+	}
 	return nil
 }
 
@@ -31,6 +37,9 @@ func (c *Client) handleChannelDelete(ctx context.Context, r *discordgo.ChannelDe
 	defer c.mutex.Unlock()
 	delete(c.channelCache, r.ID)
 	log.Printf("discord: channel deleted: %q", r.Channel.Name)
+	if r.Type == discordgo.ChannelTypeGuildVoice {
+		c.state.DiscoveryChange <- true
+	}
 	return nil
 }
 
@@ -45,6 +54,7 @@ func (c *Client) refreshChannelCache() error {
 	for _, channel := range channels {
 		c.channelCache[channel.ID] = channel
 	}
+	c.state.DiscoveryChange <- true
 	return nil
 }
 

@@ -16,6 +16,8 @@ type Meta struct {
 	DiscordGuild string     `json:"discord_guild"`
 	HangingOut   string     `json:"hanging_out"`
 	NextHunt     *time.Time `json:"next_hunt"`
+
+	VoiceRooms map[string]string `json:"voice_rooms"`
 }
 
 func (c *Client) ComputeMeta(discovery state.DiscoveryConfig) Meta {
@@ -29,5 +31,7 @@ func (c *Client) ComputeMeta(discovery state.DiscoveryConfig) Meta {
 		DiscordGuild: c.discord.Guild.ID,
 		HangingOut:   c.discord.HangingOutChannel.ID,
 		NextHunt:     nextHunt,
+
+		VoiceRooms: c.discord.ListVoiceChannels(),
 	}
 }

@@ -11,7 +11,6 @@ export default function (sync: (m: SyncMessage) => void, settings: (m: SettingsM
       if (e.data.name === "sync") {
         sync(e.data.data);
       } else if (e.data.name === "settings") {
-        console.warn("Settings", e);
         settings(e.data.data);
       } if (e.data.name === "client") {
         if (e.data.state === "connected") {

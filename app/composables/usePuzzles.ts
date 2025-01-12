@@ -222,6 +222,20 @@ export async function initializePuzzles(): Promise<State> {
     settings.discordGuild = msg.discord_guild;
     settings.hangingOut = msg.hanging_out;
     settings.nextHunt = msg.next_hunt ? new Date(msg.next_hunt) : null;
+
+    Object.entries(msg.voice_rooms).forEach(([id, raw]) => {
+      // We expect the channel's emoji to go at the end
+      const p = raw.split(" ");
+      if ([...p[p.length - 1]].length === 1) {
+        const name = p.slice(0, p.length - 1).join(" ");
+        const emoji = p[p.length - 1];
+        voiceRooms.set(id, { id, name, emoji });
+      } else {
+        voiceRooms.set(id, { id, name: raw, emoji: "📻" });
+      }
+    });
+    const ids = new Set<string>(Object.keys(msg.voice_rooms));
+    voiceRooms.forEach((_, i) => !ids.has(i) && voiceRooms.delete(i));
   };
   const connected = useAbly(onSync, onSettings);
 
@@ -297,18 +311,6 @@ export async function initializePuzzles(): Promise<State> {
   data.value.puzzles.forEach((p) => _puzzles.set(p.id, p));
   data.value.rounds.forEach((r) => _rounds.set(r.id, r));
   onSettings(data.value.settings);
-
-  Object.entries(data.value.voice_rooms).forEach(([id, raw]) => {
-    // We expect the channel's emoji to go at the end
-    const p = raw.split(" ");
-    if ([...p[p.length - 1]].length === 1) {
-      const name = p.slice(0, p.length - 1).join(" ");
-      const emoji = p[p.length - 1];
-      voiceRooms.set(id, { id, name, emoji });
-    } else {
-      voiceRooms.set(id, { id, name: raw, emoji: "📻" });
-    }
-  });
 
   refresh();
   return state;

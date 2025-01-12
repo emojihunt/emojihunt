@@ -113,7 +113,6 @@ export type HomeResponse = {
   puzzles: Puzzle[];
   rounds: Round[];
   settings: SettingsMessage;
-  voice_rooms: Record<string, string>;
 };
 
 export type SettingsMessage = {
@@ -124,6 +123,7 @@ export type SettingsMessage = {
   discord_guild: string;
   hanging_out: string;
   next_hunt: string;
+  voice_rooms: Record<string, string>;
 };
 
 export type DiscoveryConfig = {

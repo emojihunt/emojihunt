@@ -16,12 +16,10 @@ func (s *Server) ListHome(c echo.Context) error {
 	for i, puzzle := range puzzles {
 		rawPuzzles[i] = puzzle.RawPuzzle()
 	}
-	voiceRooms := s.discord.ListVoiceChannels()
 	return c.JSON(http.StatusOK, map[string]interface{}{
-		"change_id":   changeID,
-		"puzzles":     rawPuzzles,
-		"rounds":      rounds,
-		"settings":    s.sync.ComputeMeta(discovery),
-		"voice_rooms": voiceRooms,
+		"change_id": changeID,
+		"puzzles":   rawPuzzles,
+		"rounds":    rounds,
+		"settings":  s.sync.ComputeMeta(discovery),
 	})
 }
