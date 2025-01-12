@@ -314,7 +314,7 @@ export async function initializePuzzles(): Promise<State> {
 };
 
 export default function usePuzzles(): State {
-  const state = inject(key);
+  const state = inject(key, undefined);
   if (!state) {
     // Note: usePuzzles() will only work in a lower-level component than the
     // one where initializePuzzles() was called.
