@@ -19,6 +19,7 @@ type Config struct {
 	QMChannelID         string
 	HangingOutChannelID string
 	MoreEyesChannelID   string
+	TeamCategoryID      string
 }
 
 var DevConfig = Config{
@@ -27,6 +28,7 @@ var DevConfig = Config{
 	QMChannelID:         "1058092560926646282",
 	HangingOutChannelID: "1058090774488678532",
 	MoreEyesChannelID:   "1058092531688157266",
+	TeamCategoryID:      "1058090774488678530",
 }
 
 var ProdConfig = Config{
@@ -35,6 +37,7 @@ var ProdConfig = Config{
 	QMChannelID:         "795780814846689321",
 	HangingOutChannelID: "793599987694436377",
 	MoreEyesChannelID:   "793607709022748683",
+	TeamCategoryID:      "925929203537416293",
 }
 
 type Client struct {
@@ -48,6 +51,7 @@ type Client struct {
 	HangingOutChannel   *discordgo.Channel // for solves, to celebrate
 	MoreEyesChannel     *discordgo.Channel // for verbose puzzle updates
 	DefaultVoiceChannel *discordgo.Channel // for placeholder events
+	TeamCategoryID      string             // for safety
 	QMRole              *discordgo.Role    // so QMs show up in the sidebar
 
 	botsByCommand map[string]*botRegistration
@@ -146,6 +150,7 @@ func Connect(ctx context.Context, prod bool, state *state.Client) *Client {
 		HangingOutChannel:         hangingOutChannel,
 		MoreEyesChannel:           moreEyesChannel,
 		QMChannel:                 qmChannel,
+		TeamCategoryID:            config.TeamCategoryID,
 		DefaultVoiceChannel:       defaultVoiceChannel,
 		QMRole:                    qmRole,
 		botsByCommand:             make(map[string]*botRegistration),

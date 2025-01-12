@@ -89,7 +89,8 @@ func (c *Client) UpdateDiscordChannel(ctx context.Context, fields DiscordChannel
 	log.Printf("sync: updating discord channel for %q", fields.PuzzleName)
 
 	ci, ok := c.discord.GetChannel(fields.DiscordChannel)
-	if !ok || ci.Type != discordgo.ChannelTypeGuildText {
+	if !ok || ci.Type != discordgo.ChannelTypeGuildText ||
+		ci.ParentID == c.discord.TeamCategoryID {
 		return &invalidChannelError{fields.DiscordChannel}
 	}
 
