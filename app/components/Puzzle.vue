@@ -25,8 +25,8 @@ defineExpose({
     <span class="data">
       <PuzzleName :id @edit="() => emit('edit')" />
       <PuzzleStatus :id />
-      <PuzzleNoteLocation :id field="location" :tabsequence="7" />
-      <PuzzleNoteLocation :id field="note" :tabsequence="8" />
+      <PuzzleLocation :id field="location" />
+      <PuzzleNote :id field="note" />
     </span>
   </span>
 </template>
