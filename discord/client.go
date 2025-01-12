@@ -45,14 +45,13 @@ type Client struct {
 	s     *discordgo.Session
 	state *state.Client
 
-	Guild               *discordgo.Guild
-	Application         *discordgo.Application
-	QMChannel           *discordgo.Channel // for puzzle maintenance
-	HangingOutChannel   *discordgo.Channel // for solves, to celebrate
-	MoreEyesChannel     *discordgo.Channel // for verbose puzzle updates
-	DefaultVoiceChannel *discordgo.Channel // for placeholder events
-	TeamCategoryID      string             // for safety
-	QMRole              *discordgo.Role    // so QMs show up in the sidebar
+	Guild             *discordgo.Guild
+	Application       *discordgo.Application
+	QMChannel         *discordgo.Channel // for puzzle maintenance
+	HangingOutChannel *discordgo.Channel // for solves, to celebrate
+	MoreEyesChannel   *discordgo.Channel // for verbose puzzle updates
+	TeamCategoryID    string             // for safety
+	QMRole            *discordgo.Role    // so QMs show up in the sidebar
 
 	botsByCommand map[string]*botRegistration
 
@@ -111,21 +110,6 @@ func Connect(ctx context.Context, prod bool, state *state.Client) *Client {
 		log.Panicf("failed to load qm channel %q: %s", config.QMChannelID, err)
 	}
 
-	var defaultVoiceChannel *discordgo.Channel
-	channels, err := s.GuildChannels(config.GuildID)
-	if err != nil {
-		log.Panicf("failed to load voice channels: %s", err)
-	}
-	for _, channel := range channels {
-		if channel.Type == discordgo.ChannelTypeGuildVoice {
-			defaultVoiceChannel = channel
-			break
-		}
-	}
-	if defaultVoiceChannel == nil {
-		log.Panicf("no voice channels found")
-	}
-
 	allRoles, err := s.GuildRoles(guild.ID)
 	if err != nil {
 		log.Panicf("failed to load guild roles: %s", err)
@@ -151,7 +135,6 @@ func Connect(ctx context.Context, prod bool, state *state.Client) *Client {
 		MoreEyesChannel:           moreEyesChannel,
 		QMChannel:                 qmChannel,
 		TeamCategoryID:            config.TeamCategoryID,
-		DefaultVoiceChannel:       defaultVoiceChannel,
 		QMRole:                    qmRole,
 		botsByCommand:             make(map[string]*botRegistration),
 		channelCache:              make(map[string]*discordgo.Channel),

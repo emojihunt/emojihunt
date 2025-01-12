@@ -192,9 +192,17 @@ func (c *Client) RestorePlaceholderEvent() error {
 	}
 
 	log.Printf("sync: restoring voice room placeholder event")
+	var someVoiceChannelID string
+	for channel := range c.discord.ListVoiceChannels() {
+		someVoiceChannelID = channel
+		break
+	}
+	if someVoiceChannelID == "" {
+		return xerrors.Errorf("sync: at least one voice channel is required")
+	}
 	start := time.Now().Add(eventDelay)
 	_, err = c.discord.CreateScheduledEvent(&discordgo.GuildScheduledEventParams{
-		ChannelID:          c.discord.DefaultVoiceChannel.ID,
+		ChannelID:          someVoiceChannelID,
 		Name:               VoiceRoomPlaceholderTitle,
 		PrivacyLevel:       discordgo.GuildScheduledEventPrivacyLevelGuildOnly,
 		ScheduledStartTime: &start,
