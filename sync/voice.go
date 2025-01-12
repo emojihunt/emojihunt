@@ -79,6 +79,15 @@ func (c *Client) SyncVoiceRooms(ctx context.Context) error {
 		eventsByChannel[event.ChannelID] = event
 	}
 	for channelID, puzzles := range puzzlesByChannel {
+		ch, ok := c.discord.GetChannel(channelID)
+		if !ok || ch.Type != discordgo.ChannelTypeGuildVoice {
+			log.Printf("skipping sync of invalid voice room %q", channelID)
+			for _, puzzle := range puzzles {
+				c.CheckDiscordVoiceRoom(ctx, puzzle)
+			}
+			continue
+		}
+
 		var puzzleNames []string
 		for _, puzzle := range puzzles {
 			puzzleNames = append(puzzleNames, puzzle.Name)

@@ -2,6 +2,7 @@ package sync
 
 import (
 	"context"
+	"errors"
 	"log"
 	"sync"
 
@@ -210,8 +211,11 @@ func (c *Client) TriggerPuzzle(ctx context.Context, change state.PuzzleChange) e
 	wg.Wait()
 	close(ch)
 	for err := range ch {
+		var ic *invalidChannelError
 		var code = discord.ErrCode(err)
-		if code == discordgo.ErrCodeUnknownChannel || code == discordgo.ErrCodeInvalidFormBody {
+		if errors.As(err, &ic) ||
+			code == discordgo.ErrCodeUnknownChannel ||
+			code == discordgo.ErrCodeInvalidFormBody {
 			c.CheckDiscordPuzzle(ctx, puzzle)
 			return err
 		} else if err != nil {

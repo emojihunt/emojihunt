@@ -16,6 +16,14 @@ const (
 	locationDefaultMsg = "Use `/puzzle voice` to assign a voice room."
 )
 
+type invalidChannelError struct {
+	channelID string
+}
+
+func (e *invalidChannelError) Error() string {
+	return fmt.Sprintf("invalid discord channel: %q", e.channelID)
+}
+
 // CreateDiscordChannel creates a new Discord channel and returns its ID.
 func (c *Client) CreateDiscordChannel(ctx context.Context, puzzle state.RawPuzzle,
 	round state.Round) (string, error) {
@@ -79,6 +87,12 @@ func NewDiscordChannelFields(puzzle state.Puzzle) DiscordChannelFields {
 // prefixed with a check mark when the puzzle is solved.
 func (c *Client) UpdateDiscordChannel(ctx context.Context, fields DiscordChannelFields) error {
 	log.Printf("sync: updating discord channel for %q", fields.PuzzleName)
+
+	ci, ok := c.discord.GetChannel(fields.DiscordChannel)
+	if !ok || ci.Type != discordgo.ChannelTypeGuildText {
+		return &invalidChannelError{fields.DiscordChannel}
+	}
+
 	position, err := c.SortDiscordChannels(ctx, fields.PuzzleSortFields)
 	if err != nil {
 		return err
@@ -130,12 +144,12 @@ func (c *Client) UpdateDiscordChannel(ctx context.Context, fields DiscordChannel
 func (c *Client) CheckDiscordPuzzle(ctx context.Context, puzzle state.Puzzle) {
 	log.Printf("sync: checking puzzle channel for %q", puzzle.Name)
 	var channel = puzzle.DiscordChannel
-	_, ok := c.discord.GetChannel(channel)
-	if !ok {
+	ch, ok := c.discord.GetChannel(channel)
+	if !ok || ch.Type != discordgo.ChannelTypeGuildText {
 		go c.state.UpdatePuzzle(ctx, puzzle.ID,
 			func(puzzle *state.RawPuzzle) error {
 				if puzzle.DiscordChannel == channel {
-					log.Printf("sync: clearing nonexistent discord channel %q on %q", channel, puzzle.Name)
+					log.Printf("sync: clearing invalid discord channel %q on %q", channel, puzzle.Name)
 					puzzle.DiscordChannel = ""
 				}
 				return nil
@@ -148,4 +162,22 @@ func (c *Client) CheckDiscordPuzzle(ctx context.Context, puzzle state.Puzzle) {
 	// Check that solved categories exist. Caveat: unlike the fixups above, this
 	// won't fire a fresh change notification for the puzzle...
 	go c.RestoreSolvedCategories()
+}
+
+func (c *Client) CheckDiscordVoiceRoom(ctx context.Context, puzzle state.VoiceInfo) {
+	var channel = puzzle.VoiceRoom
+	if channel != "" {
+		ch, ok := c.discord.GetChannel(channel)
+		if !ok || ch.Type != discordgo.ChannelTypeGuildVoice {
+			go c.state.UpdatePuzzle(ctx, puzzle.ID,
+				func(puzzle *state.RawPuzzle) error {
+					if puzzle.VoiceRoom == channel {
+						log.Printf("sync: clearing invalid voice channel %q on %q", channel, puzzle.Name)
+						puzzle.VoiceRoom = ""
+					}
+					return nil
+				},
+			)
+		}
+	}
 }
