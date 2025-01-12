@@ -1,34 +1,32 @@
 <script setup lang="ts">
-const { id } = defineProps<{ id?: number; }>();
+const { id } = defineProps<{ id: number; }>();
 const emit = defineEmits<{ (event: "close"): void; }>();
-const store = usePuzzles();
+
+const { rounds, updateRound, deleteRound } = usePuzzles();
 const toast = useToast();
 
-const initial = (): Partial<Omit<Round, "id">> =>
-  id ? { ...store.rounds.find((r) => r.id === id) } : {};
-const original = reactive(initial());
+const original = reactive({ ...rounds.get(id) });
 const edits = reactive({ ...original });
 const modified = computed(() => {
   const modified: Partial<Omit<Round, "id">> = {};
   for (const key of RoundKeys) {
-    //  Note: we must use "!=" because inputs convert numbers to strings.
     let value = edits[key] || "";
     if (value === "-") value = "";
     // @ts-ignore
-    if (value !== original[key]) modified[key] = value;
+    // Note: we must use "!=" because inputs convert numbers to strings.
+    if (value != original[key]) modified[key] = value;
   }
   return modified;
 });
 
 const form = useTemplateRef("form");
 watch(() => id, () => {
-  if (id) nextTick(() => form.value?.querySelector("input")?.focus());
-  const updated = initial();
-  Object.assign(original, updated);
-  Object.assign(edits, updated);
+  Object.assign(original, rounds.get(id));
+  Object.assign(edits, rounds.get(id));
+  nextTick(() => form.value?.querySelector("input")?.focus());
 });
-watch([storeToRefs(store).rounds], () => {
-  const updated = initial();
+watch(rounds.get(id)!, (updated) => {
+  updated = { ...updated };
   for (const key of RoundKeys) {
     if (updated[key] === original[key]) continue;
 
@@ -47,7 +45,7 @@ const submit = (e: Event) => {
   if (!id) return;
   saving.value = true;
   if (previous) toast.remove(previous);
-  store.updateRound(id, modified.value)
+  updateRound(id, modified.value)
     .then(() => (
       toast.add({
         title: "Updated round", color: "green",
@@ -67,7 +65,7 @@ const del = (e: MouseEvent) => {
   if (!id) return;
   if (!confirm("Delete this round?")) return;
   if (previous) toast.remove(previous);
-  store.deleteRound(id)
+  deleteRound(id)
     .then(() => (
       toast.add({
         title: "Deleted round", color: "green", icon: "i-heroicons-trash",
@@ -81,10 +79,6 @@ const del = (e: MouseEvent) => {
     ).finally(() => (saving.value = false));
 };
 
-const rounds = computed(() => store.rounds.map((r) =>
-  ({ label: `${r.emoji}\ufe0f ${r.name}`, value: r.id })));
-const statuses = computed(() => Statuses.map((s) =>
-  ({ label: `${StatusEmoji(s)} ${StatusLabel(s)}`, value: s })));
 const hue = computed(() => edits.hue || 0);
 </script>
 

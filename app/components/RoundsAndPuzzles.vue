@@ -6,10 +6,10 @@ const { filter, observer } = defineProps<{
 const emit = defineEmits<{
   (e: "edit", kind: "puzzle" | "round", id: number): void;
 }>();
-const store = usePuzzles();
+const { ordering: ordering } = usePuzzles();
 
 const focused = ref(3);
-const puzzles = useTemplateRef("puzzles");
+const puzz = useTemplateRef("puzz");
 const updateTabIndex = (i: number) => {
   focused.value = i;
   document.querySelectorAll("[data-tabsequence]").forEach(
@@ -24,7 +24,7 @@ const updateTabIndex = (i: number) => {
 };
 const keydown = (e: KeyboardEvent) => {
   let delta = 0;
-  if (!puzzles.value || !e.target) return;
+  if (!puzz.value || !e.target) return;
   else if (e.key === "ArrowUp") delta = -1;
   else if (e.key === "ArrowDown") delta = 1;
   else if (e.key === "ArrowRight") {
@@ -49,15 +49,15 @@ const keydown = (e: KeyboardEvent) => {
 
   // Note: we assume (unsafely?) that the `puzzles` array matches the order of
   // puzzles on the page.
-  const i = puzzles.value.findIndex((p: any) => p.id === currentID) + delta;
-  if (i === undefined || i < 0 || i >= puzzles.value.length) {
+  const i = puzz.value.findIndex((p: any) => p.id === currentID) + delta;
+  if (i === undefined || i < 0 || i >= puzz.value.length) {
     // Focus is in first or last puzzle. Make sure it's visible, then bubble up
     // the event to make the page scroll.
     current?.scrollIntoView();
     return;
   }
 
-  puzzles.value[i]?.focus();
+  puzz.value[i]?.focus();
   e.preventDefault();
   e.stopPropagation();
 };
@@ -82,12 +82,14 @@ onMounted(() => updateTabIndex);
 
 const roundToSequence = computed(() =>
   new Map(
-    (filter ? store.rounds.filter((r) => !r.complete) : store.rounds).map((r, i) => [r.id, i]))
+    (filter ? ordering.value.filter((r) => !r.complete) : ordering.value)
+      .map((r, i) => [r.id, i])
+  )
 );
 
 defineExpose({
   focus(id: number) {
-    puzzles.value?.find((p: any) => p.id === id)?.focus();
+    puzz.value?.find((p: any) => p.id === id)?.focus();
   },
   navigate() {
     // When using the emoji nav, reset tabindex to puzzle name.
@@ -98,16 +100,15 @@ defineExpose({
 
 <template>
   <main @keydown="keydown" @focusin="focusin">
-    <template v-for="round of store.rounds">
-      <RoundHeader v-if="!filter || !round.complete" :round="round" :key="round.id"
-        :sequence="roundToSequence.get(round.id)!" :filter="filter" :observer="observer"
+    <template v-for="round of ordering">
+      <RoundHeader v-if="!filter || !round.complete" :key="round.id" :id="round.id"
+        :sequence="roundToSequence.get(round.id) || 0" :filter :observer
         @edit="() => emit('edit', 'round', round.id)" />
       <section :class="filter && round.complete && 'invisible'"
         :style="`--round-hue: ${round.hue}`">
-        <Puzzle v-for="puzzle in store.puzzlesByRound.get(round.id)" :key="puzzle.id"
-          ref="puzzles" :puzzle="puzzle"
-          @edit="() => emit('edit', 'puzzle', puzzle.id)" />
-        <div class="empty" v-if="!round.total">
+        <Puzzle v-for="puzzle in round.puzzles" ref="puzz" :key="puzzle.id"
+          :id="puzzle.id" @edit="() => emit('edit', 'puzzle', puzzle.id)" />
+        <div class="empty" v-if="round.total === 0">
           🫙&hairsp; No Puzzles
         </div>
         <hr>

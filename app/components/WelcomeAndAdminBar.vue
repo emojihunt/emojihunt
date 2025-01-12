@@ -2,14 +2,13 @@
 const emit = defineEmits<{
   (e: "click", kind: "round" | "puzzle" | "admin"): void;
 }>();
-const store = usePuzzles();
-
+const { settings, rounds } = usePuzzles();
 const display = ref<string | undefined>();
 const recalculate = () => {
   display.value = undefined;
-  if (!store.nextHunt) return;
+  if (!settings.nextHunt) return;
 
-  let delta = store.nextHunt.getTime() - new Date().getTime();
+  let delta = settings.nextHunt.getTime() - new Date().getTime();
   delta = Math.floor(delta / 1000);
   if (delta <= 0) return;
 
@@ -34,7 +33,7 @@ const recalculate = () => {
 recalculate();
 onMounted(() => {
   recalculate();
-  if (display.value && !store.rounds.length) {
+  if (display.value && !rounds.size) {
     setInterval(recalculate, 200);
   }
 });
@@ -51,8 +50,8 @@ defineExpose({ focus });
 </script>
 
 <template>
-  <section v-if="!store.rounds.length">
-    <NuxtLink :to="display ? 'https://www.isithuntyet.info' : store.huntURL">
+  <section v-if="!rounds.size">
+    <NuxtLink :to="display ? 'https://www.isithuntyet.info' : settings.huntURL">
       <template v-if="display">
         ⏳&hairsp; <span>Hunt begins in {{ display }}</span>
       </template>
@@ -65,11 +64,9 @@ defineExpose({ focus });
   <footer>
     <fieldset>
       <button ref="round" @click="() => emit('click', 'round')"
-        :disabled="!!display && !store.rounds.length">○
-        Add
-        Round</button>
+        :disabled="!!display && rounds.size === 0">○ Add Round</button>
       <button ref="puzzle" @click="() => emit('click', 'puzzle')"
-        :disabled="!store.rounds.length">▢ Add Puzzle</button>
+        :disabled="rounds.size === 0">▢ Add Puzzle</button>
       <button ref="admin" @click="emit('click', 'admin')">◆
         Admin</button>
     </fieldset>

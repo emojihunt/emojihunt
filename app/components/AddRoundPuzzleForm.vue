@@ -19,12 +19,13 @@ const index = new EmojiIndex(emojifile, { recent: [] });
 
 const { kind } = defineProps<{ kind: "round" | "puzzle"; }>();
 const emit = defineEmits<{ (event: "close"): void; }>();
-const store = usePuzzles();
+
+const { ordering, addPuzzle, addRound } = usePuzzles();
 const toast = useToast();
 
 const initial = () => ({
   emoji: "", name: "", hue: 274, url: "", create: true,
-  round: store.rounds.length ? store.rounds[0] : { id: 0, hue: 0 },
+  round: ordering.value.length ? ordering.value[0] : { id: 0, hue: 0 },
 });
 const data = reactive(initial());
 const saving = ref(false);
@@ -37,7 +38,7 @@ const submit = (e: Event) => {
   setTimeout(() => {
     let request;
     if (kind === "round") {
-      request = store.addRound({
+      request = addRound({
         name: data.name, emoji: data.emoji, hue: data.hue,
         drive_folder: "+", // *don't* add category yet, to avoid clutter
       });
@@ -48,7 +49,7 @@ const submit = (e: Event) => {
       if (data.create) {
         params = { ...params, spreadsheet_id: "+", discord_channel: "+" };
       }
-      request = store.addPuzzle(params);
+      request = addPuzzle(params);
     }
     request.
       then(() => (
@@ -105,7 +106,7 @@ const hue = computed(() => kind === "round" ? data.hue : data.round?.hue);
       <URange v-model="data.hue" :min=0 :max="359" class="hue" />
     </template>
     <template v-else>
-      <USelectMenu v-model="data.round" placeholder="Round" :options="store.rounds"
+      <USelectMenu v-model="data.round" placeholder="Round" :options="ordering"
         option-attribute="displayName" :popper="{ arrow: false }" searchable
         clear-search-on-close @close="select">
         <template #trailing>

@@ -1,17 +1,19 @@
 <script setup lang="ts">
-const { puzzle, field, tabsequence } = defineProps<{
-  puzzle: Puzzle;
+const { id, field, tabsequence } = defineProps<{
+  id: number;
   field: "location" | "note";
   tabsequence: number;
 }>();
-const store = usePuzzles();
+
+const { puzzles, voiceRooms, updatePuzzleOptimistic } = usePuzzles();
+const puzzle = puzzles.get(id)!;
 const saving = ref(false);
 
 const tooltip = computed(() => {
   if (field === "location") {
     const id = puzzle.voice_room;
     if (!id) return;
-    const channel = store.voiceRooms.get(id);
+    const channel = voiceRooms.get(id);
     if (!channel) return;
     return { emoji: channel.emoji, placeholder: channel.name, text: `in ${channel.name}` };
   } else {
@@ -27,10 +29,10 @@ const tooltip = computed(() => {
   }
 });
 
-const save = (updated: string) => {
+const save = async (updated: string) => {
   saving.value = true;
-  store.updatePuzzleOptimistic(puzzle.id, { [field]: updated })
-    .finally(() => (saving.value = false));
+  await updatePuzzleOptimistic(id, { [field]: updated });
+  saving.value = false;
 };
 </script>
 

@@ -7,9 +7,7 @@ useHead({
     { name: "theme-color", content: "oklch(30% 0 0deg)" },
   ]
 });
-const store = usePuzzles();
-await store.refresh();
-const connected = useAbly();
+const { puzzleCount } = await initializePuzzles();
 
 // It doesn't look great when the round headers stack up on top of one another.
 // We want each round header to disappear when it's covered by the next. Use CSS
@@ -30,7 +28,7 @@ onMounted(() => document.location.hash && history.pushState(
 ));
 
 const header = useTemplateRef<any>("header");
-const filter = computed(() => header.value?.filter);
+const filter = computed(() => !!header.value?.filter);
 
 const table = useTemplateRef("table");
 const welcome = useTemplateRef("welcome");
@@ -62,19 +60,18 @@ const close = () => {
 onMounted(() => window.addEventListener("keydown",
   (e) => (e.key === "Escape") && close()));
 
-const showNav = computed(() => store.puzzleCount >= 42);
-const navMargin = computed(() => store.puzzleCount >= 42 ? "4.5rem" : "2vw");
+const showNav = computed(() => puzzleCount.value >= 42);
+const navMargin = computed(() => puzzleCount.value >= 42 ? "4.5rem" : "2vw");
 </script>
 
 <template>
-  <MainHeader ref="header" :connected="!!connected" />
+  <MainHeader ref="header" />
   <div :class="['content', filter && 'filter']">
-    <EmojiNav v-if="showNav" :filter="!!filter" :observer="observer"
-      @navigate="() => table?.navigate()" />
+    <EmojiNav v-if="showNav" :filter :observer @navigate="() => table?.navigate()" />
     <div class="rule first"></div>
     <div class="rule"></div>
     <div class="rule"></div>
-    <RoundsAndPuzzles ref="table" :filter="!!filter" :observer="observer"
+    <RoundsAndPuzzles ref="table" :filter :observer
       @edit="(kind, id) => { editing = { kind, id }; }" />
     <WelcomeAndAdminBar ref="welcome" @click="click" />
     <Modal v-if="!!editing" @close="close">

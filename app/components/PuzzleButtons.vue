@@ -1,12 +1,13 @@
 <script setup lang="ts">
-const props = defineProps<{ puzzle: Puzzle; }>();
-const store = usePuzzles();
+const { id } = defineProps<{ id: number; }>();
+
+const { settings, puzzles } = usePuzzles();
+const puzzle = puzzles.get(id)!;
 const [discordBase, discordTarget] = useDiscordBase();
 
-const spreadsheetURL = computed(() => props.puzzle.spreadsheet_id ?
-  `/${props.puzzle.id}` : "");
-const discordURL = computed(() => props.puzzle.discord_channel ?
-  `${discordBase}/channels/${store.discordGuild}/${props.puzzle.discord_channel}` : "");
+const spreadsheetURL = computed(() => puzzle.spreadsheet_id ? `/${id}` : "");
+const discordURL = computed(() => puzzle.discord_channel ?
+  `${discordBase}/channels/${settings.discordGuild}/${puzzle.discord_channel}` : "");
 </script>
 
 <template>

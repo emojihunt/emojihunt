@@ -1,23 +1,20 @@
 <script setup lang="ts">
+definePageMeta({
+  validate: (route) => {
+    const id = parseInt(route.params.id as string);
+    return (id.toString() === route.params.id);
+  },
+});
+
 useHead({ htmlAttrs: { lang: "en" } });
 const route = useRoute();
-const store = usePuzzles();
-await store.refresh();
-const connected = useAbly();
+const { settings, puzzles, rounds, voiceRooms, updatePuzzleOptimistic } = await initializePuzzles();
 const [discordBase, discordTarget] = useDiscordBase();
 
 const data = computed(() => {
   const id = parseInt(route.params.id as string);
-  if (id.toString() !== route.params.id) {
-    throw createError({
-      fatal: true,
-      message: `Page not found: ${route.fullPath}`,
-      statusCode: 404,
-    });
-  }
-
-  const puzzle = store.puzzles.get(id);
-  const round = store.rounds.find((r) => r.id === puzzle?.round);
+  const puzzle = puzzles.get(id);
+  const round = puzzle && rounds.get(puzzle.round);
   if (!puzzle || !round) {
     throw createError({
       fatal: true,
@@ -33,12 +30,11 @@ const data = computed(() => {
     });
   }
 
-
-  const voiceRoom = puzzle.voice_room && store.voiceRooms.get(puzzle.voice_room);
+  const voiceRoom = puzzle.voice_room && voiceRooms.get(puzzle.voice_room);
   const spreadsheetURL = puzzle.spreadsheet_id ?
     `https://docs.google.com/spreadsheets/d/${puzzle.spreadsheet_id}` : "";
   const discordURL =
-    `${discordBase}/channels/${store.discordGuild}/${puzzle.discord_channel}`;
+    `${discordBase}/channels/${settings.discordGuild}/${puzzle.discord_channel}`;
   return { puzzle, round, voiceRoom, discordURL, spreadsheetURL };
 });
 
@@ -81,7 +77,7 @@ const togglePuzzle = (e: MouseEvent) => {
         :offset-distance="4"
         v-if="data.puzzle.status === Status.NotStarted || data.puzzle.status === Status.Abandoned">
         <button
-          @click="() => store.updatePuzzleOptimistic(data.puzzle.id, { status: Status.Working })">
+          @click="() => updatePuzzleOptimistic(data.puzzle.id, { status: Status.Working })">
           {{ StatusEmoji(data.puzzle.status) || "‼️" }}
         </button>
       </ETooltip>

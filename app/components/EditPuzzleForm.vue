@@ -1,7 +1,8 @@
 <script setup lang="ts">
-const { id } = defineProps<{ id?: number; }>();
+const { id } = defineProps<{ id: number; }>();
 const emit = defineEmits<{ (event: "close"): void; }>();
-const store = usePuzzles();
+
+const { puzzles, rounds, updatePuzzle, deletePuzzle } = usePuzzles();
 const toast = useToast();
 
 type EditState = Omit<Omit<Omit<Puzzle, "id">, "round">, "reminder"> & {
@@ -24,9 +25,7 @@ const editState = (puzzle: Partial<Omit<Puzzle, "id">>): Partial<EditState> => {
   return { ...puzzle, round: (puzzle?.round || "0").toString(), rdate, rtime };
 };
 
-const initial = (): Partial<Omit<Puzzle, "id">> =>
-  id ? { ...store.puzzles.get(id) } : {};
-const original = reactive(initial());
+const original = reactive({ ...puzzles.get(id) });
 const edits = reactive(editState(original));
 const modified = computed(() => {
   const modified: Partial<Omit<Puzzle, "id">> = {};
@@ -59,13 +58,12 @@ const modified = computed(() => {
 
 const form = useTemplateRef("form");
 watch(() => id, () => {
-  if (id) nextTick(() => form.value?.querySelector("input")?.focus());
-  const updated = initial();
-  Object.assign(original, updated);
-  Object.assign(edits, editState(updated));
+  Object.assign(original, puzzles.get(id));
+  Object.assign(edits, editState(puzzles.get(id)!));
+  nextTick(() => form.value?.querySelector("input")?.focus());
 });
-watch([storeToRefs(store).puzzles], () => {
-  const updated = initial();
+watch(() => puzzles.get(id)!, (updated) => {
+  updated = { ...updated };
   const transformed = editState(updated);
   for (const key of PuzzleKeys) {
     if (updated[key] === original[key]) continue;
@@ -88,7 +86,7 @@ const submit = (e: Event) => {
   if (!id) return;
   saving.value = true;
   if (previous) toast.remove(previous);
-  store.updatePuzzle(id, modified.value)
+  updatePuzzle(id, modified.value)
     .then(() => (
       toast.add({
         title: "Updated puzzle", color: "green",
@@ -108,7 +106,7 @@ const del = (e: MouseEvent) => {
   if (!id) return;
   if (!confirm("Delete this puzzle?")) return;
   if (previous) toast.remove(previous);
-  store.deletePuzzle(id)
+  deletePuzzle(id)
     .then(() => (
       toast.add({
         title: "Deleted puzzle", color: "green", icon: "i-heroicons-trash",
@@ -122,11 +120,9 @@ const del = (e: MouseEvent) => {
     ).finally(() => (saving.value = false));
 };
 
-const rounds = computed(() => store.rounds.map((r) =>
-  ({ label: `${r.emoji}\ufe0f ${r.name}`, value: r.id })));
 const statuses = computed(() => Statuses.map((s) =>
   ({ label: `${StatusEmoji(s)} ${StatusLabel(s)}`, value: s })));
-const hue = computed(() => store.rounds.find((r) => r.id === parseInt(edits.round || "0"))?.hue || 0);
+const hue = computed(() => rounds.get(parseInt(edits.round || "0"))?.hue || 0);
 </script>
 
 <template>
@@ -137,7 +133,8 @@ const hue = computed(() => store.rounds.find((r) => r.id === parseInt(edits.roun
     <label for="puzzle-answer" :class="'answer' in modified && 'modified'">Answer</label>
     <UInput v-model="edits.answer" id="puzzle-answer" />
     <label for="puzzle-round" :class="'round' in modified && 'modified'">Round</label>
-    <USelect v-model="edits.round" :options="rounds" id="puzzle-round" />
+    <USelect v-model="edits.round" id="puzzle-round"
+      :options="[...rounds.values()].map((r) => ({ label: r.displayName, value: r.id }))" />
     <label for="puzzle-status" :class="'status' in modified && 'modified'">Status</label>
     <USelect v-model="edits.status" :options="statuses" id="puzzle-status" />
     <label for="puzzle-note" :class="'note' in modified && 'modified'">Note</label>

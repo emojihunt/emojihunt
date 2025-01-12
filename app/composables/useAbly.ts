@@ -1,8 +1,7 @@
 import AblyWorker from "~/ablyWorker?sharedworker";
-import type { AblyWorkerMessage } from "~/utils/types";
+import type { AblyWorkerMessage, SyncMessage } from "~/utils/types";
 
-export default function (): Ref<boolean> {
-  const store = usePuzzles();
+export default function (handleDelta: (m: SyncMessage) => void): Ref<boolean> {
   const connected = ref<boolean>(false);
   let poisoned = false;
   onMounted(() => {
@@ -10,7 +9,7 @@ export default function (): Ref<boolean> {
     const worker = new AblyWorker({ name: "🌊🎨🎡 ·⚡" });
     worker.port.addEventListener("message", (e: MessageEvent<AblyWorkerMessage>) => {
       if (e.data.name === "sync") {
-        store.handleDelta(e.data.data);
+        handleDelta(e.data.data);
       } else if (e.data.name === "client") {
         if (e.data.state === "connected") {
           if (poisoned) window.location.reload();

@@ -6,8 +6,9 @@ const { filter, observer } = defineProps<{
 const emit = defineEmits<{
   (e: "navigate"): void;
 }>();
-const store = usePuzzles();
+
 const url = useRequestURL();
+const { puzzleCount, solvedPuzzleCount, ordering } = usePuzzles();
 
 // Navigate to anchors without changing the fragment
 const goto = (round: AnnotatedRound) => {
@@ -16,8 +17,7 @@ const goto = (round: AnnotatedRound) => {
   document.querySelector<HTMLElement>(`${id} ~ section .puzzle [tabIndex='0']`)?.focus();
 
   // Workaround: the first round doesn't have an anchor.
-  const rounds = filter ? store.rounds.filter((r) => !r.complete) : store.rounds;
-  if (round.id === rounds[0].id) {
+  if (round.id === ordering.value.find((r) => !filter || !r.complete)?.id) {
     window.scrollTo({ top: 0 });
   }
   else {
@@ -43,7 +43,7 @@ const keydown = (e: KeyboardEvent): void => {
   if (e.key === "ArrowUp" || e.key === "ArrowLeft") {
     if (focused.index > 0) focused.index -= 1;
   } else if (e.key === "ArrowDown" || e.key === "ArrowRight") {
-    if (focused.index < store.rounds.length - 1) focused.index += 1;
+    if (focused.index < ordering.value.length - 1) focused.index += 1;
   } else {
     return;
   }
@@ -57,20 +57,20 @@ const keydown = (e: KeyboardEvent): void => {
   <nav ref="nav" @keydown="keydown">
     <div class="spacer"></div>
     <ETooltip text="Puzzles Open" :offset-distance="-3" class="stats">
-      {{ String(store.puzzleCount - store.solvedPuzzleCount).padStart(3, '0') }}
+      {{ String(puzzleCount - solvedPuzzleCount).padStart(3, '0') }}
     </ETooltip>
     <p class="dot"></p>
-    <ETooltip v-for="round of store.rounds" :key="round.id" :text="round.name"
+    <ETooltip v-for="round of ordering" :key="round.id" :text="round.name"
       :offset-distance="-3">
       <a :href="`#${round.anchor}`" @click="(e) => (e.preventDefault(), goto(round))"
-        :tabindex="round.id === store.rounds[focused.index].id ? 0 : -1"
+        :tabindex="round.id === ordering[focused.index].id ? 0 : -1"
         :aria-label="`To ${round.name}`" :style="`--hue: ${round.hue}deg;`">
         <span :class="round.complete && 'complete'">{{ round.emoji }}&#xfe0f;</span>
       </a>
     </ETooltip>
     <p class="dot"></p>
     <ETooltip text="Puzzles Solved" :offset-distance="-3" class="stats">
-      {{ String(store.solvedPuzzleCount).padStart(3, '0') }}
+      {{ String(solvedPuzzleCount).padStart(3, '0') }}
     </ETooltip>
     <div class="spacer"></div>
   </nav>

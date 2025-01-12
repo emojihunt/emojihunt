@@ -1,12 +1,49 @@
-import { defineStore } from 'pinia';
-import { parseReminder } from '~/utils/types';
+// Reactive puzzle state (public interface).
+//
+// It's safe to destructure the immediate keys of this object.
+//
+type State = {
+  connected: Ref<boolean>,
+
+  settings: Settings;
+  puzzles: Map<number, Puzzle>;
+  rounds: Map<number, AnnotatedRound>;
+  voiceRooms: Map<string, VoiceRoom>;
+
+  ordering: Ref<SortedRound[]>;
+  puzzleCount: Ref<number>;
+  solvedPuzzleCount: Ref<number>;
+
+  addRound: (data: NewRound) => Promise<void>;
+  updateRound: (id: number, data: Omit<Partial<Round>, "id">) => Promise<void>;
+  updateRoundOptimistic: (id: number, data: Omit<Partial<Round>, "id">) => Promise<void>;
+  deleteRound: (id: number) => Promise<void>;
+  addPuzzle: (data: NewPuzzle) => Promise<void>;
+  updatePuzzle: (id: number, data: Omit<Partial<Puzzle>, "id">) => Promise<void>;
+  updatePuzzleOptimistic: (id: number, data: Omit<Partial<Puzzle>, "id">) => Promise<void>;
+  deletePuzzle: (id: number) => Promise<void>;
+};
+
+type SortedRound = AnnotatedRound & { puzzles: Puzzle[]; };
+
+type Settings = {
+  discordGuild: string;
+  hangingOut: string;
+  huntName: string;
+  huntURL: string;
+  huntCredentials: string;
+  logisticsURL: string;
+  nextHunt: Date | null;
+};
 
 type Optimistic = (
-  ({ type: "round"; } & Partial<Round>) |
-  ({ type: "round.delete", id: number; }) |
   ({ type: "puzzle"; } & Partial<Puzzle>) |
-  ({ type: "puzzle.delete", id: number; })
+  ({ type: "round"; } & Partial<Round>) |
+  ({ type: "puzzle.delete", id: number; }) |
+  ({ type: "round.delete", id: number; })
 ) & { id: number; };
+
+const key = Symbol() as InjectionKey<State>;
 
 const updateRequest = async <T>(endpoint: string, params: any): Promise<[T, number]> => {
   let args: RequestInit;
@@ -43,198 +80,245 @@ const updateRequest = async <T>(endpoint: string, params: any): Promise<[T, numb
   return [await response.json(), parseInt(header)];
 };
 
-export default defineStore("puzzles", {
-  state: () => ({
-    _rounds: new Map<number, Round>(),
-    _puzzles: new Map<number, Puzzle>(),
-    _initialChangeId: 0,
-    discordGuild: undefined as string | undefined,
-    hangingOut: undefined as string | undefined,
-    huntName: undefined as string | undefined,
-    huntURL: undefined as string | undefined,
-    huntCredentials: undefined as string | undefined,
-    logisticsURL: undefined as string | undefined,
-    nextHunt: undefined as Date | undefined,
-    voiceRooms: new Map<string, VoiceRoom>(),
+const updateReactiveMap = <K, V>(m: Map<K, V>, k: K, v: V): void => {
+  const existing = m.get(k);
+  if (existing) Object.assign(existing, v);
+  else m.set(k, v);
+};
 
-    // Writes not yet received from Ably. Committed writes first (earlier, by
-    // change ID); pending writes second (later, by local ID).
-    _optimisticCounter: Math.floor(Number.MAX_SAFE_INTEGER / 2),
-    _optimistic: new Map<number, Optimistic>(),
-  }),
-  getters: {
-    rounds(state): AnnotatedRound[] {
-      const rounds = new Map(state._rounds);
-      const entries = [...state._optimistic.entries()].sort();
-      for (const [_, entry] of entries) {
-        if (entry.type === "round") {
-          rounds.set(entry.id, { ...rounds.get(entry.id)!, ...entry });
-        } else if (entry.type === "round.delete") {
-          rounds.delete(entry.id);
-        }
+const hydrateRound = (raw: Round, puzzles: Puzzle[]): AnnotatedRound => {
+  const metas = puzzles.filter((p => p.meta));
+  return {
+    ...raw,
+    anchor: raw.name.trim().toLowerCase().replaceAll(/[^A-Za-z0-9]+/g, "-"),
+    complete: puzzles.length > 0 &&
+      (metas.length === 0 ? puzzles : metas).filter((p => !p.answer)).length === 0,
+    displayName: `${raw.emoji}\uFE0F ${raw.name}`,
+    solved: puzzles.filter((p) => p.answer).length,
+    total: puzzles.length,
+  };
+};
+
+// Called in the top-level component.
+//
+// Note: using `provide` and `inject` in the same component doesn't work! So
+// `initializePuzzles` may only be called in the top-level component, and
+// `usePuzzles` may only be called in lower-level components.
+//
+// https://github.com/vuejs/vue/issues/12678
+//
+export async function initializePuzzles(): Promise<State> {
+  if (inject(key, undefined)) {
+    throw new Error("usePuzzles() may only be initialized once");
+  }
+  if (import.meta.server && !useCookie("session").value) {
+    throw createError({
+      message: "short-circuiting to login page",
+      statusCode: 401,
+    });
+  }
+
+  const settings: Settings = reactive({
+    discordGuild: "", hangingOut: "", huntName: "", huntURL: "",
+    huntCredentials: "", logisticsURL: "", nextHunt: null,
+  });
+  const _puzzles = new Map<number, Puzzle>();
+  const _rounds = new Map<number, Round>();
+  const puzzles = reactive(new Map<number, Puzzle>());
+  const rounds = reactive(new Map<number, AnnotatedRound>());
+  const voiceRooms = reactive(new Map<string, VoiceRoom>());
+  const ordering = ref<SortedRound[]>([]);
+  const puzzleCount = ref(0);
+  const solvedPuzzleCount = ref(0);
+
+  const optimistic = new Map<number, Optimistic>();
+  let optimisticCounter = Math.floor(Number.MAX_SAFE_INTEGER / 2);
+  let initialChangeId = 0;
+
+  const refresh = () => { // clocks at around 4ms
+    // First, materialize optimistically-applied updates.
+    const localPuzzles = new Map(_puzzles);
+    const localRounds = new Map(_rounds);
+    for (const [_, entry] of [...optimistic.entries()].sort()) {
+      switch (entry.type) {
+        case "puzzle":
+          localPuzzles.set(entry.id, { ..._puzzles.get(entry.id)!, ...entry });
+          break;
+        case "round":
+          localRounds.set(entry.id, { ...rounds.get(entry.id)!, ...entry });
+          break;
+        case "puzzle.delete":
+          localPuzzles.delete(entry.id);
+          break;
+        case "round.delete":
+          localRounds.delete(entry.id);
+          break;
       }
-      const annotated: AnnotatedRound[] = [];
-      for (const base of rounds.values()) {
-        const puzzles = this.puzzlesByRound.get(base.id) || [];
-        const metas = puzzles.filter((p => p.meta));
-        annotated.push({
-          ...base,
-          anchor: base.name.trim().toLowerCase().replaceAll(/[^A-Za-z0-9]+/g, "-"),
-          complete: puzzles.length > 0 &&
-            (metas.length === 0 ? puzzles : metas).filter((p => !p.answer)).length === 0,
-          displayName: `${base.emoji}\uFE0F ${base.name}`,
-          solved: puzzles.filter((p) => !!p.answer).length,
-          total: puzzles.length,
-        });
-      }
-      annotated.sort((a, b) => {
-        if (a.special !== b.special) return a.special ? -1 : 1;
-        else if (a.sort !== b.sort) return a.sort - b.sort;
-        else return a.id - b.id;
-      });
-      return annotated;
-    },
-    puzzles(state): Map<number, Puzzle> {
-      const puzzles = new Map(state._puzzles);
-      const entries = [...state._optimistic.entries()].sort();
-      for (const [_, entry] of entries) {
-        if (entry.type === "puzzle") {
-          puzzles.set(entry.id, { ...puzzles.get(entry.id)!, ...entry });
-        } else if (entry.type === "puzzle.delete") {
-          puzzles.delete(entry.id);
-        }
-      }
-      return puzzles;
-    },
-    puzzlesByRound(): Map<number, Puzzle[]> {
-      const grouped = new Map<number, Puzzle[]>();
-      for (const puzzle of this.puzzles.values()) {
-        if (!grouped.has(puzzle.round)) {
-          grouped.set(puzzle.round, []);
-        }
-        grouped.get(puzzle.round)!.push(puzzle);
-      }
-      for (const [_, puzzles] of grouped) {
-        puzzles.sort((a, b) => {
-          if (a.meta !== b.meta) return a.meta ? 1 : -1;
-          const ra = parseReminder(a);
-          const rb = parseReminder(b);
-          if (ra) {
-            if (rb) return ra.getTime() - rb.getTime();
-            if (rb) return a.name.localeCompare(b.name);
-            else return -1;
-          } else {
-            if (rb) return 1;
-            else return a.name.localeCompare(b.name);
-          }
-        });
-      }
-      return grouped;
-    },
-    puzzleCount(): number {
-      return this.rounds.reduce((v, r) => v + r.total, 0);
-    },
-    solvedPuzzleCount(): number {
-      return this.rounds.reduce((v, r) => v + r.solved, 0);
     }
-  },
-  actions: {
-    async refresh() {
-      if (import.meta.server && !useCookie("session").value) {
-        throw createError({
-          message: "short-circuiting to login page",
-          statusCode: 401,
-        });
-      }
-      const { data, error } = await useFetch<HomeResponse>("/api/home");
-      if (!data.value) throw error.value;
 
-      this._rounds.clear();
-      this._puzzles.clear();
-      this._optimistic.clear();
-      (data.value?.rounds || []).forEach((r) => this._rounds.set(r.id, r));
-      (data.value?.puzzles || []).forEach((p) => this._puzzles.set(p.id, p));
-      this._initialChangeId = data.value?.change_id || 0;
-      this.discordGuild = data.value.discord_guild;
-      this.hangingOut = data.value.hanging_out;
-      this.huntName = data.value.hunt_name;
-      this.huntURL = data.value.hunt_url;
-      this.huntCredentials = data.value.hunt_credentials;
-      this.logisticsURL = data.value.logistics_url;
-      this.nextHunt = data.value.next_hunt ?
-        new Date(data.value.next_hunt) : undefined;
-      this.voiceRooms.clear();
-      Object.entries(data.value?.voice_rooms || {}).forEach(([id, raw]) => {
-        // We expect the channel's emoji to go at the end
-        const p = raw.split(" ");
-        if ([...p[p.length - 1]].length === 1) {
-          const name = p.slice(0, p.length - 1).join(" ");
-          const emoji = p[p.length - 1];
-          this.voiceRooms.set(id, { id, name, emoji });
+    localPuzzles.forEach((v, k) => updateReactiveMap(puzzles, k, v));
+    puzzles.forEach((_, k) => _puzzles.has(k) || puzzles.delete(k));
+
+    const grouped = new Map<number, Puzzle[]>();
+    for (const puzzle of puzzles.values()) {
+      const g = grouped.get(puzzle.round);
+      if (g) g.push(puzzle);
+      else grouped.set(puzzle.round, [puzzle]);
+    }
+    for (const [_, puzzles] of grouped) {
+      puzzles.sort((a, b) => {
+        if (a.meta !== b.meta) return a.meta ? 1 : -1;
+        const ra = parseReminder(a);
+        const rb = parseReminder(b);
+        if (ra) {
+          if (rb) return ra.getTime() - rb.getTime();
+          if (rb) return a.name.localeCompare(b.name);
+          else return -1;
         } else {
-          this.voiceRooms.set(id, { id, name: raw, emoji: "📻" });
+          if (rb) return 1;
+          else return a.name.localeCompare(b.name);
         }
       });
-    },
+    }
+
+    localRounds.forEach((v, k) => updateReactiveMap(rounds, k, hydrateRound(v, grouped.get(v.id) || [])));
+    rounds.forEach((_, k) => _rounds.has(k) || rounds.delete(k));
+
+    puzzleCount.value = puzzles.size;
+
+    solvedPuzzleCount.value = 0;
+    puzzles.forEach((p) => p.answer && (solvedPuzzleCount.value++));
+
+    ordering.value = [...rounds.values()].map((r) => ({ ...r, puzzles: grouped.get(r.id) || [] }));
+    ordering.value.sort((a, b) => {
+      if (a.special !== b.special) return a.special ? -1 : 1;
+      else if (a.sort !== b.sort) return a.sort - b.sort;
+      else return a.id - b.id;
+    });
+  };
+
+  const handleDelta = ({ change_id, kind, puzzle, round, reminder_fix }: SyncMessage) => {
+    optimistic.delete(change_id);
+    if (change_id <= initialChangeId) return;
+    if (kind === "upsert") {
+      if (puzzle) {
+        puzzle.reminder = reminder_fix!;
+        _puzzles.set(puzzle.id, puzzle);
+      }
+      if (round) _rounds.set(round.id, round);
+    } else if (kind === "delete") {
+      if (puzzle) _puzzles.delete(puzzle.id);
+      if (round) _rounds.delete(round.id);
+    } else {
+      console.error(`unknown update kind: ${kind}`);
+    }
+    refresh();
+  };
+
+  const connected = useAbly(handleDelta);
+  const state = {
+    connected, settings, puzzles, rounds, voiceRooms,
+    puzzleCount, solvedPuzzleCount, ordering,
     async addRound(data: NewRound) {
       const [round, changeId] = await updateRequest<Round>("/rounds", data);
-      this._optimistic.set(changeId, { type: "round", ...round });
+      optimistic.set(changeId, { type: "round", ...round });
+      refresh();
     },
     async updateRound(id: number, data: Omit<Partial<Round>, "id">) {
       const [_, changeId] = await updateRequest<Round>(`/rounds/${id}`, data);
-      this._optimistic.set(changeId, { type: "round", id, ...data });
+      optimistic.set(changeId, { type: "round", id, ...data });
+      refresh();
     },
     async updateRoundOptimistic(id: number, data: Omit<Partial<Round>, "id">) {
-      const localId = this._optimisticCounter++;
+      const localId = optimisticCounter++;
       const delta: Optimistic = { type: "round", id, ...data };
-      this._optimistic.set(localId, delta);
+      optimistic.set(localId, delta);
+      refresh();
       try {
         const [_, changeId] = await updateRequest<Round>(`/rounds/${id}`, data);
-        this._optimistic.set(changeId, delta);
-      } finally { this._optimistic.delete(localId); }
+        optimistic.set(changeId, delta);
+      } finally {
+        optimistic.delete(localId);
+        refresh();
+      }
     },
     async deleteRound(id: number) {
       const [_, changeId] = await updateRequest<Puzzle>(
         `/rounds/${id}`, { delete: true });
-      this._optimistic.set(changeId, { type: "round.delete", id });
+      optimistic.set(changeId, { type: "round.delete", id });
+      refresh();
     },
     async addPuzzle(data: NewPuzzle) {
       const [puzzle, changeId] = await updateRequest<Puzzle>("/puzzles", data);
-      this._optimistic.set(changeId, { type: "puzzle", ...puzzle });
+      optimistic.set(changeId, { type: "puzzle", ...puzzle });
+      refresh();
     },
     async updatePuzzle(id: number, data: Omit<Partial<Puzzle>, "id">) {
       const [_, changeId] = await updateRequest<Puzzle>(`/puzzles/${id}`, data);
-      this._optimistic.set(changeId, { type: "puzzle", id, ...data });
+      optimistic.set(changeId, { type: "puzzle", id, ...data });
+      refresh();
     },
     async updatePuzzleOptimistic(id: number, data: Omit<Partial<Puzzle>, "id">) {
-      const localId = this._optimisticCounter++;
+      const localId = optimisticCounter++;
       const delta: Optimistic = { type: "puzzle", id, ...data };
-      this._optimistic.set(localId, delta);
+      optimistic.set(localId, delta);
+      refresh();
       try {
         const [_, changeId] = await updateRequest<Puzzle>(`/puzzles/${id}`, data);
-        this._optimistic.set(changeId, delta);
-      } finally { this._optimistic.delete(localId); }
+        optimistic.set(changeId, delta);
+      } finally {
+        optimistic.delete(localId);
+        refresh();
+      }
     },
     async deletePuzzle(id: number) {
       const [_, changeId] = await updateRequest<Puzzle>(
         `/puzzles/${id}`, { delete: true });
-      this._optimistic.set(changeId, { type: "puzzle.delete", id });
+      optimistic.set(changeId, { type: "puzzle.delete", id });
+      refresh();
     },
-    handleDelta({ change_id, kind, puzzle, round, reminder_fix }: SyncMessage) {
-      this._optimistic.delete(change_id);
-      if (change_id <= this._initialChangeId) return;
-      if (kind === "upsert") {
-        if (puzzle) {
-          puzzle.reminder = reminder_fix!;
-          this._puzzles.set(puzzle.id, puzzle);
-        }
-        if (round) this._rounds.set(round.id, round);
-      } else if (kind === "delete") {
-        if (puzzle) this._puzzles.delete(puzzle.id);
-        if (round) this._rounds.delete(round.id);
-      } else {
-        console.error(`unknown update kind: ${kind}`);
-      }
-    },
-  },
-});
+  };
+  provide(key, state); // must run before first `await`
+
+  const { data, error } = await useFetch<HomeResponse>("/api/home");
+  if (!data.value) {
+    throw error.value;
+  }
+  initialChangeId = data.value.change_id;
+  data.value.puzzles.forEach((p) => _puzzles.set(p.id, p));
+  data.value.rounds.forEach((r) => _rounds.set(r.id, r));
+
+  settings.discordGuild = data.value.discord_guild;
+  settings.hangingOut = data.value.hanging_out;
+  settings.huntName = data.value.hunt_name;
+  settings.huntURL = data.value.hunt_url;
+  settings.huntCredentials = data.value.hunt_credentials;
+  settings.logisticsURL = data.value.logistics_url;
+  settings.nextHunt = data.value.next_hunt ?
+    new Date(data.value.next_hunt) : null;
+
+  Object.entries(data.value.voice_rooms).forEach(([id, raw]) => {
+    // We expect the channel's emoji to go at the end
+    const p = raw.split(" ");
+    if ([...p[p.length - 1]].length === 1) {
+      const name = p.slice(0, p.length - 1).join(" ");
+      const emoji = p[p.length - 1];
+      voiceRooms.set(id, { id, name, emoji });
+    } else {
+      voiceRooms.set(id, { id, name: raw, emoji: "📻" });
+    }
+  });
+
+  refresh();
+  return state;
+};
+
+export default function usePuzzles(): State {
+  const state = inject(key);
+  if (!state) {
+    // Note: usePuzzles() will only work in a lower-level component than the
+    // one where initializePuzzles() was called.
+    throw new Error("Called usePuzzles() before initializing");
+  }
+  return state;
+}

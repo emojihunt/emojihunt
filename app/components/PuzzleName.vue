@@ -1,6 +1,9 @@
 <script setup lang="ts">
-const { puzzle } = defineProps<{ puzzle: Puzzle; }>();
+const { id } = defineProps<{ id: number; }>();
 const emit = defineEmits<{ (e: "edit"): void; }>();
+
+const { puzzles } = usePuzzles();
+const puzzle = puzzles.get(id)!;
 </script>
 
 <template>

@@ -1,9 +1,9 @@
 <script setup lang="ts">
-const { puzzle } = defineProps<{ puzzle: Puzzle; }>();
+const { status } = defineProps<{ status: Status; }>();
 const emit = defineEmits<{ (e: "select", s: Status): void; }>();
 
 const statuses = computed(() =>
-  Object.values(Status).filter((s) => s !== puzzle.status)
+  Object.values(Status).filter((s) => s !== status)
 );
 </script>
 

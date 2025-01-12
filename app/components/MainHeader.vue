@@ -1,10 +1,9 @@
 <script setup lang="ts">
-const { connected } = defineProps<{ connected: boolean; }>();
-const store = usePuzzles();
+const { connected, settings, puzzleCount } = usePuzzles();
 
 const [discordBase, discordTarget] = useDiscordBase();
-const discordURL = computed(() => store.discordGuild && store.hangingOut ?
-  `${discordBase}/channels/${store.discordGuild}/${store.hangingOut}` : '');;
+const discordURL = computed(() => settings.discordGuild && settings.hangingOut ?
+  `${discordBase}/channels/${settings.discordGuild}/${settings.hangingOut}` : '');;
 
 const logout = async (e: MouseEvent) => {
   e.preventDefault();
@@ -35,15 +34,15 @@ onMounted(() => setTimeout(() => ably.value?.classList.add("ready"), 2500));
     <div class="flex-spacer"></div>
     <section>
       <div class="row">
-        <ETooltip :text="store.huntCredentials || ''" placement="bottom"
+        <ETooltip :text="settings.huntCredentials || ''" placement="bottom"
           :offset-distance="4">
-          <NuxtLink :to="store.huntURL" target="_blank" class="hunt">
-            {{ store.huntName || 'Mystery Hunt' }}
+          <NuxtLink :to="settings.huntURL" target="_blank" class="hunt">
+            {{ settings.huntName || 'Mystery Hunt' }}
           </NuxtLink>
         </ETooltip>
         <p class="dot"></p>
         <ETooltip text="Big Logistics Email" placement="bottom" :offset-distance="8">
-          <NuxtLink :to="store.logisticsURL" target="_blank">
+          <NuxtLink :to="settings.logisticsURL" target="_blank">
             <UIcon name="i-heroicons-question-mark-circle" size="16px" />
           </NuxtLink>
         </ETooltip>
@@ -64,7 +63,7 @@ onMounted(() => setTimeout(() => ably.value?.classList.add("ready"), 2500));
           <span>🌊🎨🎡</span>
         </NuxtLink>
       </div>
-      <div class="row" v-if="store.puzzleCount >= 21">
+      <div class="row" v-if="puzzleCount >= 21">
         <div class="flex-spacer"></div>
         <UFormGroup name="toggle" class="toggle" label="Priority">
           <UToggle v-model="filter" />
@@ -72,8 +71,8 @@ onMounted(() => setTimeout(() => ably.value?.classList.add("ready"), 2500));
       </div>
       <div class="flex-spacer"></div>
       <div class="ably" ref="ably">
-        <ETooltip v-if="true" text="Live updates paused. Connecting..." placement="left"
-          :offset-distance="4" class="ably">
+        <ETooltip v-if="!connected" text="Live updates paused. Connecting..."
+          placement="left" :offset-distance="4" class="ably">
           <Icon name="i-heroicons-bolt-slash" />
         </ETooltip>
       </div>

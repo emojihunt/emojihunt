@@ -1,25 +1,29 @@
 <script setup lang="ts">
-const { puzzle } = defineProps<{ puzzle: Puzzle; }>();
+const { id } = defineProps<{ id: number; }>();
 const emit = defineEmits<{ (e: "edit"): void; }>();
+
+const { puzzles, rounds } = usePuzzles();
+const puzzle = puzzles.get(id)!;
+const hue = computed(() => rounds.get(puzzle.round)?.hue || 0);
 
 const row = useTemplateRef("row");
 defineExpose({
-  id: puzzle.id,
+  id,
   focus() {
     nextTick(() =>
       row.value?.querySelector<HTMLElement>("[tabindex='0']")?.focus());
-  }
+  },
 });
 </script>
 
 <template>
-  <span ref="row" class="puzzle" :data-puzzle="puzzle.id">
-    <PuzzleButtons :puzzle="puzzle" />
+  <span ref="row" class="puzzle" :data-puzzle="id" :class="puzzle.answer && 'filterable'">
+    <PuzzleButtons :id />
     <span class="data">
-      <PuzzleName :puzzle="puzzle" @edit="() => emit('edit')" />
-      <PuzzleStatus :puzzle="puzzle" />
-      <PuzzleNoteLocation :puzzle="puzzle" field="location" :tabsequence="7" />
-      <PuzzleNoteLocation :puzzle="puzzle" field="note" :tabsequence="8" />
+      <PuzzleName :id @edit="() => emit('edit')" />
+      <PuzzleStatus :id />
+      <PuzzleNoteLocation :id field="location" :tabsequence="7" />
+      <PuzzleNoteLocation :id field="note" :tabsequence="8" />
     </span>
   </span>
 </template>
@@ -39,6 +43,10 @@ defineExpose({
 }
 
 /* Theming */
+.puzzle {
+  --round-hue: v-bind(hue);
+}
+
 .data {
   border-top: 1px solid transparent;
   border-bottom: 1px solid transparent;

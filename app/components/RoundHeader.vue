@@ -1,15 +1,17 @@
 <script setup lang="ts">
-const { round, sequence, filter, observer } = defineProps<{
-  round: AnnotatedRound;
+const { id, sequence, filter, observer } = defineProps<{
+  id: number;
   sequence: number;
   filter: boolean;
   observer: IntersectionObserver | undefined;
 }>();
 const emit = defineEmits<{ (e: "edit"): void; }>();
-const store = usePuzzles();
 const toast = useToast();
 
-const hue = computed(() => round.hue);
+const { rounds, ordering } = usePuzzles();
+const round = computed(() => rounds.get(id)!);
+const hue = computed(() => round.value.hue);
+
 const timeline = computed(() => timelineFromSequence(sequence));
 const nextTimeline = computed(() => timelineFromSequence(sequence + 1));
 
@@ -24,11 +26,11 @@ const ready = () => {
     registered = true;
   }
 };
-watchEffect(() => nextTick(ready));
 onMounted(() => nextTick(ready));
+watchEffect(() => nextTick(ready));
 
 const copy = async (): Promise<void> => {
-  const puzzles = store.puzzlesByRound.get(round.id);
+  const puzzles = ordering.value.find((r) => r.id === id)?.puzzles || [];
   if (!puzzles) {
     toast.add({
       title: "No puzzles to copy",

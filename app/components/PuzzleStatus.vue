@@ -1,6 +1,8 @@
 <script setup lang="ts">
-const { puzzle } = defineProps<{ puzzle: Puzzle; }>();
-const store = usePuzzles();
+const { id } = defineProps<{ id: number; }>();
+
+const { puzzles, updatePuzzleOptimistic } = usePuzzles();
+const puzzle = puzzles.get(id)!;
 
 const input = useTemplateRef("input");
 const button = useTemplateRef("button");
@@ -14,12 +16,12 @@ const select = (status: Status) => {
   answering.value = null;
   if (!StatusNeedsAnswer(status)) {
     saving.value = true;
-    store.updatePuzzleOptimistic(puzzle.id, { status, answer: "" })
+    updatePuzzleOptimistic(puzzle.id, { status, answer: "" })
       .finally(() => (saving.value = false));
     nextTick(() => button.value?.focus());
   } else if (puzzle.answer) {
     saving.value = true;
-    store.updatePuzzleOptimistic(puzzle.id, { status })
+    updatePuzzleOptimistic(puzzle.id, { status })
       .finally(() => (saving.value = false));
   } else {
     answering.value = status;
@@ -33,13 +35,13 @@ const save = (answer: string) => {
   if (answering.value) {
     // Answer with state change to "Solved", etc.
     saving.value = true;
-    store.updatePuzzleOptimistic(puzzle.id, { answer, status: answering.value, voice_room: "" })
+    updatePuzzleOptimistic(id, { answer, status: answering.value, voice_room: "" })
       .finally(() => (saving.value = false));
     answering.value = null;
   } else {
     // Regular answer fixup
     saving.value = true;
-    store.updatePuzzleOptimistic(puzzle.id, { answer })
+    updatePuzzleOptimistic(id, { answer })
       .finally(() => (saving.value = false));
   }
 };
@@ -68,7 +70,7 @@ const cancel = () => answering.value && (answering.value = null, open.value = fa
       </span>
       <Spinner v-if="saving" />
     </button>
-    <PuzzleStatusSelector v-if="open" :puzzle="puzzle" @select="select" />
+    <PuzzleStatusSelector v-if="open" :status="puzzle.status" @select="select" />
   </div>
 </template>
 
