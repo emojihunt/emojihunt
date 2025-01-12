@@ -31,7 +31,7 @@ const cancel = () => answering.value && (answering.value = null, open.value = fa
 
 const options = computed(() =>
   Object.values(Status).filter((s) => s !== puzzle.status).map(
-    (s) => ({ id: s, label: `${StatusEmoji(s)} ${StatusLabel(s)}` })
+    (s) => ({ id: s, emoji: StatusEmoji(s), name: StatusLabel(s) })
   )
 );
 const select = (status: Status) => {

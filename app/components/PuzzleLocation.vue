@@ -28,13 +28,9 @@ const saveRoom = (updated: string) => {
     }).finally(() => savingRoom.value = false);
 };
 
-const options = computed(() => {
-  const result = [...voiceRooms.values()].map(
-    (v) => ({ id: v.id, label: `${v.emoji} ${v.name}` })
-  );
-  result.push({ id: "", label: "+ In-person" });
-  return result;
-});
+const options = computed(() =>
+  [...voiceRooms.values(), { id: "", emoji: "+", name: "In-person" }]
+);
 const select = (option: string) => {
   open.value = false;
   if (option) { // voice room

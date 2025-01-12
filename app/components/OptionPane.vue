@@ -1,12 +1,15 @@
 <script setup lang="ts" generic="T">
-const { options } = defineProps<{ options: { id: T, label: string; }[]; }>();
+const { options } = defineProps<{
+  options: { id: T, emoji: string; name: string; }[];
+}>();
 const emit = defineEmits<{ (e: "select", id: T): void; }>();
 </script>
 
 <template>
   <fieldset>
-    <button v-for="option of options" @click="() => emit('select', option.id)">
-      {{ option.label }}
+    <button v-for="{ id, emoji, name } of options" @click="() => emit('select', id)">
+      <span class="emoji" v-if="emoji">{{ emoji }}</span>
+      {{ name }}
     </button>
   </fieldset>
 </template>
@@ -24,6 +27,10 @@ fieldset button {
   margin: 0.15rem 0.1rem;
 }
 
+.emoji {
+  display: inline-block;
+}
+
 /* Theming */
 fieldset {
   font-size: 0.8125rem;
@@ -31,11 +38,15 @@ fieldset {
 
 fieldset button {
   border: 1px solid oklch(85% 0 0deg);
-  border-radius: 0.6rem;
-  outline-offset: 1px;
+  border-radius: 0.375rem;
+  outline-offset: -1px;
 }
 
 fieldset button:hover {
   background-color: oklch(95% 0 0deg);
+}
+
+fieldset button:hover .emoji {
+  transform: scale(110%);
 }
 </style>
