@@ -13,7 +13,7 @@ import (
 const (
 	roundCategoryPrefix  = "Round: "
 	solvedCategoryPrefix = "Solved "
-	solvedCategoryCount  = 3
+	solvedCategoryCount  = 4
 	sortGracePeriod      = 60 * time.Second
 )
 
