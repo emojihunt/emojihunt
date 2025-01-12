@@ -197,7 +197,7 @@ export async function initializePuzzles(): Promise<State> {
     });
   };
 
-  const handleDelta = ({ change_id, kind, puzzle, round, reminder_fix }: SyncMessage) => {
+  const onSync = ({ change_id, kind, puzzle, round, reminder_fix }: SyncMessage) => {
     optimistic.delete(change_id);
     if (change_id <= initialChangeId) return;
     if (kind === "upsert") {
@@ -214,8 +214,17 @@ export async function initializePuzzles(): Promise<State> {
     }
     refresh();
   };
+  const onSettings = (msg: SettingsMessage) => {
+    settings.huntName = msg.hunt_name;
+    settings.huntURL = msg.hunt_url;
+    settings.huntCredentials = msg.hunt_credentials;
+    settings.logisticsURL = msg.logistics_url;
+    settings.discordGuild = msg.discord_guild;
+    settings.hangingOut = msg.hanging_out;
+    settings.nextHunt = msg.next_hunt ? new Date(msg.next_hunt) : null;
+  };
+  const connected = useAbly(onSync, onSettings);
 
-  const connected = useAbly(handleDelta);
   const state = {
     connected, settings, puzzles, rounds, voiceRooms,
     puzzleCount, solvedPuzzleCount, ordering,
@@ -287,15 +296,7 @@ export async function initializePuzzles(): Promise<State> {
   initialChangeId = data.value.change_id;
   data.value.puzzles.forEach((p) => _puzzles.set(p.id, p));
   data.value.rounds.forEach((r) => _rounds.set(r.id, r));
-
-  settings.discordGuild = data.value.discord_guild;
-  settings.hangingOut = data.value.hanging_out;
-  settings.huntName = data.value.hunt_name;
-  settings.huntURL = data.value.hunt_url;
-  settings.huntCredentials = data.value.hunt_credentials;
-  settings.logisticsURL = data.value.logistics_url;
-  settings.nextHunt = data.value.next_hunt ?
-    new Date(data.value.next_hunt) : null;
+  onSettings(data.value.settings);
 
   Object.entries(data.value.voice_rooms).forEach(([id, raw]) => {
     // We expect the channel's emoji to go at the end

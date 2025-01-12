@@ -109,17 +109,21 @@ export const parseReminder = (puzzle: Puzzle): Date | null => {
 };
 
 export type HomeResponse = {
+  change_id: number;
   puzzles: Puzzle[];
   rounds: Round[];
-  change_id: number;
-  discord_guild: string;
-  hanging_out: string;
+  settings: SettingsMessage;
+  voice_rooms: Record<string, string>;
+};
+
+export type SettingsMessage = {
   hunt_name: string;
   hunt_url: string;
   hunt_credentials: string;
   logistics_url: string;
-  next_hunt: string | undefined;
-  voice_rooms: Record<string, string>;
+  discord_guild: string;
+  hanging_out: string;
+  next_hunt: string;
 };
 
 export type DiscoveryConfig = {
@@ -153,6 +157,7 @@ export type VoiceRoom = {
 
 export type AblyWorkerMessage =
   { name: "sync"; data: SyncMessage; } |
+  { name: "settings"; data: SettingsMessage; } |
   { name: "client"; state: ConnectionState; };
 
 export type ConnectionState = "disconnected" | "connected" | "broken";

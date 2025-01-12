@@ -48,6 +48,9 @@ channel.subscribe("sync", (e) => {
   rewind.push(e);
   broadcast(e as any);
 });
+channel.subscribe("settings", (e) => {
+  broadcast(e as any);
+});
 
 // Notify clients of connection state changes.
 client.connection.on("connected", () => {
