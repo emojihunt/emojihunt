@@ -17,10 +17,10 @@ const tooltip = computed(() => {
   return { emoji: "⏰", text: `${formatted} Boston Time` };
 });
 
-const save = async (updated: string) => {
+const save = (updated: string) => {
   saving.value = true;
-  await updatePuzzleOptimistic(id, { note: updated });
-  saving.value = false;
+  updatePuzzleOptimistic(id, { note: updated })
+    .finally(() => (saving.value = false));
 };
 </script>
 

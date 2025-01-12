@@ -3,39 +3,113 @@ const { id } = defineProps<{ id: number; }>();
 
 const { puzzles, voiceRooms, updatePuzzleOptimistic } = usePuzzles();
 const puzzle = puzzles.get(id)!;
-const saving = ref(false);
+const room = computed(() => voiceRooms.get(puzzle.voice_room));
 
-const tooltip = computed(() => {
-  const id = puzzle.voice_room;
-  if (!id) return;
-  const channel = voiceRooms.get(id);
-  if (!channel) return;
-  return { emoji: channel.emoji, placeholder: channel.name, text: `in ${channel.name}` };
-});
+const location = useTemplateRef("location");
 
-const save = async (updated: string) => {
-  saving.value = true;
-  await updatePuzzleOptimistic(id, { location: updated });
-  saving.value = false;
+const open = ref(false);
+const savingText = ref(false);
+const savingRoom = ref(false);
+const answering = ref(false);
+
+const saveLocation = (updated: string) => {
+  savingText.value = true;
+  updatePuzzleOptimistic(id, { location: updated })
+    .then(() => (answering.value = false))
+    .finally(() => (savingText.value = false));
 };
+const cancelLocation = () => (answering.value = false);
+const saveRoom = (updated: string) => {
+  savingRoom.value = true;
+  updatePuzzleOptimistic(id, { voice_room: updated })
+    .then(() => {
+      // add a synthetic delay to reflect sync time
+      return new Promise(resolve => setTimeout(resolve, 3500));
+    }).finally(() => savingRoom.value = false);
+};
+
+const options = computed(() => {
+  const result = [...voiceRooms.values()].map(
+    (v) => ({ id: v.id, label: `${v.emoji} ${v.name}` })
+  );
+  result.push({ id: "", label: "+ In-person" });
+  return result;
+});
+const select = (option: string) => {
+  open.value = false;
+  if (option) { // voice room
+    saveRoom(option);
+  } else { // "+ In-person"
+    answering.value = true;
+    nextTick(() => location.value?.focus());
+  }
+};
+const clearRoom = () => (open.value = false, saveRoom(""));
 </script>
 
 <template>
   <div class="cell">
-    <ETooltip v-if="tooltip" :text="tooltip.text">
-      <span class="emoji">{{ tooltip.emoji }}</span>
-    </ETooltip>
-    <EditableSpan :value="puzzle.location" :tabsequence="7" @save="save"
-      :placeholder="tooltip?.placeholder" />
-    <Spinner v-if="saving" class="spinner" />
+    <div class="row">
+      <button :class="['room', !(puzzle.location || answering) && 'expand']"
+        :data-tabsequence="7" @click="() => open = !open">
+        <template v-if="room">
+          <ETooltip v-if="room" :text="`in ${room.name}`">
+            <span class="emoji">{{ room.emoji }}</span>
+          </ETooltip>
+          <span class="description" v-if="!(puzzle.location || answering)">{{ room.name
+            }}</span>
+        </template>
+        <ETooltip v-else text="Set a Voice Room">
+          <span class="emoji empty">📻</span>
+        </ETooltip>
+      </button>
+      <EditableSpan v-if="puzzle.location || answering" ref="location"
+        :value="puzzle.location" :tabsequence="7" @save="saveLocation"
+        @cancel="cancelLocation" />
+      <button class="clear" v-if="room && !savingRoom && !savingText" @click="clearRoom"
+        tabindex="-1">Clear</button>
+      <Spinner v-if="savingText || savingRoom" class="spinner" />
+    </div>
+    <OptionPane v-if="open" :options="options" @select="select" />
   </div>
 </template>
 
 <style scoped>
 /* Layout */
+.cell {
+  flex-direction: column;
+}
+
+.row,
+button.room {
+  display: flex;
+}
+
 .emoji {
   width: 1.5rem;
   text-align: center;
+}
+
+button.expand {
+  flex-grow: 1;
+}
+
+button.clear {
+  width: 0;
+  padding: 0;
+  border-radius: 0;
+  color: oklch(60% 0.15 245deg);
+}
+
+.cell:hover button.clear,
+button.clear:hover,
+button.clear:focus {
+  width: auto;
+  padding: 0 0.33rem;
+}
+
+.description {
+  padding: 3px 0.33rem;
 }
 
 .spinner {
@@ -52,13 +126,16 @@ const save = async (updated: string) => {
 .emoji {
   line-height: 1.75rem;
   filter: opacity(90%);
-
-  cursor: default;
   user-select: none;
 }
 
-.emoji:hover {
-  transform: scale(110%);
-  filter: drop-shadow(0 1px 1px oklch(85% 0 0deg));
+.emoji.empty {
+  filter: grayscale(100%) opacity(50%);
+}
+
+.description,
+button.clear {
+  line-height: 22px;
+  font-size: 12.5px;
 }
 </style>
