@@ -1,8 +1,5 @@
 <script setup lang="ts">
-const { filter, observer } = defineProps<{
-  filter: boolean;
-  observer: IntersectionObserver | undefined;
-}>();
+const { filter } = defineProps<{ filter: boolean; }>();
 const emit = defineEmits<{
   (e: "edit", kind: "puzzle" | "round", id: number): void;
 }>();
@@ -110,7 +107,7 @@ defineExpose({
   <main @keydown="keydown" @focusin="focusin">
     <template v-for="round of ordering">
       <RoundHeader v-if="!filter || !round.complete" :key="round.id" :id="round.id"
-        :sequence="roundToSequence.get(round.id) || 0" :filter :observer
+        :sequence="roundToSequence.get(round.id) || 0" :filter
         @edit="() => emit('edit', 'round', round.id)" />
       <section :class="filter && round.complete && 'invisible'"
         :style="`--round-hue: ${round.hue}`">

@@ -12,7 +12,19 @@ export default function (margin: number): IntersectionObserver {
     // y-coordinate to disambiguate.
     for (const { boundingClientRect, isIntersecting, target } of entries) {
       if (!isIntersecting && boundingClientRect.y < (margin + 1)) {
-        target.classList.add("stuck");
+        let found = false;
+        for (const title of document.querySelectorAll(".titles")) {
+          if (!found) title.classList.add("stuck");
+          else title.classList.remove("stuck");
+          if (title === target) found = true;
+        }
+      } else if (isIntersecting && boundingClientRect.y < (margin + 15)) {
+        let found = false;
+        for (const title of document.querySelectorAll(".titles")) {
+          if (title === target) found = true;
+          if (!found) title.classList.add("stuck");
+          else title.classList.remove("stuck");
+        }
       } else {
         target.classList.remove("stuck");
       }

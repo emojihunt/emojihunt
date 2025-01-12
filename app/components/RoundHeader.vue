@@ -1,9 +1,8 @@
 <script setup lang="ts">
-const { id, sequence, filter, observer } = defineProps<{
+const { id, sequence, filter } = defineProps<{
   id: number;
   sequence: number;
   filter: boolean;
-  observer: IntersectionObserver | undefined;
 }>();
 const emit = defineEmits<{ (e: "edit"): void; }>();
 const toast = useToast();
@@ -15,19 +14,21 @@ const hue = computed(() => round.value.hue);
 const timeline = computed(() => timelineFromSequence(sequence));
 const nextTimeline = computed(() => timelineFromSequence(sequence + 1));
 
-let registered = false;
 const pill = useTemplateRef("pill");
 const titles = useTemplateRef("titles");
-const ready = () => {
+watchEffect(() => {
   pill.value?.classList.add("ready");
   titles.value?.classList.add("ready");
-  if (!registered && observer) {
-    observer.observe(titles.value!);
+});
+
+let registered = false;
+const observer = inject(ObserverKey);
+watchEffect(() => {
+  if (!registered && observer?.value && titles.value) {
+    observer.value.observe(titles.value);
     registered = true;
   }
-};
-onMounted(() => nextTick(ready));
-watchEffect(() => nextTick(ready));
+});
 
 const copy = async (): Promise<void> => {
   const puzzles = ordering.value.find((r) => r.id === id)?.puzzles || [];
@@ -173,7 +174,6 @@ const copy = async (): Promise<void> => {
 
   border: var(--pill-border) solid transparent;
   border-radius: 7px;
-  filter: drop-shadow(0 -1px 1px oklch(70% 0.07 v-bind(hue) / 20%));
 
   cursor: default;
 }
@@ -270,5 +270,9 @@ button:hover {
   transition: visibility 0.025s;
 }
 
-/* see main.css for keyframes and `stuck` styles */
+.titles.stuck {
+  color: white !important;
+  /* cover up the previous round's titles */
+  text-shadow: oklch(30% 0 0deg) 0 0 5px;
+}
 </style>

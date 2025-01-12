@@ -169,3 +169,6 @@ export type SyncMessage = {
   round?: Round;
   reminder_fix?: string;
 };
+
+export const ObserverKey = Symbol() as
+  InjectionKey<Ref<IntersectionObserver | undefined>>;

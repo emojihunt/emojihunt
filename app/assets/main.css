@@ -172,19 +172,6 @@ form div[aria-haspopup="listbox"] button {
   outline: 2px solid black;
 }
 
-/* Main Page */
-:nth-last-child(n+2 of .pill.stuck) {
-  visibility: hidden;
-}
-
-:nth-last-child(n+2 of .pill.stuck)+.titles {
-  visibility: hidden;
-}
-
-.titles.stuck {
-  color: white !important;
-}
-
 /* Animations */
 @keyframes fade-out {
   0% {

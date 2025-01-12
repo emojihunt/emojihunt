@@ -5,7 +5,7 @@ useHead({
   meta: [
     { name: "viewport", content: "width=device-width, initial-scale=1, viewport-fit=cover" },
     { name: "theme-color", content: "oklch(30% 0 0deg)" },
-  ]
+  ],
 });
 const { puzzleCount } = await initializePuzzles();
 
@@ -15,6 +15,7 @@ const { puzzleCount } = await initializePuzzles();
 // if not.
 const timelines = [...Array(50).keys()].map((i) => timelineFromSequence(i));
 const observer = ref<IntersectionObserver>();
+provide(ObserverKey, observer);
 onMounted(() => {
   if (!CSS.supports("view-timeline", "--test")) {
     console.log("Falling back to IntersectionObserver...");
@@ -67,11 +68,11 @@ const navMargin = computed(() => puzzleCount.value >= 42 ? "4.5rem" : "2vw");
 <template>
   <MainHeader ref="header" />
   <div :class="['content', filter && 'filter']">
-    <EmojiNav v-if="showNav" :filter :observer @navigate="() => table?.navigate()" />
+    <EmojiNav v-if="showNav" :filter @navigate="() => table?.navigate()" />
     <div class="rule first"></div>
     <div class="rule"></div>
     <div class="rule"></div>
-    <RoundsAndPuzzles ref="table" :filter :observer
+    <RoundsAndPuzzles ref="table" :filter
       @edit="(kind, id) => { editing = { kind, id }; }" />
     <WelcomeAndAdminBar ref="welcome" @click="click" />
     <Modal v-if="!!editing" @close="close">

@@ -1,8 +1,5 @@
 <script setup lang="ts">
-const { filter, observer } = defineProps<{
-  filter: boolean;
-  observer: IntersectionObserver | undefined;
-}>();
+const { filter } = defineProps<{ filter: boolean; }>();
 const emit = defineEmits<{
   (e: "navigate"): void;
 }>();
@@ -11,7 +8,10 @@ const url = useRequestURL();
 const { puzzleCount, solvedPuzzleCount, ordering } = usePuzzles();
 
 // Navigate to anchors without changing the fragment
-const goto = (round: AnnotatedRound) => {
+const goto = (e: MouseEvent, round: AnnotatedRound) => {
+  e.preventDefault();
+  e.stopPropagation();
+
   const id = (new URL(`#${round.anchor}`, url)).hash; // escaping
   emit("navigate");
 
@@ -23,18 +23,6 @@ const goto = (round: AnnotatedRound) => {
   else {
     document.querySelector(id)?.scrollIntoView();
     document.querySelector<HTMLElement>(`${id} ~ section .puzzle [tabIndex='0']`)?.focus();
-  }
-
-  // IntersectionObserver doesn't fire with scrollIntoView, so fix up the
-  // `stuck` classes manually.
-  if (observer) {
-    for (const pill of document.querySelectorAll(".ready")) {
-      if (pill.getBoundingClientRect().y < 77) {
-        pill.classList.add("stuck");
-      } else {
-        pill.classList.remove("stuck");
-      }
-    }
   }
 };
 
@@ -63,7 +51,7 @@ const keydown = (e: KeyboardEvent): void => {
     <p class="dot"></p>
     <ETooltip v-for="round of ordering" :key="round.id" :text="round.name"
       :offset-distance="-3">
-      <a :href="`#${round.anchor}`" @click="(e) => (e.preventDefault(), goto(round))"
+      <a :href="`#${round.anchor}`" @click="(e) => goto(e, round)"
         :tabindex="round.id === ordering[focused.index].id ? 0 : -1"
         :aria-label="`To ${round.name}`" :style="`--hue: ${round.hue}deg;`">
         <span :class="round.complete && 'complete'">{{ round.emoji }}&#xfe0f;</span>
