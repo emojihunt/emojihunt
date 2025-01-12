@@ -6,7 +6,7 @@ const { filter, observer } = defineProps<{
 const emit = defineEmits<{
   (e: "edit", kind: "puzzle" | "round", id: number): void;
 }>();
-const { ordering: ordering } = usePuzzles();
+const { ordering } = usePuzzles();
 
 const focused = ref(3);
 const puzz = useTemplateRef("puzz");
