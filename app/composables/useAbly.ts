@@ -12,7 +12,7 @@ export default function (sync: (m: SyncMessage) => void, settings: (m: SettingsM
         sync(e.data.data);
       } else if (e.data.name === "settings") {
         settings(e.data.data);
-      } if (e.data.name === "client") {
+      } else if (e.data.name === "client") {
         if (e.data.state === "connected") {
           if (poisoned) window.location.reload();
           else connected.value = true;

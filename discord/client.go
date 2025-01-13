@@ -41,8 +41,7 @@ var ProdConfig = Config{
 	TeamCategoryID:      "925929203537416293",
 }
 
-// For now, let's use the same channel as sync
-const ablyChannelName = "huntbot"
+const ablyChannelName = "discord"
 
 type Client struct {
 	main  context.Context

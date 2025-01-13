@@ -8,7 +8,7 @@ import (
 	"golang.org/x/xerrors"
 )
 
-const ablyCapability = `{"huntbot":["subscribe"]}`
+const ablyCapability = `{"huntbot":["subscribe"],"discord":["subscribe"]}`
 
 func (s *Server) RequestAblyToken(c echo.Context) error {
 	token, err := s.ably.Auth.RequestToken(

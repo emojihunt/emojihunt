@@ -37,19 +37,26 @@ const client = new Ably.Realtime({
 //
 // We also maintain a local 100-message cache for clients that connect later.
 //
-const channel = client.channels.get("huntbot", { params: { rewind: "2m" } });
+const huntbot = client.channels.get("huntbot", { params: { rewind: "2m" } });
 const rewind = new Array();
 let state: ConnectionState = "disconnected";
 
 // Broadcast all messages on the `huntbot` channel to all clients.
-channel.subscribe("sync", (e) => {
+huntbot.subscribe("sync", (e) => {
   console.log("Sync", e);
   if (rewind.length >= 100) rewind.shift();
   rewind.push(e);
   broadcast(e as any);
 });
-channel.subscribe("settings", (e) => {
+huntbot.subscribe("settings", (e) => {
   console.log("Settings", e);
+  broadcast(e as any);
+});
+
+// Also broadcast all messages on the `discord` channel. These are published on
+// a separate channel to avoid clobbering the rewind window for sync.
+const discord = client.channels.get("discord");
+discord.subscribe("m", (e) => {
   broadcast(e as any);
 });
 
@@ -64,7 +71,6 @@ client.connection.on("disconnected", () => {
   state = "disconnected";
   broadcast({ name: "client", state });
 });
-
 
 // After about two minutes offline, uninterrupted in-order message delivery is
 // no longer possible. Terminate the worker and instruct all clients to reload

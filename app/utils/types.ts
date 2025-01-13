@@ -158,6 +158,7 @@ export type VoiceRoom = {
 export type AblyWorkerMessage =
   { name: "sync"; data: SyncMessage; } |
   { name: "settings"; data: SettingsMessage; } |
+  { name: "discord"; data: DiscordMessage; } |
   { name: "client"; state: ConnectionState; };
 
 export type ConnectionState = "disconnected" | "connected" | "broken";
@@ -167,6 +168,17 @@ export type SyncMessage = {
   kind: "upsert" | "delete";
   puzzle?: Puzzle;
   round?: Round;
+};
+
+export type DiscordMessage = {
+  id: string;
+  ch: string;
+  u: {
+    id: string;
+    name: string;
+    avatar: string;
+  };
+  msg: string;
 };
 
 export const ObserverKey = Symbol() as

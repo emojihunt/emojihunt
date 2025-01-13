@@ -155,13 +155,13 @@ type AblyMessage struct {
 	ID        string          `json:"id"`
 	ChannelID string          `json:"ch"`
 	Author    AblyMessageUser `json:"u"`
-	Content   string          `json:"m"`
+	Content   string          `json:"msg"`
 }
 
 type AblyMessageUser struct {
 	ID     string `json:"id"`
-	Name   string `json:"n"`
-	Avatar string `json:"a"`
+	Name   string `json:"name"`
+	Avatar string `json:"avatar"`
 }
 
 func (c *Client) handleMessageEvent(
@@ -180,6 +180,9 @@ func (c *Client) handleMessageEvent(
 	if e.Message.Thread != nil {
 		return nil // skip messages in threads
 	}
+	if ch.Type != discordgo.ChannelTypeGuildText {
+		return nil // skip messages in voice channels, etc.
+	}
 	var message = AblyMessage{
 		ID:        e.Message.ID,
 		ChannelID: e.ChannelID,
@@ -190,7 +193,7 @@ func (c *Client) handleMessageEvent(
 		},
 		Content: e.Message.Content,
 	}
-	return c.ably.Publish(ctx, "discord", message)
+	return c.ably.Publish(ctx, "m", message)
 }
 
 // Rate Limit Tracking
