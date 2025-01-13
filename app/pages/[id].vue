@@ -60,7 +60,7 @@ const discordURL = computed(() =>
 onBeforeMount(() => document.body.classList.add("fullscreen"));
 
 const puzzleURL = ref("");
-const puzzleDisplay = ref("none");
+const split = ref("");
 const togglePuzzle = (e: MouseEvent) => {
   if (!puzzle.value?.puzzle_url) return;
   if (e.metaKey || e.ctrlKey) return; // open in new tab
@@ -70,20 +70,16 @@ const togglePuzzle = (e: MouseEvent) => {
     // Lazy-load the puzzle frame
     puzzleURL.value = puzzle.value.puzzle_url;
   }
-  if (puzzleDisplay.value === "unset") {
-    puzzleDisplay.value = "none";
-  } else {
-    puzzleDisplay.value = "unset";
-  }
+  split.value = split.value ? "" : "split";
 };
 </script>
 
 <template>
-  <main>
+  <main :class="split">
     <iframe :src="spreadsheetURL || ''"></iframe>
     <iframe :src="puzzleURL" class="puzzle"></iframe>
   </main>
-  <nav>
+  <nav :class="split">
     <section>
       <ETooltip text="Click to set status to ✍️ Working" placement="top"
         :offset-distance="4"
@@ -142,7 +138,11 @@ iframe {
 }
 
 .puzzle {
-  display: v-bind(puzzleDisplay);
+  display: none;
+}
+
+.split .puzzle {
+  display: unset;
 }
 
 nav {
@@ -150,7 +150,7 @@ nav {
   bottom: 0;
   right: 0;
 
-  height: 37.5px;
+  height: 36px;
   max-width: 75%;
   padding: 1px 0.5em 0;
 
@@ -173,13 +173,14 @@ main {
 
 nav {
   font-size: 15px;
-  background-color: rgb(249 251 253 / 66%);
-
   border-left: 1px solid #e1e3e1;
-  border-top: 1px solid #e1e3e1;
-  border-top-left-radius: 6px;
-
   user-select: none;
+}
+
+nav.split {
+  background-color: rgb(249 251 253 / 75%);
+  border-top: 1px solid #e1e3e1;
+  border-top-left-radius: 8px;
 }
 
 .logo {
