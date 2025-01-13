@@ -8,14 +8,18 @@ definePageMeta({
 
 useHead({ htmlAttrs: { lang: "en" } });
 const route = useRoute();
-const { settings, puzzles, rounds, voiceRooms, updatePuzzleOptimistic } = await initializePuzzles();
+const {
+  discordCallback, settings, puzzles, rounds,
+  voiceRooms, updatePuzzleOptimistic,
+} = await initializePuzzles();
+const channel = ref("");
+const messages = useDiscordChannel(channel, discordCallback);
 const [discordBase, discordTarget] = useDiscordBase();
 
-const data = computed(() => {
+const puzzle = computed(() => {
   const id = parseInt(route.params.id as string);
   const puzzle = puzzles.get(id);
-  const round = puzzle && rounds.get(puzzle.round);
-  if (!puzzle || !round) {
+  if (!puzzle) {
     throw createError({
       fatal: true,
       message: `Puzzle #${id} could not be found`,
@@ -29,34 +33,42 @@ const data = computed(() => {
       statusCode: 404,
     });
   }
-
-  const voiceRoom = puzzle.voice_room && voiceRooms.get(puzzle.voice_room);
-  const spreadsheetURL = puzzle.spreadsheet_id ?
-    `https://docs.google.com/spreadsheets/d/${puzzle.spreadsheet_id}` : "";
-  const discordURL =
-    `${discordBase}/channels/${settings.discordGuild}/${puzzle.discord_channel}`;
-  return { puzzle, round, voiceRoom, discordURL, spreadsheetURL };
+  return puzzle;
 });
+const round = computed(() =>
+  puzzle.value && rounds.get(puzzle.value.round)
+);
 
-const setHead = () => useHead({
-  title: data.value.puzzle.name,
-  link: [{ rel: "icon", key: "icon", href: `https://emojicdn.elk.sh/${data.value.round.emoji}?style=google` }],
-});
-onMounted(setHead);
-watch(() => [data.value.puzzle.name, data.value.round], setHead);
+
+watchEffect(() => useHead({
+  title: puzzle.value.name,
+  link: [{ rel: "icon", key: "icon", href: `https://emojicdn.elk.sh/${round.value?.emoji}?style=google` }],
+}));
+watchEffect(() => channel.value = puzzle.value?.discord_channel);
+const voiceRoom = computed(() =>
+  puzzle.value.voice_room && voiceRooms.get(puzzle.value.voice_room)
+);
+const spreadsheetURL = computed(() =>
+  puzzle.value.spreadsheet_id
+    ? `https://docs.google.com/spreadsheets/d/${puzzle.value.spreadsheet_id}`
+    : ""
+);
+const discordURL = computed(() =>
+  `${discordBase}/channels/${settings.discordGuild}/${puzzle.value.discord_channel}`
+);
 
 onBeforeMount(() => document.body.classList.add("fullscreen"));
 
 const puzzleURL = ref("");
 const puzzleDisplay = ref("none");
 const togglePuzzle = (e: MouseEvent) => {
-  if (!data.value?.puzzle.puzzle_url) return;
+  if (!puzzle.value?.puzzle_url) return;
   if (e.metaKey || e.ctrlKey) return; // open in new tab
 
   e.preventDefault();
   if (!puzzleURL.value) {
     // Lazy-load the puzzle frame
-    puzzleURL.value = data.value.puzzle.puzzle_url;
+    puzzleURL.value = puzzle.value.puzzle_url;
   }
   if (puzzleDisplay.value === "unset") {
     puzzleDisplay.value = "none";
@@ -68,45 +80,44 @@ const togglePuzzle = (e: MouseEvent) => {
 
 <template>
   <main>
-    <iframe :src="data?.spreadsheetURL || ''"></iframe>
+    <iframe :src="spreadsheetURL || ''"></iframe>
     <iframe :src="puzzleURL" class="puzzle"></iframe>
   </main>
   <nav>
     <section>
       <ETooltip text="Click to set status to ✍️ Working" placement="top"
         :offset-distance="4"
-        v-if="data.puzzle.status === Status.NotStarted || data.puzzle.status === Status.Abandoned">
+        v-if="puzzle.status === Status.NotStarted || puzzle.status === Status.Abandoned">
         <button
-          @click="() => updatePuzzleOptimistic(data.puzzle.id, { status: Status.Working })">
-          {{ StatusEmoji(data.puzzle.status) || "‼️" }}
+          @click="() => updatePuzzleOptimistic(puzzle.id, { status: Status.Working })">
+          {{ StatusEmoji(puzzle.status) || "‼️" }}
         </button>
       </ETooltip>
-      <ETooltip :text="`Status: ${StatusLabel(data.puzzle.status)}`" placement="top"
+      <ETooltip :text="`Status: ${StatusLabel(puzzle.status)}`" placement="top"
         :offset-distance="4" v-else>
-        {{ StatusEmoji(data.puzzle.status) }}
+        {{ StatusEmoji(puzzle.status) }}
       </ETooltip>
-      <ETooltip :text="`Voice Room: ${data.voiceRoom.name}`" placement="top"
-        :offset-distance="4" v-if="data.voiceRoom">
-        {{ data.voiceRoom.emoji }}
+      <ETooltip :text="`Voice Room: ${voiceRoom.name}`" placement="top"
+        :offset-distance="4" v-if="voiceRoom">
+        {{ voiceRoom.emoji }}
       </ETooltip>
     </section>
     <section>
       <ETooltip text="Puzzle Page" placement="top" :offset-distance="4">
-        <NuxtLink :to="data.puzzle.puzzle_url" :ok="!!data.puzzle.puzzle_url"
-          target="_blank" @click="togglePuzzle">
+        <NuxtLink :to="puzzle.puzzle_url" :ok="!!puzzle.puzzle_url" target="_blank"
+          @click="togglePuzzle">
           🌎
         </NuxtLink>
       </ETooltip>
       <ETooltip text="Discord Channel" placement="top" :offset-distance="4">
-        <NuxtLink :to="data.discordURL" :target="discordTarget"
-          :ok="!!data.puzzle.discord_channel">
+        <NuxtLink :to="discordURL" :target="discordTarget" :ok="!!puzzle.discord_channel">
           👾
         </NuxtLink>
       </ETooltip>
     </section>
     <section>
-      <ETooltip :text="`Round: ${data.round.name}`" placement="top" :offset-distance="4">
-        {{ data.round.emoji }}
+      <ETooltip :text="`Round: ${round?.name}`" placement="top" :offset-distance="4">
+        {{ round?.emoji }}
       </ETooltip>
     </section>
     <section>

@@ -1,7 +1,10 @@
 import AblyWorker from "~/ablyWorker?sharedworker";
-import type { AblyWorkerMessage, SettingsMessage, SyncMessage } from "~/utils/types";
+import type { AblyWorkerMessage, DiscordMessage, SettingsMessage, SyncMessage } from "~/utils/types";
 
-export default function (sync: (m: SyncMessage) => void, settings: (m: SettingsMessage) => void): Ref<boolean> {
+export default function (
+  sync: (m: SyncMessage) => void,
+  settings: (m: SettingsMessage) => void,
+  discord: (m: DiscordMessage) => void): Ref<boolean> {
   const connected = ref<boolean>(false);
   let poisoned = false;
   onMounted(() => {
@@ -12,6 +15,8 @@ export default function (sync: (m: SyncMessage) => void, settings: (m: SettingsM
         sync(e.data.data);
       } else if (e.data.name === "settings") {
         settings(e.data.data);
+      } else if (e.data.name === "m") {
+        discord(e.data.data);
       } else if (e.data.name === "client") {
         if (e.data.state === "connected") {
           if (poisoned) window.location.reload();

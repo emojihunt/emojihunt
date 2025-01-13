@@ -4,6 +4,7 @@
 //
 type State = {
   connected: Ref<boolean>,
+  discordCallback: Ref<((m: DiscordMessage) => void) | undefined>;
 
   settings: Settings;
   puzzles: Map<number, Puzzle>;
@@ -234,10 +235,13 @@ export async function initializePuzzles(): Promise<State> {
     const ids = new Set<string>(Object.keys(msg.voice_rooms));
     voiceRooms.forEach((_, i) => !ids.has(i) && voiceRooms.delete(i));
   };
-  const connected = useAbly(onSync, onSettings);
+  const discordCallback = ref<(m: DiscordMessage) => void>();
+  const onDiscord = (m: DiscordMessage) => discordCallback.value?.(m);
+  const connected = useAbly(onSync, onSettings, onDiscord);
 
-  const state = {
-    connected, settings, puzzles, rounds, voiceRooms,
+  const state: State = {
+    connected, discordCallback,
+    settings, puzzles, rounds, voiceRooms,
     puzzleCount, solvedPuzzleCount, ordering,
     async addRound(data: NewRound) {
       const [round, changeId] = await updateRequest<Round>("/rounds", data);

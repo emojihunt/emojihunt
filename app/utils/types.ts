@@ -158,7 +158,7 @@ export type VoiceRoom = {
 export type AblyWorkerMessage =
   { name: "sync"; data: SyncMessage; } |
   { name: "settings"; data: SettingsMessage; } |
-  { name: "discord"; data: DiscordMessage; } |
+  { name: "m"; data: DiscordMessage; } |
   { name: "client"; state: ConnectionState; };
 
 export type ConnectionState = "disconnected" | "connected" | "broken";
