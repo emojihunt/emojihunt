@@ -153,47 +153,73 @@ func (c *Client) handleScheduledEvent(
 
 type AblyMessage struct {
 	ID        string          `json:"id"`
-	ChannelID string          `json:"ch"`
-	Author    AblyMessageUser `json:"u"`
-	Content   string          `json:"msg"`
+	ChannelID string          `json:"ch,omitempty"`
+	Author    AblyMessageUser `json:"u,omitempty"`
+	Content   string          `json:"msg"` // don't omit (for deletes)
 }
 
 type AblyMessageUser struct {
 	ID     string `json:"id"`
 	Name   string `json:"name"`
-	Avatar string `json:"avatar"`
+	Avatar string `json:"avatar,omitempty"`
 }
 
-func (c *Client) handleMessageEvent(
-	ctx context.Context, e *discordgo.MessageCreate,
+func (c *Client) handleMessageCreate(
+	ctx context.Context, m *discordgo.MessageCreate,
 ) error {
-	ch, ok := c.GetChannel(e.ChannelID)
-	if !ok || ch.ParentID == c.TeamCategoryID {
-		return nil // skip messages to #hanging-out, etc. (load management)
-	}
-	if e.Message == nil || e.Message.Author == nil {
-		return nil // ???
-	}
-	if e.Message.Author.Bot {
-		return nil // skip bot messages (avoid loops)
-	}
-	if e.Message.Thread != nil {
-		return nil // skip messages in threads
-	}
-	if ch.Type != discordgo.ChannelTypeGuildText {
-		return nil // skip messages in voice channels, etc.
+	if c.ignoreMessage(m.Message, false) {
+		return nil
 	}
 	var message = AblyMessage{
-		ID:        e.Message.ID,
-		ChannelID: e.ChannelID,
+		ID:        m.Message.ID,
+		ChannelID: m.ChannelID,
 		Author: AblyMessageUser{
-			ID:     e.Author.ID,
-			Name:   e.Author.GlobalName,
-			Avatar: e.Author.Avatar,
+			ID:     m.Author.ID,
+			Name:   m.Author.GlobalName,
+			Avatar: m.Author.Avatar,
 		},
-		Content: e.Message.Content,
+		Content: m.Message.Content,
 	}
 	return c.ably.Publish(ctx, "m", message)
+}
+
+func (c *Client) handleMessageUpdate(
+	ctx context.Context, m *discordgo.MessageUpdate,
+) error {
+	if c.ignoreMessage(m.Message, false) {
+		return nil
+	}
+	var message = AblyMessage{
+		ID:      m.Message.ID,
+		Content: m.Message.Content,
+	}
+	return c.ably.Publish(ctx, "m", message)
+}
+
+func (c *Client) handleMessageDelete(
+	ctx context.Context, m *discordgo.MessageDelete,
+) error {
+	if c.ignoreMessage(m.Message, true) {
+		return nil
+	}
+	var message = AblyMessage{
+		ID: m.Message.ID,
+	}
+	return c.ably.Publish(ctx, "m", message)
+}
+
+func (c *Client) ignoreMessage(m *discordgo.Message, delete bool) bool {
+	ch, ok := c.GetChannel(m.ChannelID)
+	if !ok || ch.ParentID == c.TeamCategoryID {
+		return true // skip messages to #hanging-out, etc. (load management)
+	} else if !delete && (m.Author == nil || m.Author.Bot) {
+		return true // skip bot messages (avoid loops)
+	} else if m.Thread != nil {
+		return true // skip messages in threads
+	} else if ch.Type != discordgo.ChannelTypeGuildText {
+		return true // skip messages in voice channels, etc.
+	}
+	return false
 }
 
 // Rate Limit Tracking

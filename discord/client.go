@@ -152,8 +152,11 @@ func Connect(ctx context.Context, prod bool, state *state.Client, ably *ably.Rea
 	// Register handlers. Remember to register the necessary intents above!
 	s.AddHandler(WrapHandler(ctx, "bot.unknown", discord.handleCommand))
 	s.AddHandler(WrapHandler(ctx, "bot.unknown", discord.handleScheduledEvent))
-	s.AddHandler(WrapHandler(ctx, "message", discord.handleMessageEvent))
 	s.AddHandler(WrapHandler(ctx, "rate_limit", discord.handleRateLimit))
+
+	s.AddHandler(WrapHandler(ctx, "message", discord.handleMessageCreate))
+	s.AddHandler(WrapHandler(ctx, "message", discord.handleMessageUpdate))
+	s.AddHandler(WrapHandler(ctx, "message", discord.handleMessageDelete))
 
 	s.AddHandler(WrapHandler(ctx, "channel", discord.handleChannelCreate))
 	s.AddHandler(WrapHandler(ctx, "channel", discord.handleChannelUpdate))
