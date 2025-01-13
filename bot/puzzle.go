@@ -115,13 +115,13 @@ func (b *PuzzleBot) Register() (*discordgo.ApplicationCommand, bool) {
 				},
 			},
 			{
-				Name:        "location",
-				Description: "Use in a puzzle channel to add or update the location 📍",
+				Name:        "in-person",
+				Description: "Use in a puzzle channel to add or update the in-person location 📍",
 				Type:        discordgo.ApplicationCommandOptionSubCommand,
 				Options: []*discordgo.ApplicationCommandOption{
 					{
 						Name:        "set",
-						Description: "What should the location be set to?",
+						Description: "What should the in-person location be set to?",
 						Required:    false,
 						Type:        discordgo.ApplicationCommandOptionString,
 					},
@@ -198,7 +198,7 @@ func (b *PuzzleBot) Handle(ctx context.Context, input *discord.CommandInput) (st
 					reply += fmt.Sprintf(" Previous note was: ```\n%s\n```", puzzle.Note)
 				}
 				puzzle.Note = note
-			case "location":
+			case "in-person":
 				var location string
 				if opt, ok := input.Options["set"]; ok {
 					location = opt.StringValue()
