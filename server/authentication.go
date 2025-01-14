@@ -22,16 +22,9 @@ const (
 
 func (s *Server) AuthenticationMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 	return func(c echo.Context) error {
-		encoded, err := c.Cookie(CookieName)
-		if err != nil {
-			return echo.NewHTTPError(http.StatusUnauthorized, "missing session cookie")
-		}
-
-		var userID string
-		err = s.cookie.Decode(CookieName, encoded.Value, &userID)
-		if err != nil {
-			log.Printf("invalid session cookie: %v", err)
-			return echo.NewHTTPError(http.StatusUnauthorized, "invalid session cookie")
+		_, ok := s.GetUserID(c)
+		if !ok {
+			return echo.NewHTTPError(http.StatusUnauthorized, "missing or invalid session cookie")
 		}
 		return next(c)
 	}
@@ -129,6 +122,21 @@ func (s *Server) oauth2TokenExchange(code, devRedirectURI string) (string, error
 	} else {
 		return token, nil
 	}
+}
+
+func (s *Server) GetUserID(c echo.Context) (string, bool) {
+	encoded, err := c.Cookie(CookieName)
+	if err != nil {
+		return "", false
+	}
+
+	var userID string
+	err = s.cookie.Decode(CookieName, encoded.Value, &userID)
+	if err != nil {
+		log.Printf("invalid session cookie: %v", err)
+		return "", false
+	}
+	return userID, true
 }
 
 func (s *Server) Logout(c echo.Context) error {

@@ -143,15 +143,15 @@ func (c *Client) refreshMemberCache() error {
 
 // Webhook Handling
 
-func (c *Client) RelayMessage(ch *discordgo.Channel, author *discordgo.User, msg string) error {
-	webhook, err := c.getRelayWebhook(ch)
+func (c *Client) RelayMessage(chID, userID, msg string) error {
+	webhook, err := c.getRelayWebhook(chID)
 	if err != nil {
 		return err
 	}
 	_, err = c.s.WebhookExecute(webhook.ID, webhook.Token, true, &discordgo.WebhookParams{
 		Content:   msg,
-		Username:  c.DisplayName(author),
-		AvatarURL: c.DisplayAvatar(author),
+		Username:  c.DisplayName(&discordgo.User{ID: userID}),
+		AvatarURL: c.DisplayAvatar(&discordgo.User{ID: userID}),
 	})
 	if err != nil {
 		return xerrors.Errorf("WebhookExecute: %w", err)
@@ -159,18 +159,18 @@ func (c *Client) RelayMessage(ch *discordgo.Channel, author *discordgo.User, msg
 	return nil
 }
 
-func (c *Client) getRelayWebhook(ch *discordgo.Channel) (*discordgo.Webhook, error) {
+func (c *Client) getRelayWebhook(chID string) (*discordgo.Webhook, error) {
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
-	webhook, ok := c.webhookCache[ch.ID]
+	webhook, ok := c.webhookCache[chID]
 	if ok {
 		return webhook, nil
 	}
-	webhook, err := c.s.WebhookCreate(ch.ID, relayWebhookName, "")
+	webhook, err := c.s.WebhookCreate(chID, relayWebhookName, "")
 	if err != nil {
 		return nil, xerrors.Errorf("WebhookCreate: %w", err)
 	}
-	c.webhookCache[ch.ID] = webhook
+	c.webhookCache[chID] = webhook
 	return webhook, nil
 }
 

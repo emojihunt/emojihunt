@@ -99,6 +99,8 @@ func Start(ctx context.Context, prod bool, ably *ably.Realtime,
 	pg.POST("/:id", s.UpdatePuzzle)
 	pg.DELETE("/:id", s.DeletePuzzle)
 
+	pg.POST("/:id/messages", s.SendMessage)
+
 	var rg = e.Group("/rounds", s.AuthenticationMiddleware)
 	rg.GET("", s.ListRounds)
 	rg.GET("/:id", s.GetRound)
