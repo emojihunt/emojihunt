@@ -146,7 +146,7 @@ export async function initializePuzzles(): Promise<State> {
           localPuzzles.set(entry.id, { ..._puzzles.get(entry.id)!, ...entry });
           break;
         case "round":
-          localRounds.set(entry.id, { ...rounds.get(entry.id)!, ...entry });
+          localRounds.set(entry.id, { ..._rounds.get(entry.id)!, ...entry });
           break;
         case "puzzle.delete":
           localPuzzles.delete(entry.id);
@@ -182,7 +182,8 @@ export async function initializePuzzles(): Promise<State> {
       });
     }
 
-    localRounds.forEach((v, k) => updateReactiveMap(rounds, k, hydrateRound(v, grouped.get(v.id) || [])));
+    localRounds.forEach((v, k) => updateReactiveMap(rounds, k,
+      hydrateRound(v, grouped.get(v.id) || [])));
     rounds.forEach((_, k) => _rounds.has(k) || rounds.delete(k));
 
     puzzleCount.value = puzzles.size;
