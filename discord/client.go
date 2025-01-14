@@ -62,6 +62,7 @@ type Client struct {
 	ably                      *ably.RealtimeChannel
 	commandsRegistered        bool
 	channelCache              map[string]*discordgo.Channel
+	memberCache               map[string]*discordgo.Member
 	scheduledEventsCache      map[string]*discordgo.GuildScheduledEvent
 	scheduledEventsLastUpdate time.Time
 	rateLimits                map[string]*time.Time // url -> retryAfter time
@@ -79,6 +80,7 @@ func Connect(ctx context.Context, prod bool, state *state.Client, ably *ably.Rea
 	}
 	s.Identify.Intents = discordgo.IntentsGuilds |
 		discordgo.IntentsGuildScheduledEvents |
+		discordgo.IntentsGuildMembers |
 		discordgo.IntentsGuildMessages |
 		discordgo.IntentMessageContent
 	s.Identify.Presence.Status = "invisible"
@@ -158,12 +160,19 @@ func Connect(ctx context.Context, prod bool, state *state.Client, ably *ably.Rea
 	s.AddHandler(WrapHandler(ctx, "message", discord.handleMessageUpdate))
 	s.AddHandler(WrapHandler(ctx, "message", discord.handleMessageDelete))
 
+	s.AddHandler(WrapHandler(ctx, "member", discord.handleGuildMemberAdd))
+	s.AddHandler(WrapHandler(ctx, "member", discord.handleGuildMemberUpdate))
+	s.AddHandler(WrapHandler(ctx, "member", discord.handleGuildMemberRemove))
+
 	s.AddHandler(WrapHandler(ctx, "channel", discord.handleChannelCreate))
 	s.AddHandler(WrapHandler(ctx, "channel", discord.handleChannelUpdate))
 	s.AddHandler(WrapHandler(ctx, "channel", discord.handleChannelDelete))
 
 	if err := discord.refreshChannelCache(); err != nil {
 		log.Panicf("refreshChannelCache: %v", err)
+	}
+	if err := discord.refreshMemberCache(); err != nil {
+		log.Panicf("refreshMemberCache: %v", err)
 	}
 	return discord
 }

@@ -149,6 +149,52 @@ func (c *Client) handleScheduledEvent(
 	return nil
 }
 
+// Guild Member Handling
+
+func (c *Client) handleGuildMemberAdd(
+	ctx context.Context, g *discordgo.GuildMemberAdd,
+) error {
+	c.mutex.Lock()
+	defer c.mutex.Unlock()
+	c.memberCache[g.User.ID] = g.Member
+	log.Printf("discord: member added: %q", g.User.GlobalName)
+	return nil
+}
+
+func (c *Client) handleGuildMemberUpdate(
+	ctx context.Context, g *discordgo.GuildMemberUpdate,
+) error {
+	c.mutex.Lock()
+	defer c.mutex.Unlock()
+	c.memberCache[g.User.ID] = g.Member
+	log.Printf("discord: member updated: %q", g.User.GlobalName)
+	return nil
+}
+
+func (c *Client) handleGuildMemberRemove(
+	ctx context.Context, g *discordgo.GuildMemberRemove,
+) error {
+	c.mutex.Lock()
+	defer c.mutex.Unlock()
+	delete(c.memberCache, g.User.ID)
+	log.Printf("discord: member removed: %q", g.User.GlobalName)
+	return nil
+}
+
+func (c *Client) refreshMemberCache() error {
+	c.mutex.Lock()
+	defer c.mutex.Unlock()
+	members, err := c.s.GuildMembers(c.Guild.ID, "", 1000)
+	if err != nil {
+		return err
+	}
+	c.memberCache = make(map[string]*discordgo.Member)
+	for _, member := range members {
+		c.memberCache[member.User.ID] = member
+	}
+	return nil
+}
+
 // Message Handling
 
 type AblyMessage struct {
@@ -167,7 +213,7 @@ func (c *Client) handleMessageCreate(
 	var message = AblyMessage{
 		ID:        m.Message.ID,
 		ChannelID: m.ChannelID,
-		Author:    m.Author.GlobalName,
+		Author:    c.DisplayName(m.Author),
 		Content:   m.Message.Content,
 	}
 	return c.ably.Publish(ctx, "m", message)
@@ -210,6 +256,19 @@ func (c *Client) ignoreMessage(m *discordgo.Message, delete bool) bool {
 		return true // skip messages in voice channels, etc.
 	}
 	return false
+}
+
+func (c *Client) DisplayName(u *discordgo.User) string {
+	c.mutex.Lock()
+	defer c.mutex.Unlock()
+	member, ok := c.memberCache[u.ID]
+	if ok && member.Nick != "" {
+		return member.Nick
+	} else if u.GlobalName != "" {
+		return u.GlobalName
+	} else {
+		return u.Username
+	}
 }
 
 // Rate Limit Tracking
