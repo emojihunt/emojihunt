@@ -5,7 +5,10 @@ import (
 	"log"
 
 	"github.com/bwmarrin/discordgo"
+	"golang.org/x/xerrors"
 )
+
+const relayWebhookName = "Huntbot Relay"
 
 // Message Handling
 
@@ -72,20 +75,27 @@ func (c *Client) ignoreMessage(m *discordgo.Message, delete bool) bool {
 	return false
 }
 
+// Guild Member Handling
+
 func (c *Client) DisplayName(u *discordgo.User) string {
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
 	member, ok := c.memberCache[u.ID]
-	if ok && member.Nick != "" {
-		return member.Nick
-	} else if u.GlobalName != "" {
-		return u.GlobalName
-	} else {
-		return u.Username
+	if ok {
+		return member.DisplayName()
 	}
+	return u.GlobalName
 }
 
-// Guild Member Handling
+func (c *Client) DisplayAvatar(u *discordgo.User) string {
+	c.mutex.Lock()
+	defer c.mutex.Unlock()
+	member, ok := c.memberCache[u.ID]
+	if ok {
+		return member.AvatarURL("")
+	}
+	return u.AvatarURL("")
+}
 
 func (c *Client) handleGuildMemberAdd(
 	ctx context.Context, g *discordgo.GuildMemberAdd,
@@ -127,6 +137,56 @@ func (c *Client) refreshMemberCache() error {
 	c.memberCache = make(map[string]*discordgo.Member)
 	for _, member := range members {
 		c.memberCache[member.User.ID] = member
+	}
+	return nil
+}
+
+// Webhook Handling
+
+func (c *Client) RelayMessage(ch *discordgo.Channel, author *discordgo.User, msg string) error {
+	webhook, err := c.getRelayWebhook(ch)
+	if err != nil {
+		return err
+	}
+	_, err = c.s.WebhookExecute(webhook.ID, webhook.Token, true, &discordgo.WebhookParams{
+		Content:   msg,
+		Username:  c.DisplayName(author),
+		AvatarURL: c.DisplayAvatar(author),
+	})
+	if err != nil {
+		return xerrors.Errorf("WebhookExecute: %w", err)
+	}
+	return nil
+}
+
+func (c *Client) getRelayWebhook(ch *discordgo.Channel) (*discordgo.Webhook, error) {
+	c.mutex.Lock()
+	defer c.mutex.Unlock()
+	webhook, ok := c.webhookCache[ch.ID]
+	if ok {
+		return webhook, nil
+	}
+	webhook, err := c.s.WebhookCreate(ch.ID, relayWebhookName, "")
+	if err != nil {
+		return nil, xerrors.Errorf("WebhookCreate: %w", err)
+	}
+	c.webhookCache[ch.ID] = webhook
+	return webhook, nil
+}
+
+func (c *Client) refreshWebhookCache() error {
+	c.mutex.Lock()
+	defer c.mutex.Unlock()
+	webhooks, err := c.s.GuildWebhooks(c.Guild.ID)
+	if err != nil {
+		return err
+	}
+	c.webhookCache = make(map[string]*discordgo.Webhook)
+	for _, webhook := range webhooks {
+		if webhook.ApplicationID != c.Application.ID {
+			continue
+		}
+		c.webhookCache[webhook.ChannelID] = webhook
 	}
 	return nil
 }

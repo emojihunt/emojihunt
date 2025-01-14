@@ -63,6 +63,7 @@ type Client struct {
 	commandsRegistered        bool
 	channelCache              map[string]*discordgo.Channel
 	memberCache               map[string]*discordgo.Member
+	webhookCache              map[string]*discordgo.Webhook
 	scheduledEventsCache      map[string]*discordgo.GuildScheduledEvent
 	scheduledEventsLastUpdate time.Time
 	rateLimits                map[string]*time.Time // url -> retryAfter time
@@ -172,6 +173,9 @@ func Connect(ctx context.Context, prod bool, state *state.Client, ably *ably.Rea
 		log.Panicf("refreshChannelCache: %v", err)
 	}
 	if err := discord.refreshMemberCache(); err != nil {
+		log.Panicf("refreshMemberCache: %v", err)
+	}
+	if err := discord.refreshWebhookCache(); err != nil {
 		log.Panicf("refreshMemberCache: %v", err)
 	}
 	return discord
