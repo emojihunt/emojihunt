@@ -17,6 +17,9 @@ const discordURL = computed(() =>
 const open = ref(false);
 const muted = ref(false);
 
+const input = useTemplateRef("input");
+const draft = ref("");
+
 const filtered = computed(() => {
   const now = Date.now();
   const cutoff = 30 * 60 * 1000; // 30 minutes
@@ -30,19 +33,40 @@ watch(() => filtered.value?.length, () => {
   } else if (!muted.value) {
     open.value = true;
     emit("open");
+    nextTick(() => input.value?.focus());
   }
 });
+
+const escape = (e: KeyboardEvent) => {
+  if (e.key === "Escape") open.value = false;
+};
+const send = (e: KeyboardEvent) => {
+  if (e.key === "Enter") {
+    if (!draft.value) return;
+    fetch(`/api/puzzles/${id}/messages`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body: (new URLSearchParams({ msg: draft.value })).toString(),
+    });
+    draft.value = "";
+  }
+};
 
 defineExpose({
   toggle(): void {
     open.value = !open.value;
-    if (open.value) emit("open");
+    if (open.value) {
+      emit("open");
+      nextTick(() => input.value?.focus());
+    };
   },
 });
 </script>
 
 <template>
-  <div class="discord" v-if="open">
+  <div class="discord" v-if="open" @keydown="escape">
     <span class="links">
       <ETooltip text="Close" placement="top" :offset-distance="4">
         <button @click="() => (open = false)">
@@ -65,6 +89,7 @@ defineExpose({
     <p v-for="message of filtered">
       <b>{{ message.u }} &centerdot;</b> {{ message.msg }}
     </p>
+    <input ref="input" type=text v-model="draft" placeholder="Reply..." @keydown="send" />
   </div>
 </template>
 
@@ -80,7 +105,8 @@ defineExpose({
   color: white;
 }
 
-p {
+p,
+input {
   padding: 8px 12px;
 
   max-height: 150px;
