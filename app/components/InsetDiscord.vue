@@ -25,8 +25,13 @@ const toggleMute = () => {
   }
 };
 
-watch(() => messages.size, () => {
-  if (!messages.size) {
+const filtered = computed(() => {
+  const now = Date.now() / 1000;
+  const cutoff = 30 * 60; // 30 minutes
+  return [...messages.values()].filter((m) => (now - m.t) < cutoff);
+});
+watch(() => filtered.value?.length, () => {
+  if (!filtered.value?.length) {
     open.value = false;
   } else if (!muted.value) {
     open.value = true;
@@ -63,7 +68,7 @@ defineExpose({
         </NuxtLink>
       </ETooltip>
     </span>
-    <p v-for="message of messages.values()">
+    <p v-for="message of filtered">
       <b>@{{ message.u }}:</b> {{ message.msg }}
     </p>
   </div>
@@ -89,6 +94,8 @@ p {
   border: 1px solid #e1e3e1;
   border-radius: 6px;
   background-color: #313338;
+
+  user-select: text;
 }
 
 p:hover {

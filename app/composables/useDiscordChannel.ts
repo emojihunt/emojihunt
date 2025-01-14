@@ -11,7 +11,8 @@ export default function (
     if (prev) {
       if (m.msg) Object.assign(prev, m); // update
       else messages.delete(m.id); // delete
-    } else if (m.ch === channel.value) {
+    } else if (m.ch === channel.value && m.u) {
+      // (ignore updates if we don't have the original)
       messages.set(m.id, m); // create
     }
   };

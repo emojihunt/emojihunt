@@ -201,6 +201,7 @@ type AblyMessage struct {
 	ID        string `json:"id"`
 	ChannelID string `json:"ch,omitempty"`
 	Author    string `json:"u,omitempty"`
+	Timestamp int64  `json:"t"`
 	Content   string `json:"msg"` // don't omit (for deletes)
 }
 
@@ -214,6 +215,7 @@ func (c *Client) handleMessageCreate(
 		ID:        m.Message.ID,
 		ChannelID: m.ChannelID,
 		Author:    c.DisplayName(m.Author),
+		Timestamp: m.Timestamp.Unix(),
 		Content:   m.Message.Content,
 	}
 	return c.ably.Publish(ctx, "m", message)

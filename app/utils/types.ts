@@ -174,6 +174,7 @@ export type DiscordMessage = {
   id: string;
   ch: string;
   u: string;
+  t: number;
   msg: string;
 };
 
