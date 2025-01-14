@@ -12,7 +12,7 @@ const set = (voice_room: string) => {
 </script>
 
 <template>
-  <fieldset>
+  <div class="bubble">
     <ETooltip text="No Voice Room" placement="top" :offset-distance="4">
       <button :disabled="!puzzle?.voice_room" @click="() => set('')">
         ❎
@@ -24,19 +24,20 @@ const set = (voice_room: string) => {
         {{ room.emoji }}
       </button>
     </ETooltip>
-  </fieldset>
+  </div>
 </template>
 
 <style scoped>
-fieldset {
+.bubble {
   padding: 0 17px;
   border: 1px solid #e1e3e1;
   border-radius: 6px;
   height: 32px;
   background-color: rgb(249 251 253 / 75%);
 
-  display: flex;
   align-self: flex-start;
+  display: flex;
+  align-items: center;
   gap: 8px;
 }
 

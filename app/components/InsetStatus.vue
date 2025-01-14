@@ -33,7 +33,7 @@ const keydown = (e: KeyboardEvent) => {
 </script>
 
 <template>
-  <fieldset @keydown="keydown">
+  <div class="bubble" @keydown="keydown">
     <ETooltip v-if="!answering" v-for="status of Object.values(Status)"
       :text="StatusLabel(status)" placement="top" :offset-distance="4">
       <button :disabled="puzzle?.status === status" @click="() => set(status)">
@@ -46,19 +46,20 @@ const keydown = (e: KeyboardEvent) => {
         <UIcon name="i-heroicons-check" />
       </button>
     </template>
-  </fieldset>
+  </div>
 </template>
 
 <style scoped>
-fieldset {
+.bubble {
   padding: 0 17px;
   border: 1px solid #e1e3e1;
   border-radius: 6px;
   height: 32px;
   background-color: rgb(249 251 253 / 75%);
 
-  display: flex;
   align-self: flex-start;
+  display: flex;
+  align-items: center;
   gap: 8px;
 }
 
