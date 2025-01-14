@@ -135,10 +135,16 @@ func (c *Client) UpdateDiscordChannel(ctx context.Context, fields DiscordChannel
 			// slow? Wait for it to finish.
 			return <-ch
 		}
-		// Being rate limited; goroutine will finish later.
-		msg := fmt.Sprintf(":snail: Hit Discord's rate limit on channel renaming. Channel will be "+
-			"renamed to %q in %s.", title, time.Until(*rateLimit).Round(time.Second))
-		return c.discord.ChannelSendRawID(fields.PuzzleChannel, msg)
+		go func() {
+			// Being rate limited; goroutine will finish later. Send this message in
+			// its own goroutine with a delay so this message appears after
+			// NotifySolveInPuzzleChannel.
+			time.Sleep(4 * time.Second)
+			msg := fmt.Sprintf(":snail: Hit Discord's rate limit on channel renaming. Channel will be "+
+				"renamed to %q in %s.", title, time.Until(*rateLimit).Round(time.Second))
+			c.discord.ChannelSendRawID(fields.PuzzleChannel, msg)
+		}()
+		return nil
 	}
 }
 
