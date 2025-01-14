@@ -1,6 +1,10 @@
 package status
 
-import "golang.org/x/xerrors"
+import (
+	"fmt"
+
+	"golang.org/x/xerrors"
+)
 
 type Status string
 
@@ -49,18 +53,27 @@ func (s Status) Pretty() string {
 	switch s {
 	case NotStarted:
 		return "Not Started"
-	case Working:
-		return "✍️ Working"
-	case Abandoned:
-		return "🗑️ Abandoned"
-	case Solved:
-		return "🏅 Solved"
-	case Backsolved:
-		return "🤦‍♀️ Backsolved"
-	case Purchased:
-		return "💸 Purchased"
 	default:
-		panic(xerrors.Errorf("called Human() on unknown status %q", s))
+		return fmt.Sprintf("%s %s", s.Emoji(), s)
+	}
+}
+
+func (s Status) Emoji() string {
+	switch s {
+	case NotStarted:
+		return ""
+	case Working:
+		return "✍️"
+	case Abandoned:
+		return "🗑️"
+	case Solved:
+		return "🏅"
+	case Backsolved:
+		return "🤦‍♀️"
+	case Purchased:
+		return "💸"
+	default:
+		panic(xerrors.Errorf("called Emoji() on unknown status %q", s))
 	}
 }
 

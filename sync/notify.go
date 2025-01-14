@@ -30,8 +30,8 @@ func (c *Client) NotifyPuzzleWorking(puzzle state.Puzzle) error {
 func (c *Client) NotifySolveInPuzzleChannel(puzzle state.Puzzle) error {
 	log.Printf("sync: notifying for solved puzzle %q in puzzle channel", puzzle.Name)
 	msg := fmt.Sprintf(
-		"Puzzle %s The answer was `%v`. I'll archive this channel.",
-		puzzle.Status.SolvedVerb(), puzzle.Answer,
+		"%s Puzzle %s The answer was `%v`. I'll archive this channel.",
+		puzzle.Status.Emoji(), puzzle.Status.SolvedVerb(), puzzle.Answer,
 	)
 	return c.discord.ChannelSendRawID(puzzle.DiscordChannel, msg)
 }
