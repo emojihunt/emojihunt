@@ -29,7 +29,7 @@ const set = (voice_room: string) => {
 
 <style scoped>
 fieldset {
-  padding: 0 1.1em;
+  padding: 0 17px;
   border: 1px solid #e1e3e1;
   border-radius: 6px;
   height: 32px;

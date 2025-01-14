@@ -8,12 +8,7 @@ definePageMeta({
 
 useHead({ htmlAttrs: { lang: "en" } });
 const route = useRoute();
-const {
-  discordCallback, settings, puzzles, rounds, voiceRooms
-} = await initializePuzzles();
-const channel = ref("");
-const messages = useDiscordChannel(channel, discordCallback);
-const [discordBase, discordTarget] = useDiscordBase();
+const { puzzles, rounds, voiceRooms } = await initializePuzzles();
 
 const puzzle = computed(() => {
   const id = parseInt(route.params.id as string);
@@ -38,12 +33,10 @@ const round = computed(() =>
   puzzle.value && rounds.get(puzzle.value.round)
 );
 
-
 watchEffect(() => useHead({
   title: puzzle.value.name,
   link: [{ rel: "icon", key: "icon", href: `https://emojicdn.elk.sh/${round.value?.emoji}?style=google` }],
 }));
-watchEffect(() => channel.value = puzzle.value?.discord_channel);
 const voiceRoom = computed(() =>
   puzzle.value.voice_room ? voiceRooms.get(puzzle.value.voice_room) : undefined
 );
@@ -51,9 +44,6 @@ const spreadsheetURL = computed(() =>
   puzzle.value.spreadsheet_id
     ? `https://docs.google.com/spreadsheets/d/${puzzle.value.spreadsheet_id}`
     : ""
-);
-const discordURL = computed(() =>
-  `${discordBase}/channels/${settings.discordGuild}/${puzzle.value.discord_channel}`
 );
 
 onBeforeMount(() => document.body.classList.add("fullscreen"));
@@ -73,6 +63,7 @@ const togglePuzzle = (e: MouseEvent) => {
 };
 
 const open = ref<"status" | "voice">();
+const discord = useTemplateRef("discord");
 </script>
 
 <template>
@@ -104,10 +95,9 @@ const open = ref<"status" | "voice">();
           </NuxtLink>
         </ETooltip>
         <ETooltip text="Discord Channel" placement="top" :offset-distance="4">
-          <NuxtLink :to="discordURL" :target="discordTarget"
-            :ok="!!puzzle.discord_channel">
+          <button @click="() => discord?.toggle()">
             👾
-          </NuxtLink>
+          </button>
         </ETooltip>
       </section>
       <section>
@@ -125,6 +115,7 @@ const open = ref<"status" | "voice">();
       @close="() => (open = undefined)" />
     <InsetVoice v-if="open === 'voice'" :id="puzzle.id"
       @close="() => (open = undefined)" />
+    <InsetDiscord ref="discord" :id="puzzle.id" />
   </div>
 </template>
 
@@ -163,7 +154,7 @@ iframe {
 
 nav {
   height: 36px;
-  padding: 1px 0.5em 0;
+  padding: 1px 8px 0;
   flex-shrink: 0;
 
   display: flex;
@@ -174,7 +165,7 @@ section {
   display: flex;
   align-items: center;
 
-  margin: 0 0.6em;
+  margin: 0 9px;
   gap: 8px;
 }
 
