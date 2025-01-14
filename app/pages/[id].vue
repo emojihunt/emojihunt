@@ -72,6 +72,8 @@ const togglePuzzle = (e: MouseEvent) => {
   }
   split.value = split.value ? "" : "split";
 };
+
+const open = ref(false);
 </script>
 
 <template>
@@ -79,49 +81,47 @@ const togglePuzzle = (e: MouseEvent) => {
     <iframe :src="spreadsheetURL || ''"></iframe>
     <iframe :src="puzzleURL" class="puzzle"></iframe>
   </main>
-  <nav :class="split">
-    <section>
-      <ETooltip text="Click to set status to ✍️ Working" placement="top"
-        :offset-distance="4"
-        v-if="puzzle.status === Status.NotStarted || puzzle.status === Status.Abandoned">
-        <button
-          @click="() => updatePuzzleOptimistic(puzzle.id, { status: Status.Working })">
-          {{ StatusEmoji(puzzle.status) || "‼️" }}
-        </button>
-      </ETooltip>
-      <ETooltip :text="`Status: ${StatusLabel(puzzle.status)}`" placement="top"
-        :offset-distance="4" v-else>
-        {{ StatusEmoji(puzzle.status) }}
-      </ETooltip>
-      <ETooltip :text="`Voice Room: ${voiceRoom.name}`" placement="top"
-        :offset-distance="4" v-if="voiceRoom">
-        {{ voiceRoom.emoji }}
-      </ETooltip>
-    </section>
-    <section>
-      <ETooltip text="Puzzle Page" placement="top" :offset-distance="4">
-        <NuxtLink :to="puzzle.puzzle_url" :ok="!!puzzle.puzzle_url" target="_blank"
-          @click="togglePuzzle">
-          🌎
+  <div :class="['inset', split]">
+    <nav>
+      <section>
+        <ETooltip :text="`Status: ${StatusLabel(puzzle.status)}`" placement="top"
+          :offset-distance="4">
+          <button @click="() => (open = !open)">
+            {{ StatusEmoji(puzzle.status) || "‼️" }}
+          </button>
+        </ETooltip>
+        <ETooltip :text="`Voice Room: ${voiceRoom.name}`" placement="top"
+          :offset-distance="4" v-if="voiceRoom">
+          {{ voiceRoom.emoji }}
+        </ETooltip>
+      </section>
+      <section>
+        <ETooltip text="Puzzle Page" placement="top" :offset-distance="4">
+          <NuxtLink :to="puzzle.puzzle_url" :ok="!!puzzle.puzzle_url" target="_blank"
+            @click="togglePuzzle">
+            🌎
+          </NuxtLink>
+        </ETooltip>
+        <ETooltip text="Discord Channel" placement="top" :offset-distance="4">
+          <NuxtLink :to="discordURL" :target="discordTarget"
+            :ok="!!puzzle.discord_channel">
+            👾
+          </NuxtLink>
+        </ETooltip>
+      </section>
+      <section>
+        <ETooltip :text="`Round: ${round?.name}`" placement="top" :offset-distance="4">
+          {{ round?.emoji }}
+        </ETooltip>
+      </section>
+      <section>
+        <NuxtLink to="/" :external="true" class="logo">
+          <span>🌊🎨🎡</span>
         </NuxtLink>
-      </ETooltip>
-      <ETooltip text="Discord Channel" placement="top" :offset-distance="4">
-        <NuxtLink :to="discordURL" :target="discordTarget" :ok="!!puzzle.discord_channel">
-          👾
-        </NuxtLink>
-      </ETooltip>
-    </section>
-    <section>
-      <ETooltip :text="`Round: ${round?.name}`" placement="top" :offset-distance="4">
-        {{ round?.emoji }}
-      </ETooltip>
-    </section>
-    <section>
-      <NuxtLink to="/" :external="true" class="logo">
-        <span>🌊🎨🎡</span>
-      </NuxtLink>
-    </section>
-  </nav>
+      </section>
+    </nav>
+    <OptionInset :id="puzzle.id" v-if="open" @close="() => (open = false)" />
+  </div>
 </template>
 
 <style scoped>
@@ -145,14 +145,22 @@ iframe {
   display: unset;
 }
 
-nav {
+.inset {
   position: fixed;
   bottom: 0;
   right: 0;
 
-  height: 36px;
   max-width: 75%;
+
+  display: flex;
+  flex-direction: column-reverse;
+  gap: 8px;
+}
+
+nav {
+  height: 36px;
   padding: 1px 0.5em 0;
+  flex-shrink: 0;
 
   display: flex;
   align-items: center;
@@ -167,20 +175,23 @@ section {
 }
 
 /* Theming */
-main {
+main,
+.inset {
   user-select: none;
+}
+
+.inset {
+  font-size: 15px;
 }
 
 nav {
-  font-size: 15px;
   border-left: 1px solid #e1e3e1;
-  user-select: none;
 }
 
-nav.split {
+.split nav {
   background-color: rgb(249 251 253 / 75%);
   border-top: 1px solid #e1e3e1;
-  border-top-left-radius: 8px;
+  border-top-left-radius: 6px;
 }
 
 .logo {
