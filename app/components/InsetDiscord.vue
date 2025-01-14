@@ -16,14 +16,6 @@ const discordURL = computed(() =>
 
 const open = ref(false);
 const muted = ref(false);
-const toggleMute = () => {
-  if (muted.value) {
-    muted.value = false;
-  } else {
-    muted.value = true;
-    open.value = false;
-  }
-};
 
 const filtered = computed(() => {
   const now = Date.now();
@@ -59,7 +51,7 @@ defineExpose({
       </ETooltip>
       &bull;
       <ETooltip :text="muted ? 'Unmute' : 'Mute'" placement="top" :offset-distance="4">
-        <button @click="toggleMute">
+        <button @click="() => (muted = !muted)">
           {{ muted ? "🔕" : "🔔" }}
         </button>
       </ETooltip>
