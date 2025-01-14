@@ -15,7 +15,7 @@ const discordURL = computed(() =>
 );
 
 const open = ref(false);
-const muted = ref(false);
+const [mute, setMute] = useMute();
 
 const input = useTemplateRef("input");
 const draft = ref("");
@@ -30,7 +30,7 @@ const filtered = computed(() => {
 watch(() => filtered.value?.length, () => {
   if (!filtered.value?.length) {
     open.value = false;
-  } else if (!muted.value) {
+  } else if (!mute.value) {
     open.value = true;
     emit("open");
     nextTick(() => input.value?.focus());
@@ -74,9 +74,9 @@ defineExpose({
         </button>
       </ETooltip>
       &bull;
-      <ETooltip :text="muted ? 'Unmute' : 'Mute'" placement="top" :offset-distance="4">
-        <button @click="() => (muted = !muted)">
-          {{ muted ? "🔕" : "🔔" }}
+      <ETooltip :text="mute ? 'Unmute' : 'Mute'" placement="top" :offset-distance="4">
+        <button @click="() => setMute(!mute)">
+          {{ mute ? "🔕" : "🔔" }}
         </button>
       </ETooltip>
       &bull;
