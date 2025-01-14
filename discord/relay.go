@@ -23,7 +23,7 @@ type AblyMessage struct {
 func (c *Client) handleMessageCreate(
 	ctx context.Context, m *discordgo.MessageCreate,
 ) error {
-	if c.ignoreMessage(m.Message, false) {
+	if c.ignoreMessage(m.Message) {
 		return nil
 	}
 	var message = AblyMessage{
@@ -39,7 +39,7 @@ func (c *Client) handleMessageCreate(
 func (c *Client) handleMessageUpdate(
 	ctx context.Context, m *discordgo.MessageUpdate,
 ) error {
-	if c.ignoreMessage(m.Message, false) {
+	if c.ignoreMessage(m.Message) {
 		return nil
 	}
 	var message = AblyMessage{
@@ -52,7 +52,7 @@ func (c *Client) handleMessageUpdate(
 func (c *Client) handleMessageDelete(
 	ctx context.Context, m *discordgo.MessageDelete,
 ) error {
-	if c.ignoreMessage(m.Message, true) {
+	if c.ignoreMessage(m.Message) {
 		return nil
 	}
 	var message = AblyMessage{
@@ -61,12 +61,10 @@ func (c *Client) handleMessageDelete(
 	return c.ably.Publish(ctx, "m", message)
 }
 
-func (c *Client) ignoreMessage(m *discordgo.Message, delete bool) bool {
+func (c *Client) ignoreMessage(m *discordgo.Message) bool {
 	ch, ok := c.GetChannel(m.ChannelID)
 	if !ok || ch.ParentID == c.TeamCategoryID {
 		return true // skip messages to #hanging-out, etc. (load management)
-	} else if !delete && (m.Author == nil || m.Author.Bot) {
-		return true // skip bot messages (avoid loops)
 	} else if m.Thread != nil {
 		return true // skip messages in threads
 	} else if ch.Type != discordgo.ChannelTypeGuildText {
@@ -83,8 +81,11 @@ func (c *Client) DisplayName(u *discordgo.User) string {
 	member, ok := c.memberCache[u.ID]
 	if ok {
 		return member.DisplayName()
+	} else if u.GlobalName != "" {
+		return u.GlobalName
+	} else {
+		return u.Username // for webhooks
 	}
-	return u.GlobalName
 }
 
 func (c *Client) DisplayAvatar(u *discordgo.User) string {
