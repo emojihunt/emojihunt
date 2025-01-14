@@ -81,7 +81,7 @@ const open = ref<"status" | "voice">();
     <iframe :src="puzzleURL" class="puzzle"></iframe>
   </main>
   <div :class="['inset', split]">
-    <nav>
+    <nav @keydown="(e) => e.key === 'Escape' && (open = undefined)">
       <section>
         <ETooltip :text="`Status: ${StatusLabel(puzzle.status)}`" placement="top"
           :offset-distance="4">
