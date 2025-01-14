@@ -26,9 +26,11 @@ const toggleMute = () => {
 };
 
 const filtered = computed(() => {
-  const now = Date.now() / 1000;
-  const cutoff = 30 * 60; // 30 minutes
-  return [...messages.values()].filter((m) => (now - m.t) < cutoff);
+  const now = Date.now();
+  const cutoff = 30 * 60 * 1000; // 30 minutes
+  return [...messages.values()]
+    .filter((m) => (now - m.t) < cutoff)
+    .sort((a, b) => a.t - b.t);
 });
 watch(() => filtered.value?.length, () => {
   if (!filtered.value?.length) {

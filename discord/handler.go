@@ -215,7 +215,7 @@ func (c *Client) handleMessageCreate(
 		ID:        m.Message.ID,
 		ChannelID: m.ChannelID,
 		Author:    c.DisplayName(m.Author),
-		Timestamp: m.Timestamp.Unix(),
+		Timestamp: m.Timestamp.UnixMilli(),
 		Content:   m.Message.Content,
 	}
 	return c.ably.Publish(ctx, "m", message)
