@@ -7,9 +7,9 @@ const puzzle = computed(() => puzzles.get(id));
 
 const input = useTemplateRef("input");
 const answering = ref<Status | null>(null);
-const answer = ref("");
+const answerModel = ref("");
 
-onMounted(() => answer.value = puzzle.value?.answer || "");
+onMounted(() => answerModel.value = puzzle.value?.answer || "");
 
 const set = (status: Status) => {
   if (StatusNeedsAnswer(status)) {
@@ -21,10 +21,9 @@ const set = (status: Status) => {
   }
 };
 const submit = () => {
-  if (!answering.value || !answer.value) return;
-  updatePuzzleOptimistic(id, {
-    status: answering.value, answer: answer.value,
-  });
+  const answer = answerModel.value?.toUpperCase();
+  if (!answering.value || !answer) return;
+  updatePuzzleOptimistic(id, { status: answering.value, answer });
   emit("close");
 };
 const keydown = (e: KeyboardEvent) => {
@@ -42,7 +41,7 @@ const keydown = (e: KeyboardEvent) => {
       </button>
     </ETooltip>
     <template v-else>
-      <input ref="input" type="text" v-model="answer" />
+      <input ref="input" type="text" v-model="answerModel" />
       <button type="submit" @click="submit">
         <UIcon name="i-heroicons-check" />
       </button>

@@ -9,8 +9,7 @@ definePageMeta({
 useHead({ htmlAttrs: { lang: "en" } });
 const route = useRoute();
 const {
-  discordCallback, settings, puzzles, rounds,
-  voiceRooms, updatePuzzleOptimistic,
+  discordCallback, settings, puzzles, rounds, voiceRooms
 } = await initializePuzzles();
 const channel = ref("");
 const messages = useDiscordChannel(channel, discordCallback);
@@ -46,7 +45,7 @@ watchEffect(() => useHead({
 }));
 watchEffect(() => channel.value = puzzle.value?.discord_channel);
 const voiceRoom = computed(() =>
-  puzzle.value.voice_room && voiceRooms.get(puzzle.value.voice_room)
+  puzzle.value.voice_room ? voiceRooms.get(puzzle.value.voice_room) : undefined
 );
 const spreadsheetURL = computed(() =>
   puzzle.value.spreadsheet_id
@@ -73,7 +72,7 @@ const togglePuzzle = (e: MouseEvent) => {
   split.value = split.value ? "" : "split";
 };
 
-const open = ref(false);
+const open = ref<"status" | "voice">();
 </script>
 
 <template>
@@ -86,13 +85,15 @@ const open = ref(false);
       <section>
         <ETooltip :text="`Status: ${StatusLabel(puzzle.status)}`" placement="top"
           :offset-distance="4">
-          <button @click="() => (open = !open)">
-            {{ StatusEmoji(puzzle.status) || "‼️" }}
-          </button>
+          <button @click="() => (open = (open === 'status') ? undefined : 'status')">
+            {{ StatusEmoji(puzzle.status) || " ‼️" }} </button>
         </ETooltip>
-        <ETooltip :text="`Voice Room: ${voiceRoom.name}`" placement="top"
-          :offset-distance="4" v-if="voiceRoom">
-          {{ voiceRoom.emoji }}
+        <ETooltip :text="voiceRoom ? `Voice Room: ${voiceRoom.name}` : 'No Voice Room'"
+          placement="top" :offset-distance="4">
+          <button :class="!voiceRoom && 'unset'"
+            @click="() => (open = (open === 'voice') ? undefined : 'voice')">
+            {{ voiceRoom?.emoji || "📻" }}
+          </button>
         </ETooltip>
       </section>
       <section>
@@ -120,7 +121,10 @@ const open = ref(false);
         </NuxtLink>
       </section>
     </nav>
-    <OptionInset :id="puzzle.id" v-if="open" @close="() => (open = false)" />
+    <InsetStatus v-if="open === 'status'" :id="puzzle.id"
+      @close="() => (open = undefined)" />
+    <InsetVoice v-if="open === 'voice'" :id="puzzle.id"
+      @close="() => (open = undefined)" />
   </div>
 </template>
 
@@ -171,7 +175,7 @@ section {
   align-items: center;
 
   margin: 0 0.6em;
-  gap: 0.33em;
+  gap: 8px;
 }
 
 /* Theming */
@@ -198,5 +202,9 @@ nav {
   letter-spacing: 0.166em;
   opacity: 70%;
   cursor: default;
+}
+
+button.unset {
+  filter: grayscale(100%) opacity(60%);
 }
 </style>
