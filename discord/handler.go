@@ -152,16 +152,10 @@ func (c *Client) handleScheduledEvent(
 // Message Handling
 
 type AblyMessage struct {
-	ID        string          `json:"id"`
-	ChannelID string          `json:"ch,omitempty"`
-	Author    AblyMessageUser `json:"u,omitempty"`
-	Content   string          `json:"msg"` // don't omit (for deletes)
-}
-
-type AblyMessageUser struct {
-	ID     string `json:"id"`
-	Name   string `json:"name"`
-	Avatar string `json:"avatar,omitempty"`
+	ID        string `json:"id"`
+	ChannelID string `json:"ch,omitempty"`
+	Author    string `json:"u,omitempty"`
+	Content   string `json:"msg"` // don't omit (for deletes)
 }
 
 func (c *Client) handleMessageCreate(
@@ -173,12 +167,8 @@ func (c *Client) handleMessageCreate(
 	var message = AblyMessage{
 		ID:        m.Message.ID,
 		ChannelID: m.ChannelID,
-		Author: AblyMessageUser{
-			ID:     m.Author.ID,
-			Name:   m.Author.GlobalName,
-			Avatar: m.Author.Avatar,
-		},
-		Content: m.Message.Content,
+		Author:    m.Author.GlobalName,
+		Content:   m.Message.Content,
 	}
 	return c.ably.Publish(ctx, "m", message)
 }

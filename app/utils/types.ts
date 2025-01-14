@@ -173,11 +173,7 @@ export type SyncMessage = {
 export type DiscordMessage = {
   id: string;
   ch: string;
-  u: {
-    id: string;
-    name: string;
-    avatar: string;
-  };
+  u: string;
   msg: string;
 };
 
