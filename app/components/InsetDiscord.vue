@@ -26,8 +26,9 @@ const toggleMute = () => {
 };
 
 watch(() => messages.size, () => {
-  if (!messages.size) return;
-  if (!muted.value) {
+  if (!messages.size) {
+    open.value = false;
+  } else if (!muted.value) {
     open.value = true;
     emit("open");
   }
