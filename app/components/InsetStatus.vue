@@ -58,6 +58,8 @@ const keydown = (e: KeyboardEvent) => {
   background-color: rgb(249 251 253 / 75%);
 
   align-self: flex-start;
+  flex-shrink: 0;
+
   display: flex;
   align-items: center;
   gap: 8px;

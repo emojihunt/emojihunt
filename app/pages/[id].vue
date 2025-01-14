@@ -62,7 +62,16 @@ const togglePuzzle = (e: MouseEvent) => {
   split.value = split.value ? "" : "split";
 };
 
+const insets = useTemplateRef("insets");
 const open = ref<"status" | "voice">();
+const toggle = (kind: "status" | "voice") => {
+  if (open.value === kind) {
+    open.value = undefined;
+  } else {
+    open.value = kind;
+    nextTick(() => insets.value?.scrollTo({ top: 99999 }));
+  }
+};
 const discord = useTemplateRef("discord");
 </script>
 
@@ -71,18 +80,17 @@ const discord = useTemplateRef("discord");
     <iframe :src="spreadsheetURL || ''"></iframe>
     <iframe :src="puzzleURL" class="puzzle"></iframe>
   </main>
-  <div :class="['inset', split]">
+  <div :class="['overlay', split]">
     <nav @keydown="(e) => e.key === 'Escape' && (open = undefined)">
       <section>
         <ETooltip :text="`Status: ${StatusLabel(puzzle.status)}`" placement="top"
           :offset-distance="4">
-          <button @click="() => (open = (open === 'status') ? undefined : 'status')">
+          <button @click="() => toggle('status')">
             {{ StatusEmoji(puzzle.status) || " ‼️" }} </button>
         </ETooltip>
         <ETooltip :text="voiceRoom ? `Voice Room: ${voiceRoom.name}` : 'No Voice Room'"
           placement="top" :offset-distance="4">
-          <button :class="!voiceRoom && 'unset'"
-            @click="() => (open = (open === 'voice') ? undefined : 'voice')">
+          <button :class="!voiceRoom && 'unset'" @click="() => toggle('voice')">
             {{ voiceRoom?.emoji || "📻" }}
           </button>
         </ETooltip>
@@ -111,11 +119,14 @@ const discord = useTemplateRef("discord");
         </NuxtLink>
       </section>
     </nav>
-    <InsetStatus v-if="open === 'status'" :id="puzzle.id"
-      @close="() => (open = undefined)" />
-    <InsetVoice v-if="open === 'voice'" :id="puzzle.id"
-      @close="() => (open = undefined)" />
-    <InsetDiscord ref="discord" :id="puzzle.id" />
+    <span ref="insets" class="insets">
+      <InsetStatus v-if="open === 'status'" :id="puzzle.id"
+        @close="() => (open = undefined)" />
+      <InsetVoice v-if="open === 'voice'" :id="puzzle.id"
+        @close="() => (open = undefined)" />
+      <InsetDiscord ref="discord" :id="puzzle.id"
+        @open="() => nextTick(() => insets?.scrollTo({ top: 99999 }))" />
+    </span>
   </div>
 </template>
 
@@ -140,13 +151,17 @@ iframe {
   display: unset;
 }
 
-.inset {
+.overlay {
   position: fixed;
   bottom: 0;
   right: 0;
 
-  max-width: 75%;
+  width: 260px;
+  max-height: 100%;
+}
 
+.overlay,
+.insets {
   display: flex;
   flex-direction: column-reverse;
   gap: 8px;
@@ -154,11 +169,12 @@ iframe {
 
 nav {
   height: 36px;
-  padding: 1px 8px 0;
+  padding: 1px 0 0;
   flex-shrink: 0;
 
   display: flex;
   align-items: center;
+  justify-content: center;
 }
 
 section {
@@ -171,16 +187,17 @@ section {
 
 /* Theming */
 main,
-.inset {
-  user-select: none;
-}
-
-.inset {
+.overlay {
   font-size: 15px;
+  user-select: none;
 }
 
 nav {
   border-left: 1px solid #e1e3e1;
+}
+
+.insets {
+  overflow-y: scroll;
 }
 
 .split nav {

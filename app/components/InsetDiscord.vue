@@ -1,5 +1,6 @@
 <script setup lang="ts">
 const { id } = defineProps<{ id: number; }>();
+const emit = defineEmits<{ (e: "open"): void; }>();
 
 const { discordCallback, puzzles, settings } = usePuzzles();
 const [discordBase, discordTarget] = useDiscordBase();
@@ -26,12 +27,16 @@ const toggleMute = () => {
 
 watch(() => messages.size, () => {
   if (!messages.size) return;
-  if (!muted.value) open.value = true;
+  if (!muted.value) {
+    open.value = true;
+    emit("open");
+  }
 });
 
 defineExpose({
   toggle(): void {
     open.value = !open.value;
+    if (open.value) emit("open");
   },
 });
 </script>
@@ -65,7 +70,7 @@ defineExpose({
 
 <style scoped>
 .discord {
-  padding: 0 9px 0 0;
+  padding: 9px 9px 0 0;
 
   display: flex;
   flex-direction: column;
@@ -78,9 +83,15 @@ defineExpose({
 p {
   padding: 8px 12px;
 
+  max-height: 150px;
+
   border: 1px solid #e1e3e1;
   border-radius: 6px;
   background-color: #313338;
+}
+
+p:hover {
+  max-height: unset;
 }
 
 .links {
