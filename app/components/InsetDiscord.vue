@@ -63,7 +63,7 @@ defineExpose({
       </ETooltip>
     </span>
     <p v-for="message of filtered">
-      <b>@{{ message.u }}:</b> {{ message.msg }}
+      <b>{{ message.u }} &centerdot;</b> {{ message.msg }}
     </p>
   </div>
 </template>
@@ -87,7 +87,7 @@ p {
 
   border: 1px solid #e1e3e1;
   border-radius: 6px;
-  background-color: #313338;
+  background-color: rgb(49 51 48 / 80%);
 
   user-select: text;
 }
