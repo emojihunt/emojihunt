@@ -68,10 +68,10 @@ const copy = async (): Promise<void> => {
     <div class="round">{{ round.name }}</div>
     <div class="flex-spacer"></div>
     <div class="buttons">
-      <button @click="copy" v-if="!filter">
+      <button @click="copy" v-if="!filter" tabindex="-1">
         <UIcon name="i-heroicons-clipboard-document-list" size="1rem" />
       </button>
-      <button @click="() => emit('edit')">
+      <button @click="() => emit('edit')" tabindex="-1">
         <UIcon name="i-heroicons-pencil" size="1rem" />
       </button>
     </div>
