@@ -115,6 +115,7 @@ input {
   border-radius: 6px;
   background-color: rgb(49 51 48 / 80%);
 
+  outline-offset: -2px;
   user-select: text;
 }
 
