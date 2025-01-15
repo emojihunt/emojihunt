@@ -23,7 +23,7 @@ const set = (status: Status) => {
 const submit = () => {
   const answer = answerModel.value?.toUpperCase();
   if (!answering.value || !answer) return;
-  updatePuzzleOptimistic(id, { status: answering.value, answer });
+  updatePuzzleOptimistic(id, { status: answering.value, answer, voice_room: "" });
   emit("close");
 };
 const keydown = (e: KeyboardEvent) => {
