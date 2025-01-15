@@ -6,6 +6,7 @@ import (
 	"log"
 	"slices"
 	"strings"
+	"time"
 
 	"github.com/emojihunt/emojihunt/discord"
 	"github.com/emojihunt/emojihunt/state"
@@ -20,8 +21,9 @@ type PuzzleSortFields struct {
 	DiscordChannel string
 	IsSolved       bool
 
-	Name string
-	Meta bool
+	Name     string
+	Meta     bool
+	Reminder time.Time
 	RoundSortFields
 }
 
@@ -32,6 +34,7 @@ func NewPuzzleSortFields(puzzle state.RawPuzzle, round state.Round) PuzzleSortFi
 		IsSolved:        puzzle.Status.IsSolved(),
 		Name:            puzzle.Name,
 		Meta:            puzzle.Meta,
+		Reminder:        puzzle.Reminder,
 		RoundSortFields: NewRoundSortFields(round),
 	}
 }
@@ -41,6 +44,16 @@ func PuzzleSort(a, b PuzzleSortFields) int {
 		return round
 	} else if a.Meta != b.Meta {
 		if a.Meta {
+			return 1
+		} else {
+			return -1
+		}
+	} else if a.Reminder != b.Reminder {
+		if a.Reminder.UnixMilli() < 1700000000000 {
+			return 1
+		} else if b.Reminder.UnixMilli() < 1700000000000 {
+			return -1
+		} else if a.Reminder.After(b.Reminder) {
 			return 1
 		} else {
 			return -1
