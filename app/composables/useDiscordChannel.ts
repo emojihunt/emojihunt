@@ -9,6 +9,9 @@ export default function (
   callback.value = (m: DiscordMessage) => {
     const prev = messages.get(m.id);
     if (prev) {
+      // @ts-ignore
+      if (m.t === 0) delete m.t; // serialization bug
+
       if (m.msg) Object.assign(prev, m); // update
       else messages.delete(m.id); // delete
     } else if (m.ch === channel.value && m.u) {
