@@ -8,7 +8,7 @@ definePageMeta({
 
 useHead({ htmlAttrs: { lang: "en" } });
 const route = useRoute();
-const { puzzles, rounds, voiceRooms } = await initializePuzzles();
+const { puzzles, rounds, voiceRooms, settings } = await initializePuzzles();
 
 const puzzle = computed(() => {
   const id = parseInt(route.params.id as string);
@@ -62,6 +62,17 @@ const togglePuzzle = (e: MouseEvent) => {
   split.value = split.value ? "" : "split";
 };
 
+const discord = useTemplateRef("discord");
+const [discordBase, discordTarget] = useDiscordBase();
+const discordURL = computed(() => puzzle.value.discord_channel ?
+  `${discordBase}/channels/${settings.discordGuild}/${puzzle.value.discord_channel}` : "");
+const toggleDiscord = (e: MouseEvent) => {
+  if (!discordURL.value) return;
+  if (e.metaKey || e.ctrlKey) return; // open in new tab
+  e.preventDefault();
+  discord.value?.toggle();
+};
+
 const insets = useTemplateRef("insets");
 const open = ref<"status" | "voice">();
 const toggle = (kind: "status" | "voice") => {
@@ -72,7 +83,6 @@ const toggle = (kind: "status" | "voice") => {
     nextTick(() => insets.value?.scrollTo({ top: 99999 }));
   }
 };
-const discord = useTemplateRef("discord");
 </script>
 
 <template>
@@ -103,9 +113,10 @@ const discord = useTemplateRef("discord");
           </NuxtLink>
         </ETooltip>
         <ETooltip text="Discord Channel" placement="top" :offset-distance="4">
-          <button @click="() => discord?.toggle()">
+          <NuxtLink :to="discordURL" :target="discordTarget" :ok="!!discordURL"
+            @click="toggleDiscord">
             👾
-          </button>
+          </NuxtLink>
         </ETooltip>
       </section>
       <section>
