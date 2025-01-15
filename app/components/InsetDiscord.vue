@@ -77,7 +77,7 @@ defineExpose({
       </ETooltip>
       &bull;
       <ETooltip text="Open in Discord" placement="top" :offset-distance="4">
-        <NuxtLink :to="discordURL" :target="discordTarget" :ok="!!puzzle.discord_channel">
+        <NuxtLink :to="discordURL" :target="discordTarget">
           👉
         </NuxtLink>
       </ETooltip>

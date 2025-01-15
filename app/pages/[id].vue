@@ -107,8 +107,7 @@ const toggle = (kind: "status" | "voice") => {
       </section>
       <section>
         <ETooltip text="Puzzle Page" placement="top" :offset-distance="4">
-          <NuxtLink :to="puzzle.puzzle_url" :ok="!!puzzle.puzzle_url" target="_blank"
-            @click="togglePuzzle">
+          <NuxtLink :to="puzzle.puzzle_url" target="_blank" @click="togglePuzzle">
             🌎
           </NuxtLink>
         </ETooltip>
@@ -225,5 +224,10 @@ nav {
 
 button.unset {
   filter: grayscale(100%) opacity(60%);
+}
+
+a[ok="false"] {
+  filter: grayscale(100%) opacity(60%);
+  pointer-events: none;
 }
 </style>
