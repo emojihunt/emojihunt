@@ -143,14 +143,14 @@ const toggle = (kind: "status" | "voice") => {
 <style scoped>
 main {
   width: 100%;
-  height: 100%;
+  height: 100dvh;
 
   display: flex;
 }
 
 iframe {
   width: 100%;
-  height: 100%;
+  height: 100dvh;
 }
 
 .puzzle {
