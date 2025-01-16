@@ -88,7 +88,23 @@ func (c *Client) SetSheetTitle(ctx context.Context, sheetID, title string) error
 		}
 		return c.sheets.Spreadsheets.BatchUpdate(sheetID, req).Context(ctx).Do()
 	})
-	return err
+	if err != nil {
+		return err
+	}
+	withRetry("sheets.BatchUpdate", func() (*sheets.BatchUpdateSpreadsheetResponse, error) {
+		var req = &sheets.BatchUpdateSpreadsheetRequest{
+			Requests: []*sheets.Request{{
+				UpdateSheetProperties: &sheets.UpdateSheetPropertiesRequest{
+					Fields: "title",
+					Properties: &sheets.SheetProperties{
+						Title: title,
+					},
+				},
+			}},
+		}
+		return c.sheets.Spreadsheets.BatchUpdate(sheetID, req).Context(ctx).Do()
+	})
+	return nil // this one is best-effort, in case Tab 0 has been deleted
 }
 
 func (c *Client) CreateFolder(ctx context.Context, name string) (id string, err error) {
