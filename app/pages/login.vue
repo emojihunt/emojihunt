@@ -95,7 +95,7 @@ if (url.searchParams.has("error")) {
       <h2>Log in</h2>
       <ul>
         <li>
-          <NuxtLink :to="`discord:///${authorize}A`">
+          <NuxtLink :to="`discord://app/${authorize}A`">
             📱 <span class="link">via Discord app</span>
           </NuxtLink>
           <NuxtLink to="https://discord.com/download" id="download"
