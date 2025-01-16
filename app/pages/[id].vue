@@ -89,11 +89,27 @@ const toggle = (kind: "status" | "voice") => {
     nextTick(() => insets.value?.scrollTo({ top: 99999 }));
   }
 };
+
+// On mobile, Google Sheets opens in "htmlview" mode by default. Show a banner
+// to open the native app, since that's much better.
+const applink = ref("");
+onMounted(() => {
+  if (/Android/i.test(navigator.userAgent)) {
+    applink.value = spreadsheetURL.value;
+  } else if (/iPhone|iPad|iPod/i.test(navigator.userAgent)) {
+    applink.value = `googlesheets://sheets.google.com/spreadsheets/d/${puzzle.value.spreadsheet_id}`;
+  }
+});
 </script>
 
 <template>
   <main :class="split">
-    <iframe :src="spreadsheetURL"></iframe>
+    <div>
+      <NuxtLink :to="applink" class="applink" v-if="!!applink">
+        Open in Google Sheets &nbsp;
+      </NuxtLink>
+      <iframe :src="spreadsheetURL"></iframe>
+    </div>
     <iframe :src="puzzleURL" class="puzzle"></iframe>
   </main>
   <div :class="['overlay', split]">
@@ -154,8 +170,10 @@ main {
   display: flex;
 }
 
+main>div,
 iframe {
   display: flex;
+  flex-direction: column;
   flex-grow: 1;
 }
 
@@ -235,5 +253,17 @@ button.unset {
 a[ok="false"] {
   filter: grayscale(100%) opacity(60%);
   pointer-events: none;
+}
+
+.applink {
+  padding: 1rem;
+  padding-right: calc(1rem + env(safe-area-inset-right));
+  border-radius: 0;
+
+  font-weight: 600;
+  text-align: right;
+
+  color: white;
+  background-color: oklch(52.7% 0.141 148.39);
 }
 </style>
