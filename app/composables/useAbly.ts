@@ -9,6 +9,7 @@ export default function (
   let poisoned = false;
   onMounted(() => {
     // SharedWorker is only available on the client.
+    if (typeof SharedWorker === "undefined") return;
     const worker = new AblyWorker({ name: "🌊🎨🎡 ·⚡" });
     worker.port.addEventListener("message", (e: MessageEvent<AblyWorkerMessage>) => {
       if (e.data.name === "sync") {
