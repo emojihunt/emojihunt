@@ -42,6 +42,10 @@ params.set("state", ret || "");
 
 const authorize = `oauth2/authorize?${params.toString()}`;
 
+// Logging in via app is broken on Android, at least in Chrome.
+const brokenAppLogin = ref(false);
+onMounted(() => brokenAppLogin.value = (typeof SharedWorker === "undefined"));
+
 type LoginError =
   { status: "canceled"; } |
   { status: "invalid_code"; } |
@@ -94,7 +98,7 @@ if (url.searchParams.has("error")) {
       <h2>Log in</h2>
       <ul>
         <li>
-          <NuxtLink :to="`discord:///${authorize}A`">
+          <NuxtLink :to="`discord:///${authorize}A`" :class="brokenAppLogin && 'broken'">
             📱 <span class="link">via Discord app</span>
           </NuxtLink>
           <NuxtLink to="https://discord.com/download" id="download"
@@ -200,5 +204,12 @@ a:hover .link {
 .error {
   margin-left: calc(1rem + 2px);
   color: oklch(60% 0.20 24deg);
+}
+
+.broken .link,
+.broken:hover .link,
+.broken+#download {
+  text-decoration: line-through;
+  color: oklch(60% 0 0deg);
 }
 </style>
