@@ -2,9 +2,11 @@ package sync
 
 import (
 	"context"
+	"fmt"
 	"log"
 
 	"github.com/emojihunt/emojihunt/state"
+	"github.com/emojihunt/emojihunt/state/status"
 )
 
 // CreateSpreadsheet creates a new Google Sheets spreadsheet and returns its ID.
@@ -23,15 +25,19 @@ type SpreadsheetFields struct {
 	PuzzleName       string
 	SpreadsheetID    string
 	RoundDriveFolder string
-	IsSolved         bool
+	SolvedStatus     status.Status
 }
 
 func NewSpreadsheetFields(puzzle state.Puzzle) SpreadsheetFields {
+	var solvedStatus status.Status
+	if puzzle.Status.IsSolved() {
+		solvedStatus = puzzle.Status
+	}
 	return SpreadsheetFields{
 		SpreadsheetID:    puzzle.SpreadsheetID,
 		PuzzleName:       puzzle.Name,
 		RoundDriveFolder: puzzle.Round.DriveFolder,
-		IsSolved:         puzzle.Status.IsSolved(),
+		SolvedStatus:     solvedStatus,
 	}
 }
 
@@ -41,8 +47,8 @@ func NewSpreadsheetFields(puzzle state.Puzzle) SpreadsheetFields {
 func (c *Client) UpdateSpreadsheet(ctx context.Context, fields SpreadsheetFields) error {
 	log.Printf("sync: updating spreadsheet for %q", fields.PuzzleName)
 	var name = fields.PuzzleName
-	if fields.IsSolved {
-		name = "✅ " + name
+	if fields.SolvedStatus != "" {
+		name = fmt.Sprintf("%s %s", fields.SolvedStatus.Emoji(), name)
 	}
 	err := c.drive.SetSheetTitle(ctx, fields.SpreadsheetID, name)
 	if err != nil {
