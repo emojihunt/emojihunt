@@ -3,7 +3,7 @@ import type { AblyWorkerMessage, ConnectionState } from './utils/types';
 
 // Keep a list of clients as they connect. There's no easy way to implement
 // garbage collection, unfortunately...
-const ports: Array<MessagePort> = [];
+const ports: Array<MessagePort | DedicatedWorkerGlobalScope> = [];
 const broadcast = (m: AblyWorkerMessage) => ports.forEach(p => p.postMessage(m));
 self.addEventListener("connect", (e: any) => {
   console.log("Client connected");
@@ -11,6 +11,14 @@ self.addEventListener("connect", (e: any) => {
     ports.push(port);
     port.postMessage({ name: "client", state });
     rewind.forEach(r => port.postMessage(r));
+  }
+});
+
+// Fallback: can be run as a non-shared Worker, for Chrome for Android.
+self.addEventListener("message", (e: MessageEvent<string>) => {
+  if (e.data === "start") {
+    console.log("Worker launched in dedicated scope");
+    ports.push(self as DedicatedWorkerGlobalScope);
   }
 });
 

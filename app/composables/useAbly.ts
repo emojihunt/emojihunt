@@ -1,4 +1,5 @@
-import AblyWorker from "~/ablyWorker?sharedworker";
+import AblySharedWorker from "~/ablyWorker?sharedworker";
+import AblyDedicatedWorker from "~/ablyWorker?worker";
 import type { AblyWorkerMessage, DiscordMessage, SettingsMessage, SyncMessage } from "~/utils/types";
 
 export default function (
@@ -7,33 +8,41 @@ export default function (
   discord: (m: DiscordMessage) => void): Ref<boolean> {
   const connected = ref<boolean>(false);
   let poisoned = false;
-  onMounted(() => {
-    // SharedWorker is only available on the client.
-    if (typeof SharedWorker === "undefined") return;
-    const worker = new AblyWorker({ name: "🌊🎨🎡 ·⚡" });
-    worker.port.addEventListener("message", (e: MessageEvent<AblyWorkerMessage>) => {
-      if (e.data.name === "sync") {
-        sync(e.data.data);
-      } else if (e.data.name === "settings") {
-        settings(e.data.data);
-      } else if (e.data.name === "m") {
-        discord(e.data.data);
-      } else if (e.data.name === "client") {
-        if (e.data.state === "connected") {
-          if (poisoned) window.location.reload();
-          else connected.value = true;
-        } else if (e.data.state === "disconnected") {
-          connected.value = false;
-        } else {
-          console.warn("Connection lost. Will reload page when next online...");
-          poisoned = true;
-        }
+
+  const onMessage = (e: MessageEvent<AblyWorkerMessage>) => {
+    if (e.data.name === "sync") {
+      sync(e.data.data);
+    } else if (e.data.name === "settings") {
+      settings(e.data.data);
+    } else if (e.data.name === "m") {
+      discord(e.data.data);
+    } else if (e.data.name === "client") {
+      if (e.data.state === "connected") {
+        if (poisoned) window.location.reload();
+        else connected.value = true;
+      } else if (e.data.state === "disconnected") {
+        connected.value = false;
+      } else {
+        console.warn("Connection lost. Will reload page when next online...");
+        poisoned = true;
       }
-    });
-    worker.addEventListener(
-      "error", (e) => console.warn("Worker Error:", e)
-    );
-    worker.port.start();
+    }
+  };
+  const onError = (e: Event) => console.warn("Worker Error:", e);
+  onMounted(() => {
+    // SharedWorker is only available on the client...
+    if (typeof SharedWorker === "undefined") {
+      // ...and isn't available in Chrome for Android.
+      const worker = new AblyDedicatedWorker({ name: "🌊🎨🎡 ·⚡" });
+      worker.addEventListener("message", onMessage);
+      worker.addEventListener("error", onError);
+      worker.postMessage("start");
+    } else {
+      const worker = new AblySharedWorker({ name: "🌊🎨🎡 ·⚡" });
+      worker.port.addEventListener("message", onMessage);
+      worker.port.addEventListener("error", onError);
+      worker.port.start();
+    }
   });
   return connected;
 }
