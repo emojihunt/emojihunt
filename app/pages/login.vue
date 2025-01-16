@@ -76,11 +76,12 @@ if (url.searchParams.has("error")) {
   } else if (error.value?.statusCode === 403) {
     // The /authenticate endpoint returns HTTP 403 if the code fails to verify.
     // All other errors are hard errors.
-    const { username } = await error.value.data;
+    const { username } = error.value.data;
     if (username) {
       result.value = { status: "unknown_member", username };
+    } else {
+      result.value = { status: "invalid_code" };
     }
-    result.value = { status: "invalid_code" };
   } else {
     throw error.value;
   }
