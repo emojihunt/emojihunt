@@ -6,7 +6,13 @@ definePageMeta({
   },
 });
 
-useHead({ htmlAttrs: { lang: "en" } });
+useHead({
+  htmlAttrs: { lang: "en" },
+  meta: [
+    { name: "viewport", content: "width=device-width, initial-scale=1, viewport-fit=cover" },
+    { name: "theme-color", content: "oklch(30% 0 0deg)" },
+  ],
+});
 const route = useRoute();
 const { puzzles, rounds, voiceRooms, settings } = await initializePuzzles();
 
@@ -87,7 +93,7 @@ const toggle = (kind: "status" | "voice") => {
 
 <template>
   <main :class="split">
-    <iframe :src="spreadsheetURL || ''"></iframe>
+    <iframe :src="spreadsheetURL"></iframe>
     <iframe :src="puzzleURL" class="puzzle"></iframe>
   </main>
   <div :class="['overlay', split]">
@@ -149,8 +155,8 @@ main {
 }
 
 iframe {
-  width: 100%;
-  height: 100dvh;
+  display: flex;
+  flex-grow: 1;
 }
 
 .puzzle {
