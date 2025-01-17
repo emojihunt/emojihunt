@@ -58,4 +58,8 @@ defineExpose({
 .puzzle:hover .data {
   border-color: oklch(86% 0 0deg);
 }
+
+:global(.filter .filterable) {
+  display: none;
+}
 </style>
