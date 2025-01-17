@@ -55,6 +55,9 @@ const select = (option: string) => {
           <span class="description" v-if="!(puzzle.location || answering)">{{ room.name
             }}</span>
         </template>
+        <ETooltip v-else-if="puzzle.location" text="Add a Voice Room">
+          <span class="emoji">📍</span>
+        </ETooltip>
         <ETooltip v-else text="Set a Voice Room">
           <span class="emoji empty">📻</span>
         </ETooltip>

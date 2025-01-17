@@ -120,10 +120,12 @@ onMounted(() => {
           <button @click="() => toggle('status')">
             {{ StatusEmoji(puzzle.status) || " ‼️" }} </button>
         </ETooltip>
-        <ETooltip :text="voiceRoom ? `Voice Room: ${voiceRoom.name}` : 'No Voice Room'"
-          placement="top" :offset-distance="4">
-          <button :class="!voiceRoom && 'unset'" @click="() => toggle('voice')">
-            {{ voiceRoom?.emoji || "📻" }}
+        <ETooltip :text="voiceRoom ? `Voice Room: ${voiceRoom.name}` : puzzle.location ?
+          `In-person: ${puzzle.location}` : 'No Voice Room'" placement="top"
+          :offset-distance="4">
+          <button :class="!voiceRoom && !puzzle.location && 'unset'"
+            @click="() => toggle('voice')">
+            {{ voiceRoom?.emoji || (puzzle.location ? "📍" : "📻") }}
           </button>
         </ETooltip>
       </section>
