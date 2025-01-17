@@ -61,7 +61,9 @@ const keydown = (e: KeyboardEvent): void => {
       <a :href="`#${round.anchor}`" @click="(e) => goto(e, round)"
         :tabindex="round.id === ordering[focused.index].id ? 0 : -1"
         :aria-label="`To ${round.name}`" :style="`--hue: ${round.hue}deg;`">
-        <span :class="round.complete && 'complete'">{{ round.emoji }}&#xfe0f;</span>
+        <span
+          :class="[round.complete && 'complete', filter && !round.priority && 'grayscale']">{{
+            round.emoji }}&#xfe0f;</span>
       </a>
     </ETooltip>
     <p class="dot"></p>
@@ -164,6 +166,11 @@ a span.complete {
   background: linear-gradient(to left top,
       transparent 47.75%, currentColor 49.5%,
       currentColor 50.5%, transparent 52.25%);
+}
+
+a span.grayscale {
+  opacity: 50%;
+  filter: grayscale(100%);
 }
 
 a:hover span {

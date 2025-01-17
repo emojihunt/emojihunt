@@ -16,6 +16,7 @@ export const RoundKeys: (keyof Omit<Round, "id">)[] = [
 export type AnnotatedRound = Round & {
   anchor: string;
   complete: boolean;
+  priority: boolean;
   displayName: string;
   solved: number;
   total: number;

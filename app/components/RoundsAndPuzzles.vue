@@ -87,7 +87,7 @@ onMounted(() => updateTabIndex);
 
 const roundToSequence = computed(() =>
   new Map(
-    (filter ? ordering.value.filter((r) => !r.complete) : ordering.value)
+    (filter ? ordering.value.filter((r) => r.priority) : ordering.value)
       .map((r, i) => [r.id, i])
   )
 );
@@ -108,10 +108,10 @@ defineExpose({
 <template>
   <main @keydown="keydown" @focusin="focusin">
     <template v-for="round of ordering">
-      <RoundHeader v-if="!filter || !round.complete" :key="round.id" :id="round.id"
+      <RoundHeader v-if="!filter || round.priority" :key="round.id" :id="round.id"
         :sequence="roundToSequence.get(round.id) || 0" :filter
         @edit="() => emit('edit', 'round', round.id)" />
-      <section :class="filter && round.complete && 'invisible'"
+      <section :class="filter && !round.priority && 'invisible'"
         :style="`--round-hue: ${round.hue}`">
         <Puzzle v-for="puzzle in round.puzzles" ref="puzz" :key="puzzle.id"
           :id="puzzle.id" @edit="() => emit('edit', 'puzzle', puzzle.id)" />

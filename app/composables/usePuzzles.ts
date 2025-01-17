@@ -89,11 +89,13 @@ const updateReactiveMap = <K, V>(m: Map<K, V>, k: K, v: V): void => {
 
 const hydrateRound = (raw: Round, puzzles: Puzzle[]): AnnotatedRound => {
   const metas = puzzles.filter((p => p.meta));
+  const complete = puzzles.length > 0 &&
+    (metas.length === 0 ? puzzles : metas).filter((p => !p.answer)).length === 0;
   return {
     ...raw,
     anchor: raw.name.trim().toLowerCase().replaceAll(/[^A-Za-z0-9]+/g, "-"),
-    complete: puzzles.length > 0 &&
-      (metas.length === 0 ? puzzles : metas).filter((p => !p.answer)).length === 0,
+    complete,
+    priority: !complete && !raw.special,
     displayName: `${raw.emoji}\uFE0F ${raw.name}`,
     solved: puzzles.filter((p) => p.answer).length,
     total: puzzles.length,
