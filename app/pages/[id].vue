@@ -54,20 +54,6 @@ const spreadsheetURL = computed(() =>
 
 onBeforeMount(() => document.body.classList.add("fullscreen"));
 
-const puzzleURL = ref("");
-const split = ref("");
-const togglePuzzle = (e: MouseEvent) => {
-  if (!puzzle.value?.puzzle_url) return;
-  if (e.metaKey || e.ctrlKey) return; // open in new tab
-
-  e.preventDefault();
-  if (!puzzleURL.value) {
-    // Lazy-load the puzzle frame
-    puzzleURL.value = puzzle.value.puzzle_url;
-  }
-  split.value = split.value ? "" : "split";
-};
-
 const discord = useTemplateRef("discord");
 const [discordBase, discordTarget] = useDiscordBase();
 const discordURL = computed(() => puzzle.value.discord_channel ?
@@ -103,16 +89,13 @@ onMounted(() => {
 </script>
 
 <template>
-  <main :class="split">
-    <div>
-      <NuxtLink :to="applink" class="applink" v-if="!!applink">
-        Open in Google Sheets &nbsp;
-      </NuxtLink>
-      <iframe :src="spreadsheetURL"></iframe>
-    </div>
-    <iframe :src="puzzleURL" class="puzzle"></iframe>
+  <main>
+    <NuxtLink :to="applink" class="applink" v-if="!!applink">
+      Open in Google Sheets &nbsp;
+    </NuxtLink>
+    <iframe :src="spreadsheetURL"></iframe>
   </main>
-  <div :class="['overlay', split]">
+  <div class="overlay">
     <nav @keydown="(e) => e.key === 'Escape' && (open = undefined)">
       <section>
         <ETooltip :text="`Status: ${StatusLabel(puzzle.status)}`" placement="top"
@@ -131,7 +114,7 @@ onMounted(() => {
       </section>
       <section>
         <ETooltip text="Puzzle Page" placement="top" :offset-distance="4">
-          <NuxtLink :to="puzzle.puzzle_url" target="_blank" @click="togglePuzzle">
+          <NuxtLink :to="puzzle.puzzle_url" target="_blank">
             🌎
           </NuxtLink>
         </ETooltip>
@@ -170,21 +153,12 @@ main {
   height: 100dvh;
 
   display: flex;
+  flex-direction: column;
 }
 
-main>div,
 iframe {
   display: flex;
-  flex-direction: column;
-  flex-grow: 1;
-}
-
-.puzzle {
-  display: none;
-}
-
-.split .puzzle {
-  display: unset;
+  height: 100dvh;
 }
 
 .overlay {
@@ -234,12 +208,6 @@ nav {
 
 .insets {
   overflow-y: scroll;
-}
-
-.split nav {
-  background-color: rgb(249 251 253 / 75%);
-  border-top: 1px solid #e1e3e1;
-  border-top-left-radius: 6px;
 }
 
 .logo {
