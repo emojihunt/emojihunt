@@ -1,9 +1,6 @@
 package sync
 
 import (
-	"time"
-
-	"github.com/emojihunt/emojihunt/huntyet"
 	"github.com/emojihunt/emojihunt/state"
 )
 
@@ -21,7 +18,6 @@ type Meta struct {
 }
 
 func (c *Client) ComputeMeta(discovery state.DiscoveryConfig) Meta {
-	nextHunt, _ := huntyet.NextHunt(time.Now())
 	return Meta{
 		HuntName:        discovery.HuntName,
 		HuntURL:         discovery.HuntURL,
@@ -30,7 +26,6 @@ func (c *Client) ComputeMeta(discovery state.DiscoveryConfig) Meta {
 
 		DiscordGuild: c.discord.Guild.ID,
 		HangingOut:   c.discord.HangingOutChannel.ID,
-		NextHunt:     nextHunt.Format(time.RFC3339),
 
 		VoiceRooms: c.discord.ListVoiceChannels(),
 	}
