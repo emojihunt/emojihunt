@@ -1,9 +1,10 @@
 package discovery
 
 import (
-	"bufio"
 	"bytes"
 	"context"
+	"crypto/rand"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -284,29 +285,44 @@ func (p *Poller) OpenWebsocket(ctx context.Context) (*websocket.Conn, chan bool,
 	}
 	log.Printf("discovery: opened websocket connection to %q", p.wsURL.String())
 	if p.wsToken != "" {
-		// Custom (??) authentication protocol from 2021
-		data, err := json.Marshal(map[string]interface{}{
-			"type": "AUTH",
-			"data": p.wsToken,
-		})
-		if err != nil {
-			return nil, nil, err
-		}
-		if _, err := ws.Write(data); err != nil {
-			return nil, nil, err
-		}
-		log.Printf("discovery: wrote AUTH message to websocket")
 	}
 	go func(ws *websocket.Conn, ch chan bool) {
 		defer close(ch)
 
-		scanner := bufio.NewScanner(ws)
-		for scanner.Scan() {
+		for {
+			var msg map[string]interface{}
+			err := websocket.JSON.Receive(ws, &msg)
+			if err != nil {
+				log.Printf("discovery: ws error: %#v", err)
+				break
+			}
 			if p.wsLimiter.Allow() {
-				log.Printf("discovery: ws: %q", scanner.Text())
-				ch <- true
+				log.Printf("discovery: ws: %v", msg)
+				if msg["type"] == "hello" {
+					// Custom authentication protocol from 2025
+					subid := make([]byte, 8)
+					rand.Read(subid)
+					data, err := json.Marshal(map[string]interface{}{
+						"rpc":     1,
+						"method":  "sub",
+						"subId":   hex.EncodeToString(subid),
+						"dataset": "activity_log",
+					})
+					if err != nil {
+						log.Printf("discovery: error formatting sub message: %#v", err)
+						break
+					}
+					_, err = ws.Write(data)
+					if err != nil {
+						log.Printf("discovery: error writing sub message: %#v", err)
+						break
+					}
+					log.Printf("discovery: wrote sub message to websocket: %s", data)
+				} else {
+					ch <- true
+				}
 			} else {
-				log.Printf("discovery: ws (skipped due to rate limit): %q", scanner.Text())
+				log.Printf("discovery: ws (skipped due to rate limit): %q", msg)
 			}
 		}
 		log.Printf("discovery: closing ws channel")
