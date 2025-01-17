@@ -228,9 +228,9 @@ func (p *Poller) Scrape(ctx context.Context) ([]state.ScrapedPuzzle, error) {
 		roundName := strings.TrimSpace(roundBuf.String())
 
 		puzzleItemNodes := p.puzzleItemSelector.MatchAll(puzzleListNode)
-		if len(puzzleItemNodes) == 0 {
-			return nil, xerrors.Errorf("no puzzle item nodes found in puzzle list: %#v", puzzleListNode)
-		}
+		// if len(puzzleItemNodes) == 0 {
+		// 	return nil, xerrors.Errorf("no puzzle item nodes found in puzzle list: %#v", puzzleListNode)
+		// }
 		for _, item := range puzzleItemNodes {
 			var puzzleBuf bytes.Buffer
 			collectText(item, &puzzleBuf)
