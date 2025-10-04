@@ -59,7 +59,7 @@ const keydown = (e: KeyboardEvent): void => {
     <ETooltip v-for="round of ordering" :key="round.id" :text="round.name"
       :offset-distance="-3">
       <a :href="`#${round.anchor}`" @click="(e) => goto(e, round)"
-        :tabindex="round.id === ordering[focused.index].id ? 0 : -1"
+        :tabindex="round.id === ordering[focused.index]?.id ? 0 : -1"
         :aria-label="`To ${round.name}`" :style="`--hue: ${round.hue}deg;`">
         <span
           :class="[round.complete && 'complete', filter && !round.priority && 'grayscale']">{{

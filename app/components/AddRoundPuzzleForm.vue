@@ -43,7 +43,7 @@ const submit = (e: Event) => {
       });
     } else {
       let params: NewPuzzle = {
-        name: data.name, round: data.round.id, puzzle_url: data.url,
+        name: data.name, round: data.round!.id, puzzle_url: data.url,
       };
       if (data.create) {
         params = { ...params, spreadsheet_id: "+", discord_channel: "+" };
@@ -79,7 +79,7 @@ const emoji = (e: any) => {
       }
     }
   };
-  form.value?.querySelectorAll("input")[1].focus();
+  form.value?.querySelectorAll("input")[1]?.focus();
 };
 const urlBlur = () => {
   if (data.url && !data.url.startsWith("http")) {

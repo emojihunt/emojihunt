@@ -227,9 +227,9 @@ export async function initializePuzzles(): Promise<State> {
     Object.entries(msg.voice_rooms).forEach(([id, raw]) => {
       // We expect the channel's emoji to go at the end
       const p = raw.split(" ");
-      if ([...p[p.length - 1]].length === 1) {
+      if ([...p[p.length - 1]!].length === 1) {
         const name = p.slice(0, p.length - 1).join(" ");
-        const emoji = p[p.length - 1];
+        const emoji = p[p.length - 1]!;
         voiceRooms.set(id, { id, name, emoji });
       } else {
         voiceRooms.set(id, { id, name: raw, emoji: "📻" });

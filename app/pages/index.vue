@@ -13,7 +13,7 @@ const { puzzleCount } = await initializePuzzles();
 // We want each round header to disappear when it's covered by the next. Use CSS
 // scroll-linked animations if supported and fall back to IntersectionObserver
 // if not.
-const timelines = [...Array(50).keys()].map((i) => timelineFromSequence(i));
+const timelines = [...Array(50).keys()].map((i) => timelineFromSequence(i)).join(", ");
 const observer = ref<IntersectionObserver>();
 const observerLastJump = ref(0);
 provide(ObserverKey, observer);

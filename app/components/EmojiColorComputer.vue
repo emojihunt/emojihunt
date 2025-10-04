@@ -21,13 +21,13 @@ onMounted(() => {
     for (let i = 0; i < data.length; i += 4) {
       const color = new Color({
         spaceId: colorSpace,
-        coords: [data[i], data[i + 1], data[i + 2]],
+        coords: [data[i]!, data[i + 1]!, data[i + 2]!],
         alpha: data[i + 3],
       });
       const [lightness, chroma, hue] = color.oklch;
-      if (!(lightness + chroma + hue)) continue;
-      const weight = Math.round(color.alpha * chroma * 10);
-      for (let i = 0; i < weight; i++) hues.push(hue);
+      if (!(lightness! + chroma! + hue!)) continue;
+      const weight = Math.round(color.alpha * chroma! * 10);
+      for (let i = 0; i < weight; i++) hues.push(hue!);
     }
     median.value = Math.round(circularMean(hues));
     result.value = [median.value, emoji, ...alternates];
