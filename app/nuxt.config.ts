@@ -30,7 +30,17 @@ export default defineNuxtConfig({
     serverBundle: false,
   },
   nitro: {
-    preset: "vercel-edge",
+    // https://github.com/nuxt/nuxt/discussions/27746
+    preset: "bun",
+    node: true,
+    noExternals: true,
+    inlineDynamicImports: true,
+    serveStatic: "inline",
+    esbuild: {
+      options: {
+        target: "esnext",
+      },
+    }
   },
   modules: [
     "@nuxt/icon",

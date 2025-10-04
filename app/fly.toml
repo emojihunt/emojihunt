@@ -1,0 +1,8 @@
+app = "emojiweb"
+primary_region = "ewr"
+
+[http_service]
+  internal_port = 3000
+  force_https = true
+  auto_start_machines = true
+  auto_stop_machines = "stop"

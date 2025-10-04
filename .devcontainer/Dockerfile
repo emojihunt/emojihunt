@@ -17,4 +17,3 @@ RUN pip install --break-system-packages brotli fonttools uharfbuzz
 # Install CLIs
 RUN (curl -fsSL https://fly.io/install.sh | FLYCTL_INSTALL=/usr/local sh)
 RUN (curl -fsSL https://bun.sh/install | BUN_INSTALL=/usr/local bash)
-RUN npm install -g vercel
