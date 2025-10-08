@@ -5,8 +5,8 @@ const emit = defineEmits<{ (event: "close"): void; }>();
 const { puzzles, rounds, updatePuzzle, deletePuzzle } = usePuzzles();
 const toast = useToast();
 
-type EditState = Omit<Omit<Omit<Puzzle, "id">, "round">, "reminder"> & {
-  round: string; rdate: string; rtime: string;
+type EditState = Omit<Omit<Puzzle, "id">, "reminder"> & {
+  rdate: string; rtime: string;
 };
 const editState = (puzzle: Partial<Omit<Puzzle, "id">>): Partial<EditState> => {
   let [rdate, rtime] = ["", ""];
@@ -22,7 +22,7 @@ const editState = (puzzle: Partial<Omit<Puzzle, "id">>): Partial<EditState> => {
     rdate = `${p.year}-${p.month}-${p.day}`;
     rtime = `${p.hour}:${p.minute}`;
   }
-  return { ...puzzle, round: (puzzle?.round || "0").toString(), rdate, rtime };
+  return { ...puzzle, rdate, rtime };
 };
 
 const original = reactive({ ...puzzles.get(id) });
@@ -41,7 +41,7 @@ const modified = computed(() => {
     if (key === "status") {
       if (edits.status !== original.status) modified.status = edits.status;
     } else if (key === "round") {
-      const edited = parseInt(edits.round || "0");
+      const edited = edits.round;
       if (edited !== original.round) modified.round = edited;
     } else if (key === "meta") {
       if (edits.meta !== original.meta) modified.meta = edits.meta;
@@ -69,6 +69,7 @@ watch(() => puzzles.get(id)!, (updated) => {
     if (updated[key] === original[key]) continue;
 
     if (key === "status") edits.status = transformed.status;
+    else if (key === "round") edits.round = transformed.round;
     else if (key === "meta") edits.meta = transformed.meta;
     else if (key === "reminder") {
       edits.rdate = transformed.rdate;
@@ -122,7 +123,7 @@ const del = (e: MouseEvent) => {
 
 const statuses = computed(() => Statuses.map((s) =>
   ({ label: `${StatusEmoji(s)} ${StatusLabel(s)}`, value: s })));
-const hue = computed(() => rounds.get(parseInt(edits.round || "0"))?.hue || 0);
+const hue = computed(() => rounds.get(edits.round || 0)?.hue || 0);
 </script>
 
 <template>
@@ -134,7 +135,7 @@ const hue = computed(() => rounds.get(parseInt(edits.round || "0"))?.hue || 0);
     <UInput v-model="edits.answer" id="puzzle-answer" />
     <label for="puzzle-round" :class="'round' in modified && 'modified'">Round</label>
     <USelect v-model="edits.round" id="puzzle-round" value-key="id"
-      :items="[...rounds]" />
+      :items="[...rounds].map(([i, r]) => ({ ...r, label: r.displayName }))" />
     <label for="puzzle-status" :class="'status' in modified && 'modified'">Status</label>
     <USelect v-model="edits.status" :items="statuses" id="puzzle-status" />
     <label for="puzzle-note" :class="'note' in modified && 'modified'">Note</label>

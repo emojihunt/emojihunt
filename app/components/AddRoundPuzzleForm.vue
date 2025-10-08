@@ -25,7 +25,7 @@ const toast = useToast();
 
 const data = reactive({
   emoji: "", name: "", hue: 274, url: "", create: true,
-  round: ordering.value.length ? ordering.value[0] : { id: 0, hue: 0 },
+  round: ordering.value[0]?.id || 0,
 });
 const saving = ref(false);
 
@@ -43,7 +43,7 @@ const submit = (e: Event) => {
       });
     } else {
       let params: NewPuzzle = {
-        name: data.name, round: data.round!.id, puzzle_url: data.url,
+        name: data.name, round: data.round, puzzle_url: data.url,
       };
       if (data.create) {
         params = { ...params, spreadsheet_id: "+", discord_channel: "+" };
@@ -94,7 +94,8 @@ onMounted(autofocus);
 watch(() => kind, autofocus);
 const select = () => form.value?.querySelector("input")?.focus();
 
-const hue = computed(() => kind === "round" ? data.hue : data.round?.hue);
+const hue = computed(() => kind === "round" ? data.hue
+  : ordering.value.find((r) => r.id == data.round)?.hue);
 </script>
 
 <template>
@@ -105,8 +106,9 @@ const hue = computed(() => kind === "round" ? data.hue : data.round?.hue);
       <USlider v-model="data.hue" :min=0 :max="359" class="hue" />
     </template>
     <template v-else>
-      <USelectMenu v-model="data.round" placeholder="Round" :items="ordering"
-        @close="select" trailing-icon="i-heroicons-chevron-up" />
+      <USelectMenu v-model="data.round" placeholder="Round" value-key="id"
+        :items="ordering.map((r) => ({ ...r, label: r.displayName }))" @close="select"
+        trailing-icon="i-heroicons-chevron-up" />
       <UInput v-model="data.name" placeholder="Puzzle Name" />
       <UInput v-model="data.url" placeholder="Puzzle URL" class="url" @blur="urlBlur" />
       <ETooltip text="Create spreadsheet and Discord channel" side="top"
