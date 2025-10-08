@@ -1,3 +1,7 @@
+/* Imports */
+@import "tailwindcss";
+@import "@nuxt/ui";
+
 /* Fonts! */
 @font-face {
   font-family: "Inter Variable";

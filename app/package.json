@@ -14,7 +14,7 @@
     "@iconify-json/heroicons-solid": "^1.2.1",
     "@nuxt/devtools": "^2.6.5",
     "@nuxt/icon": "^2.0.0",
-    "@nuxt/ui": "^2.20.0",
+    "@nuxt/ui": "^4.0.0",
     "ably": "^2.6.0",
     "colorjs.io": "^0.5.2",
     "emoji-mart-vue-fast": "^15.0.3",
