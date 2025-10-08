@@ -102,16 +102,11 @@ const hue = computed(() => kind === "round" ? data.hue : data.round?.hue);
     <template v-if="kind === 'round'">
       <UInput v-model="data.emoji" placeholder="🫥" readonly="readonly" />
       <UInput v-model="data.name" placeholder="Round Name" />
-      <URange v-model="data.hue" :min=0 :max="359" class="hue" />
+      <USlider v-model="data.hue" :min=0 :max="359" class="hue" />
     </template>
     <template v-else>
-      <USelectMenu v-model="data.round" placeholder="Round" :options="ordering"
-        option-attribute="displayName" :popper="{ arrow: false }" searchable
-        clear-search-on-close @close="select">
-        <template #trailing>
-          <UIcon name="i-heroicons-chevron-up" class="text-gray-400" />
-        </template>
-      </USelectMenu>
+      <USelectMenu v-model="data.round" placeholder="Round" :items="ordering"
+        @close="select" trailing-icon="i-heroicons-chevron-up" />
       <UInput v-model="data.name" placeholder="Puzzle Name" />
       <UInput v-model="data.url" placeholder="Puzzle URL" class="url" @blur="urlBlur" />
       <ETooltip text="Create spreadsheet and Discord channel" placement="top"

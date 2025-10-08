@@ -133,10 +133,10 @@ const hue = computed(() => rounds.get(parseInt(edits.round || "0"))?.hue || 0);
     <label for="puzzle-answer" :class="'answer' in modified && 'modified'">Answer</label>
     <UInput v-model="edits.answer" id="puzzle-answer" />
     <label for="puzzle-round" :class="'round' in modified && 'modified'">Round</label>
-    <USelect v-model="edits.round" id="puzzle-round"
-      :options="[...rounds.values()].map((r) => ({ label: r.displayName, value: r.id }))" />
+    <USelect v-model="edits.round" id="puzzle-round" value-key="id"
+      :items="[...rounds]" />
     <label for="puzzle-status" :class="'status' in modified && 'modified'">Status</label>
-    <USelect v-model="edits.status" :options="statuses" id="puzzle-status" />
+    <USelect v-model="edits.status" :items="statuses" id="puzzle-status" />
     <label for="puzzle-note" :class="'note' in modified && 'modified'">Note</label>
     <UInput v-model="edits.note" id="puzzle-note" />
     <label for="puzzle-location"

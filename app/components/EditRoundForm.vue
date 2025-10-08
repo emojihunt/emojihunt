@@ -90,7 +90,7 @@ const hue = computed(() => edits.hue || 0);
     <label for="round-emoji" :class="'emoji' in modified && 'modified'">Emoji</label>
     <UInput v-model="edits.emoji" id="round-emoji" />
     <label for="round-hue" :class="'hue' in modified && 'modified'">Hue</label>
-    <URange v-model="edits.hue" :min=0 :max="359" id="round-hue" class="hue" />
+    <USlider v-model="edits.hue" :min=0 :max="359" id="round-hue" class="hue" />
     <label for="round-sort" :class="'sort' in modified && 'modified'">Sort</label>
     <UInput v-model="edits.sort" id="round-sort" />
     <label for="round-drive" :class="'drive_folder' in modified && 'modified'">Drive

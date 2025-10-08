@@ -65,9 +65,9 @@ onMounted(() => setTimeout(() => ably.value?.classList.add("ready"), 2500));
       </div>
       <div class="row" v-if="puzzleCount >= 21">
         <div class="flex-spacer"></div>
-        <UFormGroup name="toggle" class="toggle" label="Priority">
-          <UToggle v-model="filter" />
-        </UFormGroup>
+        <UFormField name="toggle" class="toggle" label="Priority">
+          <USwitch v-model="filter" />
+        </UFormField>
       </div>
       <div class="flex-spacer"></div>
       <div class="ably" ref="ably">

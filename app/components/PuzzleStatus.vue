@@ -29,7 +29,7 @@ const save = (answer: string) => {
 };
 const cancel = () => answering.value && (answering.value = null, expanded && (expanded.value = 0));
 
-const options = computed(() =>
+const items = computed(() =>
   Object.values(Status).filter((s) => s !== puzzle.status).map(
     (s) => ({ id: s, emoji: StatusEmoji(s), name: StatusLabel(s) })
   )
@@ -74,7 +74,7 @@ const select = (status: Status) => {
       </span>
       <Spinner v-if="saving" />
     </button>
-    <OptionPane v-if="expanded === id" :options="options" @select="select" />
+    <OptionPane v-if="expanded === id" :items="items" @select="select" />
   </div>
 </template>
 

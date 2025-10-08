@@ -29,7 +29,7 @@ const saveRoom = (updated: string) => {
     }).finally(() => savingRoom.value = false);
 };
 
-const options = computed(() =>
+const items = computed(() =>
   [...voiceRooms.values(), { id: "", emoji: "+", name: "In-person" }]
 );
 const select = (option: string) => {
@@ -53,7 +53,7 @@ const select = (option: string) => {
             <span class="emoji">{{ room.emoji }}</span>
           </ETooltip>
           <span class="description" v-if="!(puzzle.location || answering)">{{ room.name
-            }}</span>
+          }}</span>
         </template>
         <ETooltip v-else-if="puzzle.location" text="Add a Voice Room">
           <span class="emoji">📍</span>
@@ -69,7 +69,7 @@ const select = (option: string) => {
         @click="() => saveRoom('')" tabindex="-1">Clear</button>
       <Spinner v-if="savingText || savingRoom" class="spinner" />
     </div>
-    <OptionPane v-if="expanded === id" :options="options" @select="select" />
+    <OptionPane v-if="expanded === id" :items="items" @select="select" />
   </div>
 </template>
 
