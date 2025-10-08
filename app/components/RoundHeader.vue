@@ -32,7 +32,7 @@ watchEffect(() => {
 
 const copy = async (): Promise<void> => {
   const puzzles = ordering.value.find((r) => r.id === id)?.puzzles || [];
-  if (!puzzles) {
+  if (!puzzles.length) {
     toast.add({
       title: "No puzzles to copy",
       color: "error",
