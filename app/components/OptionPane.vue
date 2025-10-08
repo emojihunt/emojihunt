@@ -1,13 +1,13 @@
 <script setup lang="ts" generic="T">
-const { options } = defineProps<{
-  options: { id: T, emoji: string; name: string; }[];
+const { items } = defineProps<{
+  items: { id: T, emoji: string; name: string; }[];
 }>();
 const emit = defineEmits<{ (e: "select", id: T): void; }>();
 </script>
 
 <template>
   <fieldset>
-    <button v-for="{ id, emoji, name } of options" @click="() => emit('select', id)">
+    <button v-for="{ id, emoji, name } of items" @click="() => emit('select', id)">
       <span class="emoji" v-if="emoji">{{ emoji }}</span>
       {{ name }}
     </button>
