@@ -38,7 +38,7 @@ watch(rounds.get(id)!, (updated) => {
   Object.assign(original, updated);
 });
 
-let previous: string;
+let previous: string | number;
 const saving = ref(false);
 const submit = (e: Event) => {
   e.preventDefault();

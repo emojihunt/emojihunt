@@ -29,7 +29,7 @@ const data = reactive({
 });
 const saving = ref(false);
 
-let previous: string;
+let previous: string | number;
 const submit = (e: Event) => {
   e.preventDefault();
   saving.value = true;

@@ -8,7 +8,7 @@ const data: DiscoveryConfig = await(async () => {
   else throw error.value;
 })();
 
-let previous: string;
+let previous: string | number;
 const saving = ref(false);
 const testing = ref<boolean | Map<string, ScrapedPuzzle[]>>(false);
 const submit = async (e: Event) => {
