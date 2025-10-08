@@ -53,13 +53,13 @@ const submit = (e: Event) => {
     request.
       then(() => (
         toast.add({
-          title: `Added ${kind}`, color: "green",
+          title: `Added ${kind}`, color: "success",
           icon: "i-heroicons-check-badge",
         }),
         emit("close")
       )).catch((e) => (
         previous = toast.add({
-          title: "Error", color: "red", description: e.data.message,
+          title: "Error", color: "error", description: e.data.message,
           icon: "i-heroicons-exclamation-triangle",
         }).id),
       ).finally(() => (saving.value = false));

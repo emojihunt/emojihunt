@@ -35,7 +35,7 @@ const copy = async (): Promise<void> => {
   if (!puzzles) {
     toast.add({
       title: "No puzzles to copy",
-      color: "red",
+      color: "error",
       icon: "i-heroicons-exclamation-triangle",
     });
     return;
@@ -55,7 +55,7 @@ const copy = async (): Promise<void> => {
   ]);
   toast.add({
     title: "Copied",
-    color: "green",
+    color: "success",
     icon: "i-heroicons-clipboard-document-check",
   });
 };

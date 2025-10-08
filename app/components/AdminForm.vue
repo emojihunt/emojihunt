@@ -26,13 +26,13 @@ const submit = async (e: Event) => {
     window.location.reload();
   } else if (response.status === 200) {
     previous = toast.add({
-      title: "Updated configuration", color: "green",
+      title: "Updated configuration", color: "success",
       icon: "i-heroicons-check-badge",
     }).id;
     emit("close");
   } else {
     previous = toast.add({
-      title: "Error", color: "red", description: (await response.json()).message,
+      title: "Error", color: "error", description: (await response.json()).message,
       icon: "i-heroicons-exclamation-triangle",
     }).id;
   }
@@ -62,7 +62,7 @@ const test = async (e: Event) => {
     testing.value = result;
   } else {
     previous = toast.add({
-      title: "Error", color: "red", description: (await response.json()).message,
+      title: "Error", color: "error", description: (await response.json()).message,
       icon: "i-heroicons-exclamation-triangle",
     }).id;
     testing.value = false;

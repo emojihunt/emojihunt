@@ -9,7 +9,7 @@ const keydown = (e: KeyboardEvent) => {
 
 <template>
   <footer @keydown="keydown">
-    <section class="ring-1 ring-inset ring-gray-300">
+    <section class="ring-1 ring-inset ring-neutral-300">
       <slot></slot>
     </section>
   </footer>

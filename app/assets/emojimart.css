@@ -16,7 +16,7 @@
   height: 33vh;
   color: #222427;
 
-  border-top: 1px solid rgb(var(--color-gray-300));
+  border-top: 1px solid rgb(var(--color-neutral-300));
   margin-bottom: -0.5rem;
   width: unset !important;
 }

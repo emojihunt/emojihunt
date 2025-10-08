@@ -89,13 +89,13 @@ const submit = (e: Event) => {
   updatePuzzle(id, modified.value)
     .then(() => (
       toast.add({
-        title: "Updated puzzle", color: "green",
+        title: "Updated puzzle", color: "success",
         icon: "i-heroicons-check-badge",
       }),
       emit("close")
     )).catch((e) => (
       previous = toast.add({
-        title: "Error", color: "red", description: e.data.message,
+        title: "Error", color: "error", description: e.data.message,
         icon: "i-heroicons-exclamation-triangle",
       }).id),
     ).finally(() => (saving.value = false));
@@ -109,12 +109,12 @@ const del = (e: MouseEvent) => {
   deletePuzzle(id)
     .then(() => (
       toast.add({
-        title: "Deleted puzzle", color: "green", icon: "i-heroicons-trash",
+        title: "Deleted puzzle", color: "success", icon: "i-heroicons-trash",
       }),
       emit("close")
     )).catch((e) => (
       previous = toast.add({
-        title: "Error", color: "red", description: e.data.message,
+        title: "Error", color: "error", description: e.data.message,
         icon: "i-heroicons-exclamation-triangle",
       }).id),
     ).finally(() => (saving.value = false));
@@ -166,7 +166,7 @@ const hue = computed(() => rounds.get(parseInt(edits.round || "0"))?.hue || 0);
       <UCheckbox v-model="edits.meta" label="Meta"
         :class="'meta' in modified && 'modified'" />
       <div class="flex-spacer"></div>
-      <UButton color="red" variant="ghost" @click="del">
+      <UButton color="error" variant="ghost" @click="del">
         Delete
       </UButton>
       <UButton type="submit" :disabled="saving">
