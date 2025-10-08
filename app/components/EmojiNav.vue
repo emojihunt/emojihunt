@@ -52,12 +52,12 @@ const keydown = (e: KeyboardEvent): void => {
 <template>
   <nav ref="nav" @keydown="keydown">
     <div class="spacer"></div>
-    <ETooltip text="Puzzles Open" :offset-distance="-3" class="stats">
+    <ETooltip text="Puzzles Open" class="stats">
       {{ String(puzzleCount - solvedPuzzleCount).padStart(3, '0') }}
     </ETooltip>
     <p class="dot"></p>
     <ETooltip v-for="round of ordering" :key="round.id" :text="round.name"
-      :offset-distance="-3">
+      :side-offset="3">
       <a :href="`#${round.anchor}`" @click="(e) => goto(e, round)"
         :tabindex="round.id === ordering[focused.index]?.id ? 0 : -1"
         :aria-label="`To ${round.name}`" :style="`--hue: ${round.hue}deg;`">
@@ -67,7 +67,7 @@ const keydown = (e: KeyboardEvent): void => {
       </a>
     </ETooltip>
     <p class="dot"></p>
-    <ETooltip text="Puzzles Solved" :offset-distance="-3" class="stats">
+    <ETooltip text="Puzzles Solved" class="stats">
       {{ String(solvedPuzzleCount).padStart(3, '0') }}
     </ETooltip>
     <div class="spacer"></div>

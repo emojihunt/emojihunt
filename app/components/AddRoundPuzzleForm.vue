@@ -109,7 +109,7 @@ const hue = computed(() => kind === "round" ? data.hue : data.round?.hue);
         @close="select" trailing-icon="i-heroicons-chevron-up" />
       <UInput v-model="data.name" placeholder="Puzzle Name" />
       <UInput v-model="data.url" placeholder="Puzzle URL" class="url" @blur="urlBlur" />
-      <ETooltip text="Create spreadsheet and Discord channel" placement="top"
+      <ETooltip text="Create spreadsheet and Discord channel" side="top"
         strategy="absolute" class="checkbox">
         <UCheckbox v-model="data.create" />
       </ETooltip>

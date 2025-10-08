@@ -13,13 +13,13 @@ const set = (voice_room: string) => {
 
 <template>
   <div class="bubble">
-    <ETooltip text="No Voice Room" placement="top" :offset-distance="4">
+    <ETooltip text="No Voice Room" side="top" :side-offset="4">
       <button :disabled="!puzzle?.voice_room" @click="() => set('')">
         ❎
       </button>
     </ETooltip>
-    <ETooltip v-for="room of voiceRooms.values()" :text="room.name" placement="top"
-      :offset-distance="4">
+    <ETooltip v-for="room of voiceRooms.values()" :text="room.name" side="top"
+      :side-offset="4">
       <button :disabled="puzzle?.voice_room === room.id" @click="() => set(room.id)">
         {{ room.emoji }}
       </button>

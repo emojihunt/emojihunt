@@ -64,19 +64,19 @@ defineExpose({
 <template>
   <div class="discord" v-if="open" @keydown="escape">
     <span class="links">
-      <ETooltip text="Close" placement="top" :offset-distance="4">
+      <ETooltip text="Close" side="top" :side-offset="4">
         <button @click="() => (open = false)">
           🔻
         </button>
       </ETooltip>
       &bull;
-      <ETooltip :text="mute ? 'Unmute' : 'Mute'" placement="top" :offset-distance="4">
+      <ETooltip :text="mute ? 'Unmute' : 'Mute'" side="top" :side-offset="4">
         <button @click="() => setMute(!mute)">
           {{ mute ? "🔕" : "🔔" }}
         </button>
       </ETooltip>
       &bull;
-      <ETooltip text="Open in Discord" placement="top" :offset-distance="4">
+      <ETooltip text="Open in Discord" side="top" :side-offset="4">
         <NuxtLink :to="discordURL" :target="discordTarget">
           👉
         </NuxtLink>

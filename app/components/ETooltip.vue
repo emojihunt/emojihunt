@@ -1,25 +1,24 @@
 <script setup lang="ts">
-import type { Placement, PositioningStrategy } from '@popperjs/core';
-
 const {
   text,
-  openDelay = 250,
-  placement = "right",
-  offsetDistance = 0,
-  strategy = "fixed" } = defineProps<{
-    text: string;
-    openDelay?: number;
-    placement?: Placement;
-    offsetDistance?: number;
-    strategy?: PositioningStrategy;
-  }>();
+  delayDuration = 250,
+  side = "right",
+  sideOffset = 0,
+} = defineProps<{
+  text: string;
+  delayDuration?: number;
+  side?: "top" | "bottom" | "right" | "left";
+  sideOffset?: number;
+}>();
 </script>
 
 <template>
-  <UTooltip :text="text" :open-delay="openDelay"
-    :popper="{ placement, offsetDistance, strategy }">
-    <slot></slot>
-  </UTooltip>
+  <div>
+    <UTooltip :text="text" :delay-duration="delayDuration"
+      :content="{ side, sideOffset }">
+      <slot></slot>
+    </UTooltip>
+  </div>
 </template>
 
 <style scoped>
