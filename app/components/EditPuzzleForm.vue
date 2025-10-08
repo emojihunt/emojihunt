@@ -5,10 +5,13 @@ const emit = defineEmits<{ (event: "close"): void; }>();
 const { puzzles, rounds, updatePuzzle, deletePuzzle } = usePuzzles();
 const toast = useToast();
 
-type EditState = Omit<Omit<Puzzle, "id">, "reminder"> & {
-  rdate: string; rtime: string;
+type EditState = Omit<Omit<Omit<Puzzle, "id">, "status">, "reminder"> & {
+  status: "Not Started" | Status.Working | Status.Abandoned | Status.Solved | Status.Backsolved | Status.Purchased;
+  rdate: string;
+  rtime: string;
 };
 const editState = (puzzle: Partial<Omit<Puzzle, "id">>): Partial<EditState> => {
+  const status = puzzle.status || "Not Started";
   let [rdate, rtime] = ["", ""];
   const date = puzzle.reminder && new Date(puzzle.reminder);
   if (date && date.getTime() >= 1700000000000) {
@@ -22,7 +25,7 @@ const editState = (puzzle: Partial<Omit<Puzzle, "id">>): Partial<EditState> => {
     rdate = `${p.year}-${p.month}-${p.day}`;
     rtime = `${p.hour}:${p.minute}`;
   }
-  return { ...puzzle, rdate, rtime };
+  return { ...puzzle, status, rdate, rtime };
 };
 
 const original = reactive({ ...puzzles.get(id) });
@@ -39,7 +42,15 @@ const modified = computed(() => {
 
   for (const key of PuzzleKeys) {
     if (key === "status") {
-      if (edits.status !== original.status) modified.status = edits.status;
+      let status: Status;
+      if (edits.status === "Not Started") status = Status.NotStarted;
+      else if (edits.status === "Abandoned") status = Status.Abandoned;
+
+      if (edits.status === "Not Started") {
+        if (original.status !== "") modified.status = Status.NotStarted;
+      } else {
+        if (edits.status !== original.status) modified.status = edits.status;
+      }
     } else if (key === "round") {
       const edited = edits.round;
       if (edited !== original.round) modified.round = edited;
@@ -122,7 +133,7 @@ const del = (e: MouseEvent) => {
 };
 
 const statuses = computed(() => Statuses.map((s) =>
-  ({ label: `${StatusEmoji(s)} ${StatusLabel(s)}`, value: s })));
+  ({ label: `${StatusEmoji(s)} ${StatusLabel(s)}`, value: s || "Not Started" })));
 const hue = computed(() => rounds.get(edits.round || 0)?.hue || 0);
 </script>
 
@@ -137,7 +148,8 @@ const hue = computed(() => rounds.get(edits.round || 0)?.hue || 0);
     <USelect v-model="edits.round" id="puzzle-round" value-key="id"
       :items="[...rounds].map(([i, r]) => ({ ...r, label: r.displayName }))" />
     <label for="puzzle-status" :class="'status' in modified && 'modified'">Status</label>
-    <USelect v-model="edits.status" :items="statuses" id="puzzle-status" />
+    <USelect v-model="edits.status" value-key="value" :items="statuses"
+      id="puzzle-status" />
     <label for="puzzle-note" :class="'note' in modified && 'modified'">Note</label>
     <UInput v-model="edits.note" id="puzzle-note" />
     <label for="puzzle-location"
