@@ -102,7 +102,7 @@ const hue = computed(() => edits.hue || 0);
     <UInput v-model="edits.discord_category" id="round-discord" />
     <fieldset>
       <UCheckbox v-model="edits.special" label="Special" class="checkbox"
-        :class="'special' in modified && 'modified'" />
+        icon="i-heroicons-check" :class="'special' in modified && 'modified'" />
       <div class="flex-spacer"></div>
       <UButton color="error" variant="ghost" @click="del">
         Delete

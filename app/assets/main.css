@@ -112,6 +112,10 @@ form :focus-visible {
   outline-color: var(--ui-primary) !important;
 }
 
+button[role="checkbox"] span[data-state="checked"] {
+  border-radius: 4px;
+}
+
 /* Common Classes */
 .flex-spacer {
   flex-grow: 1;

@@ -176,7 +176,7 @@ const hue = computed(() => rounds.get(edits.round || 0)?.hue || 0);
       <UInput v-model="edits.rtime" id="puzzle-reminder-time" type="time" />
     </div>
     <fieldset>
-      <UCheckbox v-model="edits.meta" label="Meta"
+      <UCheckbox v-model="edits.meta" label="Meta" icon="i-heroicons-check"
         :class="'meta' in modified && 'modified'" />
       <div class="flex-spacer"></div>
       <UButton color="error" variant="ghost" @click="del">

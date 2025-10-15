@@ -112,7 +112,7 @@ const hue = computed(() => kind === "round" ? data.hue
       <UInput v-model="data.name" placeholder="Puzzle Name" />
       <UInput v-model="data.url" placeholder="Puzzle URL" class="url" @blur="urlBlur" />
       <ETooltip text="Create spreadsheet and Discord channel" side="top" class="checkbox">
-        <UCheckbox v-model="data.create" />
+        <UCheckbox v-model="data.create" icon="i-heroicons-check" />
       </ETooltip>
     </template>
     <UButton type="submit" :disabled="saving" class="justify-center">
@@ -144,7 +144,8 @@ form.puzzle {
   grid-template-columns: 10rem 12rem 12rem 1.5rem 3.5rem;
 }
 
-.checkbox {
+:deep(.checkbox) {
+  display: flex;
   justify-content: center;
   align-items: center;
 }

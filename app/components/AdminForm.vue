@@ -74,7 +74,7 @@ const test = async (e: Event) => {
   <h1>Discovery</h1>
   <form>
     <UInput v-model="data.puzzles_url" placeholder="Puzzles URL" autofocus />
-    <UCheckbox v-model="data.group_mode" label="Group Mode" />
+    <UCheckbox v-model="data.group_mode" label="Group Mode" icon="i-heroicons-check" />
     <UInput v-model="data.cookie_name" placeholder="Cookie Name" />
     <UInput v-model="data.cookie_value" placeholder="Cookie Value" />
     <UInput v-model="data.group_selector" placeholder="Group Selector" />
