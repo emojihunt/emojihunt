@@ -16,7 +16,7 @@ var startTimes = []time.Time{
 	time.Date(2023, 1, 13, 12, 0, 0, 0, BostonTime),
 	time.Date(2024, 1, 12, 12, 0, 0, 0, BostonTime),
 	time.Date(2025, 1, 17, 13, 0, 0, 0, BostonTime),
-	time.Date(2026, 1, 17, 13, 0, 0, 0, BostonTime), // TODO
+	time.Date(2026, 1, 16, 13, 0, 0, 0, BostonTime),
 }
 
 // Returns the start time of the next Hunt, or nil if Hunt is ongoing. ok
