@@ -103,6 +103,15 @@ button {
   cursor: pointer;
 }
 
+form {
+  --ui-primary: oklch(72% 0.19 var(--form-hue));
+  font-size: 15px;
+}
+
+form :focus-visible {
+  outline-color: var(--ui-primary) !important;
+}
+
 /* Common Classes */
 .flex-spacer {
   flex-grow: 1;

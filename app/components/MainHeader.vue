@@ -120,7 +120,7 @@ p.dot {
   gap: 0.5rem;
 }
 
-:deep(.toggle >div) {
+:deep(.toggle>div) {
   margin: 0;
   display: flex;
   align-items: center;
@@ -129,7 +129,6 @@ p.dot {
 .toggle :deep(button) {
   position: unset;
   height: 1rem;
-  width: calc(2rem + 2px);
 }
 
 .toggle :deep(button span) {
@@ -170,25 +169,22 @@ p.dot:before {
   cursor: default;
 }
 
+.toggle {
+  --ui-primary: v-bind(color);
+}
+
 .toggle :deep(label) {
   font-size: 0.8125rem;
   line-height: 1.65em;
   font-weight: 450;
   color: v-bind(color);
+
+  cursor: pointer;
   user-select: none;
 }
 
 .toggle :deep(button) {
   transform: rotate(180deg);
-}
-
-.toggle :deep(.focus-visible\:ring-2:focus-visible) {
-  box-shadow: none;
-  outline-color: white !important;
-}
-
-.toggle :deep(button.bg-primary-500) {
-  background-color: oklch(72% 0.19 245deg);
 }
 
 /* Animation */
