@@ -94,71 +94,13 @@ body.fullscreen #__nuxt>div {
   overscroll-behavior-x: none;
 }
 
-button,
-fieldset,
-hr,
-svg {
-  margin: 0;
-  padding: 0;
+hr {
   border: none;
-  background: none;
-}
-
-a,
-button {
-  border-radius: var(--default-border-radius);
 }
 
 button {
   user-select: none;
   cursor: pointer;
-}
-
-a:focus-visible,
-button:focus-visible {
-  outline: 2px solid;
-  /* Undo Nuxt UI changes */
-  outline-color: black !important;
-}
-
-/* Dynamic colors in Nuxt UI forms */
-form .focus\:ring-primary-500:focus,
-form .focus-visible\:ring-primary-500:focus-visible,
-form .focus-visible\:outline-primary-500:focus-visible,
-form .emoji-mart button {
-  --tw-ring-color: oklch(72% 0.19 var(--form-hue));
-}
-
-form .text-primary-500 {
-  color: oklch(72% 0.19 var(--form-hue));
-}
-
-form .bg-primary-500 {
-  background-color: oklch(72% 0.19 var(--form-hue));
-}
-
-form .hover\:bg-primary-600:hover {
-  background-color: oklch(66% 0.19 var(--form-hue));
-}
-
-form .disabled\:bg-primary-500:disabled {
-  background-color: oklch(72% 0.19 var(--form-hue));
-  opacity: 50%;
-}
-
-form a:focus-visible,
-form button:focus-visible {
-  outline-offset: 2px;
-  outline-color: var(--tw-ring-color) !important;
-}
-
-form label.modified,
-form .modified label {
-  color: oklch(60% 0.18 var(--form-hue)) !important;
-}
-
-form div[aria-haspopup="listbox"] button {
-  outline: none !important
 }
 
 /* Common Classes */

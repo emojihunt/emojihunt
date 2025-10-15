@@ -199,7 +199,7 @@ h1 {
 form {
   margin: 0 0.5rem;
   display: grid;
-  grid-template-columns: 7rem 17rem;
+  grid-template-columns: 7rem 20rem;
   gap: 0.5rem;
 }
 
@@ -218,13 +218,16 @@ fieldset {
   grid-column: 2;
   display: flex;
   gap: 1rem;
+
+  padding-left: 0;
+  padding-right: 0;
 }
 
 fieldset>:first-child {
   align-self: center;
 }
 
-button[type="submit"] {
+:deep(button[type="submit"]) {
   width: 4.75rem;
   display: flex;
   justify-content: center;

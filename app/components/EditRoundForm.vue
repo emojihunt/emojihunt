@@ -137,13 +137,16 @@ fieldset {
   grid-column: 2;
   display: flex;
   gap: 1rem;
+
+  padding-left: 0;
+  padding-right: 0;
 }
 
 fieldset>:first-child {
   align-self: center;
 }
 
-button[type="submit"] {
+:deep(button[type="submit"]) {
   width: 4.75rem;
   display: flex;
   justify-content: center;

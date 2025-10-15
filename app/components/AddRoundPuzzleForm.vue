@@ -111,12 +111,11 @@ const hue = computed(() => kind === "round" ? data.hue
         trailing-icon="i-heroicons-chevron-up" />
       <UInput v-model="data.name" placeholder="Puzzle Name" />
       <UInput v-model="data.url" placeholder="Puzzle URL" class="url" @blur="urlBlur" />
-      <ETooltip text="Create spreadsheet and Discord channel" side="top"
-        strategy="absolute" class="checkbox">
+      <ETooltip text="Create spreadsheet and Discord channel" side="top" class="checkbox">
         <UCheckbox v-model="data.create" />
       </ETooltip>
     </template>
-    <UButton type="submit" :disabled="saving">
+    <UButton type="submit" :disabled="saving" class="justify-center">
       <Spinner v-if="saving" />
       <span v-else>Add</span>
     </UButton>
@@ -158,7 +157,7 @@ form.round div:first-child :deep(input) {
   grid-column: 1 / 4;
 }
 
-.round button {
+.round :deep(button[type="submit"]) {
   grid-row: 1;
   grid-column: 3;
 }
