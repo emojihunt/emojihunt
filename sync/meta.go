@@ -22,7 +22,7 @@ type Meta struct {
 
 func (c *Client) ComputeMeta(discovery state.DiscoveryConfig) Meta {
 	var nextHunt string
-	if raw, ok := huntyet.NextHunt(time.Now()); ok {
+	if raw, _ := huntyet.NextHunt(time.Now()); raw != nil {
 		nextHunt = raw.Format(time.RFC3339)
 	}
 	return Meta{

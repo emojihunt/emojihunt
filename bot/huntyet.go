@@ -25,8 +25,8 @@ func (b *HuntYetBot) Register() (*discordgo.ApplicationCommand, bool) {
 
 func (b *HuntYetBot) Handle(ctx context.Context, input *discord.CommandInput) (string, error) {
 	var now = time.Now()
-	next, ok := huntyet.NextHunt(now)
-	if !ok {
+	next, current := huntyet.NextHunt(now)
+	if !current {
 		return "Gosh, I'm not sure! @tech can update the bot.", nil
 	} else if next == nil {
 		return "Yes! HUNT HUNT HUNT!", nil

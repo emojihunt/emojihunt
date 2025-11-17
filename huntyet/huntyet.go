@@ -17,11 +17,13 @@ var startTimes = []time.Time{
 	time.Date(2024, 1, 12, 12, 0, 0, 0, BostonTime),
 	time.Date(2025, 1, 17, 13, 0, 0, 0, BostonTime),
 	time.Date(2026, 1, 16, 13, 0, 0, 0, BostonTime),
+	time.Date(2027, 1, 15, 13, 0, 0, 0, BostonTime),
+	time.Date(2028, 1, 14, 13, 0, 0, 0, BostonTime),
 }
 
-// Returns the start time of the next Hunt, or nil if Hunt is ongoing. ok
+// Returns the start time of the next Hunt, or nil if Hunt is ongoing. current
 // indicates whether the list of Hunts is current.
-func NextHunt(at time.Time) (next *time.Time, ok bool) {
+func NextHunt(at time.Time) (next *time.Time, current bool) {
 	for _, start := range startTimes {
 		end := start.Add(duration)
 		if at.Before(start) {
@@ -35,7 +37,7 @@ func NextHunt(at time.Time) (next *time.Time, ok bool) {
 }
 
 func MustLoadLocation(name string) *time.Location {
-	location, err := time.LoadLocation("America/New_York")
+	location, err := time.LoadLocation(name)
 	if err != nil {
 		panic("could not load time zone: " + name)
 	}
