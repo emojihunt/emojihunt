@@ -124,4 +124,8 @@ p:hover {
   color: #313338;
   text-align: right;
 }
+
+.links>div {
+  display: inline-block;
+}
 </style>

@@ -89,60 +89,63 @@ onMounted(() => {
 </script>
 
 <template>
-  <main>
-    <NuxtLink :to="applink" class="applink" v-if="!!applink">
-      Open in Google Sheets &nbsp;
-    </NuxtLink>
-    <iframe :src="spreadsheetURL"></iframe>
-  </main>
-  <div class="overlay">
-    <nav @keydown="(e) => e.key === 'Escape' && (open = undefined)">
-      <section>
-        <ETooltip :text="`Status: ${StatusLabel(puzzle.status)}`" side="top"
-          :side-offset="4">
-          <button @click="() => toggle('status')">
-            {{ StatusEmoji(puzzle.status) || " ‼️" }} </button>
-        </ETooltip>
-        <ETooltip :text="voiceRoom ? `Voice Room: ${voiceRoom.name}` : puzzle.location ?
-          `In-person: ${puzzle.location}` : 'No Voice Room'" side="top" :side-offset="4">
-          <button :class="!voiceRoom && !puzzle.location && 'unset'"
-            @click="() => toggle('voice')">
-            {{ voiceRoom?.emoji || (puzzle.location ? "📍" : "📻") }}
-          </button>
-        </ETooltip>
-      </section>
-      <section>
-        <ETooltip text="Puzzle Page" side="top" :side-offset="4">
-          <NuxtLink :to="puzzle.puzzle_url" target="_blank">
-            🌎
+  <div>
+    <main>
+      <NuxtLink :to="applink" class="applink" v-if="!!applink">
+        Open in Google Sheets &nbsp;
+      </NuxtLink>
+      <iframe :src="spreadsheetURL"></iframe>
+    </main>
+    <div class="overlay">
+      <nav @keydown="(e) => e.key === 'Escape' && (open = undefined)">
+        <section>
+          <ETooltip :text="`Status: ${StatusLabel(puzzle.status)}`" side="top"
+            :side-offset="4">
+            <button @click="() => toggle('status')">
+              {{ StatusEmoji(puzzle.status) || " ‼️" }} </button>
+          </ETooltip>
+          <ETooltip :text="voiceRoom ? `Voice Room: ${voiceRoom.name}` : puzzle.location ?
+            `In-person: ${puzzle.location}` : 'No Voice Room'" side="top"
+            :side-offset="4">
+            <button :class="!voiceRoom && !puzzle.location && 'unset'"
+              @click="() => toggle('voice')">
+              {{ voiceRoom?.emoji || (puzzle.location ? "📍" : "📻") }}
+            </button>
+          </ETooltip>
+        </section>
+        <section>
+          <ETooltip text="Puzzle Page" side="top" :side-offset="4">
+            <NuxtLink :to="puzzle.puzzle_url" target="_blank">
+              🌎
+            </NuxtLink>
+          </ETooltip>
+          <ETooltip text="Discord Channel" side="top" :side-offset="4">
+            <NuxtLink :to="discordURL" :target="discordTarget" :ok="!!discordURL"
+              @click="toggleDiscord">
+              👾
+            </NuxtLink>
+          </ETooltip>
+        </section>
+        <section>
+          <ETooltip :text="`Round: ${round?.name}`" side="top" :side-offset="4">
+            <span>{{ round?.emoji }}</span>
+          </ETooltip>
+        </section>
+        <section>
+          <NuxtLink to="/" :external="true" class="logo">
+            <span>🌊🎨🎡</span>
           </NuxtLink>
-        </ETooltip>
-        <ETooltip text="Discord Channel" side="top" :side-offset="4">
-          <NuxtLink :to="discordURL" :target="discordTarget" :ok="!!discordURL"
-            @click="toggleDiscord">
-            👾
-          </NuxtLink>
-        </ETooltip>
-      </section>
-      <section>
-        <ETooltip :text="`Round: ${round?.name}`" side="top" :side-offset="4">
-          {{ round?.emoji }}
-        </ETooltip>
-      </section>
-      <section>
-        <NuxtLink to="/" :external="true" class="logo">
-          <span>🌊🎨🎡</span>
-        </NuxtLink>
-      </section>
-    </nav>
-    <span ref="insets" class="insets">
-      <InsetStatus v-if="open === 'status'" :id="puzzle.id"
-        @close="() => (open = undefined)" />
-      <InsetVoice v-if="open === 'voice'" :id="puzzle.id"
-        @close="() => (open = undefined)" />
-      <InsetDiscord ref="discord" :id="puzzle.id"
-        @open="() => nextTick(() => insets?.scrollTo({ top: 99999 }))" />
-    </span>
+        </section>
+      </nav>
+      <span ref="insets" class="insets">
+        <InsetStatus v-if="open === 'status'" :id="puzzle.id"
+          @close="() => (open = undefined)" />
+        <InsetVoice v-if="open === 'voice'" :id="puzzle.id"
+          @close="() => (open = undefined)" />
+        <InsetDiscord ref="discord" :id="puzzle.id"
+          @open="() => nextTick(() => insets?.scrollTo({ top: 99999 }))" />
+      </span>
+    </div>
   </div>
 </template>
 
@@ -202,6 +205,7 @@ main,
 }
 
 nav {
+  background-color: #f8f8f8;
   border-left: 1px solid #e1e3e1;
 }
 
