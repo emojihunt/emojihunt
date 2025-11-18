@@ -20,7 +20,7 @@ const span = useTemplateRef("span");
 // once and control all further updates manually.
 const rerender = () => {
   if (!span.value) return;
-  span.value.contentEditable = editing.value ? "true" : "false";
+  span.value.contentEditable = editing.value ? "plaintext-only" : "false";
   let updated = props.value.trim();
   if (!editing.value && !updated) {
     updated = props.placeholder;
@@ -129,11 +129,11 @@ span {
 
 span:hover,
 span:focus,
-span[contenteditable="true"] {
+span[contenteditable="plaintext-only"] {
   white-space: unset;
 }
 
-span[contenteditable="true"] {
+span[contenteditable="plaintext-only"] {
   background-color: oklch(97% 0.02 275deg);
 }
 
