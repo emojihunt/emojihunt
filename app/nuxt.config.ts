@@ -51,6 +51,20 @@ export default defineNuxtConfig({
   vite: {
     build: {
       assetsInlineLimit: 8192,
+      chunkSizeWarningLimit: 1024,
+      rollupOptions: {
+        output: {
+          manualChunks(id) {
+            // Emit large JSON files as separate chunks
+            if (id.includes("assets/emojimart.json")) {
+              return "emojimart-json";
+            } else if (id.includes("assets/emoji-metadata.json")) {
+              return "emoji-metadata-json";
+            }
+            return null;
+          },
+        },
+      },
     },
   },
 });
