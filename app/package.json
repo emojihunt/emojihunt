@@ -10,16 +10,16 @@
     "postinstall": "nuxt prepare"
   },
   "devDependencies": {
-    "@iconify-json/heroicons": "^1.2.2",
+    "@iconify-json/heroicons": "^1.2.3",
     "@iconify-json/heroicons-solid": "^1.2.1",
-    "@nuxt/devtools": "^2.6.5",
-    "@nuxt/icon": "^2.0.0",
-    "@nuxt/ui": "^4.0.0",
-    "ably": "^2.6.0",
+    "@nuxt/devtools": "^2.7.0",
+    "@nuxt/icon": "^2.1.0",
+    "@nuxt/ui": "^4.2.0",
+    "ably": "^2.14.0",
     "colorjs.io": "^0.5.2",
-    "emoji-mart-vue-fast": "^15.0.3",
-    "nuxt": "^4.1.0",
-    "vue": "^3.5.13",
-    "vue-router": "^4.5.0"
+    "emoji-mart-vue-fast": "^15.0.5",
+    "nuxt": "^4.2.1",
+    "vue": "^3.5.24",
+    "vue-router": "^4.6.3"
   }
 }
