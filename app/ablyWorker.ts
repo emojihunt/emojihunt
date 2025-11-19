@@ -1,4 +1,4 @@
-import Ably from 'ably';
+import { BaseRealtime, FetchRequest, WebSocketTransport } from 'ably/modular';
 import type { AblyWorkerMessage, ConnectionState } from './utils/types';
 
 // Keep a list of clients as they connect. There's no easy way to implement
@@ -22,7 +22,7 @@ self.addEventListener("message", (e: MessageEvent<string>) => {
   }
 });
 
-const client = new Ably.Realtime({
+const client = new BaseRealtime({
   authCallback: async (_, callback) => {
     console.log("Fetching Ably token...");
     const r = await fetch("/api/ably", { method: "POST" });
@@ -34,6 +34,10 @@ const client = new Ably.Realtime({
       console.log("Received Ably token");
       callback(null, await r.json());
     }
+  },
+  plugins: {
+    FetchRequest,
+    WebSocketTransport,
   },
 });
 
