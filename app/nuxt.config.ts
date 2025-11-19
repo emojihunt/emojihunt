@@ -10,7 +10,6 @@ export default defineNuxtConfig({
   colorMode: {
     preference: "light",
   },
-  compatibilityDate: "2024-12-29",
   css: [
     "assets/normalize.css",
     "assets/main.css",
@@ -30,17 +29,7 @@ export default defineNuxtConfig({
     serverBundle: false,
   },
   nitro: {
-    // https://github.com/nuxt/nuxt/discussions/27746
     preset: "bun",
-    node: true,
-    noExternals: true,
-    inlineDynamicImports: true,
-    serveStatic: "inline",
-    esbuild: {
-      options: {
-        target: "esnext",
-      },
-    }
   },
   modules: [
     "@nuxt/icon",
