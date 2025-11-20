@@ -17,11 +17,6 @@ import (
 )
 
 const (
-	DevRootFolderID = "1KNcBa-GjA9Uz8LJ5OYs_zfWRvFRDVu1d"
-
-	// ID of this year's root folder (e.g. the "emoji hunt/2023" folder)
-	ProdRootFolderID = "1lqp9IXmkcgUs12lzJW0RswlzL4CRQTyT"
-
 	// All puzzle spreadsheets are created as copies of this template
 	TemplateSheetID = "1WIpd27BwvZCQm355t5u1bDD2TefktZXuZRpRNtO6Tjo"
 )
@@ -50,10 +45,17 @@ func NewClient(ctx context.Context, prod bool) *Client {
 		log.Panicf("drive.NewService: %s", err)
 	}
 
-	var rootFolderID = DevRootFolderID
-	if prod {
-		rootFolderID = ProdRootFolderID
+	rootFolderID, ok := os.LookupEnv("GOOGLE_DRIVE_FOLDER")
+	if !ok {
+		log.Panicf("GOOGLE_DRIVE_FOLDER is required")
 	}
+	_, err = withRetry("drive.CheckFolder", func() (*drive.File, error) {
+		return driveService.Files.Get(rootFolderID).Context(ctx).Do()
+	})
+	if err != nil {
+		log.Panicf("no such Google Drive item: %s", rootFolderID)
+	}
+
 	return &Client{
 		drive:        driveService,
 		sheets:       sheetsService,
