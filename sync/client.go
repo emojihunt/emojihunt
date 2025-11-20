@@ -216,6 +216,7 @@ func (c *Client) TriggerPuzzle(ctx context.Context, change state.PuzzleChange) e
 		if errors.As(err, &ic) ||
 			code == discordgo.ErrCodeUnknownChannel ||
 			code == discordgo.ErrCodeInvalidFormBody {
+			log.Printf("sync: discord error %#v on %q", err, puzzle.Name)
 			c.CheckDiscordPuzzle(ctx, puzzle)
 			return err
 		} else if err != nil {

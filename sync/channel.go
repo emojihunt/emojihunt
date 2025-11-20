@@ -153,6 +153,7 @@ func (c *Client) CheckDiscordPuzzle(ctx context.Context, puzzle state.Puzzle) {
 	var channel = puzzle.DiscordChannel
 	ch, ok := c.discord.GetChannel(channel)
 	if !ok || ch.Type != discordgo.ChannelTypeGuildText {
+		log.Printf("sync: found invalid puzzle channel %#v, %v", ch, ok)
 		go c.state.UpdatePuzzle(ctx, puzzle.ID,
 			func(puzzle *state.RawPuzzle) error {
 				if puzzle.DiscordChannel == channel {
