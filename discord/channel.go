@@ -5,6 +5,7 @@ import (
 	"log"
 
 	"github.com/bwmarrin/discordgo"
+	"github.com/emojihunt/emojihunt/state"
 	"golang.org/x/xerrors"
 )
 
@@ -34,12 +35,21 @@ func (c *Client) handleChannelUpdate(ctx context.Context, r *discordgo.ChannelUp
 
 func (c *Client) handleChannelDelete(ctx context.Context, r *discordgo.ChannelDelete) error {
 	c.mutex.Lock()
-	defer c.mutex.Unlock()
 	delete(c.channelCache, r.ID)
 	log.Printf("discord: channel deleted: %q", r.Channel.Name)
 	if r.Type == discordgo.ChannelTypeGuildVoice {
 		c.state.DiscoveryChange <- true
 	}
+	c.mutex.Unlock()
+	c.state.UpdatePuzzleByDiscordChannel(ctx, r.ID,
+		func(puzzle *state.RawPuzzle) error {
+			if puzzle.DiscordChannel == r.ID {
+				log.Printf("discord: deleting channel from puzzle %q", r.Channel.Name)
+				puzzle.DiscordChannel = ""
+			}
+			return nil
+		},
+	)
 	return nil
 }
 
