@@ -10,9 +10,9 @@ import (
 )
 
 // CreateSpreadsheet creates a new Google Sheets spreadsheet and returns its ID.
-func (c *Client) CreateSpreadsheet(ctx context.Context, puzzle state.RawPuzzle) (string, error) {
+func (c *Client) CreateSpreadsheet(ctx context.Context, puzzle state.RawPuzzle, round state.Round) (string, error) {
 	log.Printf("sync: creating spreadsheet for %q", puzzle.Name)
-	return c.drive.CreateSheet(ctx, puzzle.Name)
+	return c.drive.CreateSheet(ctx, puzzle.Name, round.DriveFolder)
 }
 
 // CreateDriveFolder creates a new Google Drive folder and returns its ID.

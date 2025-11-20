@@ -21,6 +21,9 @@ const (
 
 	// ID of this year's root folder (e.g. the "emoji hunt/2023" folder)
 	ProdRootFolderID = "1lqp9IXmkcgUs12lzJW0RswlzL4CRQTyT"
+
+	// All puzzle spreadsheets are created as copies of this template
+	TemplateSheetID = "1WIpd27BwvZCQm355t5u1bDD2TefktZXuZRpRNtO6Tjo"
 )
 
 type Client struct {
@@ -58,20 +61,20 @@ func NewClient(ctx context.Context, prod bool) *Client {
 	}
 }
 
-func (c *Client) CreateSheet(ctx context.Context, name string) (id string, err error) {
-	sheet, err := withRetry("sheets.Create", func() (*sheets.Spreadsheet, error) {
-		return c.sheets.Spreadsheets.Create(&sheets.Spreadsheet{
-			Sheets: []*sheets.Sheet{
-				{Properties: &sheets.SheetProperties{
-					Title: name, ForceSendFields: []string{"SheetId"},
-				}},
-			},
+func (c *Client) CreateSheet(ctx context.Context, name string, folder string) (id string, err error) {
+	file, err := withRetry("sheets.Create", func() (*drive.File, error) {
+		return c.drive.Files.Copy(TemplateSheetID, &drive.File{
+			Parents: []string{folder},
 		}).Context(ctx).Do()
 	})
 	if err != nil {
 		return "", err
 	}
-	return sheet.SpreadsheetId, nil
+	err = c.SetSheetTitle(ctx, file.Id, name)
+	if err != nil {
+		return "", err
+	}
+	return file.Id, nil
 }
 
 func (c *Client) SetSheetTitle(ctx context.Context, sheetID, title string) error {

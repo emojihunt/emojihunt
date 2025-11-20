@@ -65,7 +65,7 @@ func (s *Server) CreatePuzzle(c echo.Context) error {
 	}
 	if raw.SpreadsheetID == "+" {
 		raw.SpreadsheetID = ""
-		raw.SpreadsheetID, err = s.sync.CreateSpreadsheet(ctx, raw)
+		raw.SpreadsheetID, err = s.sync.CreateSpreadsheet(ctx, raw, round)
 		if err != nil {
 			return err
 		}

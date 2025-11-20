@@ -196,7 +196,7 @@ func (c *Client) createPuzzle(ctx context.Context, record state.ScrapedPuzzle,
 		Round:     round.ID,
 		PuzzleURL: record.PuzzleURL,
 	}
-	puzzle.SpreadsheetID, err = c.sync.CreateSpreadsheet(ctx, puzzle)
+	puzzle.SpreadsheetID, err = c.sync.CreateSpreadsheet(ctx, puzzle, round)
 	if err != nil {
 		return err
 	}
