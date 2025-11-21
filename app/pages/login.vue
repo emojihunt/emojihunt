@@ -32,9 +32,9 @@ const code = url.searchParams.get("code");
 const ret = url.searchParams.get("return");
 const state = url.searchParams.get("state");
 
-const config = useAppConfig();
+const { clientID } = useAppConfig();
 const params = new URLSearchParams();
-params.set("client_id", config.clientID);
+params.set("client_id", clientID);
 params.set("redirect_uri", useRedirectURI());
 params.set("response_type", "code");
 params.set("scope", "identify");
@@ -53,7 +53,7 @@ if (url.searchParams.has("error")) {
 } else if (!code) {
   // not started
 } else {
-  const { data, error } = await useFetch("/api/authenticate", {
+  const { data, error } = await useAPI("/authenticate", {
     method: "POST",
     headers: {
       "Content-Type": "application/x-www-form-urlencoded",

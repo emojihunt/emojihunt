@@ -101,7 +101,7 @@ const hue = computed(() => kind === "round" ? data.hue
 <template>
   <form ref="form" :class="kind" @submit="submit">
     <template v-if="kind === 'round'">
-      <UInput v-model="data.emoji" placeholder="🫥" readonly="readonly" />
+      <UInput v-model="data.emoji" placeholder="🫥" readonly />
       <UInput v-model="data.name" placeholder="Round Name" />
       <USlider v-model="data.hue" :min=0 :max="359" class="hue" />
     </template>

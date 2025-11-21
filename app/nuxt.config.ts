@@ -2,6 +2,7 @@
 const prod = import.meta.env.NODE_ENV === "production";
 export default defineNuxtConfig({
   appConfig: {
+    apiBase: prod ? "https://api.emojihunt.org" : "http://localhost:8080",
     clientID: prod ? "794725034152689664" : "1058094051586490368",
   },
   build: {
@@ -10,6 +11,7 @@ export default defineNuxtConfig({
   colorMode: {
     preference: "light",
   },
+  compatibilityDate: "2025-07-15",
   css: [
     "assets/normalize.css",
     "assets/main.css",
@@ -38,14 +40,11 @@ export default defineNuxtConfig({
   routeRules: {
     "/**": {
       headers: {
-        "X-Content-Type-Options": "nosniff",
-        "Referrer-Policy": "origin",
         "Cross-Origin-Opener-Policy": "same-origin",
         "Cross-Origin-Resource-Policy": "same-site",
+        "Referrer-Policy": "origin",
+        "X-Content-Type-Options": "nosniff",
       },
-    },
-    "/api/**": {
-      proxy: prod ? "https://huntbot.fly.dev/**" : "http://localhost:8080/**",
     },
   },
   vite: {

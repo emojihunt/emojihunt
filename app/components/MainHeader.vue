@@ -7,7 +7,7 @@ const discordURL = computed(() => settings.discordGuild && settings.hangingOut ?
 
 const logout = async (e: MouseEvent) => {
   e.preventDefault();
-  const res = await fetch("/api/logout", { method: "POST" });
+  const res = await formSubmit("/logout", {});
   if (res.status === 200) {
     navigateTo("/", { external: true }); // full-page reload
   } else {

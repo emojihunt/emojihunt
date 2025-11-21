@@ -9,3 +9,19 @@ export const highlightContents = (element: HTMLElement): void => {
 };
 
 export const timelineFromSequence = (id: number): string => `--round-${id}`;
+
+export const formSubmit = async (
+  url: string,
+  data: object,
+  method: "POST" | "DELETE" = "POST",
+): Promise<Response> => {
+  const { apiBase } = useAppConfig();
+  return await fetch(apiBase + url, {
+    method: method,
+    credentials: "include",
+    headers: {
+      "Content-Type": "application/x-www-form-urlencoded",
+    },
+    body: (new URLSearchParams(data as any)).toString(),
+  });
+};

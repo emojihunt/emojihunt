@@ -15,7 +15,11 @@ const (
 	SessionDuration = 4 * 24 * time.Hour
 	OAuth2TokenURL  = "https://discord.com/api/v10/oauth2/token"
 
-	ProdRedirectURI = "https://www.emojihunt.org/login"
+	ProdCookieDomain = "emojihunt.org"
+	DevCookieDomain  = "localhost"
+
+	ProdAppOrigin = "https://www.emojihunt.org"
+	DevAppOrigin  = "http://localhost:3000"
 
 	CookieName = "session"
 )
@@ -75,6 +79,7 @@ func (s *Server) Authenticate(c echo.Context) error {
 		Value:    encoded,
 		Expires:  time.Now().Add(SessionDuration - 10*time.Minute),
 		Path:     "/",
+		Domain:   s.cookieDomain,
 		Secure:   true,
 		HttpOnly: true,
 		SameSite: http.SameSiteLaxMode,
@@ -145,6 +150,7 @@ func (s *Server) Logout(c echo.Context) error {
 		Value:    "",
 		Expires:  time.Unix(0, 0),
 		Path:     "/",
+		Domain:   s.cookieDomain,
 		Secure:   true,
 		HttpOnly: true,
 		SameSite: http.SameSiteLaxMode,

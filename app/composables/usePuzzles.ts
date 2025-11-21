@@ -48,25 +48,12 @@ const key = Symbol() as InjectionKey<State>;
 
 const updateRequest = async <T>(endpoint: string, params: any): Promise<[T, number]> => {
   let args: RequestInit;
+  let response: Response;
   if (params.delete === true) {
-    args = {
-      method: "DELETE",
-      // Workaround for https://github.com/nuxt/nuxt/issues/23422
-      headers: {
-        "Content-Type": "application/x-www-form-urlencoded",
-      },
-      body: "-",
-    };
+    response = await formSubmit(endpoint, {}, "DELETE");
   } else {
-    args = {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/x-www-form-urlencoded",
-      },
-      body: (new URLSearchParams(params as any)).toString(),
-    };
+    response = await formSubmit(endpoint, params);
   }
-  const response = await fetch(`/api${endpoint}`, args);
   if (response.status === 401) {
     window.location.reload();
   } else if (response.status !== 200) {
@@ -307,7 +294,7 @@ export async function initializePuzzles(): Promise<State> {
   };
   provide(key, state); // must run before first `await`
 
-  const { data, error } = await useFetch<HomeResponse>("/api/home");
+  const { data, error } = await useAPI<HomeResponse>("/home");
   if (!data.value) {
     throw error.value;
   }

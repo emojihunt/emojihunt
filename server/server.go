@@ -31,9 +31,10 @@ type Server struct {
 	sync    *sync.Client
 
 	// authentication and OAuth2 settings
-	cookie      *securecookie.SecureCookie
-	credentials *url.Userinfo
-	redirectURI string
+	cookie       *securecookie.SecureCookie
+	credentials  *url.Userinfo
+	cookieDomain string
+	redirectURI  string
 }
 
 type IDParams struct {
@@ -64,15 +65,26 @@ func Start(ctx context.Context, prod bool, ably *ably.Realtime,
 		s.credentials = url.UserPassword(parts[0], parts[1])
 	}
 
+	var appOrigin string
 	if prod {
-		s.redirectURI = ProdRedirectURI
+		appOrigin = ProdAppOrigin
+		s.cookieDomain = ProdCookieDomain
+		s.redirectURI = ProdAppOrigin + "/login"
+	} else {
+		appOrigin = DevAppOrigin
+		s.cookieDomain = DevCookieDomain
+		// blank redirectURI disables strict validation
 	}
-	// blank value disables strict validation
 
 	e.HideBanner = true
 	e.Use(s.SentryMiddleware)
 	e.Use(middleware.RecoverWithConfig(middleware.RecoverConfig{
 		DisablePrintStack: true,
+	}))
+	e.Use(middleware.CORSWithConfig(middleware.CORSConfig{
+		AllowCredentials: true,
+		AllowOrigins:     []string{appOrigin},
+		ExposeHeaders:    []string{"X-Change-ID"},
 	}))
 	e.HTTPErrorHandler = s.ErrorHandler
 

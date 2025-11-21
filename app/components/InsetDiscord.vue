@@ -39,13 +39,7 @@ const escape = (e: KeyboardEvent) => {
 const send = (e: KeyboardEvent) => {
   if (e.key === "Enter") {
     if (!draft.value) return;
-    fetch(`/api/puzzles/${id}/messages`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/x-www-form-urlencoded",
-      },
-      body: (new URLSearchParams({ msg: draft.value })).toString(),
-    });
+    formSubmit(`/puzzles/${id}/messages`, { msg: draft.value });
     draft.value = "";
   }
 };

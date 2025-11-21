@@ -25,7 +25,13 @@ self.addEventListener("message", (e: MessageEvent<string>) => {
 const client = new BaseRealtime({
   authCallback: async (_, callback) => {
     console.log("Fetching Ably token...");
-    const r = await fetch("/api/ably", { method: "POST" });
+    // We can't use useAppConfig() here :(
+    const apiBase = origin.includes("localhost") ?
+      "http://localhost:8080" : "https://api.emojihunt.org";
+    const r = await fetch(`${apiBase}/ably`, {
+      method: "POST",
+      credentials: "include",
+    });
     if (r.status !== 200) {
       const msg = `HTTP ${r.status}: ${await r.text()}`;
       console.error(msg);

@@ -3,7 +3,7 @@ const emit = defineEmits<{ (event: "close"): void; }>();
 const toast = useToast();
 
 const data: DiscoveryConfig = await(async () => {
-  const { data, error } = await useFetch<DiscoveryConfig>("/api/discovery");
+  const { data, error } = await useAPI<DiscoveryConfig>("/discovery");
   if (data.value) return data.value;
   else throw error.value;
 })();
@@ -15,13 +15,7 @@ const submit = async (e: Event) => {
   e.preventDefault();
   saving.value = true;
   if (previous) toast.remove(previous);
-  const response = await fetch("/api/discovery", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/x-www-form-urlencoded",
-    },
-    body: (new URLSearchParams(data as any)).toString(),
-  });
+  const response = await formSubmit("/discovery", data);
   if (response.status === 401) {
     window.location.reload();
   } else if (response.status === 200) {
@@ -42,13 +36,7 @@ const test = async (e: Event) => {
   e.preventDefault();
   testing.value = true;
   if (previous) toast.remove(previous);
-  const response = await fetch("/api/discovery/test", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/x-www-form-urlencoded",
-    },
-    body: (new URLSearchParams(data as any)).toString(),
-  });
+  const response = await formSubmit("/discovery/test", data);
   if (response.status === 401) {
     window.location.reload();
   } else if (response.status === 200) {
