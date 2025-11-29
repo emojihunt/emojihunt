@@ -19,6 +19,7 @@ import (
 	"github.com/emojihunt/emojihunt/server"
 	"github.com/emojihunt/emojihunt/state"
 	"github.com/emojihunt/emojihunt/sync"
+	"github.com/emojihunt/emojihunt/util"
 	"github.com/getsentry/sentry-go"
 )
 
@@ -28,28 +29,7 @@ func init() { flag.Parse() }
 
 func main() {
 	// Initialize Sentry
-	dsn, ok := os.LookupEnv("SENTRY_DSN")
-	if !ok {
-		panic("SENTRY_DSN is required")
-	}
-	sentry.Init(sentry.ClientOptions{
-		Dsn: dsn,
-		BeforeSend: func(event *sentry.Event, hint *sentry.EventHint) *sentry.Event {
-			if hint.OriginalException != nil {
-				log.Printf("error: %s", hint.OriginalException)
-			} else {
-				log.Printf("error: %s", hint.RecoveredException)
-			}
-			for _, exception := range event.Exception {
-				if tr := exception.Stacktrace; tr != nil {
-					for i := len(tr.Frames) - 1; i >= 0; i-- {
-						log.Printf("\t%s:%d", tr.Frames[i].AbsPath, tr.Frames[i].Lineno)
-					}
-				}
-			}
-			return event
-		},
-	})
+	util.SentryInit()
 	defer sentry.Flush(time.Second * 5)
 	defer func() {
 		if err := recover(); err != nil {

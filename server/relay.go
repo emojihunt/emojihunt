@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/labstack/echo/v4"
+	"golang.org/x/xerrors"
 )
 
 type MessageParams struct {
@@ -20,7 +21,10 @@ func (s *Server) SendMessage(c echo.Context) error {
 	if err != nil {
 		return err
 	}
-	user, _ := s.GetUserID(c)
+	user, ok := s.cookie.GetUserID(c)
+	if !ok {
+		return xerrors.Errorf("unauthenticated user")
+	}
 	s.discord.RelayMessage(puzzle.DiscordChannel, user, params.Message)
 	return c.JSON(http.StatusOK, "")
 }

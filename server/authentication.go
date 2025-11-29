@@ -7,32 +7,12 @@ import (
 	"net/url"
 	"time"
 
+	"github.com/emojihunt/emojihunt/util"
 	"github.com/labstack/echo/v4"
 	"golang.org/x/xerrors"
 )
 
-const (
-	SessionDuration = 4 * 24 * time.Hour
-	OAuth2TokenURL  = "https://discord.com/api/v10/oauth2/token"
-
-	ProdCookieDomain = "emojihunt.org"
-	DevCookieDomain  = "localhost"
-
-	ProdAppOrigin = "https://www.emojihunt.org"
-	DevAppOrigin  = "http://localhost:3000"
-
-	CookieName = "session"
-)
-
-func (s *Server) AuthenticationMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
-	return func(c echo.Context) error {
-		_, ok := s.GetUserID(c)
-		if !ok {
-			return echo.NewHTTPError(http.StatusUnauthorized, "missing or invalid session cookie")
-		}
-		return next(c)
-	}
-}
+const OAuth2TokenURL = "https://discord.com/api/v10/oauth2/token"
 
 type AuthenticateParams struct {
 	Code        string `form:"code"`
@@ -70,14 +50,14 @@ func (s *Server) Authenticate(c echo.Context) error {
 		})
 	}
 
-	encoded, err := s.cookie.Encode(CookieName, session.User.ID)
+	encoded, err := s.cookie.Encode(util.SessionCookieName, session.User.ID)
 	if err != nil {
 		return err
 	}
 	c.SetCookie(&http.Cookie{
-		Name:     CookieName,
+		Name:     util.SessionCookieName,
 		Value:    encoded,
-		Expires:  time.Now().Add(SessionDuration - 10*time.Minute),
+		Expires:  time.Now().Add(util.SessionDuration - 10*time.Minute),
 		Path:     "/",
 		Domain:   s.cookieDomain,
 		Secure:   true,
@@ -129,24 +109,9 @@ func (s *Server) oauth2TokenExchange(code, devRedirectURI string) (string, error
 	}
 }
 
-func (s *Server) GetUserID(c echo.Context) (string, bool) {
-	encoded, err := c.Cookie(CookieName)
-	if err != nil {
-		return "", false
-	}
-
-	var userID string
-	err = s.cookie.Decode(CookieName, encoded.Value, &userID)
-	if err != nil {
-		log.Printf("invalid session cookie: %v", err)
-		return "", false
-	}
-	return userID, true
-}
-
 func (s *Server) Logout(c echo.Context) error {
 	c.SetCookie(&http.Cookie{
-		Name:     CookieName,
+		Name:     util.SessionCookieName,
 		Value:    "",
 		Expires:  time.Unix(0, 0),
 		Path:     "/",
