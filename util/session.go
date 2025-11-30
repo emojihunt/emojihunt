@@ -1,7 +1,10 @@
 package util
 
 import (
+	"crypto"
+	"crypto/hmac"
 	"encoding/hex"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -78,4 +81,17 @@ func (s *SessionCookie) AuthenticationMiddleware(next echo.HandlerFunc) echo.Han
 		}
 		return next(c)
 	}
+}
+
+func HuntbotToken() string {
+	if raw, ok := os.LookupEnv("SERVER_SECRET"); !ok {
+		log.Panicf("SERVER_SECRET is required")
+	} else if key, err := hex.DecodeString(raw); err != nil || len(key) != 32 {
+		log.Panicf("expected SERVER_SECRET to be 32 bytes in hex: %s", err)
+	} else {
+		h := hmac.New(crypto.SHA256.New, key)
+		h.Write([]byte("huntbot/live"))
+		return fmt.Sprintf("Bearer %x", h.Sum(nil))
+	}
+	panic("unreachable")
 }

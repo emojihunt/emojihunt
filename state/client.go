@@ -20,6 +20,7 @@ type Client struct {
 	DiscoveryChange chan bool
 	PuzzleChange    chan PuzzleChange
 	RoundChange     chan RoundChange
+	LiveMessage     chan LiveMessage
 
 	queries  *db.Queries
 	mutex    sync.Mutex // used to serialize database writes

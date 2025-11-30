@@ -46,6 +46,11 @@ type RoundChange struct {
 	ChangeID int64
 }
 
+type LiveMessage struct {
+	Event string `json:"event"`
+	Data  any    `json:"data"`
+}
+
 type ScrapedPuzzle struct {
 	Name      string `json:"name"`
 	RoundName string `json:"round_name"`

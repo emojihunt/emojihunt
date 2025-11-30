@@ -16,6 +16,7 @@ import (
 	"github.com/emojihunt/emojihunt/discord"
 	"github.com/emojihunt/emojihunt/discovery"
 	"github.com/emojihunt/emojihunt/drive"
+	live "github.com/emojihunt/emojihunt/live/client"
 	"github.com/emojihunt/emojihunt/server"
 	"github.com/emojihunt/emojihunt/state"
 	"github.com/emojihunt/emojihunt/sync"
@@ -74,6 +75,9 @@ func main() {
 	var discovery = discovery.New(discord, state, sync)
 	go discovery.SyncWorker(ctx)
 	go discovery.Watch(ctx)
+
+	var live = live.New(*prod, state)
+	go live.Watch(ctx)
 
 	log.Printf("starting web server")
 	server.Start(ctx, *prod, ably, discord, state, sync)
