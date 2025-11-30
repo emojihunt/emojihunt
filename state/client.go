@@ -47,6 +47,7 @@ func New(ctx context.Context, path string) *Client {
 		DiscoveryChange: make(chan bool, 8),
 		PuzzleChange:    make(chan PuzzleChange, 32),
 		RoundChange:     make(chan RoundChange, 8),
+		LiveMessage:     make(chan LiveMessage, 32),
 		queries:         db.New(dbx),
 	}
 	epoch, err := client.IncrementSyncEpoch(ctx)

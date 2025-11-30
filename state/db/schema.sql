@@ -36,6 +36,13 @@ CREATE TABLE rounds (
     CONSTRAINT uc_emoji UNIQUE(emoji)
 );
 
+CREATE TABLE changelog (
+    id              INTEGER PRIMARY KEY,
+    kind            TEXT    NOT NULL,
+    puzzle          BLOB,
+    round           BLOB
+);
+
 CREATE TABLE settings (
     key             TEXT    PRIMARY KEY,
     value           BLOB

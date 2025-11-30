@@ -89,20 +89,6 @@ const (
 	ablySettingsEventTitle = "settings"
 )
 
-type AblyKind string
-
-const (
-	AblyKindUpsert AblyKind = "upsert"
-	AblyKindDelete AblyKind = "delete"
-)
-
-type AblySyncMessage struct {
-	ChangeID int64             `json:"change_id"`
-	Kind     AblyKind          `json:"kind"`
-	Puzzle   *state.AblyPuzzle `json:"puzzle,omitempty"`
-	Round    *state.Round      `json:"round,omitempty"`
-}
-
 func (c *Client) TriggerDiscovery(ctx context.Context) error {
 	config, err := c.state.DiscoveryConfig(ctx)
 	if err != nil {
@@ -110,6 +96,10 @@ func (c *Client) TriggerDiscovery(ctx context.Context) error {
 	}
 
 	var message = c.ComputeMeta(config)
+	c.state.LiveMessage <- state.LiveMessage{
+		Event: ablySettingsEventTitle,
+		Data:  message,
+	}
 	if err := c.ably.Publish(ctx, ablySettingsEventTitle, message); err != nil {
 		return xerrors.Errorf("ably.Publish: %w", err)
 	}
@@ -134,17 +124,11 @@ func (c *Client) TriggerDiscovery(ctx context.Context) error {
 
 func (c *Client) TriggerPuzzle(ctx context.Context, change state.PuzzleChange) error {
 	// Publish the update to Ably
-	var message = AblySyncMessage{ChangeID: change.ChangeID}
-	if change.After == nil {
-		var encoded = state.AblyPuzzle{ID: change.Before.ID}
-		message.Kind = AblyKindDelete
-		message.Puzzle = &encoded
-	} else {
-		var encoded = change.After.AblyPuzzle()
-		message.Kind = AblyKindUpsert
-		message.Puzzle = &encoded
+	c.state.LiveMessage <- state.LiveMessage{
+		Event: ablySyncEventTitle,
+		Data:  change.SyncMessage(),
 	}
-	err := c.ably.Publish(ctx, ablySyncEventTitle, message)
+	err := c.ably.Publish(ctx, ablySyncEventTitle, change.SyncMessage())
 	if err != nil {
 		return xerrors.Errorf("ably.Publish: %w", err)
 	}
@@ -252,15 +236,11 @@ func (c *Client) TriggerPuzzle(ctx context.Context, change state.PuzzleChange) e
 
 func (c *Client) TriggerRound(ctx context.Context, change state.RoundChange) error {
 	// Publish the update to Ably
-	var message = AblySyncMessage{ChangeID: change.ChangeID}
-	if change.After == nil {
-		message.Kind = AblyKindDelete
-		message.Round = &state.Round{ID: change.Before.ID}
-	} else {
-		message.Kind = AblyKindUpsert
-		message.Round = change.After
+	c.state.LiveMessage <- state.LiveMessage{
+		Event: ablySyncEventTitle,
+		Data:  change.SyncMessage(),
 	}
-	err := c.ably.Publish(ctx, ablySyncEventTitle, message)
+	err := c.ably.Publish(ctx, ablySyncEventTitle, change.SyncMessage())
 	if err != nil {
 		return xerrors.Errorf("ably.Publish: %w", err)
 	}

@@ -105,6 +105,24 @@ DELETE FROM rounds
 WHERE id = ?;
 
 
+-- name: ListChangelog :many
+SELECT * FROM changelog
+ORDER BY id;
+
+-- name: CreateChangelog :exec
+INSERT INTO changelog (
+    id, kind, puzzle, round
+) VALUES (?, ?, ?, ?);
+
+-- name: PruneChangelog :exec
+DELETE FROM changelog
+WHERE id NOT IN (
+    SELECT id FROM changelog
+    ORDER BY id DESC
+    LIMIT 250
+);
+
+
 -- name: GetSetting :one
 SELECT value from settings
 WHERE key = ?;

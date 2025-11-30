@@ -117,8 +117,12 @@ func (c *Client) watch(ctx context.Context) error {
 	go func() {
 		for {
 			select {
-			case <-c.state.LiveMessage:
-				continue // TODO
+			case msg := <-c.state.LiveMessage:
+				err := ws.WriteJSON(msg)
+				if err != nil {
+					fin <- err
+					return
+				}
 			case <-ctx.Done():
 				fin <- nil
 				return

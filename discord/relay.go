@@ -5,10 +5,14 @@ import (
 	"log"
 
 	"github.com/bwmarrin/discordgo"
+	"github.com/emojihunt/emojihunt/state"
 	"golang.org/x/xerrors"
 )
 
-const relayWebhookName = "Huntbot Relay"
+const (
+	relayWebhookName    = "Huntbot Relay"
+	ablyRelayEventTitle = "m"
+)
 
 // Message Handling
 
@@ -33,7 +37,11 @@ func (c *Client) handleMessageCreate(
 		Timestamp: m.Timestamp.UnixMilli(),
 		Content:   m.Message.Content,
 	}
-	return c.ably.Publish(ctx, "m", message)
+	c.state.LiveMessage <- state.LiveMessage{
+		Event: ablyRelayEventTitle,
+		Data:  message,
+	}
+	return c.ably.Publish(ctx, ablyRelayEventTitle, message)
 }
 
 func (c *Client) handleMessageUpdate(
@@ -46,7 +54,11 @@ func (c *Client) handleMessageUpdate(
 		ID:      m.Message.ID,
 		Content: m.Message.Content,
 	}
-	return c.ably.Publish(ctx, "m", message)
+	c.state.LiveMessage <- state.LiveMessage{
+		Event: ablyRelayEventTitle,
+		Data:  message,
+	}
+	return c.ably.Publish(ctx, ablyRelayEventTitle, message)
 }
 
 func (c *Client) handleMessageDelete(
@@ -58,7 +70,11 @@ func (c *Client) handleMessageDelete(
 	var message = AblyMessage{
 		ID: m.Message.ID,
 	}
-	return c.ably.Publish(ctx, "m", message)
+	c.state.LiveMessage <- state.LiveMessage{
+		Event: ablyRelayEventTitle,
+		Data:  message,
+	}
+	return c.ably.Publish(ctx, ablyRelayEventTitle, message)
 }
 
 func (c *Client) ignoreMessage(m *discordgo.Message) bool {
@@ -69,6 +85,8 @@ func (c *Client) ignoreMessage(m *discordgo.Message) bool {
 		return true // skip messages in threads
 	} else if ch.Type != discordgo.ChannelTypeGuildText {
 		return true // skip messages in voice channels, etc.
+	} else if m.Author != nil && m.Author.ID == c.Application.ID {
+		return true // skip messages from huntbot
 	}
 	return false
 }

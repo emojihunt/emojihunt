@@ -13,3 +13,5 @@ sql:
         overrides:
           - column: "puzzles.status"
             go_type: "github.com/emojihunt/emojihunt/state/status.Status"
+          - column: "changelog.kind"
+            go_type: "github.com/emojihunt/emojihunt/state/status.AblyKind"

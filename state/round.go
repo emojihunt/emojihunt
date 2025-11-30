@@ -68,9 +68,11 @@ func (c *Client) CreateRound(ctx context.Context, round Round) (Round, int64, er
 		return Round{}, 0, xerrors.Errorf("CreateRound: %w", err)
 	}
 	created := Round(result)
-	c.changeID += 1
-	c.RoundChange <- RoundChange{nil, &created, c.changeID}
-	return created, c.changeID, nil
+	change, err := c.LogRoundChange(ctx, nil, &created)
+	if err != nil {
+		return Round{}, 0, err
+	}
+	return created, change.ChangeID, nil
 }
 
 func (c *Client) UpdateRound(ctx context.Context, id int64,
@@ -95,8 +97,12 @@ func (c *Client) UpdateRound(ctx context.Context, id int64,
 	if err != nil {
 		return Round{}, 0, err
 	}
-	c.changeID += 1
-	c.RoundChange <- RoundChange{&before, &after, c.changeID}
+
+	change, err := c.LogRoundChange(ctx, &before, &after)
+	if err != nil {
+		return Round{}, 0, err
+	}
+	// TODO: ...
 	puzzles, err := c.queries.ListPuzzlesByRound(ctx, id)
 	if err != nil {
 		return Round{}, 0, xerrors.Errorf("ListPuzzlesByRound: %w", err)
@@ -106,7 +112,7 @@ func (c *Client) UpdateRound(ctx context.Context, id int64,
 		pre.Round = before
 		c.PuzzleChange <- PuzzleChange{&pre, &post, c.changeID, nil}
 	}
-	return after, c.changeID, nil
+	return after, change.ChangeID, nil
 }
 
 func (c *Client) DeleteRound(ctx context.Context, id int64) (int64, error) {
@@ -120,7 +126,9 @@ func (c *Client) DeleteRound(ctx context.Context, id int64) (int64, error) {
 	if err != nil {
 		return 0, xerrors.Errorf("DeleteRound: %w", err)
 	}
-	c.changeID += 1
-	c.RoundChange <- RoundChange{&round, nil, c.changeID}
-	return c.changeID, nil
+	change, err := c.LogRoundChange(ctx, &round, nil)
+	if err != nil {
+		return 0, err
+	}
+	return change.ChangeID, nil
 }

@@ -40,10 +40,35 @@ type PuzzleChange struct {
 	BotComplete chan error
 }
 
+func (change *PuzzleChange) SyncMessage() AblySyncMessage {
+	var msg = AblySyncMessage{ChangeID: change.ChangeID}
+	if change.After == nil {
+		msg.Kind = status.AblyKindDelete
+		msg.Puzzle = &AblyPuzzle{ID: change.Before.ID}
+	} else {
+		var encoded = change.After.AblyPuzzle()
+		msg.Kind = status.AblyKindUpsert
+		msg.Puzzle = &encoded
+	}
+	return msg
+}
+
 type RoundChange struct {
 	Before   *Round
 	After    *Round
 	ChangeID int64
+}
+
+func (change *RoundChange) SyncMessage() AblySyncMessage {
+	var msg = AblySyncMessage{ChangeID: change.ChangeID}
+	if change.After == nil {
+		msg.Kind = status.AblyKindDelete
+		msg.Round = &Round{ID: change.Before.ID}
+	} else {
+		msg.Kind = status.AblyKindUpsert
+		msg.Round = change.After
+	}
+	return msg
 }
 
 type LiveMessage struct {
@@ -101,6 +126,13 @@ type AblyPuzzle struct {
 	Meta           bool          `json:"meta"`
 	VoiceRoom      string        `json:"voice_room"`
 	Reminder       string        `json:"reminder"`
+}
+
+type AblySyncMessage struct {
+	ChangeID int64           `json:"change_id"`
+	Kind     status.AblyKind `json:"kind"`
+	Puzzle   *AblyPuzzle     `json:"puzzle,omitempty"`
+	Round    *Round          `json:"round,omitempty"`
 }
 
 func (p Puzzle) AblyPuzzle() AblyPuzzle {

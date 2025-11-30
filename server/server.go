@@ -82,6 +82,7 @@ func Start(ctx context.Context, prod bool, ably *ably.Realtime,
 			"sync_queues": map[string]interface{}{
 				"puzzle": len(s.state.PuzzleChange),
 				"round":  len(s.state.RoundChange),
+				"live":   len(s.state.LiveMessage),
 			},
 		})
 	})

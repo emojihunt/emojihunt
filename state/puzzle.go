@@ -124,9 +124,11 @@ func (c *Client) CreatePuzzle(ctx context.Context, puzzle RawPuzzle) (Puzzle, in
 	if err != nil {
 		return Puzzle{}, 0, err
 	}
-	c.changeID += 1
-	c.PuzzleChange <- PuzzleChange{nil, &created, c.changeID, nil}
-	return created, c.changeID, nil
+	change, err := c.LogPuzzleChange(ctx, nil, &created, nil, true)
+	if err != nil {
+		return Puzzle{}, 0, err
+	}
+	return created, change.ChangeID, nil
 }
 
 func (c *Client) UpdatePuzzle(ctx context.Context, id int64,
@@ -153,9 +155,11 @@ func (c *Client) UpdatePuzzle(ctx context.Context, id int64,
 	if err != nil {
 		return Puzzle{}, 0, err
 	}
-	c.changeID += 1
-	c.PuzzleChange <- PuzzleChange{&before, &after, c.changeID, nil}
-	return after, c.changeID, nil
+	change, err := c.LogPuzzleChange(ctx, &before, &after, nil, true)
+	if err != nil {
+		return Puzzle{}, 0, err
+	}
+	return after, change.ChangeID, nil
 }
 
 func (c *Client) UpdatePuzzleByDiscordChannel(ctx context.Context, channel string,
@@ -182,10 +186,7 @@ func (c *Client) UpdatePuzzleByDiscordChannel(ctx context.Context, channel strin
 	if err != nil {
 		return PuzzleChange{}, err
 	}
-	c.changeID += 1
-	var change = PuzzleChange{&before, &after, c.changeID, make(chan error, 1)}
-	c.PuzzleChange <- change
-	return change, nil
+	return c.LogPuzzleChange(ctx, &before, &after, make(chan error, 1), true)
 }
 
 func (c *Client) ClearPuzzleVoiceRoom(ctx context.Context, room string) error {
@@ -203,9 +204,12 @@ func (c *Client) ClearPuzzleVoiceRoom(ctx context.Context, room string) error {
 	for _, row := range rows {
 		var before, after = Puzzle(row), Puzzle(row)
 		after.VoiceRoom = ""
-		c.PuzzleChange <- PuzzleChange{&before, &after, c.changeID, nil}
+		_, err2 := c.LogPuzzleChange(ctx, &before, &after, nil, false)
+		if err2 != nil {
+			err = err2
+		}
 	}
-	return nil
+	return err
 }
 
 func (c *Client) DeletePuzzle(ctx context.Context, id int64) (int64, error) {
@@ -219,7 +223,9 @@ func (c *Client) DeletePuzzle(ctx context.Context, id int64) (int64, error) {
 	if err != nil {
 		return 0, xerrors.Errorf("DeletePuzzle: %w", err)
 	}
-	c.changeID += 1
-	c.PuzzleChange <- PuzzleChange{&puzzle, nil, c.changeID, nil}
-	return c.changeID, nil
+	change, err := c.LogPuzzleChange(ctx, &puzzle, nil, nil, true)
+	if err != nil {
+		return 0, err
+	}
+	return change.ChangeID, nil
 }
