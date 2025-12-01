@@ -124,7 +124,7 @@ func (c *Client) CreatePuzzle(ctx context.Context, puzzle RawPuzzle) (Puzzle, in
 	if err != nil {
 		return Puzzle{}, 0, err
 	}
-	change, err := c.LogPuzzleChange(ctx, nil, &created, nil, true)
+	change, err := c.LogPuzzleChange(ctx, nil, &created, nil)
 	if err != nil {
 		return Puzzle{}, 0, err
 	}
@@ -155,7 +155,7 @@ func (c *Client) UpdatePuzzle(ctx context.Context, id int64,
 	if err != nil {
 		return Puzzle{}, 0, err
 	}
-	change, err := c.LogPuzzleChange(ctx, &before, &after, nil, true)
+	change, err := c.LogPuzzleChange(ctx, &before, &after, nil)
 	if err != nil {
 		return Puzzle{}, 0, err
 	}
@@ -186,7 +186,7 @@ func (c *Client) UpdatePuzzleByDiscordChannel(ctx context.Context, channel strin
 	if err != nil {
 		return PuzzleChange{}, err
 	}
-	return c.LogPuzzleChange(ctx, &before, &after, make(chan error, 1), true)
+	return c.LogPuzzleChange(ctx, &before, &after, make(chan error, 1))
 }
 
 func (c *Client) ClearPuzzleVoiceRoom(ctx context.Context, room string) error {
@@ -200,11 +200,11 @@ func (c *Client) ClearPuzzleVoiceRoom(ctx context.Context, room string) error {
 	if err != nil {
 		return xerrors.Errorf("ClearPuzzleVoiceRoom: %w", err)
 	}
-	c.changeID += 1
 	for _, row := range rows {
 		var before, after = Puzzle(row), Puzzle(row)
 		after.VoiceRoom = ""
-		_, err2 := c.LogPuzzleChange(ctx, &before, &after, nil, false)
+		// Each puzzle gets a different Change ID, that's fine.
+		_, err2 := c.LogPuzzleChange(ctx, &before, &after, nil)
 		if err2 != nil {
 			err = err2
 		}
@@ -223,7 +223,7 @@ func (c *Client) DeletePuzzle(ctx context.Context, id int64) (int64, error) {
 	if err != nil {
 		return 0, xerrors.Errorf("DeletePuzzle: %w", err)
 	}
-	change, err := c.LogPuzzleChange(ctx, &puzzle, nil, nil, true)
+	change, err := c.LogPuzzleChange(ctx, &puzzle, nil, nil)
 	if err != nil {
 		return 0, err
 	}

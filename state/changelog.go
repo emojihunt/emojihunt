@@ -9,13 +9,9 @@ import (
 )
 
 func (c *Client) LogPuzzleChange(ctx context.Context, before *Puzzle,
-	after *Puzzle, complete chan error, increment bool) (PuzzleChange, error) {
+	after *Puzzle, complete chan error) (PuzzleChange, error) {
 
-	if increment {
-		c.changeID += 1
-	} else {
-		// TODO: this path will error due to primary key uniqueness
-	}
+	c.changeID += 1
 
 	var change = PuzzleChange{before, after, c.changeID, complete}
 	var msg = change.SyncMessage()
