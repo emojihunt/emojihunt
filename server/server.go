@@ -12,6 +12,7 @@ import (
 
 	"github.com/ably/ably-go/ably"
 	"github.com/emojihunt/emojihunt/discord"
+	live "github.com/emojihunt/emojihunt/live/client"
 	"github.com/emojihunt/emojihunt/state"
 	"github.com/emojihunt/emojihunt/sync"
 	"github.com/emojihunt/emojihunt/util"
@@ -23,6 +24,7 @@ type Server struct {
 	ably    *ably.Realtime
 	discord *discord.Client
 	echo    *echo.Echo
+	live    *live.Client
 	state   *state.Client
 	sync    *sync.Client
 
@@ -38,7 +40,8 @@ type IDParams struct {
 }
 
 func Start(ctx context.Context, prod bool, ably *ably.Realtime,
-	discord *discord.Client, state *state.Client, sync *sync.Client) {
+	discord *discord.Client, live *live.Client, state *state.Client,
+	sync *sync.Client) {
 	var e = echo.New()
 	var s = &Server{
 		ably:    ably,

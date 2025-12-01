@@ -10,8 +10,7 @@ import (
 )
 
 const (
-	relayWebhookName    = "Huntbot Relay"
-	ablyRelayEventTitle = "m"
+	relayWebhookName = "Huntbot Relay"
 )
 
 // Message Handling
@@ -38,10 +37,10 @@ func (c *Client) handleMessageCreate(
 		Content:   m.Message.Content,
 	}
 	c.state.LiveMessage <- state.LiveMessage{
-		Event: ablyRelayEventTitle,
+		Event: state.EventTypeDiscord,
 		Data:  message,
 	}
-	return c.ably.Publish(ctx, ablyRelayEventTitle, message)
+	return c.ably.Publish(ctx, state.EventTypeDiscord, message)
 }
 
 func (c *Client) handleMessageUpdate(
@@ -55,10 +54,10 @@ func (c *Client) handleMessageUpdate(
 		Content: m.Message.Content,
 	}
 	c.state.LiveMessage <- state.LiveMessage{
-		Event: ablyRelayEventTitle,
+		Event: state.EventTypeDiscord,
 		Data:  message,
 	}
-	return c.ably.Publish(ctx, ablyRelayEventTitle, message)
+	return c.ably.Publish(ctx, state.EventTypeDiscord, message)
 }
 
 func (c *Client) handleMessageDelete(
@@ -71,10 +70,10 @@ func (c *Client) handleMessageDelete(
 		ID: m.Message.ID,
 	}
 	c.state.LiveMessage <- state.LiveMessage{
-		Event: ablyRelayEventTitle,
+		Event: state.EventTypeDiscord,
 		Data:  message,
 	}
-	return c.ably.Publish(ctx, ablyRelayEventTitle, message)
+	return c.ably.Publish(ctx, state.EventTypeDiscord, message)
 }
 
 func (c *Client) ignoreMessage(m *discordgo.Message) bool {

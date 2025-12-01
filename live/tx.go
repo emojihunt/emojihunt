@@ -26,6 +26,6 @@ func (s *Server) Transmit(c echo.Context) error {
 		if err != nil {
 			log.Printf("tx: rerr: %v", err)
 		}
-		log.Printf("tx: %s\n", msg)
+		log.Printf("tx: %s", msg)
 	}
 }

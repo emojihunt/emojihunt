@@ -1,4 +1,4 @@
-package sync
+package client
 
 import (
 	"time"

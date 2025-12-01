@@ -10,6 +10,7 @@ import (
 	"github.com/bwmarrin/discordgo"
 	"github.com/emojihunt/emojihunt/discord"
 	"github.com/emojihunt/emojihunt/drive"
+	live "github.com/emojihunt/emojihunt/live/client"
 	"github.com/emojihunt/emojihunt/state"
 	"github.com/emojihunt/emojihunt/state/status"
 	"github.com/getsentry/sentry-go"
@@ -22,18 +23,24 @@ type Client struct {
 	ably    *ably.RealtimeChannel
 	discord *discord.Client
 	drive   *drive.Client
+	live    *live.Client
 	state   *state.Client
 
 	solvedCategories []string
 	sortLock         sync.Mutex
 }
 
+const ablyChannelName = "huntbot"
+
 func New(ably *ably.Realtime, discord *discord.Client, drive *drive.Client,
-	state *state.Client) *Client {
+	live *live.Client, state *state.Client) *Client {
 	return &Client{
 		RestartDiscovery: make(chan bool),
 		ably:             ably.Channels.Get(ablyChannelName),
-		discord:          discord, drive: drive, state: state,
+		discord:          discord,
+		drive:            drive,
+		live:             live,
+		state:            state,
 	}
 }
 
@@ -83,24 +90,18 @@ func (c *Client) Watch(ctx context.Context) {
 	}
 }
 
-const (
-	ablyChannelName        = "huntbot"
-	ablySyncEventTitle     = "sync"
-	ablySettingsEventTitle = "settings"
-)
-
 func (c *Client) TriggerDiscovery(ctx context.Context) error {
 	config, err := c.state.DiscoveryConfig(ctx)
 	if err != nil {
 		return err
 	}
 
-	var message = c.ComputeMeta(config)
+	var message = c.live.ComputeMeta(config)
 	c.state.LiveMessage <- state.LiveMessage{
-		Event: ablySettingsEventTitle,
+		Event: state.EventTypeSettings,
 		Data:  message,
 	}
-	if err := c.ably.Publish(ctx, ablySettingsEventTitle, message); err != nil {
+	if err := c.ably.Publish(ctx, state.EventTypeSettings, message); err != nil {
 		return xerrors.Errorf("ably.Publish: %w", err)
 	}
 
@@ -126,10 +127,10 @@ func (c *Client) TriggerPuzzle(ctx context.Context, change state.PuzzleChange) e
 	if change.ChangeID > 0 {
 		// Publish the update to Ably
 		c.state.LiveMessage <- state.LiveMessage{
-			Event: ablySyncEventTitle,
+			Event: state.EventTypeSync,
 			Data:  change.SyncMessage(),
 		}
-		err := c.ably.Publish(ctx, ablySyncEventTitle, change.SyncMessage())
+		err := c.ably.Publish(ctx, state.EventTypeSync, change.SyncMessage())
 		if err != nil {
 			return xerrors.Errorf("ably.Publish: %w", err)
 		}
@@ -240,10 +241,10 @@ func (c *Client) TriggerRound(ctx context.Context, change state.RoundChange) err
 	if change.ChangeID > 0 {
 		// Publish the update to Ably
 		c.state.LiveMessage <- state.LiveMessage{
-			Event: ablySyncEventTitle,
+			Event: state.EventTypeSync,
 			Data:  change.SyncMessage(),
 		}
-		err := c.ably.Publish(ctx, ablySyncEventTitle, change.SyncMessage())
+		err := c.ably.Publish(ctx, state.EventTypeSync, change.SyncMessage())
 		if err != nil {
 			return xerrors.Errorf("ably.Publish: %w", err)
 		}

@@ -20,6 +20,6 @@ func (s *Server) ListHome(c echo.Context) error {
 		"change_id": changeID,
 		"puzzles":   rawPuzzles,
 		"rounds":    rounds,
-		"settings":  s.sync.ComputeMeta(discovery),
+		"settings":  s.live.ComputeMeta(discovery),
 	})
 }

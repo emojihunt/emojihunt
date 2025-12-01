@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/emojihunt/emojihunt/discord"
 	"github.com/emojihunt/emojihunt/state"
 	"github.com/emojihunt/emojihunt/util"
 	"github.com/getsentry/sentry-go"
@@ -28,20 +29,22 @@ func LiveURL(prod bool) string {
 }
 
 type Client struct {
-	url    string
-	dialer *websocket.Dialer
-	token  string
-	state  *state.Client
+	url     string
+	dialer  *websocket.Dialer
+	discord *discord.Client
+	token   string
+	state   *state.Client
 }
 
-func New(prod bool, state *state.Client) *Client {
+func New(prod bool, discord *discord.Client, state *state.Client) *Client {
 	return &Client{
 		url: LiveURL(prod),
 		dialer: &websocket.Dialer{
 			HandshakeTimeout: 30 * time.Second,
 		},
-		token: util.HuntbotToken(),
-		state: state,
+		discord: discord,
+		token:   util.HuntbotToken(),
+		state:   state,
 	}
 }
 
@@ -111,7 +114,17 @@ func (c *Client) watch(ctx context.Context) error {
 	}()
 
 	// Resynchronize state
-	// TODO
+	config, err := c.state.DiscoveryConfig(ctx)
+	if err != nil {
+		return err
+	}
+	var message = c.ComputeMeta(config)
+	err = ws.WriteJSON(
+		state.LiveMessage{Event: state.EventTypeSettings, Data: message},
+	)
+	if err != nil {
+		return err
+	}
 
 	// Forward incremental updates
 	go func() {

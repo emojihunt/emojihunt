@@ -73,9 +73,17 @@ func (change *RoundChange) SyncMessage() AblySyncMessage {
 	return msg
 }
 
+type EventType string
+
+const (
+	EventTypeDiscord  = "m"
+	EventTypeSettings = "settings"
+	EventTypeSync     = "sync"
+)
+
 type LiveMessage struct {
-	Event string `json:"event"`
-	Data  any    `json:"data"`
+	Event EventType `json:"event"`
+	Data  any       `json:"data"`
 }
 
 type ScrapedPuzzle struct {

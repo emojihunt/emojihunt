@@ -69,18 +69,18 @@ func main() {
 	var drive = drive.NewClient(ctx, *prod)
 
 	// Start internal engines
-	var sync = sync.New(ably, discord, drive, state)
+	var live = live.New(*prod, discord, state)
+	go live.Watch(ctx)
+
+	var sync = sync.New(ably, discord, drive, live, state)
 	go sync.Watch(ctx)
 
 	var discovery = discovery.New(discord, state, sync)
 	go discovery.SyncWorker(ctx)
 	go discovery.Watch(ctx)
 
-	var live = live.New(*prod, state)
-	go live.Watch(ctx)
-
 	log.Printf("starting web server")
-	server.Start(ctx, *prod, ably, discord, state, sync)
+	server.Start(ctx, *prod, ably, discord, live, state, sync)
 
 	log.Printf("starting discord bots")
 	discord.RegisterBots(

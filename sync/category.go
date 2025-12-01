@@ -14,7 +14,6 @@ const (
 	roundCategoryPrefix  = "Round: "
 	solvedCategoryPrefix = "Solved "
 	solvedCategoryCount  = 4
-	sortGracePeriod      = 60 * time.Second
 )
 
 // CreateDiscordCategory creates a new Discord category and returns its ID.
