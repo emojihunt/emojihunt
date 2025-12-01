@@ -31,8 +31,10 @@ type Puzzle struct {
 }
 
 type PuzzleChange struct {
-	Before   *Puzzle
-	After    *Puzzle
+	Before *Puzzle
+	After  *Puzzle
+
+	// If zero, don't broadcast the change to Ably.
 	ChangeID int64
 
 	// An optional channel to notify on completion. Only set when called from a

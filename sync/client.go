@@ -123,14 +123,16 @@ func (c *Client) TriggerDiscovery(ctx context.Context) error {
 }
 
 func (c *Client) TriggerPuzzle(ctx context.Context, change state.PuzzleChange) error {
-	// Publish the update to Ably
-	c.state.LiveMessage <- state.LiveMessage{
-		Event: ablySyncEventTitle,
-		Data:  change.SyncMessage(),
-	}
-	err := c.ably.Publish(ctx, ablySyncEventTitle, change.SyncMessage())
-	if err != nil {
-		return xerrors.Errorf("ably.Publish: %w", err)
+	if change.ChangeID > 0 {
+		// Publish the update to Ably
+		c.state.LiveMessage <- state.LiveMessage{
+			Event: ablySyncEventTitle,
+			Data:  change.SyncMessage(),
+		}
+		err := c.ably.Publish(ctx, ablySyncEventTitle, change.SyncMessage())
+		if err != nil {
+			return xerrors.Errorf("ably.Publish: %w", err)
+		}
 	}
 
 	if change.After == nil {
@@ -235,14 +237,16 @@ func (c *Client) TriggerPuzzle(ctx context.Context, change state.PuzzleChange) e
 }
 
 func (c *Client) TriggerRound(ctx context.Context, change state.RoundChange) error {
-	// Publish the update to Ably
-	c.state.LiveMessage <- state.LiveMessage{
-		Event: ablySyncEventTitle,
-		Data:  change.SyncMessage(),
-	}
-	err := c.ably.Publish(ctx, ablySyncEventTitle, change.SyncMessage())
-	if err != nil {
-		return xerrors.Errorf("ably.Publish: %w", err)
+	if change.ChangeID > 0 {
+		// Publish the update to Ably
+		c.state.LiveMessage <- state.LiveMessage{
+			Event: ablySyncEventTitle,
+			Data:  change.SyncMessage(),
+		}
+		err := c.ably.Publish(ctx, ablySyncEventTitle, change.SyncMessage())
+		if err != nil {
+			return xerrors.Errorf("ably.Publish: %w", err)
+		}
 	}
 
 	if change.After == nil {

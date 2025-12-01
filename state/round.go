@@ -102,7 +102,6 @@ func (c *Client) UpdateRound(ctx context.Context, id int64,
 	if err != nil {
 		return Round{}, 0, err
 	}
-	// TODO: ...
 	puzzles, err := c.queries.ListPuzzlesByRound(ctx, id)
 	if err != nil {
 		return Round{}, 0, xerrors.Errorf("ListPuzzlesByRound: %w", err)
@@ -110,7 +109,7 @@ func (c *Client) UpdateRound(ctx context.Context, id int64,
 	for _, puzzle := range puzzles {
 		var pre, post = Puzzle(puzzle), Puzzle(puzzle)
 		pre.Round = before
-		c.PuzzleChange <- PuzzleChange{&pre, &post, c.changeID, nil}
+		c.PuzzleChange <- PuzzleChange{&pre, &post, 0, nil}
 	}
 	return after, change.ChangeID, nil
 }
