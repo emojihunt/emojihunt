@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"log"
 	"net/http"
@@ -16,8 +17,10 @@ import (
 	"github.com/emojihunt/emojihunt/state"
 	"github.com/emojihunt/emojihunt/sync"
 	"github.com/emojihunt/emojihunt/util"
+	"github.com/getsentry/sentry-go"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
+	"github.com/mattn/go-sqlite3"
 )
 
 type Server struct {
@@ -47,6 +50,7 @@ func Start(ctx context.Context, prod bool, ably *ably.Realtime,
 		ably:    ably,
 		discord: discord,
 		echo:    e,
+		live:    live,
 		state:   state,
 		sync:    sync,
 
@@ -76,7 +80,7 @@ func Start(ctx context.Context, prod bool, ably *ably.Realtime,
 		AllowOrigins:     []string{util.AppOrigin(prod)},
 		ExposeHeaders:    []string{"X-Change-ID"},
 	}))
-	e.HTTPErrorHandler = util.ErrorHandler(e)
+	e.HTTPErrorHandler = s.ErrorHandler
 
 	e.GET("/", func(c echo.Context) error {
 		return c.JSON(http.StatusOK, map[string]interface{}{
@@ -131,4 +135,25 @@ func Start(ctx context.Context, prod bool, ably *ably.Realtime,
 
 func SetChangeIDHeader(c echo.Context, id int64) {
 	c.Response().Header().Set("X-Change-ID", strconv.FormatInt(id, 10))
+}
+
+func (s *Server) ErrorHandler(err error, c echo.Context) {
+	var ve state.ValidationError
+	var se sqlite3.Error
+	if _, ok := err.(*echo.HTTPError); ok {
+	} else if ok := errors.As(err, &ve); ok {
+		err = echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	} else if ok := errors.As(err, &se); ok && se.Code == sqlite3.ErrConstraint {
+		err = echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	} else if errors.Is(err, sql.ErrNoRows) {
+		err = echo.NewHTTPError(http.StatusNotFound, err.Error())
+	} else {
+		// Report unexpected errors to Sentry
+		hub, ok := c.Get(util.SentryContextKey).(*sentry.Hub)
+		if !ok {
+			hub = sentry.CurrentHub().Clone()
+		}
+		hub.CaptureException(err)
+	}
+	s.echo.DefaultHTTPErrorHandler(err, c)
 }

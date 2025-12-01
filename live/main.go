@@ -11,8 +11,10 @@ import (
 	"os"
 	"os/signal"
 	"strings"
+	"sync"
 	"time"
 
+	"github.com/emojihunt/emojihunt/state"
 	"github.com/emojihunt/emojihunt/util"
 	"github.com/getsentry/sentry-go"
 	"github.com/gorilla/websocket"
@@ -29,6 +31,11 @@ type Server struct {
 	cookie   *util.SessionCookie
 	token    string
 	upgrader *websocket.Upgrader
+
+	mutex    sync.Mutex // hold while accessing everything below
+	counter  int64
+	clients  map[int64]*websocket.Conn
+	settings *state.LiveMessage // cache the last settings message
 }
 
 func main() {
@@ -65,6 +72,7 @@ func main() {
 					r.Header.Get("Origin") == ""
 			},
 		},
+		clients: make(map[int64]*websocket.Conn),
 	}
 
 	s.echo.HideBanner = true
@@ -76,18 +84,23 @@ func main() {
 		AllowCredentials: true,
 		AllowOrigins:     []string{appOrigin},
 	}))
-	s.echo.HTTPErrorHandler = util.ErrorHandler(s.echo)
+	s.echo.HTTPErrorHandler = s.ErrorHandler
 
 	s.echo.GET("/", func(c echo.Context) error {
+		s.mutex.Lock()
+		var n = len(s.clients)
+		s.mutex.Unlock()
 		return c.JSON(http.StatusOK, map[string]interface{}{
-			"instance": os.Getenv("FLY_MACHINE_VERSION"),
-			"status":   "healthy",
+			"instance":   os.Getenv("FLY_MACHINE_VERSION"),
+			"status":     "healthy",
+			"ws_clients": n,
 		})
 	})
 	s.echo.GET("/robots.txt", func(c echo.Context) error {
 		return c.String(http.StatusOK, "User-agent: *\nDisallow: /\n")
 	})
 	s.echo.GET("/tx", s.Transmit, s.HuntbotMiddleware)
+	s.echo.GET("/rx", s.Receive, s.cookie.AuthenticationMiddleware)
 
 	go func() {
 		err := s.echo.Start(":9090")
@@ -115,4 +128,21 @@ func (s *Server) HuntbotMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 			return echo.NewHTTPError(http.StatusUnauthorized, "missing or invalid bearer token")
 		}
 	}
+}
+
+func (s *Server) ErrorHandler(err error, c echo.Context) {
+	// Ignore ordinary websocket closure
+	if _, ok := err.(*websocket.CloseError); ok {
+		return
+	}
+
+	// Report unexpected errors to Sentry
+	hub, ok := c.Get(util.SentryContextKey).(*sentry.Hub)
+	if !ok {
+		hub = sentry.CurrentHub().Clone()
+	}
+	hub.CaptureException(err)
+
+	// Don't invoke DefaultHTTPErrorHandler, since we've probably already upgraded
+	// the connection.
 }

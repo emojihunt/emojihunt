@@ -3,7 +3,7 @@ package main
 import (
 	"log"
 
-	"github.com/gorilla/websocket"
+	"github.com/emojihunt/emojihunt/state"
 	"github.com/labstack/echo/v4"
 )
 
@@ -13,19 +13,33 @@ func (s *Server) Transmit(c echo.Context) error {
 		return err
 	}
 	defer ws.Close()
+	log.Printf("tx: connect")
 
 	for {
-		// Write
-		err := ws.WriteMessage(websocket.TextMessage, []byte("Hello, huntbot!"))
+		var msg state.LiveMessage
+		err = ws.ReadJSON(&msg)
 		if err != nil {
-			log.Printf("tx: werr: %v", err)
+			log.Printf("tx: close")
+			return err
 		}
+		log.Printf("tx: %#v", msg)
+		s.handle(msg)
+	}
+}
 
-		// Read
-		_, msg, err := ws.ReadMessage()
+func (s *Server) handle(msg state.LiveMessage) {
+	s.mutex.Lock()
+	defer s.mutex.Unlock()
+
+	if msg.Event == state.EventTypeSettings {
+		s.settings = &msg
+	}
+
+	for _, ws := range s.clients {
+		err := ws.WriteJSON(msg)
 		if err != nil {
-			log.Printf("tx: rerr: %v", err)
+			log.Printf("client: %#v", err)
+			ws.Close()
 		}
-		log.Printf("tx: %s", msg)
 	}
 }
