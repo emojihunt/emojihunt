@@ -1,0 +1,17 @@
+app = "huntlive"
+primary_region = "ord"
+
+[build]
+  dockerfile = "../Dockerfile.live"
+
+[http_service]
+  force_https = true
+  auto_start_machines = false
+  internal_port = 9090
+
+[[http_service.checks]]
+  grace_period = "10s"
+  interval = "30s"
+  timeout = "5s"
+  method = "GET"
+  path = "/"
