@@ -16,7 +16,7 @@ import (
 )
 
 const (
-	ProdLiveURL = "ws://huntlive.internal/tx"
+	ProdLiveURL = "ws://huntlive.internal:9090/tx"
 	DevLiveURL  = "ws://localhost:9090/tx"
 )
 
