@@ -46,6 +46,7 @@ export default defineNuxtConfig({
         "X-Content-Type-Options": "nosniff",
       },
     },
+    "/": { prerender: false }, // otherwise, just redirects to /login
   },
   vite: {
     build: {
