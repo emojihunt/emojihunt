@@ -197,11 +197,14 @@ func (p *Poller) Scrape(ctx context.Context) (puz []state.ScrapedPuzzle, err err
 				nameNode := node
 
 				node = node.NextSibling
-				for node.Type == html.TextNode {
+				for node != nil && node.Type == html.TextNode {
 					// Skip over text nodes.
 					node = node.NextSibling
 				}
-				if p.puzzleListSelector.Match(node) {
+				if node == nil {
+					// Nothing found, abort.
+					return nil, xerrors.Errorf("nil puzzle table")
+				} else if p.puzzleListSelector.Match(node) {
 					// Puzzle list found!
 					discovered = append(discovered, [2]*html.Node{nameNode, node})
 				} else if p.roundNameSelector.Match(node) {
