@@ -15,7 +15,7 @@ import (
 	"github.com/emojihunt/emojihunt/discord"
 	live "github.com/emojihunt/emojihunt/live/client"
 	"github.com/emojihunt/emojihunt/state"
-	"github.com/emojihunt/emojihunt/sync"
+	"github.com/emojihunt/emojihunt/syncer"
 	"github.com/emojihunt/emojihunt/util"
 	"github.com/getsentry/sentry-go"
 	"github.com/labstack/echo-contrib/echoprometheus"
@@ -30,7 +30,7 @@ type Server struct {
 	echo    *echo.Echo
 	live    *live.Client
 	state   *state.Client
-	sync    *sync.Client
+	syncer  *syncer.Client
 
 	// authentication and OAuth2 settings
 	cookie       *util.SessionCookie
@@ -45,7 +45,7 @@ type IDParams struct {
 
 func Start(ctx context.Context, prod bool, ably *ably.Realtime,
 	discord *discord.Client, live *live.Client, state *state.Client,
-	sync *sync.Client) {
+	syncer *syncer.Client) {
 	var e = echo.New()
 	var s = &Server{
 		ably:    ably,
@@ -53,7 +53,7 @@ func Start(ctx context.Context, prod bool, ably *ably.Realtime,
 		echo:    e,
 		live:    live,
 		state:   state,
-		sync:    sync,
+		syncer:  syncer,
 
 		cookie:       util.NewSessionCookie(),
 		cookieDomain: util.CookieDomain(prod),

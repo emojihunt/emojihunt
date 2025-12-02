@@ -12,19 +12,19 @@ import (
 	"github.com/emojihunt/emojihunt/emojiname"
 	"github.com/emojihunt/emojihunt/state"
 	"github.com/emojihunt/emojihunt/state/db"
-	"github.com/emojihunt/emojihunt/sync"
+	"github.com/emojihunt/emojihunt/syncer"
 	"github.com/getsentry/sentry-go"
 )
 
 type Client struct {
 	discord *discord.Client
 	state   *state.Client
-	sync    *sync.Client
+	syncer  *syncer.Client
 
 	discovered chan []state.ScrapedPuzzle
 }
 
-func New(discord *discord.Client, s *state.Client, y *sync.Client) *Client {
+func New(discord *discord.Client, s *state.Client, y *syncer.Client) *Client {
 	return &Client{discord, s, y, make(chan []state.ScrapedPuzzle)}
 }
 
@@ -69,7 +69,7 @@ func (c *Client) Watch(ctx context.Context) {
 		case <-ctx.Done():
 			cancel()
 			return
-		case <-c.sync.RestartDiscovery:
+		case <-c.syncer.RestartDiscovery:
 			log.Printf("discovery: restarting...")
 			cancel()
 		}
@@ -196,11 +196,11 @@ func (c *Client) createPuzzle(ctx context.Context, record state.ScrapedPuzzle,
 		Round:     round.ID,
 		PuzzleURL: record.PuzzleURL,
 	}
-	puzzle.SpreadsheetID, err = c.sync.CreateSpreadsheet(ctx, puzzle, round)
+	puzzle.SpreadsheetID, err = c.syncer.CreateSpreadsheet(ctx, puzzle, round)
 	if err != nil {
 		return err
 	}
-	puzzle.DiscordChannel, err = c.sync.CreateDiscordChannel(ctx, puzzle, round)
+	puzzle.DiscordChannel, err = c.syncer.CreateDiscordChannel(ctx, puzzle, round)
 	if err != nil {
 		return err
 	}
@@ -248,7 +248,7 @@ func (c *Client) handleDiscoveredRound(ctx context.Context, round db.DiscoveredR
 		var record = state.Round{Name: round.Name, Emoji: emoji, Hue: int64(hue)}
 		log.Printf("discovery: creating round %q with emoji %q, hue %d",
 			record.Name, record.Emoji, record.Hue)
-		record.DriveFolder, err = c.sync.CreateDriveFolder(ctx, record)
+		record.DriveFolder, err = c.syncer.CreateDriveFolder(ctx, record)
 		if err != nil {
 			return err
 		}

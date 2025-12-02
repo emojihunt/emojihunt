@@ -65,14 +65,14 @@ func (s *Server) CreatePuzzle(c echo.Context) error {
 	}
 	if raw.SpreadsheetID == "+" {
 		raw.SpreadsheetID = ""
-		raw.SpreadsheetID, err = s.sync.CreateSpreadsheet(ctx, raw, round)
+		raw.SpreadsheetID, err = s.syncer.CreateSpreadsheet(ctx, raw, round)
 		if err != nil {
 			return err
 		}
 	}
 	if raw.DiscordChannel == "+" {
 		raw.DiscordChannel = ""
-		raw.DiscordChannel, err = s.sync.CreateDiscordChannel(ctx, raw, round)
+		raw.DiscordChannel, err = s.syncer.CreateDiscordChannel(ctx, raw, round)
 		if err != nil {
 			return err
 		}

@@ -19,7 +19,7 @@ import (
 	live "github.com/emojihunt/emojihunt/live/client"
 	"github.com/emojihunt/emojihunt/server"
 	"github.com/emojihunt/emojihunt/state"
-	"github.com/emojihunt/emojihunt/sync"
+	"github.com/emojihunt/emojihunt/syncer"
 	"github.com/emojihunt/emojihunt/util"
 	"github.com/getsentry/sentry-go"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -74,15 +74,15 @@ func main() {
 	var live = live.New(*prod, discord, state)
 	go live.Watch(ctx)
 
-	var sync = sync.New(ably, discord, drive, live, state)
-	go sync.Watch(ctx)
+	var syncer = syncer.New(ably, discord, drive, live, state)
+	go syncer.Watch(ctx)
 
-	var discovery = discovery.New(discord, state, sync)
+	var discovery = discovery.New(discord, state, syncer)
 	go discovery.SyncWorker(ctx)
 	go discovery.Watch(ctx)
 
 	log.Printf("starting web server")
-	server.Start(ctx, *prod, ably, discord, live, state, sync)
+	server.Start(ctx, *prod, ably, discord, live, state, syncer)
 
 	log.Printf("starting discord bots")
 	discord.RegisterBots(
