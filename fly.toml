@@ -12,6 +12,10 @@ primary_region = "ord"
   method = "GET"
   path = "/"
 
+[metrics]
+port = 6060
+path = "/metrics"
+
 [[mounts]]
   source = "state"
   destination = "/state"

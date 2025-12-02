@@ -18,6 +18,7 @@ import (
 	"github.com/emojihunt/emojihunt/sync"
 	"github.com/emojihunt/emojihunt/util"
 	"github.com/getsentry/sentry-go"
+	"github.com/labstack/echo-contrib/echoprometheus"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	"github.com/mattn/go-sqlite3"
@@ -72,6 +73,7 @@ func Start(ctx context.Context, prod bool, ably *ably.Realtime,
 
 	e.HideBanner = true
 	e.Use(util.SentryMiddleware)
+	s.echo.Use(echoprometheus.NewMiddleware("huntbot"))
 	e.Use(middleware.RecoverWithConfig(middleware.RecoverConfig{
 		DisablePrintStack: true,
 	}))

@@ -15,3 +15,7 @@ primary_region = "ord"
   timeout = "5s"
   method = "GET"
   path = "/"
+
+[metrics]
+port = 7070
+path = "/metrics"

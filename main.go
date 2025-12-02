@@ -22,6 +22,7 @@ import (
 	"github.com/emojihunt/emojihunt/sync"
 	"github.com/emojihunt/emojihunt/util"
 	"github.com/getsentry/sentry-go"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
 var prod = flag.Bool("prod", false, "selects development or production")
@@ -39,10 +40,11 @@ func main() {
 		}
 	}()
 
-	// Debug Server: http://localhost:6060/debug/pprof/goroutine?debug=2
-	go func() {
-		http.ListenAndServe("localhost:6060", nil)
-	}()
+	// Debug Server
+	// - http://localhost:6060/debug/pprof/goroutine?debug=2
+	// - http://localhost:6060/metrics
+	http.Handle("/metrics", promhttp.Handler())
+	go http.ListenAndServe(":6060", nil)
 
 	// Set up the main context, which is cancelled on Ctrl-C
 	ctx, cancel := context.WithCancel(context.Background())

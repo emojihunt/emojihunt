@@ -18,8 +18,10 @@ import (
 	"github.com/emojihunt/emojihunt/util"
 	"github.com/getsentry/sentry-go"
 	"github.com/gorilla/websocket"
+	"github.com/labstack/echo-contrib/echoprometheus"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
 var prod = flag.Bool("prod", false, "selects development or production")
@@ -49,10 +51,11 @@ func main() {
 		}
 	}()
 
-	// Debug Server: http://localhost:7070/debug/pprof/goroutine?debug=2
-	go func() {
-		http.ListenAndServe("localhost:7070", nil)
-	}()
+	// Debug Server
+	// - http://localhost:7070/debug/pprof/goroutine?debug=2
+	// - http://localhost:607070670700/metrics
+	http.Handle("/metrics", promhttp.Handler())
+	go http.ListenAndServe(":7070", nil)
 
 	// Set up the main context, which is cancelled on Ctrl-C
 	ctx, cancel := context.WithCancel(context.Background())
@@ -77,6 +80,7 @@ func main() {
 
 	s.echo.HideBanner = true
 	s.echo.Use(util.SentryMiddleware)
+	s.echo.Use(echoprometheus.NewMiddleware("huntlive"))
 	s.echo.Use(middleware.RecoverWithConfig(middleware.RecoverConfig{
 		DisablePrintStack: true,
 	}))
