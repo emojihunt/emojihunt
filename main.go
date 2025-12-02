@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 	"os/signal"
+	"sync"
 	"time"
 
 	"net/http"
@@ -66,25 +67,21 @@ func main() {
 	}
 	defer ably.Close()
 
-	var discord = discord.Connect(ctx, *prod, state, ably)
+	var wg sync.WaitGroup
+	var drv *drive.Client
+	wg.Go(func() {
+		drv = drive.NewClient(ctx, *prod)
+	})
+	var discord = discord.Connect(ctx, *prod, state, ably, &wg)
+	wg.Wait()
 	defer discord.Close()
-	var drive = drive.NewClient(ctx, *prod)
 
 	// Start internal engines
 	var live = live.New(*prod, discord, state)
-	go live.Watch(ctx)
-
-	var syncer = syncer.New(ably, discord, drive, live, state)
-	go syncer.Watch(ctx)
-
+	var syncer = syncer.New(ably, discord, drv, live, state)
 	var discovery = discovery.New(discord, state, syncer)
-	go discovery.SyncWorker(ctx)
-	go discovery.Watch(ctx)
 
-	log.Printf("starting web server")
-	server.Start(ctx, *prod, ably, discord, live, state, syncer)
-
-	log.Printf("starting discord bots")
+	log.Printf("starting discord bots and handlers")
 	discord.RegisterBots(
 		bot.NewEmojiNameBot(),
 		bot.NewHuntYetBot(),
@@ -92,7 +89,17 @@ func main() {
 		bot.NewQMBot(discord, state),
 		bot.NewReminderBot(ctx, discord, state),
 	)
+	discord.RegisterHandlers(ctx) // yes, there is a small gap here
 
+	go live.Watch(ctx)
+	go syncer.Watch(ctx)
+	go discovery.SyncWorker(ctx)
+	go discovery.Watch(ctx)
+
+	log.Printf("starting web server")
+	server.Start(ctx, *prod, ably, discord, live, state, syncer)
+
+	time.Sleep(1 * time.Second)
 	log.Print("press ctrl+C to exit")
 	<-ctx.Done()
 }

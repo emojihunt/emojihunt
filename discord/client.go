@@ -58,7 +58,10 @@ type Client struct {
 
 	botsByCommand map[string]*botRegistration
 
-	mutex                     sync.Mutex // hold while accessing everything below
+	// Hold this lock when accessing any variable below, and during setup when
+	// setting the variables above.
+	mutex sync.Mutex
+
 	ably                      *ably.RealtimeChannel
 	commandsRegistered        bool
 	channelCache              map[string]*discordgo.Channel
@@ -69,7 +72,8 @@ type Client struct {
 	rateLimits                map[string]*time.Time // url -> retryAfter time
 }
 
-func Connect(ctx context.Context, prod bool, state *state.Client, ably *ably.Realtime) *Client {
+func Connect(ctx context.Context, prod bool, state *state.Client,
+	ably *ably.Realtime, wg *sync.WaitGroup) *Client {
 	// Initialize discordgo client
 	token, ok := os.LookupEnv("DISCORD_TOKEN")
 	if !ok {
@@ -94,57 +98,13 @@ func Connect(ctx context.Context, prod bool, state *state.Client, ably *ably.Rea
 	if prod {
 		config = ProdConfig
 	}
-	guild, err := s.Guild(config.GuildID)
-	if err != nil {
-		log.Panicf("failed to load guild %s: %s", config.GuildID, err)
-	}
 
-	app, err := s.Application("@me")
-	if err != nil {
-		log.Panicf("failed to load application @me: %s", err)
-	}
-
-	hangingOutChannel, err := s.Channel(config.HangingOutChannelID)
-	if err != nil {
-		log.Panicf("failed to load hanging-out channel %q: %s",
-			config.HangingOutChannelID, err)
-	}
-	moreEyesChannel, err := s.Channel(config.MoreEyesChannelID)
-	if err != nil {
-		log.Panicf("failed to load more-eyes channel %q: %s",
-			config.MoreEyesChannelID, err)
-	}
-	qmChannel, err := s.Channel(config.QMChannelID)
-	if err != nil {
-		log.Panicf("failed to load qm channel %q: %s", config.QMChannelID, err)
-	}
-
-	allRoles, err := s.GuildRoles(guild.ID)
-	if err != nil {
-		log.Panicf("failed to load guild roles: %s", err)
-	}
-	var qmRole *discordgo.Role
-	for _, role := range allRoles {
-		if role.ID == config.QMRoleID {
-			qmRole = role
-		}
-	}
-	if qmRole == nil {
-		log.Panicf("role %q not found in guild %q", config.QMRoleID, guild.ID)
-	}
-
-	// Set up slash commands; return
+	// Initialize bare-bones Client
 	discord := &Client{
 		main:                      ctx,
 		s:                         s,
 		state:                     state,
-		Guild:                     guild,
-		Application:               app,
-		HangingOutChannel:         hangingOutChannel,
-		MoreEyesChannel:           moreEyesChannel,
-		QMChannel:                 qmChannel,
 		TeamCategoryID:            config.TeamCategoryID,
-		QMRole:                    qmRole,
 		ably:                      ably.Channels.Get(ablyChannelName),
 		botsByCommand:             make(map[string]*botRegistration),
 		channelCache:              make(map[string]*discordgo.Channel),
@@ -152,33 +112,132 @@ func Connect(ctx context.Context, prod bool, state *state.Client, ably *ably.Rea
 		rateLimits:                make(map[string]*time.Time),
 	}
 
-	// Register handlers. Remember to register the necessary intents above!
-	s.AddHandler(WrapHandler(ctx, "bot.unknown", discord.handleCommand))
-	s.AddHandler(WrapHandler(ctx, "bot.unknown", discord.handleScheduledEvent))
-	s.AddHandler(WrapHandler(ctx, "rate_limit", discord.handleRateLimit))
+	// Load and configure Guild
+	wg.Go(func() {
+		guild, err := s.Guild(config.GuildID)
+		if err != nil {
+			log.Panicf("failed to load guild %s: %s", config.GuildID, err)
+		}
 
-	s.AddHandler(WrapHandler(ctx, "message", discord.handleMessageCreate))
-	s.AddHandler(WrapHandler(ctx, "message", discord.handleMessageUpdate))
-	s.AddHandler(WrapHandler(ctx, "message", discord.handleMessageDelete))
+		discord.mutex.Lock()
+		defer discord.mutex.Unlock()
+		discord.Guild = guild
+	})
 
-	s.AddHandler(WrapHandler(ctx, "member", discord.handleGuildMemberAdd))
-	s.AddHandler(WrapHandler(ctx, "member", discord.handleGuildMemberUpdate))
-	s.AddHandler(WrapHandler(ctx, "member", discord.handleGuildMemberRemove))
+	// Load and configure Application; load webhooks; configure webhookCache
+	wg.Go(func() {
+		app, err := s.Application("@me")
+		if err != nil {
+			log.Panicf("failed to load application @me: %s", err)
+		}
 
-	s.AddHandler(WrapHandler(ctx, "channel", discord.handleChannelCreate))
-	s.AddHandler(WrapHandler(ctx, "channel", discord.handleChannelUpdate))
-	s.AddHandler(WrapHandler(ctx, "channel", discord.handleChannelDelete))
+		discord.mutex.Lock()
+		discord.Application = app
+		discord.mutex.Unlock()
 
-	if err := discord.refreshChannelCache(); err != nil {
-		log.Panicf("refreshChannelCache: %v", err)
-	}
-	if err := discord.refreshMemberCache(); err != nil {
-		log.Panicf("refreshMemberCache: %v", err)
-	}
-	if err := discord.refreshWebhookCache(); err != nil {
-		log.Panicf("refreshMemberCache: %v", err)
-	}
+		webhooks, err := s.GuildWebhooks(config.GuildID)
+		if err != nil {
+			log.Panicf("failed to load webhooks: %s", err)
+		}
+
+		discord.mutex.Lock()
+		defer discord.mutex.Unlock()
+		discord.webhookCache = make(map[string]*discordgo.Webhook)
+		for _, webhook := range webhooks {
+			if webhook.ApplicationID != app.ID {
+				continue
+			}
+			discord.webhookCache[webhook.ChannelID] = webhook
+		}
+	})
+
+	// Load channels; find and configure HangingOutChannel, MoreEyesChannel,
+	// QMChannel, and channelCache.
+	wg.Go(func() {
+		channels, err := discord.s.GuildChannels(config.GuildID)
+		if err != nil {
+			log.Panicf("failed to load channels: %s", err)
+		}
+
+		discord.mutex.Lock()
+		defer discord.mutex.Unlock()
+		discord.channelCache = make(map[string]*discordgo.Channel)
+		for _, channel := range channels {
+			discord.channelCache[channel.ID] = channel
+			switch channel.ID {
+			case config.HangingOutChannelID:
+				discord.HangingOutChannel = channel
+			case config.MoreEyesChannelID:
+				discord.MoreEyesChannel = channel
+			case config.QMChannelID:
+				discord.QMChannel = channel
+			}
+		}
+		if discord.HangingOutChannel == nil {
+			log.Panicf("failed to load hanging-out channel %q: %s",
+				config.HangingOutChannelID, err)
+		} else if discord.MoreEyesChannel == nil {
+			log.Panicf("failed to load more-eyes channel %q: %s",
+				config.MoreEyesChannelID, err)
+		} else if discord.QMChannel == nil {
+			log.Panicf("failed to load qm channel %q: %s", config.QMChannelID, err)
+		}
+	})
+
+	// Load roles; find and configure QMRole
+	wg.Go(func() {
+		allRoles, err := s.GuildRoles(config.GuildID)
+		if err != nil {
+			log.Panicf("failed to load guild roles: %s", err)
+		}
+
+		discord.mutex.Lock()
+		defer discord.mutex.Unlock()
+		for _, role := range allRoles {
+			if role.ID == config.QMRoleID {
+				discord.QMRole = role
+			}
+		}
+		if discord.QMRole == nil {
+			log.Panicf("role %q not found in guild %q", config.QMRoleID, config.GuildID)
+		}
+	})
+
+	// Load members; configure memberCache
+	wg.Go(func() {
+		members, err := s.GuildMembers(config.GuildID, "", 1000)
+		if err != nil {
+			log.Panicf("failed to load guild members: %s", err)
+		}
+
+		discord.mutex.Lock()
+		defer discord.mutex.Unlock()
+		discord.memberCache = make(map[string]*discordgo.Member)
+		for _, member := range members {
+			discord.memberCache[member.User.ID] = member
+		}
+	})
+
 	return discord
+}
+
+func (c *Client) RegisterHandlers(ctx context.Context) {
+	// Register handlers. Remember to register the necessary intents above!
+	c.s.AddHandler(WrapHandler(ctx, "bot.unknown", c.handleCommand))
+	c.s.AddHandler(WrapHandler(ctx, "bot.unknown", c.handleScheduledEvent))
+	c.s.AddHandler(WrapHandler(ctx, "rate_limit", c.handleRateLimit))
+
+	c.s.AddHandler(WrapHandler(ctx, "message", c.handleMessageCreate))
+	c.s.AddHandler(WrapHandler(ctx, "message", c.handleMessageUpdate))
+	c.s.AddHandler(WrapHandler(ctx, "message", c.handleMessageDelete))
+
+	c.s.AddHandler(WrapHandler(ctx, "member", c.handleGuildMemberAdd))
+	c.s.AddHandler(WrapHandler(ctx, "member", c.handleGuildMemberUpdate))
+	c.s.AddHandler(WrapHandler(ctx, "member", c.handleGuildMemberRemove))
+
+	c.s.AddHandler(WrapHandler(ctx, "channel", c.handleChannelCreate))
+	c.s.AddHandler(WrapHandler(ctx, "channel", c.handleChannelUpdate))
+	c.s.AddHandler(WrapHandler(ctx, "channel", c.handleChannelDelete))
 }
 
 func ErrCode(err error) int {

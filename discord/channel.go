@@ -53,21 +53,6 @@ func (c *Client) handleChannelDelete(ctx context.Context, r *discordgo.ChannelDe
 	return nil
 }
 
-func (c *Client) refreshChannelCache() error {
-	c.mutex.Lock()
-	defer c.mutex.Unlock()
-	channels, err := c.s.GuildChannels(c.Guild.ID)
-	if err != nil {
-		return err
-	}
-	c.channelCache = make(map[string]*discordgo.Channel)
-	for _, channel := range channels {
-		c.channelCache[channel.ID] = channel
-	}
-	c.state.DiscoveryChange <- true
-	return nil
-}
-
 // Public API
 
 func (c *Client) GetChannel(id string) (*discordgo.Channel, bool) {

@@ -157,20 +157,6 @@ func (c *Client) handleGuildMemberRemove(
 	return nil
 }
 
-func (c *Client) refreshMemberCache() error {
-	c.mutex.Lock()
-	defer c.mutex.Unlock()
-	members, err := c.s.GuildMembers(c.Guild.ID, "", 1000)
-	if err != nil {
-		return err
-	}
-	c.memberCache = make(map[string]*discordgo.Member)
-	for _, member := range members {
-		c.memberCache[member.User.ID] = member
-	}
-	return nil
-}
-
 // Webhook Handling
 
 func (c *Client) RelayMessage(chID, userID, msg string) error {
@@ -202,21 +188,4 @@ func (c *Client) getRelayWebhook(chID string) (*discordgo.Webhook, error) {
 	}
 	c.webhookCache[chID] = webhook
 	return webhook, nil
-}
-
-func (c *Client) refreshWebhookCache() error {
-	c.mutex.Lock()
-	defer c.mutex.Unlock()
-	webhooks, err := c.s.GuildWebhooks(c.Guild.ID)
-	if err != nil {
-		return err
-	}
-	c.webhookCache = make(map[string]*discordgo.Webhook)
-	for _, webhook := range webhooks {
-		if webhook.ApplicationID != c.Application.ID {
-			continue
-		}
-		c.webhookCache[webhook.ChannelID] = webhook
-	}
-	return nil
 }
