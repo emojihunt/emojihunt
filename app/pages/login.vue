@@ -19,15 +19,16 @@ useSeoMeta({
   description: "Welcome to the 🌊🎨🎡 puzzle tracker! Please log in.",
 });
 
+const url = useRequestURL();
 const event = useRequestEvent();
-const redirect_uri = useRedirectURI();
+const redirect_uri = (new URL("/login", url)).toString();
+
 const discord = useCookie("discord", {
   secure: true,
   sameSite: 'lax',
   expires: new Date(4070908800000),
 });
 
-const url = useRequestURL();
 const code = url.searchParams.get("code");
 const ret = url.searchParams.get("return");
 const state = url.searchParams.get("state");
