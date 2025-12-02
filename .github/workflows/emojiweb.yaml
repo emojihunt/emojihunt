@@ -4,17 +4,14 @@ on:
     branches:
       - main
     paths:
-      - "**.go"
-      - "go.*"
-      - "Dockerfile*"
-      - "emojiname/**/*.json"
+      - "app/**"
 jobs:
-  huntbot:
+  emojiweb:
     runs-on: ubuntu-latest
-    concurrency: deploy-huntbot
+    concurrency: deploy-emojiweb
     steps:
       - uses: actions/checkout@v6
       - uses: superfly/flyctl-actions/setup-flyctl@master
-      - run: flyctl deploy --remote-only
+      - run: flyctl deploy --remote-only app
         env:
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
