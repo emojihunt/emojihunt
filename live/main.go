@@ -21,6 +21,8 @@ import (
 	"github.com/labstack/echo-contrib/echoprometheus"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promauto"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
@@ -37,8 +39,20 @@ type Server struct {
 	mutex    sync.Mutex // hold while accessing everything below
 	counter  int64
 	clients  map[int64]*websocket.Conn
+	servers  int
 	settings *state.LiveMessage // cache the last settings message
 }
+
+var (
+	rxConnections = promauto.NewGauge(prometheus.GaugeOpts{
+		Name: "live_rx_clients",
+		Help: "The total number of active Rx connections",
+	})
+	txConnections = promauto.NewGauge(prometheus.GaugeOpts{
+		Name: "live_tx_clients",
+		Help: "The total number of active Tx connections",
+	})
+)
 
 func main() {
 	// Initialize Sentry
@@ -77,6 +91,15 @@ func main() {
 		},
 		clients: make(map[int64]*websocket.Conn),
 	}
+	go func() {
+		for {
+			s.mutex.Lock()
+			rxConnections.Set(float64(len(s.clients)))
+			txConnections.Set(float64(s.servers))
+			s.mutex.Unlock()
+			time.Sleep(5 * time.Second)
+		}
+	}()
 
 	s.echo.HideBanner = true
 	s.echo.Use(util.SentryMiddleware)
@@ -92,12 +115,14 @@ func main() {
 
 	s.echo.GET("/", func(c echo.Context) error {
 		s.mutex.Lock()
-		var n = len(s.clients)
-		s.mutex.Unlock()
+		defer s.mutex.Unlock()
 		return c.JSON(http.StatusOK, map[string]interface{}{
-			"instance":   os.Getenv("FLY_MACHINE_VERSION"),
-			"status":     "healthy",
-			"ws_clients": n,
+			"instance": os.Getenv("FLY_MACHINE_VERSION"),
+			"status":   "healthy",
+			"websocket": map[string]interface{}{
+				"rx": len(s.clients),
+				"tx": s.servers,
+			},
 		})
 	})
 	s.echo.GET("/robots.txt", func(c echo.Context) error {

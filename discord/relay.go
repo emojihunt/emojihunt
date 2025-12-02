@@ -6,11 +6,20 @@ import (
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/emojihunt/emojihunt/state"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promauto"
 	"golang.org/x/xerrors"
 )
 
 const (
 	relayWebhookName = "Huntbot Relay"
+)
+
+var (
+	messagesRelayed = promauto.NewCounter(prometheus.CounterOpts{
+		Name: "discord_relay",
+		Help: "The total number of messages relayed from Discord",
+	})
 )
 
 // Message Handling
@@ -29,6 +38,7 @@ func (c *Client) handleMessageCreate(
 	if c.ignoreMessage(m.Message) {
 		return nil
 	}
+	messagesRelayed.Inc()
 	var message = AblyMessage{
 		ID:        m.Message.ID,
 		ChannelID: m.ChannelID,
@@ -49,6 +59,7 @@ func (c *Client) handleMessageUpdate(
 	if c.ignoreMessage(m.Message) {
 		return nil
 	}
+	messagesRelayed.Inc()
 	var message = AblyMessage{
 		ID:      m.Message.ID,
 		Content: m.Message.Content,
@@ -66,6 +77,7 @@ func (c *Client) handleMessageDelete(
 	if c.ignoreMessage(m.Message) {
 		return nil
 	}
+	messagesRelayed.Inc()
 	var message = AblyMessage{
 		ID: m.Message.ID,
 	}

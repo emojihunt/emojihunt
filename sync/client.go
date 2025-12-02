@@ -48,6 +48,8 @@ func (c *Client) Watch(ctx context.Context) {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
+	go c.HandleMetrics()
+
 	hub := sentry.CurrentHub().Clone()
 	hub.ConfigureScope(func(scope *sentry.Scope) {
 		scope.SetTag("task", "sync")
@@ -91,6 +93,7 @@ func (c *Client) Watch(ctx context.Context) {
 }
 
 func (c *Client) TriggerDiscovery(ctx context.Context) error {
+	discoveryRestarts.Inc()
 	config, err := c.state.DiscoveryConfig(ctx)
 	if err != nil {
 		return err
@@ -124,6 +127,7 @@ func (c *Client) TriggerDiscovery(ctx context.Context) error {
 }
 
 func (c *Client) TriggerPuzzle(ctx context.Context, change state.PuzzleChange) error {
+	puzzlesProcessed.Inc()
 	if change.ChangeID > 0 {
 		// Publish the update to Ably
 		c.state.LiveMessage <- state.LiveMessage{
@@ -238,6 +242,7 @@ func (c *Client) TriggerPuzzle(ctx context.Context, change state.PuzzleChange) e
 }
 
 func (c *Client) TriggerRound(ctx context.Context, change state.RoundChange) error {
+	roundsProcessed.Inc()
 	if change.ChangeID > 0 {
 		// Publish the update to Ably
 		c.state.LiveMessage <- state.LiveMessage{

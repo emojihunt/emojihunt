@@ -9,10 +9,23 @@ import (
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/getsentry/sentry-go"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promauto"
 	"golang.org/x/xerrors"
 )
 
 const HandlerTimeout = 120 * time.Second
+
+var (
+	commandsHandled = promauto.NewCounterVec(prometheus.CounterOpts{
+		Name: "discord_command",
+		Help: "The total number of bot commands handled",
+	}, []string{"command", "username"})
+	rateLimitsHit = promauto.NewCounterVec(prometheus.CounterOpts{
+		Name: "discord_rate_limited",
+		Help: "The total number of time a rate limit was hit",
+	}, []string{"url"})
+)
 
 func WrapHandler[Action any](
 	main context.Context,
@@ -61,17 +74,18 @@ func (c *Client) handleCommand(
 		original := append([]*discordgo.ApplicationCommandInteractionDataOption(nil), options...)
 		options = nil
 		for _, opt := range original {
-			if opt.Type == discordgo.ApplicationCommandOptionSubCommand {
+			switch opt.Type {
+			case discordgo.ApplicationCommandOptionSubCommand:
 				if input.Subcommand == "" {
 					input.Subcommand = opt.Name
 				} else {
 					input.Subcommand = fmt.Sprintf("%s.%s", input.Subcommand, opt.Name)
 				}
 				options = opt.Options
-			} else if opt.Type == discordgo.ApplicationCommandOptionSubCommandGroup {
+			case discordgo.ApplicationCommandOptionSubCommandGroup:
 				input.Subcommand = opt.Name
 				options = opt.Options
-			} else {
+			default:
 				input.Options[opt.Name] = opt
 			}
 		}
@@ -82,13 +96,14 @@ func (c *Client) handleCommand(
 		return xerrors.Errorf("unknown command %q", input.Command)
 	}
 
-	var task = fmt.Sprintf("bot.%s", input.Command)
+	var task = input.Command
 	if input.Subcommand != "" {
 		task = fmt.Sprintf("%s.%s", task, input.Subcommand)
 	}
 	log.Printf("handling command %s from @%s", task, input.User.Username)
+	commandsHandled.WithLabelValues(task, input.User.Username).Inc()
 	sentry.GetHubFromContext(ctx).ConfigureScope(func(scope *sentry.Scope) {
-		scope.SetTag("task", task)
+		scope.SetTag("task", fmt.Sprintf("bot.%s", task))
 	})
 
 	// For async handlers, acknowledge the interaction immediately. This means
@@ -177,6 +192,7 @@ func (c *Client) handleRateLimit(
 	defer c.mutex.Unlock()
 	expiry := time.Now().Add(r.TooManyRequests.RetryAfter)
 	c.rateLimits[r.URL] = &expiry
+	rateLimitsHit.WithLabelValues(r.URL).Inc()
 
 	wait := time.Until(expiry).Round(time.Second)
 	return xerrors.Errorf("discord rate limit: %s (wait %s)", r.URL, wait)
