@@ -8,6 +8,7 @@ on:
       - "go.*"
       - "Dockerfile*"
       - "emojiname/**/*.json"
+      - "fly.toml"
 jobs:
   huntbot:
     runs-on: ubuntu-latest

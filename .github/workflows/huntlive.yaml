@@ -8,6 +8,7 @@ on:
       - "go.*"
       - "Dockerfile*"
       - "emojiname/**/*.json"
+      - "live/fly.toml"
 jobs:
   huntlive:
     runs-on: ubuntu-latest
