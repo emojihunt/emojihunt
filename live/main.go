@@ -131,18 +131,20 @@ func (s *Server) HuntbotMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 }
 
 func (s *Server) ErrorHandler(err error, c echo.Context) {
-	// Ignore ordinary websocket closure
 	if _, ok := err.(*websocket.CloseError); ok {
-		return
-	}
+		// Ignore ordinary websocket closure
+	} else if _, ok := err.(*echo.HTTPError); ok {
+		// Handle 404s and similar errors
+		s.echo.DefaultHTTPErrorHandler(err, c)
+	} else {
+		// Report unexpected errors to Sentry
+		hub, ok := c.Get(util.SentryContextKey).(*sentry.Hub)
+		if !ok {
+			hub = sentry.CurrentHub().Clone()
+		}
+		hub.CaptureException(err)
 
-	// Report unexpected errors to Sentry
-	hub, ok := c.Get(util.SentryContextKey).(*sentry.Hub)
-	if !ok {
-		hub = sentry.CurrentHub().Clone()
+		// Don't invoke DefaultHTTPErrorHandler, since we've probably already upgraded
+		// the connection.
 	}
-	hub.CaptureException(err)
-
-	// Don't invoke DefaultHTTPErrorHandler, since we've probably already upgraded
-	// the connection.
 }
