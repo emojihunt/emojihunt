@@ -73,7 +73,7 @@ func Start(ctx context.Context, prod bool, ably *ably.Realtime,
 
 	e.HideBanner = true
 	e.Use(util.SentryMiddleware)
-	s.echo.Use(echoprometheus.NewMiddleware("huntbot"))
+	s.echo.Use(echoprometheus.NewMiddleware("echo"))
 	e.Use(middleware.RecoverWithConfig(middleware.RecoverConfig{
 		DisablePrintStack: true,
 	}))

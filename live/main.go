@@ -80,7 +80,7 @@ func main() {
 
 	s.echo.HideBanner = true
 	s.echo.Use(util.SentryMiddleware)
-	s.echo.Use(echoprometheus.NewMiddleware("huntlive"))
+	s.echo.Use(echoprometheus.NewMiddleware("echo"))
 	s.echo.Use(middleware.RecoverWithConfig(middleware.RecoverConfig{
 		DisablePrintStack: true,
 	}))
