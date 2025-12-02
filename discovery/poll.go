@@ -139,7 +139,13 @@ reconnect:
 	}
 }
 
-func (p *Poller) Scrape(ctx context.Context) ([]state.ScrapedPuzzle, error) {
+func (p *Poller) Scrape(ctx context.Context) (puz []state.ScrapedPuzzle, err error) {
+	defer func() {
+		if r := recover(); r != nil {
+			err = xerrors.Errorf("panic: %w", r)
+		}
+	}()
+
 	// Download
 	log.Printf("discovery: scraping %q", p.puzzlesURL.String())
 	req, err := http.NewRequestWithContext(ctx, "GET", p.puzzlesURL.String(), nil)
