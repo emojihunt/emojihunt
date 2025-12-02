@@ -1,0 +1,20 @@
+name: Fly Deploy (huntbot)
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "**.go"
+      - "go.*"
+      - "Dockerfile*"
+      - "emojiname/**/*.json"
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    concurrency: deploy-huntbot
+    steps:
+      - uses: actions/checkout@v6
+      - uses: superfly/flyctl-actions/setup-flyctl@master
+      - run: flyctl deploy --remote-only
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
