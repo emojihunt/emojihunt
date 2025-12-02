@@ -36,7 +36,7 @@ const state = url.searchParams.get("state");
 const { clientID } = useAppConfig();
 const params = new URLSearchParams();
 params.set("client_id", clientID);
-params.set("redirect_uri", useRedirectURI());
+params.set("redirect_uri", redirect_uri);
 params.set("response_type", "code");
 params.set("scope", "identify");
 params.set("state", ret || "");
