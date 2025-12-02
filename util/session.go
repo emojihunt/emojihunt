@@ -15,29 +15,23 @@ import (
 )
 
 const (
-	ProdAppOrigin = "https://www.emojihunt.org"
-	DevAppOrigin  = "http://localhost:3000"
-
-	ProdCookieDomain = "emojihunt.org"
-	DevCookieDomain  = "localhost"
-
 	SessionCookieName = "session"
 	SessionDuration   = 4 * 24 * time.Hour
 )
 
-func AppOrigin(prod bool) string {
+func AppOrigins(prod bool) []string {
 	if prod {
-		return ProdAppOrigin
+		return []string{"https://www.emojihunt.org", "https://static.emojihunt.org"}
 	} else {
-		return DevAppOrigin
+		return []string{"http://localhost:3000"}
 	}
 }
 
 func CookieDomain(prod bool) string {
 	if prod {
-		return ProdCookieDomain
+		return "emojihunt.org"
 	} else {
-		return DevCookieDomain
+		return "localhost"
 	}
 }
 

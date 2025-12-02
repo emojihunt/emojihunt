@@ -36,7 +36,6 @@ type Server struct {
 	cookie       *util.SessionCookie
 	credentials  *url.Userinfo
 	cookieDomain string
-	redirectURI  string
 }
 
 type IDParams struct {
@@ -67,10 +66,6 @@ func Start(ctx context.Context, prod bool, ably *ably.Realtime,
 		s.credentials = url.UserPassword(parts[0], parts[1])
 	}
 
-	if prod {
-		s.redirectURI = util.ProdAppOrigin + "/login"
-	} // else blank redirectURI disables strict validation
-
 	e.HideBanner = true
 	e.Use(util.SentryMiddleware)
 	s.echo.Use(echoprometheus.NewMiddleware("echo"))
@@ -79,7 +74,7 @@ func Start(ctx context.Context, prod bool, ably *ably.Realtime,
 	}))
 	e.Use(middleware.CORSWithConfig(middleware.CORSConfig{
 		AllowCredentials: true,
-		AllowOrigins:     []string{util.AppOrigin(prod)},
+		AllowOrigins:     util.AppOrigins(prod),
 		ExposeHeaders:    []string{"X-Change-ID"},
 	}))
 	e.HTTPErrorHandler = s.ErrorHandler

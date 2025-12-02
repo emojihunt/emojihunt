@@ -74,7 +74,7 @@ func (s *Server) Authenticate(c echo.Context) error {
 	})
 }
 
-func (s *Server) oauth2TokenExchange(code, devRedirectURI string) (string, error) {
+func (s *Server) oauth2TokenExchange(code, redirectURI string) (string, error) {
 	endpoint, err := url.Parse(OAuth2TokenURL)
 	if err != nil {
 		return "", err
@@ -84,12 +84,7 @@ func (s *Server) oauth2TokenExchange(code, devRedirectURI string) (string, error
 	var query = url.Values{}
 	query.Add("grant_type", "authorization_code")
 	query.Add("code", code)
-
-	if s.redirectURI == "" {
-		query.Add("redirect_uri", devRedirectURI)
-	} else {
-		query.Add("redirect_uri", s.redirectURI)
-	}
+	query.Add("redirect_uri", redirectURI)
 
 	resp, err := http.PostForm(endpoint.String(), query)
 	if err != nil {

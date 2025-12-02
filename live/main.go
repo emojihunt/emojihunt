@@ -78,15 +78,22 @@ func main() {
 	go func() { <-ch; cancel() }()
 
 	// Start web server
-	var appOrigin = util.AppOrigin(*prod)
+	var appOrigins = util.AppOrigins(*prod)
 	var s = &Server{
 		echo:   echo.New(),
 		cookie: util.NewSessionCookie(),
 		token:  util.HuntbotToken(),
 		upgrader: &websocket.Upgrader{
 			CheckOrigin: func(r *http.Request) bool {
-				return strings.EqualFold(r.Header.Get("Origin"), appOrigin) ||
-					r.Header.Get("Origin") == ""
+				if r.Header.Get("Origin") == "" {
+					return true
+				}
+				for _, origin := range appOrigins {
+					if strings.EqualFold(r.Header.Get("Origin"), origin) {
+						return true
+					}
+				}
+				return false
 			},
 		},
 		clients: make(map[int64]*websocket.Conn),
@@ -109,7 +116,7 @@ func main() {
 	}))
 	s.echo.Use(middleware.CORSWithConfig(middleware.CORSConfig{
 		AllowCredentials: true,
-		AllowOrigins:     []string{appOrigin},
+		AllowOrigins:     appOrigins,
 	}))
 	s.echo.HTTPErrorHandler = s.ErrorHandler
 
