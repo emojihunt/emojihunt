@@ -2,8 +2,10 @@ package client
 
 import (
 	"context"
+	"errors"
 	"log"
 	"net/http"
+	"syscall"
 	"time"
 
 	"github.com/emojihunt/emojihunt/discord"
@@ -90,6 +92,9 @@ func (c *Client) watch(ctx context.Context) error {
 	headers.Add(echo.HeaderAuthorization, c.token)
 	ws, _, err := c.dialer.DialContext(ctx, c.url, headers)
 	if err != nil {
+		if errors.Is(err, syscall.ECONNREFUSED) {
+			return nil // don't report to Sentry, it will eat our rate limit
+		}
 		return xerrors.Errorf("live: %w", err)
 	}
 	log.Printf("live: connected!")
