@@ -14,7 +14,7 @@ import (
 	"github.com/getsentry/sentry-go"
 	"github.com/gorilla/websocket"
 	"github.com/labstack/echo/v4"
-	"golang.org/x/xerrors"
+	"golang.org/x/sync/errgroup"
 )
 
 const (
@@ -65,7 +65,13 @@ reconnect:
 	for {
 		log.Printf("live: connecting...")
 		err := c.watch(ctx)
-		if err != nil {
+		if errors.Is(err, syscall.ECONNREFUSED) {
+			// don't report to Sentry, it will eat our rate limit
+		} else if _, ok := err.(*websocket.CloseError); ok {
+			log.Printf("live: disconnected")
+			// don't report ordinary disconnections
+		} else {
+			log.Printf("live: %#v", err)
 			sentry.GetHubFromContext(ctx).CaptureException(err)
 		}
 
@@ -85,39 +91,26 @@ reconnect:
 }
 
 func (c *Client) watch(ctx context.Context) error {
-	ctx, cancel := context.WithCancel(ctx)
-	defer cancel()
+	erg, ctx := errgroup.WithContext(ctx)
 
 	var headers = make(http.Header)
 	headers.Add(echo.HeaderAuthorization, c.token)
 	ws, _, err := c.dialer.DialContext(ctx, c.url, headers)
 	if err != nil {
-		if errors.Is(err, syscall.ECONNREFUSED) {
-			return nil // don't report to Sentry, it will eat our rate limit
-		}
-		return xerrors.Errorf("live: %w", err)
+		return err
 	}
 	log.Printf("live: connected!")
 	defer ws.Close()
 
 	// Per the docs, we need to read messages in order for ping/pong/close
 	// handling to work.
-	var fin = make(chan error)
-	go func() {
+	erg.Go(func() error {
 		for {
-			// TODO: this leaks? try an errgroup
 			if _, _, err := ws.NextReader(); err != nil {
-				if _, ok := err.(*websocket.CloseError); ok {
-					log.Printf("live: disconnected")
-					fin <- nil
-				} else {
-					log.Printf("live: %#v", err)
-					fin <- err
-				}
-				return
+				return err
 			}
 		}
-	}()
+	})
 
 	// Forward current discovery state
 	config, err := c.state.DiscoveryConfig(ctx)
@@ -156,7 +149,7 @@ func (c *Client) watch(ctx context.Context) error {
 	}
 
 	// Forward incremental updates
-	go func() {
+	erg.Go(func() error {
 		for {
 			select {
 			case msg := <-c.state.LiveMessage:
@@ -166,14 +159,12 @@ func (c *Client) watch(ctx context.Context) error {
 				}
 				err := ws.WriteJSON(msg)
 				if err != nil {
-					fin <- err
-					return
+					return err
 				}
 			case <-ctx.Done():
-				fin <- nil
-				return
+				return nil
 			}
 		}
-	}()
-	return <-fin
+	})
+	return erg.Wait()
 }
