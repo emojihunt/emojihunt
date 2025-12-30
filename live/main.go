@@ -141,13 +141,16 @@ func main() {
 			log.Panicf("echo.Start: %s", err)
 		}
 	}()
-	go func() {
-		<-ctx.Done()
-		s.echo.Shutdown(ctx)
-	}()
 
 	log.Print("press ctrl+C to exit")
 	<-ctx.Done()
+
+	log.Print("shutting down")
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+	if err := s.echo.Shutdown(ctx); err != nil {
+		log.Panicf("echo.Shutdown: %s", err)
+	}
 }
 
 func (s *Server) HuntbotMiddleware(next echo.HandlerFunc) echo.HandlerFunc {

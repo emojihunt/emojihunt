@@ -10,6 +10,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/ably/ably-go/ably"
 	"github.com/emojihunt/emojihunt/discord"
@@ -44,9 +45,9 @@ type IDParams struct {
 
 func Start(ctx context.Context, prod bool, ably *ably.Realtime,
 	discord *discord.Client, live *live.Client, state *state.Client,
-	syncer *syncer.Client) {
+	syncer *syncer.Client) Server {
 	var e = echo.New()
-	var s = &Server{
+	var s = Server{
 		ably:    ably,
 		discord: discord,
 		echo:    e,
@@ -124,10 +125,15 @@ func Start(ctx context.Context, prod bool, ably *ably.Realtime,
 			log.Panicf("echo.Start: %s", err)
 		}
 	}()
-	go func() {
-		<-ctx.Done()
-		e.Shutdown(ctx)
-	}()
+	return s
+}
+
+func (s *Server) Shutdown() {
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+	if err := s.echo.Shutdown(ctx); err != nil {
+		log.Panicf("echo.Shutdown: %s", err)
+	}
 }
 
 func SetChangeIDHeader(c echo.Context, id int64) {

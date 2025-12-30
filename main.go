@@ -94,9 +94,12 @@ func main() {
 	go discovery.Watch(ctx)
 
 	log.Printf("starting web server")
-	server.Start(ctx, *prod, ably, discord, live, state, syncer)
+	var server = server.Start(ctx, *prod, ably, discord, live, state, syncer)
 
 	time.Sleep(1 * time.Second)
 	log.Print("press ctrl+C to exit")
 	<-ctx.Done()
+
+	log.Print("shutting down")
+	server.Shutdown()
 }
