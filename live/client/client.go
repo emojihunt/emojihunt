@@ -105,6 +105,7 @@ func (c *Client) watch(ctx context.Context) error {
 	var fin = make(chan error)
 	go func() {
 		for {
+			// TODO: this leaks? try an errgroup
 			if _, _, err := ws.NextReader(); err != nil {
 				if _, ok := err.(*websocket.CloseError); ok {
 					log.Printf("live: disconnected")
@@ -118,17 +119,40 @@ func (c *Client) watch(ctx context.Context) error {
 		}
 	}()
 
-	// Resynchronize state
+	// Forward current discovery state
 	config, err := c.state.DiscoveryConfig(ctx)
 	if err != nil {
 		return err
 	}
-	var message = c.ComputeMeta(config)
 	err = ws.WriteJSON(
-		state.LiveMessage{Event: state.EventTypeSettings, Data: message},
+		state.LiveMessage{
+			Event: state.EventTypeSettings,
+			Data:  c.ComputeMeta(config),
+		},
 	)
 	if err != nil {
 		return err
+	}
+
+	// Forward all past changes in on-disk buffer
+	var latest int64 = 0
+	changes, err := c.state.Changes(ctx)
+	if err != nil {
+		return err
+	}
+	for _, change := range changes {
+		if change.ChangeID <= latest {
+			log.Printf("bad: out-of-order sync message: %#v @ %d", change, latest)
+		} else {
+			latest = change.ChangeID
+		}
+		err := ws.WriteJSON(state.LiveMessage{
+			Event: state.EventTypeSync,
+			Data:  change,
+		})
+		if err != nil {
+			return err
+		}
 	}
 
 	// Forward incremental updates
@@ -136,6 +160,10 @@ func (c *Client) watch(ctx context.Context) error {
 		for {
 			select {
 			case msg := <-c.state.LiveMessage:
+				if msg.ChangeID > 0 && msg.ChangeID <= latest {
+					log.Printf("discarding out-of-order sync message: %#v @ %d", msg, latest)
+					continue
+				}
 				err := ws.WriteJSON(msg)
 				if err != nil {
 					fin <- err

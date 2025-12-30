@@ -874,7 +874,7 @@ DELETE FROM changelog
 WHERE id NOT IN (
     SELECT id FROM changelog
     ORDER BY id DESC
-    LIMIT 250
+    LIMIT 256
 )
 `
 

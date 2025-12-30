@@ -82,8 +82,9 @@ const (
 )
 
 type LiveMessage struct {
-	Event EventType `json:"event"`
-	Data  any       `json:"data"`
+	Event    EventType `json:"event"`
+	Data     any       `json:"data"`
+	ChangeID int64     `json:"-"`
 }
 
 type ScrapedPuzzle struct {

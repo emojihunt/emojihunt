@@ -8,6 +8,34 @@ import (
 	"golang.org/x/xerrors"
 )
 
+func (c *Client) Changes(ctx context.Context) ([]AblySyncMessage, error) {
+	changes, err := c.queries.ListChangelog(ctx)
+	if err != nil {
+		return nil, xerrors.Errorf("ListChangelog: %w", err)
+	}
+	var result []AblySyncMessage
+	for _, change := range changes {
+		var msg = AblySyncMessage{
+			ChangeID: change.ID,
+			Kind:     change.Kind,
+		}
+		if change.Puzzle != nil {
+			err := json.Unmarshal(change.Puzzle, &msg.Puzzle)
+			if err != nil {
+				return nil, err
+			}
+		}
+		if change.Round != nil {
+			err := json.Unmarshal(change.Round, &msg.Round)
+			if err != nil {
+				return nil, err
+			}
+		}
+		result = append(result, msg)
+	}
+	return result, nil
+}
+
 func (c *Client) LogPuzzleChange(ctx context.Context, before *Puzzle,
 	after *Puzzle, complete chan error) (PuzzleChange, error) {
 

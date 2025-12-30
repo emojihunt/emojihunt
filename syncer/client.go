@@ -131,8 +131,9 @@ func (c *Client) TriggerPuzzle(ctx context.Context, change state.PuzzleChange) e
 	if change.ChangeID > 0 {
 		// Publish the update to Ably
 		c.state.LiveMessage <- state.LiveMessage{
-			Event: state.EventTypeSync,
-			Data:  change.SyncMessage(),
+			Event:    state.EventTypeSync,
+			Data:     change.SyncMessage(),
+			ChangeID: change.ChangeID,
 		}
 		err := c.ably.Publish(ctx, state.EventTypeSync, change.SyncMessage())
 		if err != nil {
@@ -250,8 +251,9 @@ func (c *Client) TriggerRound(ctx context.Context, change state.RoundChange) err
 	if change.ChangeID > 0 {
 		// Publish the update to Ably
 		c.state.LiveMessage <- state.LiveMessage{
-			Event: state.EventTypeSync,
-			Data:  change.SyncMessage(),
+			Event:    state.EventTypeSync,
+			Data:     change.SyncMessage(),
+			ChangeID: change.ChangeID,
 		}
 		err := c.ably.Publish(ctx, state.EventTypeSync, change.SyncMessage())
 		if err != nil {
