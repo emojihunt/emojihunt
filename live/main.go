@@ -72,10 +72,7 @@ func main() {
 	go http.ListenAndServe(":7070", nil)
 
 	// Set up the main context, which is cancelled on Ctrl-C
-	ctx, cancel := context.WithCancel(context.Background())
-	ch := make(chan os.Signal, 1)
-	signal.Notify(ch, os.Interrupt)
-	go func() { <-ch; cancel() }()
+	ctx, _ := signal.NotifyContext(context.Background(), os.Interrupt)
 
 	// Start web server
 	var appOrigins = util.AppOrigins(*prod)
