@@ -161,8 +161,9 @@ func (c *Client) TriggerPuzzle(ctx context.Context, change state.PuzzleChange) e
 		}
 		var c1 = NewDiscordChannelFields(puzzle)
 		if puzzle.DiscordChannel != "" && c0 != c1 {
-			wg.Add(1)
-			go func() { ch <- c.UpdateDiscordChannel(ctx, c1); wg.Done() }()
+			wg.Go(func() {
+				ch <- c.UpdateDiscordChannel(ctx, c1)
+			})
 		}
 	}
 
@@ -173,8 +174,9 @@ func (c *Client) TriggerPuzzle(ctx context.Context, change state.PuzzleChange) e
 	}
 	var p1 = NewDiscordPinFields(puzzle)
 	if puzzle.DiscordChannel != "" && p0 != p1 {
-		wg.Add(1)
-		go func() { ch <- c.UpdateDiscordPin(ctx, p1); wg.Done() }()
+		wg.Go(func() {
+			ch <- c.UpdateDiscordPin(ctx, p1)
+		})
 	}
 
 	// Maybe sync updates to the spreadsheet name and folder
@@ -184,8 +186,9 @@ func (c *Client) TriggerPuzzle(ctx context.Context, change state.PuzzleChange) e
 	}
 	var s1 = NewSpreadsheetFields(puzzle)
 	if puzzle.SpreadsheetID != "" && s0 != s1 {
-		wg.Add(1)
-		go func() { ch <- c.UpdateSpreadsheet(ctx, s1); wg.Done() }()
+		wg.Go(func() {
+			ch <- c.UpdateSpreadsheet(ctx, s1)
+		})
 	}
 
 	// Maybe sync updates to the voice room
@@ -195,8 +198,9 @@ func (c *Client) TriggerPuzzle(ctx context.Context, change state.PuzzleChange) e
 	}
 	var v1 = NewVoiceRoomFields(puzzle)
 	if v0 != v1 {
-		wg.Add(1)
-		go func() { ch <- c.SyncVoiceRooms(ctx); wg.Done() }()
+		wg.Go(func() {
+			ch <- c.SyncVoiceRooms(ctx)
+		})
 	}
 
 	wg.Wait()
@@ -270,8 +274,9 @@ func (c *Client) TriggerRound(ctx context.Context, change state.RoundChange) err
 	}
 	var c1 = NewDiscordCategoryFields(round)
 	if round.DiscordCategory != "" && c0 != c1 {
-		wg.Add(1)
-		go func() { ch <- c.UpdateDiscordCategory(ctx, c1); wg.Done() }()
+		wg.Go(func() {
+			ch <- c.UpdateDiscordCategory(ctx, c1)
+		})
 	}
 
 	// Maybe sync updates to the Google Drive folder name
@@ -281,8 +286,9 @@ func (c *Client) TriggerRound(ctx context.Context, change state.RoundChange) err
 	}
 	var d1 = NewDriveFolderFields(round)
 	if round.DriveFolder != "" && d0 != d1 {
-		wg.Add(1)
-		go func() { ch <- c.UpdateDriveFolder(ctx, d1); wg.Done() }()
+		wg.Go(func() {
+			ch <- c.UpdateDriveFolder(ctx, d1)
+		})
 	}
 
 	wg.Wait()
