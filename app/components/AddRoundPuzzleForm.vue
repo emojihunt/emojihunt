@@ -8,11 +8,16 @@ import { Picker, EmojiIndex } from "emoji-mart-vue-fast/src";
 //  3. npm install && node scripts/build-data.js
 //  4. Data is in data/all.json
 //
-// Current version: Unicode 15.1 (emoji-datasource 15.1.2)
+// Current version: Unicode 16.0 (emoji-datasource 16.0.0)
 //
 import emojifile from "~/assets/emojimart.json";
 
 // Generated from http://localhost:3000/emoji (see console output)
+//
+// Remember to also update emojiname/emoji-hues.json.
+//
+// Current version: Unicode 16.0
+//
 import emojihues from "~/assets/emoji-hues.json";
 
 const index = new EmojiIndex(emojifile, { recent: [] });

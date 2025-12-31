@@ -87,6 +87,8 @@ func RandomEmoji(n int) ([]*Emoji, error) {
 // emoji.json from https://github.com/iamcal/emoji-data/blob/master/emoji.json
 // Copyright (c) 2013 Cal Henderson and MIT licensed.
 //
+// Current version: Unicode 16.0
+//
 //go:embed emoji.json
 var rawEmoji []byte
 var allEmoji []*Emoji

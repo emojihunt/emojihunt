@@ -38,6 +38,8 @@
    *
    *     fonttools ttLib Noto-COLRv1.ttf --flavor woff2 -o Noto-COLRv1.woff2
    *
+   * Current version: Unicode 16.0
+   *
    * [0] https://caniuse.com/colr-v1
    * [1] https://stackoverflow.com/q/78008226
    * [2] https://github.com/googlefonts/noto-emoji/blob/main/fonts/Noto-COLRv1.ttf

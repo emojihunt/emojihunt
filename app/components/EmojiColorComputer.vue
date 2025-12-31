@@ -16,11 +16,13 @@ onMounted(() => {
   ctx.fillText(emoji + "\ufe0f", cv.width / 2, cv.height / 2);
 
   setTimeout(() => {
-    const { colorSpace, data } = ctx.getImageData(0, 0, cv.width, cv.height);
+    const { data } = ctx.getImageData(
+      0, 0, cv.width, cv.height, { colorSpace: "srgb" },
+    );
     const hues = [];
     for (let i = 0; i < data.length; i += 4) {
       const color = new Color({
-        spaceId: colorSpace,
+        spaceId: "srgb",
         coords: [data[i]!, data[i + 1]!, data[i + 2]!],
         alpha: data[i + 3],
       });

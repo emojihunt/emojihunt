@@ -1,5 +1,5 @@
 <script setup lang="ts">
-// Current: Unicode 15.1
+// Current: Unicode 16.0
 // Update URL: https://github.com/googlefonts/emoji-metadata
 import data from "~/assets/emoji-metadata.json";
 
