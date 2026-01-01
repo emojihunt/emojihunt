@@ -106,7 +106,8 @@ func (c *Client) watch(ctx context.Context) error {
 	// handling to work.
 	erg.Go(func() error {
 		for {
-			if _, _, err := ws.NextReader(); err != nil {
+			_, _, err := ws.NextReader()
+			if err != nil {
 				return err
 			}
 		}
@@ -128,20 +129,20 @@ func (c *Client) watch(ctx context.Context) error {
 	}
 
 	// Forward all past changes in on-disk buffer
-	var latest int64 = 0
+	var latest int64
 	changes, err := c.state.Changes(ctx)
 	if err != nil {
 		return err
 	}
 	for _, change := range changes {
 		if change.ChangeID <= latest {
-			log.Printf("bad: out-of-order sync message: %#v @ %d", change, latest)
-		} else {
-			latest = change.ChangeID
+			log.Panicf("got out-of-order sync from db")
 		}
+		latest = change.ChangeID
 		err := ws.WriteJSON(state.LiveMessage{
-			Event: state.EventTypeSync,
-			Data:  change,
+			Event:    state.EventTypeSync,
+			Data:     change,
+			ChangeID: change.ChangeID,
 		})
 		if err != nil {
 			return err
@@ -153,9 +154,13 @@ func (c *Client) watch(ctx context.Context) error {
 		for {
 			select {
 			case msg := <-c.state.LiveMessage:
-				if msg.ChangeID > 0 && msg.ChangeID <= latest {
-					log.Printf("discarding out-of-order sync message: %#v @ %d", msg, latest)
-					continue
+				log.Printf("CID %d", msg.ChangeID)
+				if msg.ChangeID > 0 {
+					if msg.ChangeID <= latest {
+						log.Printf("out-of-order sync: %#v@%d", msg, latest)
+						continue
+					}
+					latest = msg.ChangeID
 				}
 				err := ws.WriteJSON(msg)
 				if err != nil {

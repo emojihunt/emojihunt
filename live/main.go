@@ -36,11 +36,13 @@ type Server struct {
 	token    string
 	upgrader *websocket.Upgrader
 
-	mutex    sync.Mutex // hold while accessing everything below
-	counter  int64
-	clients  map[int64]*websocket.Conn
-	servers  int
-	settings *state.LiveMessage // cache the last settings message
+	mutex   sync.Mutex // hold while accessing everything below
+	counter int64
+	clients map[int64](chan *state.LiveMessage)
+	servers int
+
+	settings *state.LiveMessage   // cache the last settings message
+	sync     []*state.LiveMessage // cache recent sync messages
 }
 
 var (
@@ -93,7 +95,7 @@ func main() {
 				return false
 			},
 		},
-		clients: make(map[int64]*websocket.Conn),
+		clients: make(map[int64](chan *state.LiveMessage)),
 	}
 	go func() {
 		for {

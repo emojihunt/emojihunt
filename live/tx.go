@@ -45,24 +45,26 @@ func (s *Server) Transmit(c echo.Context) error {
 		log.Printf("tx: %#v", msg)
 		txMessages.WithLabelValues(string(msg.Event)).Inc()
 		var start = time.Now()
-		s.handle(msg)
+		s.handle(&msg)
 		handleLatency.Observe(time.Since(start).Seconds())
 	}
 }
 
-func (s *Server) handle(msg state.LiveMessage) {
+func (s *Server) handle(msg *state.LiveMessage) {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
 
-	if msg.Event == state.EventTypeSettings {
-		s.settings = &msg
+	switch msg.Event {
+	case state.EventTypeSettings:
+		s.settings = msg
+	case state.EventTypeSync:
+		s.sync = append(s.sync, msg)
+		if len(s.sync) > 256 {
+			s.sync = s.sync[len(s.sync)-256:]
+		}
 	}
 
-	for _, ws := range s.clients {
-		err := ws.WriteJSON(msg)
-		if err != nil {
-			log.Printf("client: %#v", err)
-			ws.Close()
-		}
+	for _, ch := range s.clients {
+		ch <- msg
 	}
 }
