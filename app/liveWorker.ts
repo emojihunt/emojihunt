@@ -1,33 +1,35 @@
-import type { AblyWorkerMessage, ConnectionState } from './utils/types';
+import type { AblyWorkerMessage, ConnectionState, SyncMessage } from './utils/types';
 
 let state: ConnectionState = "disconnected";
 const updateState = (s: ConnectionState) =>
   (state = s, broadcast({ event: "client", state }));
 
-const rewind = new Array<AblyWorkerMessage>();
+const rewind = new Array<SyncMessage>();
 
 // Keep a list of connected clients.
 //
 // HACK: detect when a client disconnects using the Web Locks API. The client
-// generates a UUID, requests a lock with that ID, then sends us the ID. When
-// we succeed in acquiring the same lock, the client must be dead.
+// generates a UUID, takes a lock with that ID, then sends us the ID. When we
+// succeed in acquiring the same lock, the client must be dead.
 //
-const ports: Map<string, MessagePort> = new Map();
+const ports: Map<string, MessagePort | DedicatedWorkerGlobalScope> = new Map();
+const unicast = (
+  p: MessagePort | DedicatedWorkerGlobalScope, m: AblyWorkerMessage,
+) => p.postMessage(m);
 const broadcast = (m: AblyWorkerMessage) => ports.forEach(p => p.postMessage(m));
 
 self.addEventListener("connect", (e: any) => {
   for (const port of e.ports) {
     port.addEventListener("message", (e: MessageEvent<string>) => {
       const id = e.data;
-      console.log(`[${id}] Connected`);
+      console.log(`[${id}] Joined`);
       ports.set(id, port);
       navigator.locks.request(id, () => {
         ports.delete(id);
-        console.log(`[${id}] Disconnected`);
+        console.log(`[${id}] Left`);
       });
-
-      port.postMessage({ event: "client", state });
-      rewind.forEach(r => port.postMessage(r));
+      unicast(port, { event: "client", state });
+      rewind.forEach(data => unicast(port, { event: "sync", data }));
     });
     port.start();
   }
@@ -37,37 +39,46 @@ self.addEventListener("connect", (e: any) => {
 self.addEventListener("message", (e: MessageEvent<string>) => {
   if (e.data === "start") {
     console.log("Worker launched in dedicated scope");
-    ports.set(crypto.randomUUID(), self as any);
+    const port = self as DedicatedWorkerGlobalScope;
+    ports.set(crypto.randomUUID(), port);
+    unicast(port, { event: "client", state });
+    rewind.forEach(data => unicast(port, { event: "sync", data }));
   }
 });
 
 const reconnect = () => new Promise((resolve) => {
-  const endpoint = origin.includes("localhost") // no useAppConfig() here :(
+  let endpoint = origin.includes("localhost") // can't useAppConfig() here :(
     ? "ws://localhost:9090/rx"
     : "wss://live.emojihunt.org/rx";
+  const last = rewind.at(-1);
+  if (last) {
+    endpoint = `${endpoint}?after=${last.change_id}`;
+  }
   const ws = new WebSocket(endpoint);
-  const timer = setTimeout(() => (ws.close(), resolve(null)), 5_000);
+  const timer = setTimeout(() => (ws.close(), resolve(null)), 10_000);
   ws.addEventListener("open", () => {
     console.log("[rx] ...connected!");
     updateState("connected");
     clearTimeout(timer);
-    // TODO: make sure rewind window is up to date, else go to dead state
   });
   ws.addEventListener("close", (e) => resolve(e));
   ws.addEventListener("error", (e) => resolve(e));
 
   ws.addEventListener("message", (e) => {
     const msg = JSON.parse(e.data) as AblyWorkerMessage;
-    // TODO: cache settings messages (add change ID on server, maybe include in rewind)
     switch (msg.event) {
       case "sync":
         console.log("[*] Sync", msg.data);
-        rewind.push(msg);
+        rewind.push(msg.data);
         if (rewind.length >= 256) rewind.shift();
         break;
       case "settings":
         console.log("[*] Settings", msg.data);
         break;
+      case "m":
+        break;
+      default:
+        console.warn("[*] Unknown", msg);
     }
     broadcast(msg);
   });
@@ -82,10 +93,8 @@ while (true) {
     console.warn("[rx] Timed out");
   } else if (error instanceof CloseEvent) {
     console.warn("[rx] Closed");
-  } else if (error instanceof ErrorEvent) {
-    console.error("[rx]", error.error);
   } else {
-    console.error("[rx] unknown:", error);
+    console.error("[rx]", error);
   }
-  await new Promise((r) => setTimeout(r, 1_000));
+  await new Promise((r) => setTimeout(r, 2_000));
 }
