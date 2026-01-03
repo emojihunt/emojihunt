@@ -162,7 +162,7 @@ export type AblyWorkerMessage =
   { event: "m"; data: DiscordMessage; } |
   { event: "client"; state: ConnectionState; };
 
-export type ConnectionState = "disconnected" | "connected" | "broken";
+export type ConnectionState = "disconnected" | "connected" | "broken" | "dead";
 
 export type SyncMessage = {
   change_id: number;

@@ -24,7 +24,10 @@ export default function (
         else connected.value = true;
       } else if (e.data.state === "disconnected") {
         connected.value = false;
-      } else {
+      } else if (e.data.state === "dead") {
+        console.warn("Connection lost. Reloading page...");
+        window.location.reload();
+      } else { // "broken" (Ably only)
         console.warn("Connection lost. Will reload page when next online...");
         poisoned = true;
       }

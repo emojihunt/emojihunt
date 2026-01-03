@@ -6,6 +6,8 @@ const updateState = (s: ConnectionState) =>
 
 const rewind = new Array<SyncMessage>();
 
+let backoff = 1_000;
+
 // Keep a list of connected clients.
 //
 // HACK: detect when a client disconnects using the Web Locks API. The client
@@ -55,11 +57,12 @@ const reconnect = () => new Promise((resolve) => {
     endpoint = `${endpoint}?after=${last.change_id}`;
   }
   const ws = new WebSocket(endpoint);
-  const timer = setTimeout(() => (ws.close(), resolve(null)), 10_000);
+  const timer = setTimeout(() => (ws.close(), resolve(null)), backoff);
   ws.addEventListener("open", () => {
     console.log("[rx] ...connected!");
     updateState("connected");
     clearTimeout(timer);
+    backoff = 1_000;
   });
   ws.addEventListener("close", (e) => resolve(e));
   ws.addEventListener("error", (e) => resolve(e));
@@ -87,14 +90,26 @@ const reconnect = () => new Promise((resolve) => {
 });
 
 console.log("Live worker initialized");
-while (true) {
-  const error = await reconnect();
-  if (error === null) {
-    console.warn("[rx] Timed out");
-  } else if (error instanceof CloseEvent) {
-    console.warn("[rx] Closed");
-  } else {
-    console.error("[rx]", error);
+(async () => {
+  while (true) {
+    const error = await reconnect();
+    updateState("disconnected");
+    backoff = Math.min(backoff * 2, 16_000);
+    if (error === null) {
+      console.warn("[rx] Timed out");
+      // no sleep, we've already been waiting
+    } else {
+      if (error instanceof CloseEvent) {
+        console.warn("[rx] Closed", error.code, error.reason);
+        if (error.code === 4004) {
+          console.error("[rx] Unrecoverable consistency failure");
+          updateState("dead");
+          return;
+        }
+      } else {
+        console.error("[rx]", error);
+      }
+      await new Promise((r) => setTimeout(r, backoff));
+    }
   }
-  await new Promise((r) => setTimeout(r, 2_000));
-}
+})();
