@@ -32,6 +32,10 @@ type AblyMessage struct {
 	Content   string `json:"msg"` // don't omit (for deletes)
 }
 
+func (m AblyMessage) EventType() state.EventType {
+	return state.EventTypeDiscord
+}
+
 func (c *Client) handleMessageCreate(
 	ctx context.Context, m *discordgo.MessageCreate,
 ) error {
@@ -46,10 +50,7 @@ func (c *Client) handleMessageCreate(
 		Timestamp: m.Timestamp.UnixMilli(),
 		Content:   m.Message.Content,
 	}
-	c.state.LiveMessage <- state.LiveMessage{
-		Event: state.EventTypeDiscord,
-		Data:  message,
-	}
+	c.state.LiveMessage <- message
 	return c.ably.Publish(ctx, state.EventTypeDiscord, message)
 }
 
@@ -64,10 +65,7 @@ func (c *Client) handleMessageUpdate(
 		ID:      m.Message.ID,
 		Content: m.Message.Content,
 	}
-	c.state.LiveMessage <- state.LiveMessage{
-		Event: state.EventTypeDiscord,
-		Data:  message,
-	}
+	c.state.LiveMessage <- message
 	return c.ably.Publish(ctx, state.EventTypeDiscord, message)
 }
 
@@ -81,10 +79,7 @@ func (c *Client) handleMessageDelete(
 	var message = AblyMessage{
 		ID: m.Message.ID,
 	}
-	c.state.LiveMessage <- state.LiveMessage{
-		Event: state.EventTypeDiscord,
-		Data:  message,
-	}
+	c.state.LiveMessage <- message
 	return c.ably.Publish(ctx, state.EventTypeDiscord, message)
 }
 

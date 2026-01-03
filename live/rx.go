@@ -3,6 +3,7 @@ package main
 import (
 	"log"
 
+	"github.com/emojihunt/emojihunt/live/client"
 	"github.com/emojihunt/emojihunt/state"
 	"github.com/labstack/echo/v4"
 	"golang.org/x/sync/errgroup"
@@ -16,11 +17,11 @@ func (s *Server) Receive(c echo.Context) error {
 	defer ws.Close()
 
 	s.mutex.Lock()
-	var ch = make(chan *state.LiveMessage, 257)
+	var ch = make(chan state.LiveMessage, 257)
 	if s.settings != nil {
-		ch <- s.settings
+		ch <- *s.settings
 	}
-	for _, msg := range s.sync {
+	for _, msg := range s.replay {
 		ch <- msg
 	}
 	s.counter += 1
@@ -53,15 +54,14 @@ func (s *Server) Receive(c echo.Context) error {
 		for {
 			select {
 			case msg := <-ch:
-				if msg.ChangeID > 0 {
-					if msg.ChangeID <= latest {
-						log.Printf("rx[%04d]: out of order: %#v@%d",
-							id, msg, latest)
+				if v, ok := msg.(state.AblySyncMessage); ok {
+					if v.ChangeID <= latest {
+						log.Printf("rx[%04d]: out of order: %#v@%d", id, msg, latest)
 						continue
 					}
-					latest = msg.ChangeID
+					latest = v.ChangeID
 				}
-				err := ws.WriteJSON(msg)
+				err := client.WriteMessage(ws, msg)
 				if err != nil {
 					return err
 				}

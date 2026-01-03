@@ -81,10 +81,10 @@ const (
 	EventTypeSync     = "sync"
 )
 
-type LiveMessage struct {
-	Event    EventType `json:"event"`
-	Data     any       `json:"data"`
-	ChangeID int64     `json:"cid"`
+type LiveMessage interface {
+	EventType() EventType
+	// Event EventType       `json:"event"`
+	// Data  json.RawMessage `json:"data"`
 }
 
 type ScrapedPuzzle struct {
@@ -144,6 +144,10 @@ type AblySyncMessage struct {
 	Kind     status.AblyKind `json:"kind"`
 	Puzzle   *AblyPuzzle     `json:"puzzle,omitempty"`
 	Round    *Round          `json:"round,omitempty"`
+}
+
+func (m AblySyncMessage) EventType() EventType {
+	return EventTypeSync
 }
 
 func (p Puzzle) AblyPuzzle() AblyPuzzle {

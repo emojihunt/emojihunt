@@ -4,6 +4,7 @@ import (
 	"log"
 	"time"
 
+	"github.com/emojihunt/emojihunt/live/client"
 	"github.com/emojihunt/emojihunt/state"
 	"github.com/labstack/echo/v4"
 	"github.com/prometheus/client_golang/prometheus"
@@ -33,8 +34,7 @@ func (s *Server) Transmit(c echo.Context) error {
 	s.mutex.Unlock()
 
 	for {
-		var msg state.LiveMessage
-		err = ws.ReadJSON(&msg)
+		msg, err := client.ReadMessage(ws)
 		if err != nil {
 			log.Printf("tx: close")
 			s.mutex.Lock()
@@ -43,24 +43,24 @@ func (s *Server) Transmit(c echo.Context) error {
 			return err
 		}
 		log.Printf("tx: %#v", msg)
-		txMessages.WithLabelValues(string(msg.Event)).Inc()
+		txMessages.WithLabelValues(string(msg.EventType())).Inc()
 		var start = time.Now()
-		s.handle(&msg)
+		s.handle(msg)
 		handleLatency.Observe(time.Since(start).Seconds())
 	}
 }
 
-func (s *Server) handle(msg *state.LiveMessage) {
+func (s *Server) handle(msg state.LiveMessage) {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
 
-	switch msg.Event {
-	case state.EventTypeSettings:
-		s.settings = msg
-	case state.EventTypeSync:
-		s.sync = append(s.sync, msg)
-		if len(s.sync) > 256 {
-			s.sync = s.sync[len(s.sync)-256:]
+	switch v := msg.(type) {
+	case client.SettingsMessage:
+		s.settings = &v
+	case state.AblySyncMessage:
+		s.replay = append(s.replay, v)
+		if len(s.replay) > 256 {
+			s.replay = s.replay[len(s.replay)-256:]
 		}
 	}
 

@@ -7,7 +7,7 @@ import (
 	"github.com/emojihunt/emojihunt/state"
 )
 
-type Meta struct {
+type SettingsMessage struct {
 	HuntName        string `json:"hunt_name"`
 	HuntURL         string `json:"hunt_url"`
 	HuntCredentials string `json:"hunt_credentials"`
@@ -20,12 +20,12 @@ type Meta struct {
 	VoiceRooms map[string]string `json:"voice_rooms"`
 }
 
-func (c *Client) ComputeMeta(discovery state.DiscoveryConfig) Meta {
+func (c *Client) ComputeMeta(discovery state.DiscoveryConfig) SettingsMessage {
 	var nextHunt string
 	if raw, _ := huntyet.NextHunt(time.Now()); raw != nil {
 		nextHunt = raw.Format(time.RFC3339)
 	}
-	return Meta{
+	return SettingsMessage{
 		HuntName:        discovery.HuntName,
 		HuntURL:         discovery.HuntURL,
 		HuntCredentials: discovery.HuntCredentials,
@@ -37,4 +37,8 @@ func (c *Client) ComputeMeta(discovery state.DiscoveryConfig) Meta {
 
 		VoiceRooms: c.discord.ListVoiceChannels(),
 	}
+}
+
+func (m SettingsMessage) EventType() state.EventType {
+	return state.EventTypeSettings
 }

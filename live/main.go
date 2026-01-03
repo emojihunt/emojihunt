@@ -14,6 +14,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/emojihunt/emojihunt/live/client"
 	"github.com/emojihunt/emojihunt/state"
 	"github.com/emojihunt/emojihunt/util"
 	"github.com/getsentry/sentry-go"
@@ -38,11 +39,11 @@ type Server struct {
 
 	mutex   sync.Mutex // hold while accessing everything below
 	counter int64
-	clients map[int64](chan *state.LiveMessage)
+	clients map[int64](chan state.LiveMessage)
 	servers int
 
-	settings *state.LiveMessage   // cache the last settings message
-	sync     []*state.LiveMessage // cache recent sync messages
+	settings *client.SettingsMessage // cache the last settings message
+	replay   []state.AblySyncMessage // cache recent sync messages
 }
 
 var (
@@ -95,7 +96,7 @@ func main() {
 				return false
 			},
 		},
-		clients: make(map[int64](chan *state.LiveMessage)),
+		clients: make(map[int64](chan state.LiveMessage)),
 	}
 	go func() {
 		for {

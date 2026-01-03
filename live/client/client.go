@@ -118,12 +118,7 @@ func (c *Client) watch(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	err = ws.WriteJSON(
-		state.LiveMessage{
-			Event: state.EventTypeSettings,
-			Data:  c.ComputeMeta(config),
-		},
-	)
+	err = WriteMessage(ws, c.ComputeMeta(config))
 	if err != nil {
 		return err
 	}
@@ -136,14 +131,11 @@ func (c *Client) watch(ctx context.Context) error {
 	}
 	for _, change := range changes {
 		if change.ChangeID <= latest {
-			log.Panicf("got out-of-order sync from db")
+			log.Printf("got out-of-order sync from db")
+			continue
 		}
 		latest = change.ChangeID
-		err := ws.WriteJSON(state.LiveMessage{
-			Event:    state.EventTypeSync,
-			Data:     change,
-			ChangeID: change.ChangeID,
-		})
+		err := WriteMessage(ws, change)
 		if err != nil {
 			return err
 		}
@@ -154,15 +146,14 @@ func (c *Client) watch(ctx context.Context) error {
 		for {
 			select {
 			case msg := <-c.state.LiveMessage:
-				log.Printf("CID %d", msg.ChangeID)
-				if msg.ChangeID > 0 {
-					if msg.ChangeID <= latest {
-						log.Printf("out-of-order sync: %#v@%d", msg, latest)
+				if s, ok := msg.(state.AblySyncMessage); ok {
+					if s.ChangeID <= latest {
+						log.Printf("out-of-order sync: %#v@%d", s, latest)
 						continue
 					}
-					latest = msg.ChangeID
+					latest = s.ChangeID
 				}
-				err := ws.WriteJSON(msg)
+				err := WriteMessage(ws, msg)
 				if err != nil {
 					return err
 				}
