@@ -6,7 +6,7 @@ const updateState = (s: ConnectionState) =>
 
 const rewind = new Array<SyncMessage>();
 
-let backoff = 1_000;
+let backoff = 500;
 
 // Keep a list of connected clients.
 //
@@ -62,7 +62,7 @@ const reconnect = () => new Promise((resolve) => {
     console.log("[rx] ...connected!");
     updateState("connected");
     clearTimeout(timer);
-    backoff = 1_000;
+    backoff = 500;
   });
   ws.addEventListener("close", (e) => resolve(e));
   ws.addEventListener("error", (e) => resolve(e));
@@ -94,7 +94,7 @@ console.log("Live worker initialized");
   while (true) {
     const error = await reconnect();
     updateState("disconnected");
-    backoff = Math.min(backoff * 2, 16_000);
+    backoff = Math.min(backoff * 2, 4_000);
     if (error === null) {
       console.warn("[rx] Timed out");
       // no sleep, we've already been waiting
