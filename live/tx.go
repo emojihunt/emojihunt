@@ -9,6 +9,7 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
+	"golang.org/x/xerrors"
 )
 
 var (
@@ -28,29 +29,47 @@ func (s *Server) Transmit(c echo.Context) error {
 		return err
 	}
 	defer ws.Close()
-	log.Printf("tx: connect")
-	s.mutex.Lock()
-	s.servers += 1
-	s.mutex.Unlock()
+	err = s.connect()
+	if err != nil {
+		return err
+	}
 
 	for {
 		msg, err := client.ReadMessage(ws)
 		if err != nil {
 			log.Printf("tx: close")
 			s.mutex.Lock()
-			s.servers -= 1
+			s.server = false
 			s.mutex.Unlock()
 			return err
 		}
-		log.Printf("tx: %#v", msg)
-		txMessages.WithLabelValues(string(msg.EventType())).Inc()
-		var start = time.Now()
 		s.handle(msg)
-		handleLatency.Observe(time.Since(start).Seconds())
 	}
 }
 
+func (s *Server) connect() error {
+	log.Printf("tx: connect")
+
+	s.mutex.Lock()
+	defer s.mutex.Unlock()
+
+	if s.server {
+		s.mutex.Unlock()
+		return xerrors.Errorf("server already connected")
+	}
+	s.server = true
+	s.rewind = nil // clear rewind buffer to prevent gaps
+	return nil
+}
+
 func (s *Server) handle(msg state.LiveMessage) {
+	log.Printf("tx: %#v", msg)
+	txMessages.WithLabelValues(string(msg.EventType())).Inc()
+	var start = time.Now()
+	defer func() {
+		handleLatency.Observe(time.Since(start).Seconds())
+	}()
+
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
 
@@ -58,9 +77,13 @@ func (s *Server) handle(msg state.LiveMessage) {
 	case client.SettingsMessage:
 		s.settings = &v
 	case state.AblySyncMessage:
-		s.replay = append(s.replay, v)
-		if len(s.replay) > 256 {
-			s.replay = s.replay[len(s.replay)-256:]
+		if len(s.rewind) > 0 && v.ChangeID <= s.rewind[len(s.rewind)-1].ChangeID {
+			log.Printf("tx: out-of-order from %d", s.rewind[len(s.rewind)-1].ChangeID)
+		} else {
+			s.rewind = append(s.rewind, v)
+			if len(s.rewind) > 256 {
+				s.rewind = s.rewind[len(s.rewind)-256:]
+			}
 		}
 	}
 

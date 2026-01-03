@@ -40,10 +40,10 @@ type Server struct {
 	mutex   sync.Mutex // hold while accessing everything below
 	counter int64
 	clients map[int64](chan state.LiveMessage)
-	servers int
+	server  bool
 
 	settings *client.SettingsMessage // cache the last settings message
-	replay   []state.AblySyncMessage // cache recent sync messages
+	rewind   []state.AblySyncMessage // cache recent sync messages
 }
 
 var (
@@ -102,7 +102,11 @@ func main() {
 		for {
 			s.mutex.Lock()
 			rxConnections.Set(float64(len(s.clients)))
-			txConnections.Set(float64(s.servers))
+			if s.server {
+				txConnections.Set(1)
+			} else {
+				txConnections.Set(0)
+			}
 			s.mutex.Unlock()
 			time.Sleep(5 * time.Second)
 		}
@@ -128,7 +132,7 @@ func main() {
 			"status":   "healthy",
 			"websocket": map[string]interface{}{
 				"rx": len(s.clients),
-				"tx": s.servers,
+				"tx": s.server,
 			},
 		})
 	})

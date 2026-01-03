@@ -21,7 +21,7 @@ func (s *Server) Receive(c echo.Context) error {
 	if s.settings != nil {
 		ch <- *s.settings
 	}
-	for _, msg := range s.replay {
+	for _, msg := range s.rewind {
 		ch <- msg
 	}
 	s.counter += 1
