@@ -4,9 +4,11 @@ import (
 	"log"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/emojihunt/emojihunt/live/client"
 	"github.com/emojihunt/emojihunt/state"
+	"github.com/gorilla/websocket"
 	"github.com/labstack/echo/v4"
 	"golang.org/x/sync/errgroup"
 )
@@ -55,21 +57,24 @@ func (s *Server) Receive(c echo.Context) error {
 
 	s.mutex.Unlock()
 
-	// *Now* check whether we can satisfy this request
-	if after > 0 && !found {
-		if hasRewind {
-			return echo.NewHTTPError(http.StatusPreconditionFailed, "change not found in rewind buffer")
-		} else {
-			return echo.NewHTTPError(http.StatusTooEarly, "rewind buffer is empty")
-		}
-	}
-
 	// Start websocket!
 	ws, err := s.upgrader.Upgrade(c.Response(), c.Request(), nil)
 	if err != nil {
 		return err
 	}
 	defer ws.Close()
+
+	// We have to return errors over the socket rather than via HTTP status codes
+	// because the browser doesn't expose those :(
+	if after > 0 && !found {
+		var msg []byte
+		if hasRewind {
+			msg = websocket.FormatCloseMessage(4004, "change not found in rewind buffer")
+		} else {
+			msg = websocket.FormatCloseMessage(4005, "no tx server connected")
+		}
+		return ws.WriteControl(websocket.CloseMessage, msg, time.Now().Add(10*time.Second))
+	}
 
 	// Per the docs, we need to read messages in order for ping/pong/close
 	// handling to work.
