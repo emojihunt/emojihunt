@@ -1,20 +1,35 @@
 import type { AblyWorkerMessage, ConnectionState } from './utils/types';
 
 let state: ConnectionState = "disconnected";
-const rewind = new Array<AblyWorkerMessage>();
-
-// Keep a list of clients as they connect.
-// TODO: implement garbage collection with Web Locks
-const ports: Array<MessagePort | DedicatedWorkerGlobalScope> = [];
-const broadcast = (m: AblyWorkerMessage) => ports.forEach(p => p.postMessage(m));
 const updateState = (s: ConnectionState) =>
   (state = s, broadcast({ event: "client", state }));
+
+const rewind = new Array<AblyWorkerMessage>();
+
+// Keep a list of connected clients.
+//
+// HACK: detect when a client disconnects using the Web Locks API. The client
+// generates a UUID, requests a lock with that ID, then sends us the ID. When
+// we succeed in acquiring the same lock, the client must be dead.
+//
+const ports: Map<string, MessagePort> = new Map();
+const broadcast = (m: AblyWorkerMessage) => ports.forEach(p => p.postMessage(m));
+
 self.addEventListener("connect", (e: any) => {
-  console.log("Client connected");
   for (const port of e.ports) {
-    ports.push(port);
-    port.postMessage({ event: "client", state });
-    rewind.forEach(r => port.postMessage(r));
+    port.addEventListener("message", (e: MessageEvent<string>) => {
+      const id = e.data;
+      console.log(`[${id}] Connected`);
+      ports.set(id, port);
+      navigator.locks.request(id, () => {
+        ports.delete(id);
+        console.log(`[${id}] Disconnected`);
+      });
+
+      port.postMessage({ event: "client", state });
+      rewind.forEach(r => port.postMessage(r));
+    });
+    port.start();
   }
 });
 
@@ -22,7 +37,7 @@ self.addEventListener("connect", (e: any) => {
 self.addEventListener("message", (e: MessageEvent<string>) => {
   if (e.data === "start") {
     console.log("Worker launched in dedicated scope");
-    ports.push(self as DedicatedWorkerGlobalScope);
+    ports.set(crypto.randomUUID(), self as any);
   }
 });
 
@@ -33,7 +48,7 @@ const reconnect = () => new Promise((resolve) => {
   const ws = new WebSocket(endpoint);
   const timer = setTimeout(() => (ws.close(), resolve(null)), 5_000);
   ws.addEventListener("open", () => {
-    console.log("[rx] Connected!");
+    console.log("[rx] ...connected!");
     updateState("connected");
     clearTimeout(timer);
     // TODO: make sure rewind window is up to date, else go to dead state
@@ -46,12 +61,12 @@ const reconnect = () => new Promise((resolve) => {
     // TODO: cache settings messages (add change ID on server, maybe include in rewind)
     switch (msg.event) {
       case "sync":
-        console.log("Sync", msg.data);
+        console.log("[*] Sync", msg.data);
         rewind.push(msg);
         if (rewind.length >= 256) rewind.shift();
         break;
       case "settings":
-        console.log("Settings", msg.data);
+        console.log("[*] Settings", msg.data);
         break;
     }
     broadcast(msg);

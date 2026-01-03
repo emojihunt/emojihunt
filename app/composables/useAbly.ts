@@ -43,12 +43,16 @@ export default function (
       worker.addEventListener("error", onError);
       worker.postMessage("start");
     } else {
-      const worker = newSyncBackend
-        ? new LiveSharedWorker({ name: "🌊🎨🎡 ·⚡⚡" })
-        : new AblySharedWorker({ name: "🌊🎨🎡 ·⚡" });
-      worker.port.addEventListener("message", onMessage);
-      worker.port.addEventListener("error", onError);
-      worker.port.start();
+      const id = crypto.randomUUID();
+      navigator.locks.request(id, () => new Promise(() => {
+        const worker = newSyncBackend
+          ? new LiveSharedWorker({ name: "🌊🎨🎡 ·⚡⚡" })
+          : new AblySharedWorker({ name: "🌊🎨🎡 ·⚡" });
+        worker.port.addEventListener("message", onMessage);
+        worker.port.addEventListener("error", onError);
+        worker.port.start();
+        worker.port.postMessage(id);
+      }));
     }
   });
   return connected;
