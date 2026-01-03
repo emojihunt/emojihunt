@@ -123,7 +123,7 @@ export async function initializePuzzles(): Promise<State> {
 
   const optimistic = new Map<number, Optimistic>();
   let optimisticCounter = Math.floor(Number.MAX_SAFE_INTEGER / 2);
-  let initialChangeId = 0;
+  let latestChangeId = 0;
 
   const refresh = () => { // clocks at around 4ms
     // First, materialize optimistically-applied updates.
@@ -189,8 +189,11 @@ export async function initializePuzzles(): Promise<State> {
   };
 
   const onSync = ({ change_id, kind, puzzle, round }: SyncMessage) => {
-    optimistic.delete(change_id);
-    if (change_id <= initialChangeId) return;
+    if (change_id <= latestChangeId) return;
+    for (const key of [...optimistic.keys()]) {
+      if (key <= change_id) optimistic.delete(key);
+    }
+    latestChangeId = change_id;
     if (kind === "upsert") {
       if (puzzle) _puzzles.set(puzzle.id, puzzle);
       if (round) _rounds.set(round.id, round);
@@ -235,12 +238,16 @@ export async function initializePuzzles(): Promise<State> {
     puzzleCount, solvedPuzzleCount, ordering,
     async addRound(data: NewRound) {
       const [round, changeId] = await updateRequest<Round>("/rounds", data);
-      optimistic.set(changeId, { type: "round", ...round });
+      if (changeId > latestChangeId) {
+        optimistic.set(changeId, { type: "round", ...round });
+      }
       refresh();
     },
     async updateRound(id: number, data: Omit<Partial<Round>, "id">) {
       const [_, changeId] = await updateRequest<Round>(`/rounds/${id}`, data);
-      optimistic.set(changeId, { type: "round", id, ...data });
+      if (changeId > latestChangeId) {
+        optimistic.set(changeId, { type: "round", id, ...data });
+      }
       refresh();
     },
     async updateRoundOptimistic(id: number, data: Omit<Partial<Round>, "id">) {
@@ -250,7 +257,9 @@ export async function initializePuzzles(): Promise<State> {
       refresh();
       try {
         const [_, changeId] = await updateRequest<Round>(`/rounds/${id}`, data);
-        optimistic.set(changeId, delta);
+        if (changeId > latestChangeId) {
+          optimistic.set(changeId, delta);
+        }
       } finally {
         optimistic.delete(localId);
         refresh();
@@ -259,17 +268,23 @@ export async function initializePuzzles(): Promise<State> {
     async deleteRound(id: number) {
       const [_, changeId] = await updateRequest<Puzzle>(
         `/rounds/${id}`, { delete: true });
-      optimistic.set(changeId, { type: "round.delete", id });
+      if (changeId > latestChangeId) {
+        optimistic.set(changeId, { type: "round.delete", id });
+      }
       refresh();
     },
     async addPuzzle(data: NewPuzzle) {
       const [puzzle, changeId] = await updateRequest<Puzzle>("/puzzles", data);
-      optimistic.set(changeId, { type: "puzzle", ...puzzle });
+      if (changeId > latestChangeId) {
+        optimistic.set(changeId, { type: "puzzle", ...puzzle });
+      }
       refresh();
     },
     async updatePuzzle(id: number, data: Omit<Partial<Puzzle>, "id">) {
       const [_, changeId] = await updateRequest<Puzzle>(`/puzzles/${id}`, data);
-      optimistic.set(changeId, { type: "puzzle", id, ...data });
+      if (changeId > latestChangeId) {
+        optimistic.set(changeId, { type: "puzzle", id, ...data });
+      }
       refresh();
     },
     async updatePuzzleOptimistic(id: number, data: Omit<Partial<Puzzle>, "id">) {
@@ -279,7 +294,9 @@ export async function initializePuzzles(): Promise<State> {
       refresh();
       try {
         const [_, changeId] = await updateRequest<Puzzle>(`/puzzles/${id}`, data);
-        optimistic.set(changeId, delta);
+        if (changeId > latestChangeId) {
+          optimistic.set(changeId, delta);
+        }
       } finally {
         optimistic.delete(localId);
         refresh();
@@ -288,7 +305,9 @@ export async function initializePuzzles(): Promise<State> {
     async deletePuzzle(id: number) {
       const [_, changeId] = await updateRequest<Puzzle>(
         `/puzzles/${id}`, { delete: true });
-      optimistic.set(changeId, { type: "puzzle.delete", id });
+      if (changeId > latestChangeId) {
+        optimistic.set(changeId, { type: "puzzle.delete", id });
+      }
       refresh();
     },
   };
@@ -298,7 +317,7 @@ export async function initializePuzzles(): Promise<State> {
   if (!data.value) {
     throw error.value;
   }
-  initialChangeId = data.value.change_id;
+  latestChangeId = data.value.change_id;
   data.value.puzzles.forEach((p) => _puzzles.set(p.id, p));
   data.value.rounds.forEach((r) => _rounds.set(r.id, r));
   onSettings(data.value.settings);
