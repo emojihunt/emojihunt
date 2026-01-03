@@ -83,8 +83,6 @@ const (
 
 type LiveMessage interface {
 	EventType() EventType
-	// Event EventType       `json:"event"`
-	// Data  json.RawMessage `json:"data"`
 }
 
 type ScrapedPuzzle struct {

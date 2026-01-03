@@ -65,12 +65,9 @@ reconnect:
 	for {
 		log.Printf("live: connecting...")
 		err := c.watch(ctx)
-		if errors.Is(err, syscall.ECONNREFUSED) {
-			// don't report to Sentry, it will eat our rate limit
-		} else if _, ok := err.(*websocket.CloseError); ok {
+		if _, ok := err.(*websocket.CloseError); ok {
 			log.Printf("live: disconnected")
-			// don't report ordinary disconnections
-		} else {
+		} else if err != nil {
 			log.Printf("live: %#v", err)
 			sentry.GetHubFromContext(ctx).CaptureException(err)
 		}
@@ -95,8 +92,13 @@ func (c *Client) watch(ctx context.Context) error {
 
 	var headers = make(http.Header)
 	headers.Add(echo.HeaderAuthorization, c.token)
-	ws, _, err := c.dialer.DialContext(ctx, c.url, headers)
-	if err != nil {
+	ws, resp, err := c.dialer.DialContext(ctx, c.url, headers)
+	if errors.Is(err, syscall.ECONNREFUSED) {
+		return nil // don't report to Sentry, it will eat our rate limit
+	} else if resp != nil && resp.StatusCode == http.StatusConflict {
+		log.Printf("live: another server is connected")
+		return nil
+	} else if err != nil {
 		return err
 	}
 	log.Printf("live: connected!")

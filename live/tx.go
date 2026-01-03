@@ -2,6 +2,7 @@ package main
 
 import (
 	"log"
+	"net/http"
 	"time"
 
 	"github.com/emojihunt/emojihunt/live/client"
@@ -9,7 +10,6 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
-	"golang.org/x/xerrors"
 )
 
 var (
@@ -24,63 +24,70 @@ var (
 )
 
 func (s *Server) Transmit(c echo.Context) error {
+	// We only allow one server to connect at a time, and we clear the rewind
+	// buffer when it disconnects. This prevents gaps or backwards jumps in the
+	// rewind buffer.
+	//
+	// Note that clients remain connected when the server leaves. We need separate
+	// logic to preserve ordering there.
+	//
+	log.Printf("tx: connect")
+	s.mutex.Lock()
+	if s.server {
+		log.Printf("tx: server already connected")
+		s.mutex.Unlock() // unlock in both branches!
+		return echo.NewHTTPError(http.StatusConflict, "server already connected")
+	} else {
+		s.server = true
+		s.mutex.Unlock() // unlock in both branches!
+	}
+
+	defer func() {
+		s.mutex.Lock()
+		s.server = false
+		s.rewind = nil
+		for _, ch := range s.clients {
+			ch <- nil // sentinel indicating a potential discontinuity
+		}
+		s.mutex.Unlock()
+		log.Printf("tx: close")
+	}()
+
 	ws, err := s.upgrader.Upgrade(c.Response(), c.Request(), nil)
 	if err != nil {
 		return err
 	}
 	defer ws.Close()
-	err = s.connect()
-	if err != nil {
-		return err
-	}
 
 	for {
 		msg, err := client.ReadMessage(ws)
 		if err != nil {
-			log.Printf("tx: close")
-			s.mutex.Lock()
-			s.server = false
-			s.mutex.Unlock()
 			return err
 		}
 		s.handle(msg)
 	}
 }
 
-func (s *Server) connect() error {
-	log.Printf("tx: connect")
+func (s *Server) handle(msg state.LiveMessage) {
+	log.Printf("tx: %#v", msg)
+	txMessages.WithLabelValues(string(msg.EventType())).Inc()
 
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
 
-	if s.server {
-		s.mutex.Unlock()
-		return xerrors.Errorf("server already connected")
-	}
-	s.server = true
-	s.rewind = nil // clear rewind buffer to prevent gaps
-	return nil
-}
-
-func (s *Server) handle(msg state.LiveMessage) {
-	log.Printf("tx: %#v", msg)
-	txMessages.WithLabelValues(string(msg.EventType())).Inc()
 	var start = time.Now()
 	defer func() {
 		handleLatency.Observe(time.Since(start).Seconds())
 	}()
 
-	s.mutex.Lock()
-	defer s.mutex.Unlock()
-
 	switch v := msg.(type) {
-	case client.SettingsMessage:
-		s.settings = &v
-	case state.AblySyncMessage:
+	case *client.SettingsMessage:
+		s.settings = v
+	case *state.AblySyncMessage:
 		if len(s.rewind) > 0 && v.ChangeID <= s.rewind[len(s.rewind)-1].ChangeID {
 			log.Printf("tx: out-of-order from %d", s.rewind[len(s.rewind)-1].ChangeID)
 		} else {
-			s.rewind = append(s.rewind, v)
+			s.rewind = append(s.rewind, *v)
 			if len(s.rewind) > 256 {
 				s.rewind = s.rewind[len(s.rewind)-256:]
 			}
