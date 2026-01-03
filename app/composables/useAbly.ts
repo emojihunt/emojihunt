@@ -7,7 +7,8 @@ import type { AblyWorkerMessage, DiscordMessage, SettingsMessage, SyncMessage } 
 export default function (
   sync: (m: SyncMessage) => void,
   settings: (m: SettingsMessage) => void,
-  discord: (m: DiscordMessage) => void): Ref<boolean> {
+  discord: (m: DiscordMessage) => void,
+): Ref<boolean> {
   const connected = ref<boolean>(false);
   let poisoned = false;
 

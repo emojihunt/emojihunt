@@ -47,7 +47,6 @@ type Optimistic = (
 const key = Symbol() as InjectionKey<State>;
 
 const updateRequest = async <T>(endpoint: string, params: any): Promise<[T, number]> => {
-  let args: RequestInit;
   let response: Response;
   if (params.delete === true) {
     response = await formSubmit(endpoint, {}, "DELETE");
