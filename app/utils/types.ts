@@ -157,10 +157,10 @@ export type VoiceRoom = {
 };
 
 export type AblyWorkerMessage =
-  { name: "sync"; data: SyncMessage; } |
-  { name: "settings"; data: SettingsMessage; } |
-  { name: "m"; data: DiscordMessage; } |
-  { name: "client"; state: ConnectionState; };
+  { event: "sync"; data: SyncMessage; } |
+  { event: "settings"; data: SettingsMessage; } |
+  { event: "m"; data: DiscordMessage; } |
+  { event: "client"; state: ConnectionState; };
 
 export type ConnectionState = "disconnected" | "connected" | "broken";
 

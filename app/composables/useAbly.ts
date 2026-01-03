@@ -10,13 +10,13 @@ export default function (
   let poisoned = false;
 
   const onMessage = (e: MessageEvent<AblyWorkerMessage>) => {
-    if (e.data.name === "sync") {
+    if (e.data.event === "sync") {
       sync(e.data.data);
-    } else if (e.data.name === "settings") {
+    } else if (e.data.event === "settings") {
       settings(e.data.data);
-    } else if (e.data.name === "m") {
+    } else if (e.data.event === "m") {
       discord(e.data.data);
-    } else if (e.data.name === "client") {
+    } else if (e.data.event === "client") {
       if (e.data.state === "connected") {
         if (poisoned) window.location.reload();
         else connected.value = true;

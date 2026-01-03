@@ -9,7 +9,7 @@ self.addEventListener("connect", (e: any) => {
   console.log("Client connected");
   for (const port of e.ports) {
     ports.push(port);
-    port.postMessage({ name: "client", state });
+    port.postMessage({ event: "client", state });
     rewind.forEach(r => port.postMessage(r));
   }
 });
@@ -60,34 +60,37 @@ const rewind = new Array();
 let state: ConnectionState = "disconnected";
 
 // Broadcast all messages on the `huntbot` channel to all clients.
-huntbot.subscribe("sync", (e) => {
+huntbot.subscribe("sync", (e: any) => {
+  e.event = e.name;
   console.log("Sync", e);
   if (rewind.length >= 100) rewind.shift();
   rewind.push(e);
-  broadcast(e as any);
+  broadcast(e);
 });
-huntbot.subscribe("settings", (e) => {
+huntbot.subscribe("settings", (e: any) => {
+  e.event = e.name;
   console.log("Settings", e);
-  broadcast(e as any);
+  broadcast(e);
 });
 
 // Also broadcast all messages on the `discord` channel. These are published on
 // a separate channel to avoid clobbering the rewind window for sync.
 const discord = client.channels.get("discord");
-discord.subscribe("m", (e) => {
-  broadcast(e as any);
+discord.subscribe("m", (e: any) => {
+  e.event = e.name;
+  broadcast(e);
 });
 
 // Notify clients of connection state changes.
 client.connection.on("connected", () => {
   console.log("Connected");
   state = "connected";
-  broadcast({ name: "client", state });
+  broadcast({ event: "client", state });
 });
 client.connection.on("disconnected", () => {
   console.log("Disconnected");
   state = "disconnected";
-  broadcast({ name: "client", state });
+  broadcast({ event: "client", state });
 });
 
 // After about two minutes offline, uninterrupted in-order message delivery is
@@ -96,7 +99,7 @@ client.connection.on("disconnected", () => {
 client.connection.on("suspended", () => {
   console.log("Terminating...");
   state = "broken";
-  broadcast({ name: "client", state });
+  broadcast({ event: "client", state });
   client.close();
   close();
 });
