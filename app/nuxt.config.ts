@@ -4,6 +4,7 @@ export default defineNuxtConfig({
   appConfig: {
     apiBase: prod ? "https://api.emojihunt.org" : "http://localhost:8080",
     clientID: prod ? "794725034152689664" : "1058094051586490368",
+    newSyncBackend: true,
   },
   build: {
     transpile: ["emoji-mart-vue-fast"],

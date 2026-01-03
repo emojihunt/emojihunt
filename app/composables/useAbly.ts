@@ -1,5 +1,7 @@
 import AblySharedWorker from "~/ablyWorker?sharedworker";
 import AblyDedicatedWorker from "~/ablyWorker?worker";
+import LiveSharedWorker from "~/liveWorker?sharedworker";
+import LiveDedicatedWorker from "~/liveWorker?worker";
 import type { AblyWorkerMessage, DiscordMessage, SettingsMessage, SyncMessage } from "~/utils/types";
 
 export default function (
@@ -30,15 +32,20 @@ export default function (
   };
   const onError = (e: Event) => console.warn("Worker Error:", e);
   onMounted(() => {
+    const { newSyncBackend } = useAppConfig();
     // SharedWorker is only available on the client...
     if (typeof SharedWorker === "undefined") {
       // ...and isn't available in Chrome for Android.
-      const worker = new AblyDedicatedWorker({ name: "🌊🎨🎡 ·⚡" });
+      const worker = newSyncBackend
+        ? new LiveDedicatedWorker({ name: "🌊🎨🎡 ·⚡⚡" })
+        : new AblyDedicatedWorker({ name: "🌊🎨🎡 ·⚡" });
       worker.addEventListener("message", onMessage);
       worker.addEventListener("error", onError);
       worker.postMessage("start");
     } else {
-      const worker = new AblySharedWorker({ name: "🌊🎨🎡 ·⚡" });
+      const worker = newSyncBackend
+        ? new LiveSharedWorker({ name: "🌊🎨🎡 ·⚡⚡" })
+        : new AblySharedWorker({ name: "🌊🎨🎡 ·⚡" });
       worker.port.addEventListener("message", onMessage);
       worker.port.addEventListener("error", onError);
       worker.port.start();
