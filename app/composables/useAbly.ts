@@ -26,7 +26,7 @@ export default function (
       } else if (e.data.state === "disconnected") {
         connected.value = false;
       } else if (e.data.state === "dead") {
-        console.warn("Connection lost. Reloading page...");
+        console.warn("Live server got too far ahead. Reloading page...");
         window.location.reload();
       } else { // "broken" (Ably only)
         console.warn("Connection lost. Will reload page when next online...");

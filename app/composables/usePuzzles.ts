@@ -123,6 +123,7 @@ export async function initializePuzzles(): Promise<State> {
   const optimistic = new Map<number, Optimistic>();
   let optimisticCounter = Math.floor(Number.MAX_SAFE_INTEGER / 2);
   let latestChangeId = 0;
+  let searching = false;
 
   const refresh = () => { // clocks at around 4ms
     // First, materialize optimistically-applied updates.
@@ -188,7 +189,17 @@ export async function initializePuzzles(): Promise<State> {
   };
 
   const onSync = ({ change_id, kind, puzzle, round }: SyncMessage) => {
-    if (change_id <= latestChangeId) return;
+    if (change_id < latestChangeId) {
+      return;
+    } else if (change_id === latestChangeId) {
+      console.log("Live sync caught up!");
+      searching = false; // we're all caught up!
+      return;
+    } else if (searching) {// change_id > latestChangeId
+      console.warn("Live worker got too far ahead. Reloading page...");
+      window.location.reload();
+      return;
+    }
     for (const key of [...optimistic.keys()]) {
       if (key <= change_id) optimistic.delete(key);
     }
@@ -317,6 +328,9 @@ export async function initializePuzzles(): Promise<State> {
     throw error.value;
   }
   latestChangeId = data.value.change_id;
+  if (latestChangeId > 0) {
+    searching = true;
+  }
   data.value.puzzles.forEach((p) => _puzzles.set(p.id, p));
   data.value.rounds.forEach((r) => _rounds.set(r.id, r));
   onSettings(data.value.settings);
