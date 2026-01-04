@@ -114,4 +114,9 @@ a:hover svg:first-child {
 a:hover svg:last-child {
   display: block;
 }
+
+a:focus-visible {
+  border-radius: 2px;
+  outline: 2px solid black;
+}
 </style>
