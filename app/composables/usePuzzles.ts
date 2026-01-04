@@ -132,10 +132,12 @@ export async function initializePuzzles(): Promise<State> {
     for (const [_, entry] of [...optimistic.entries()].sort()) {
       switch (entry.type) {
         case "puzzle":
-          localPuzzles.set(entry.id, { ..._puzzles.get(entry.id)!, ...entry });
+          let p = localPuzzles.get(entry.id);
+          if (p) localPuzzles.set(entry.id, { ...p, ...entry });
           break;
         case "round":
-          localRounds.set(entry.id, { ..._rounds.get(entry.id)!, ...entry });
+          let r = localRounds.get(entry.id);
+          if (r) localRounds.set(entry.id, { ...r, ...entry });
           break;
         case "puzzle.delete":
           localPuzzles.delete(entry.id);
@@ -147,7 +149,7 @@ export async function initializePuzzles(): Promise<State> {
     }
 
     localPuzzles.forEach((v, k) => updateReactiveMap(puzzles, k, v));
-    puzzles.forEach((_, k) => _puzzles.has(k) || puzzles.delete(k));
+    puzzles.forEach((_, k) => localPuzzles.has(k) || puzzles.delete(k));
 
     const grouped = new Map<number, Puzzle[]>();
     for (const puzzle of puzzles.values()) {
@@ -173,7 +175,7 @@ export async function initializePuzzles(): Promise<State> {
 
     localRounds.forEach((v, k) => updateReactiveMap(rounds, k,
       hydrateRound(v, grouped.get(v.id) || [])));
-    rounds.forEach((_, k) => _rounds.has(k) || rounds.delete(k));
+    rounds.forEach((_, k) => localRounds.has(k) || rounds.delete(k));
 
     puzzleCount.value = puzzles.size;
 
