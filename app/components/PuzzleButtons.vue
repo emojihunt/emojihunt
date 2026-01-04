@@ -13,7 +13,7 @@ const discordURL = computed(() => puzzle.discord_channel ?
 <template>
   <nav>
     <!-- Icons from Heroicons, https://heroicons.com. -->
-    <ETooltip text="Puzzle Page" :delay-duration="750" :side-offset="1">
+    <ETooltip text="Puzzle Page" :delay-duration="750" :side-offset="4">
       <NuxtLink :to="puzzle.puzzle_url" target="_blank" :ok="!!puzzle.puzzle_url"
         data-tabsequence="0" style="--hue: 238deg;">
         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
@@ -28,7 +28,7 @@ const discordURL = computed(() => puzzle.discord_channel ?
         </svg>
       </NuxtLink>
     </ETooltip>
-    <ETooltip text="Google Spreadsheet" :delay-duration="750" :side-offset="1">
+    <ETooltip text="Google Spreadsheet" :delay-duration="750" :side-offset="4">
       <NuxtLink :to="spreadsheetURL" target="_blank" :ok="!!spreadsheetURL"
         data-tabsequence="1" style="--hue: 148deg;">
         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
@@ -44,7 +44,7 @@ const discordURL = computed(() => puzzle.discord_channel ?
         </svg>
       </NuxtLink>
     </ETooltip>
-    <ETooltip text="Discord Channel" :delay-duration="750" :side-offset="1">
+    <ETooltip text="Discord Channel" :delay-duration="750" :side-offset="4">
       <NuxtLink :to="discordURL" :target="discordTarget" :ok="!!discordURL"
         data-tabsequence="2" style="--hue: 282deg;">
         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"

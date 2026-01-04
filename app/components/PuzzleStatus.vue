@@ -75,7 +75,7 @@ const select = (status: Status) => {
     <div v-if="puzzle.answer || answering" class="answer">
       <EditableSpan ref="input" :value="puzzle.answer" :tabsequence="5"
         :sticky="!!answering" @save="save" @cancel="cancel" :readonly="saving" />
-      <ETooltip :text="answering || puzzle.status" side="left">
+      <ETooltip :text="answering || puzzle.status" side="left" :side-offset="4">
         <button :data-tabsequence="6"
           @click="() => answering ? (answering = null, expanded = id) : expanded = (expanded === id ? 0 : id)">
           <span>{{ StatusEmoji(answering || puzzle.status) }}</span>

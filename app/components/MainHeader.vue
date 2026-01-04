@@ -33,7 +33,7 @@ onMounted(() => setTimeout(() => ably.value?.classList.add("ready"), 2500));
     <div class="flex-spacer"></div>
     <section>
       <div class="row">
-        <ETooltip :text="settings.huntCredentials || ''" side="bottom" :side-offset="4">
+        <ETooltip :text="settings.huntCredentials || ''" side="bottom" :side-offset="8">
           <NuxtLink :to="settings.huntURL" target="_blank" class="hunt">
             {{ settings.huntName || 'Mystery Hunt' }}
           </NuxtLink>

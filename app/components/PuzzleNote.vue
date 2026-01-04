@@ -31,7 +31,7 @@ const save = (updated: string) => {
 
 <template>
   <div class="cell">
-    <ETooltip v-if="tooltip" :text="tooltip.text" :side-offset="4">
+    <ETooltip v-if="tooltip" :text="tooltip.text" :side-offset="6">
       <span class="emoji">{{ tooltip.emoji }}</span>
     </ETooltip>
     <EditableSpan :value="puzzle.note" :tabsequence="8" @save="save" :readonly="saving" />

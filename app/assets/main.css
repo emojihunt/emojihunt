@@ -118,6 +118,10 @@ button[role="checkbox"] span[data-state="checked"] {
   border-radius: 4px;
 }
 
+div[data-reka-popper-content-wrapper]>div[data-dismissable-layer] {
+  padding: 4px 6px !important;
+}
+
 /* Common Classes */
 .flex-spacer {
   flex-grow: 1;
