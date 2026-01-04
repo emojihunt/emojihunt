@@ -38,10 +38,8 @@ const save = (answer: string) => {
 };
 const cancel = () => answering.value && (answering.value = null, expanded && (expanded.value = 0));
 
-const items = computed(() =>
-  Object.values(Status).filter((s) => s !== puzzle.status).map(
-    (s) => ({ id: s, emoji: StatusEmoji(s), name: StatusLabel(s) })
-  )
+const items = Object.values(Status).map(
+  (s) => ({ id: s, emoji: StatusEmoji(s), name: StatusLabel(s), right: StatusNeedsAnswer(s) })
 );
 const select = (status: Status) => {
   if (expanded) expanded.value = 0;
@@ -91,7 +89,7 @@ const select = (status: Status) => {
       </span>
       <Spinner v-if="saving" />
     </button>
-    <OptionPane v-if="expanded === id" :items="items" @select="select" />
+    <OptionPane v-if="expanded === id" :items="items" double @select="select" />
   </div>
 </template>
 
@@ -153,9 +151,15 @@ const select = (status: Status) => {
 }
 
 .answer button {
-  line-height: calc(1.75rem - 1px);
+  height: 28.33px;
+  line-height: 28px;
   filter: opacity(90%);
   border-radius: 0;
+}
+
+.answer button:focus-visible {
+  /* make Chrome use square outline */
+  outline: 2px solid black;
 }
 
 .answer button:hover {

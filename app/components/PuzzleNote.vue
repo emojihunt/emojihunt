@@ -42,7 +42,8 @@ const save = (updated: string) => {
 <style scoped>
 /* Layout */
 .emoji {
-  width: 1.5rem;
+  display: inline-block;
+  width: 1.25rem;
   text-align: center;
 }
 

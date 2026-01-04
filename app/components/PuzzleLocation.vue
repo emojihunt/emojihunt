@@ -39,13 +39,19 @@ const saveRoom = (updated: string) => {
     .finally(() => savingRoom.value = false);
 };
 
-const items = computed(() =>
-  [...voiceRooms.values(), { id: "", emoji: "+", name: "In-person" }]
-);
+const items = computed(() => {
+  const array = [...[...voiceRooms.values()].map((v => ({ ...v, right: false })))];
+  if (!puzzle.location) {
+    const label =
+      array.push({ id: "", emoji: "", name: puzzle.voice_room ? "Add In-Person" : "In-Person", right: true });
+  }
+  return array;
+});
+
 const select = (option: string) => {
   if (option) { // voice room
     saveRoom(option);
-  } else { // "+ In-person"
+  } else { // (add) in-person
     if (expanded) expanded.value = 0;
     answering.value = true;
     nextTick(() => location.value?.focus());
@@ -62,8 +68,8 @@ const select = (option: string) => {
           <ETooltip v-if="room" :text="`in ${room.name}`" :side-offset="6">
             <span class="emoji">{{ room.emoji }}</span>
           </ETooltip>
-          <span class="description" v-if="!(puzzle.location || answering)">{{ room.name
-            }}</span>
+          <span class="description" v-if="!(puzzle.location || answering)">{{
+            room.name }}</span>
         </template>
         <ETooltip v-else-if="puzzle.location" text="Add a Voice Room" :side-offset="6">
           <span class="emoji">📍</span>
@@ -95,7 +101,8 @@ button.room {
 }
 
 .emoji {
-  width: 1.5rem;
+  display: inline-block;
+  width: 1rem;
   text-align: center;
 }
 
@@ -132,7 +139,18 @@ button.clear:focus {
   font-size: 0.8125rem;
 }
 
+button.room {
+  height: 28.33px;
+  line-height: 28px;
+}
+
+button.room:focus-visible {
+  /* make Chrome use square outline */
+  outline: 2px solid black;
+}
+
 .emoji {
+  margin: 0 2px;
   line-height: 1.75rem;
   filter: opacity(90%);
   user-select: none;
