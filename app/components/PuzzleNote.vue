@@ -17,9 +17,14 @@ const tooltip = computed(() => {
   return { emoji: "⏰", text: `${formatted} Boston Time` };
 });
 
+const toast = useToast();
 const save = (updated: string) => {
   saving.value = true;
   updatePuzzleOptimistic(id, { note: updated })
+    .catch(() => toast.add({
+      title: "Error", color: "error", description: "Failed to save puzzle",
+      icon: "i-heroicons-exclamation-triangle",
+    }))
     .finally(() => (saving.value = false));
 };
 </script>

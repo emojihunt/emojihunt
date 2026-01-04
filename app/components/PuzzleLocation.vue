@@ -1,5 +1,6 @@
 <script setup lang="ts">
 const { id } = defineProps<{ id: number; }>();
+const toast = useToast();
 
 const { puzzles, voiceRooms, updatePuzzleOptimistic } = usePuzzles();
 const puzzle = puzzles.get(id)!;
@@ -16,6 +17,10 @@ const saveLocation = (updated: string) => {
   savingText.value = true;
   updatePuzzleOptimistic(id, { location: updated })
     .then(() => (answering.value = false))
+    .catch(() => toast.add({
+      title: "Error", color: "error", description: "Failed to save puzzle",
+      icon: "i-heroicons-exclamation-triangle",
+    }))
     .finally(() => (savingText.value = false));
 };
 const cancelLocation = () => (answering.value = false);
@@ -26,7 +31,12 @@ const saveRoom = (updated: string) => {
     .then(() => {
       // add a synthetic delay to reflect sync time
       return new Promise(resolve => setTimeout(resolve, 3500));
-    }).finally(() => savingRoom.value = false);
+    })
+    .catch(() => toast.add({
+      title: "Error", color: "error", description: "Failed to save puzzle",
+      icon: "i-heroicons-exclamation-triangle",
+    }))
+    .finally(() => savingRoom.value = false);
 };
 
 const items = computed(() =>

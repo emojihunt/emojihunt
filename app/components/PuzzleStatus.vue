@@ -1,5 +1,6 @@
 <script setup lang="ts">
 const { id } = defineProps<{ id: number; }>();
+const toast = useToast();
 
 const { puzzles, updatePuzzleOptimistic } = usePuzzles();
 const puzzle = puzzles.get(id)!;
@@ -18,12 +19,20 @@ const save = (answer: string) => {
     // Answer with state change to "Solved", etc.
     saving.value = true;
     updatePuzzleOptimistic(id, { answer, status: answering.value, voice_room: "" })
+      .catch(() => toast.add({
+        title: "Error", color: "error", description: "Failed to save puzzle",
+        icon: "i-heroicons-exclamation-triangle",
+      }))
       .finally(() => (saving.value = false));
     answering.value = null;
   } else {
     // Regular answer fixup
     saving.value = true;
     updatePuzzleOptimistic(id, { answer })
+      .catch(() => toast.add({
+        title: "Error", color: "error", description: "Failed to save puzzle",
+        icon: "i-heroicons-exclamation-triangle",
+      }))
       .finally(() => (saving.value = false));
   }
 };
@@ -40,11 +49,19 @@ const select = (status: Status) => {
   if (!StatusNeedsAnswer(status)) {
     saving.value = true;
     updatePuzzleOptimistic(id, { status, answer: "" })
+      .catch(() => toast.add({
+        title: "Error", color: "error", description: "Failed to save puzzle",
+        icon: "i-heroicons-exclamation-triangle",
+      }))
       .finally(() => (saving.value = false));
     nextTick(() => button.value?.focus());
   } else if (puzzle.answer) {
     saving.value = true;
     updatePuzzleOptimistic(id, { status })
+      .catch(() => toast.add({
+        title: "Error", color: "error", description: "Failed to save puzzle",
+        icon: "i-heroicons-exclamation-triangle",
+      }))
       .finally(() => (saving.value = false));
   } else {
     answering.value = status;
