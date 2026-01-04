@@ -105,8 +105,17 @@ section>div {
 
 .row a {
   display: flex;
+}
+
+.row a:focus-visible {
+  outline: 2px solid white;
   outline-offset: 2px;
-  outline-color: white !important;
+  border-radius: 1px;
+}
+
+.hunt,
+.logo {
+  line-height: 16px;
 }
 
 p.dot {
@@ -170,6 +179,10 @@ p.dot:before {
 
 .toggle {
   --ui-primary: v-bind(color);
+}
+
+.toggle :deep(button) {
+  outline-color: v-bind(color);
 }
 
 .toggle :deep(label) {
