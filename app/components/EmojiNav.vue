@@ -158,28 +158,29 @@ a span {
   display: block;
 }
 
+a span.grayscale,
 a span.complete {
   opacity: 50%;
   filter: grayscale(100%);
-
-  /* Strikethrough. https://stackoverflow.com/a/40499367 */
-  background: linear-gradient(to left top,
-      transparent 47.75%, currentColor 49.5%,
-      currentColor 50.5%, transparent 52.25%);
 }
 
-a span.grayscale {
-  opacity: 50%;
-  filter: grayscale(100%);
+a span.complete {
+  /* Strikethrough. https://stackoverflow.com/a/40499367 */
+  background: linear-gradient(to left top,
+      transparent 48%, currentColor 49.5%,
+      currentColor 50.5%, transparent 52%);
 }
 
 a:hover span {
+  transform: scale(110%);
+
   opacity: 100%;
   filter: drop-shadow(0 1px 1px oklch(85% 0 0deg));
-  transform: scale(110%);
 }
 
+a:hover span.grayscale,
 a:hover span.complete {
   opacity: 80%;
+  filter: grayscale(100%) drop-shadow(0 1px 1px oklch(85% 0 0deg));
 }
 </style>
