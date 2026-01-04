@@ -164,16 +164,17 @@ const copy = async (): Promise<void> => {
 /* Theming */
 .pill {
   font-size: 1rem;
-  padding: 0 1.2rem;
+  padding: 0 18px 0 calc(21.25px - 6px);
 
   color: oklch(51% 0.075 v-bind(hue));
   background: linear-gradient(white, white) padding-box,
     linear-gradient(68deg,
-      oklch(80% 0.10 calc(v-bind(hue) - 10)),
-      oklch(65% 0.21 calc(v-bind(hue) + 20))) border-box;
+      oklch(72% 0.10 calc(v-bind(hue) - 10)),
+      oklch(62% 0.15 calc(v-bind(hue) + 20))) border-box;
 
   border: var(--pill-border) solid transparent;
-  border-radius: 7px;
+  border-left: 6px solid transparent;
+  border-radius: 10px;
 
   cursor: default;
 }
@@ -182,8 +183,8 @@ const copy = async (): Promise<void> => {
   color: oklch(51% 0 0deg);
   background: linear-gradient(white, white) padding-box,
     linear-gradient(68deg,
-      oklch(80% 0 0deg),
-      oklch(65% 0 0deg)) border-box;
+      oklch(72% 0 0deg),
+      oklch(62% 0 0deg)) border-box;
 }
 
 .pill.filter .emoji,
