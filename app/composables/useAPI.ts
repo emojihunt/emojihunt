@@ -13,6 +13,7 @@ export default function <T>(
   let params = {
     baseURL: apiBase,
     credentials: "include",
+    timeout: 10_000,
     ...(opts as any),
   };
 

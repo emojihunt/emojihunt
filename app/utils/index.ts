@@ -1,3 +1,5 @@
+import type { FetchResponse } from 'ofetch';
+
 export const highlightContents = (element: HTMLElement): void => {
   const node = element.childNodes[0]!;
   const range = document.createRange();
@@ -14,14 +16,16 @@ export const formSubmit = async (
   url: string,
   data: object,
   method: "POST" | "DELETE" = "POST",
-): Promise<Response> => {
+): Promise<FetchResponse<any>> => {
   const { apiBase } = useAppConfig();
-  return await fetch(apiBase + url, {
+  return await $fetch.raw(apiBase + url, {
     method: method,
     credentials: "include",
     headers: {
       "Content-Type": "application/x-www-form-urlencoded",
     },
     body: (new URLSearchParams(data as any)).toString(),
-  });
+    timeout: 10_000,
+    ignoreResponseError: true,
+  }) as any;
 };

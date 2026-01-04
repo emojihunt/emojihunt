@@ -26,7 +26,7 @@ const submit = async (e: Event) => {
     emit("close");
   } else {
     previous = toast.add({
-      title: "Error", color: "error", description: (await response.json()).message,
+      title: "Error", color: "error", description: response._data.message,
       icon: "i-heroicons-exclamation-triangle",
     }).id;
   }
@@ -41,7 +41,7 @@ const test = async (e: Event) => {
     window.location.reload();
   } else if (response.status === 200) {
     const result = new Map<string, ScrapedPuzzle[]>();
-    for (const scraped of await response.json()) {
+    for (const scraped of response._data) {
       if (!result.has(scraped.round_name)) {
         result.set(scraped.round_name, []);
       }
@@ -50,7 +50,7 @@ const test = async (e: Event) => {
     testing.value = result;
   } else {
     previous = toast.add({
-      title: "Error", color: "error", description: (await response.json()).message,
+      title: "Error", color: "error", description: response._data.message,
       icon: "i-heroicons-exclamation-triangle",
     }).id;
     testing.value = false;

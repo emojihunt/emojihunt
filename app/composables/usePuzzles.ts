@@ -47,7 +47,7 @@ type Optimistic = (
 const key = Symbol() as InjectionKey<State>;
 
 const updateRequest = async <T>(endpoint: string, params: any): Promise<[T, number]> => {
-  let response: Response;
+  let response;
   if (params.delete === true) {
     response = await formSubmit(endpoint, {}, "DELETE");
   } else {
@@ -59,12 +59,12 @@ const updateRequest = async <T>(endpoint: string, params: any): Promise<[T, numb
     throw createError({
       fatal: true,
       statusCode: response.status,
-      data: await response.json().catch(() => response.text()),
+      data: response._data,
     });
   }
   const header = response.headers.get("X-Change-ID");
   if (!header) throw "Missing X-Change-ID header";
-  return [await response.json(), parseInt(header)];
+  return [await response._data, parseInt(header)];
 };
 
 const updateReactiveMap = <K, V>(m: Map<K, V>, k: K, v: V): void => {

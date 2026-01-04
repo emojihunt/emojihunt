@@ -11,11 +11,10 @@ const logout = async (e: MouseEvent) => {
   if (res.status === 200) {
     navigateTo("/", { external: true }); // full-page reload
   } else {
-    const data = await res.text();
     throw createError({
       fatal: true,
       statusCode: res.status,
-      data,
+      data: res._data,
     });
   }
 };
