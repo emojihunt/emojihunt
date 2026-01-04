@@ -1,7 +1,7 @@
 <script setup lang="ts">
 const { id } = defineProps<{ id: number; }>();
 
-const { puzzles, voiceRooms, updatePuzzleOptimistic } = usePuzzles();
+const { puzzles, updatePuzzleOptimistic } = usePuzzles();
 const puzzle = puzzles.get(id)!;
 const saving = ref(false);
 
@@ -34,7 +34,7 @@ const save = (updated: string) => {
     <ETooltip v-if="tooltip" :text="tooltip.text" :side-offset="4">
       <span class="emoji">{{ tooltip.emoji }}</span>
     </ETooltip>
-    <EditableSpan :value="puzzle.note" :tabsequence="8" @save="save" />
+    <EditableSpan :value="puzzle.note" :tabsequence="8" @save="save" :readonly="saving" />
     <Spinner v-if="saving" class="spinner" />
   </div>
 </template>

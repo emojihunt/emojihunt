@@ -74,7 +74,7 @@ const select = (option: string) => {
       </button>
       <EditableSpan v-if="puzzle.location || answering" ref="location"
         :value="puzzle.location" :tabsequence="7" @save="saveLocation"
-        @cancel="cancelLocation" />
+        @cancel="cancelLocation" :readonly="savingText" />
       <button class="clear" v-if="room && !savingRoom && !savingText"
         @click="() => saveRoom('')" tabindex="-1">Clear</button>
       <Spinner v-if="savingText || savingRoom" class="spinner" />
