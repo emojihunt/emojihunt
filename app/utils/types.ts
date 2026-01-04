@@ -85,7 +85,7 @@ export const StatusEmoji = (status: Status): string => {
     case Status.Abandoned: return "🗑️";
     case Status.Solved: return "🏅";
     case Status.Backsolved: return "🤦‍♀️";
-    case Status.Purchased: return "💸 ";
+    case Status.Purchased: return "💸";
   }
 };
 
