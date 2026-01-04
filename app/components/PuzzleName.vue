@@ -25,6 +25,11 @@ button {
   border-radius: 0;
 }
 
+button:focus-visible {
+  /* make Chrome use square outline */
+  outline: 2px solid black;
+}
+
 .meta:focus-within,
 .meta button:focus-visible {
   outline-color: oklch(50% 0.24 var(--round-hue)) !important;
@@ -37,7 +42,6 @@ button {
       oklch(50% 0.24 calc(var(--round-hue) + 60)) 20%,
       oklch(50% 0.24 calc(var(--round-hue) + 180)) 100%);
   background-clip: text;
-  -webkit-background-clip: text;
   color: transparent;
   font-weight: 550;
 }
@@ -47,7 +51,7 @@ button {
   padding: 0;
 
   font-size: 0.8125rem;
-  line-height: 28px;
+  line-height: 28.33px;
   align-self: flex-start;
   color: oklch(60% 0.15 245deg);
 }
@@ -69,5 +73,9 @@ button:focus {
 
 button:hover {
   color: oklch(40% 0.15 245deg);
+}
+
+.meta button:hover {
+  color: oklch(40% 0.15 var(--round-hue));
 }
 </style>
