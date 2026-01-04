@@ -70,7 +70,7 @@ const updateRequest = async <T>(endpoint: string, params: any): Promise<[T, numb
 const updateReactiveMap = <K, V>(m: Map<K, V>, k: K, v: V): void => {
   const existing = m.get(k);
   if (existing) Object.assign(existing, v);
-  else m.set(k, v);
+  else m.set(k, { ...v });
 };
 
 const hydrateRound = (raw: Round, puzzles: Puzzle[]): AnnotatedRound => {
