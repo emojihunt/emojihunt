@@ -156,24 +156,18 @@ export type VoiceRoom = {
   name: string;
 };
 
-export type StatusMessage =
-  { event: "start", id: string; } |
-  { event: "activity", id: string, puzzle: number, active: boolean; };
-
-export type AblyWorkerMessage =
-  { event: "sync"; data: SyncMessage; } |
-  { event: "settings"; data: SettingsMessage; } |
-  { event: "m"; data: DiscordMessage; } |
-  { event: "client"; state: ConnectionState; };
-
 export type ConnectionState = "disconnected" | "connected" | "broken" | "dead";
 
-export type SyncMessage = {
-  change_id: number;
-  kind: "upsert" | "delete";
-  puzzle?: Puzzle;
-  round?: Round;
-};
+export type StatusMessage =
+  | { event: "start", id: string; }
+  | { event: "activity", id: string, puzzle: number, active: boolean; };
+
+export type AblyWorkerMessage =
+  | { event: "client"; state: ConnectionState; }
+  | { event: "m"; data: DiscordMessage; }
+  | { event: "settings"; data: SettingsMessage; }
+  | { event: "sync"; data: SyncMessage; }
+  | { event: "users"; data: UsersMessage; };
 
 export type DiscordMessage = {
   id: string;
@@ -181,6 +175,18 @@ export type DiscordMessage = {
   u: string;
   t: number;
   msg: string;
+};
+
+export type SyncMessage = {
+  change_id: number;
+  kind: "upsert" | "delete";
+  puzzle?: Puzzle;
+  round?: Round;
+};
+export type UsersMessage = {
+  users: any;
+  delete?: string[];
+  replace?: boolean;
 };
 
 export const ObserverKey = Symbol() as

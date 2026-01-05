@@ -7,8 +7,11 @@ const updateState = (s: ConnectionState) =>
   (state = s, broadcast({ event: "client", state }));
 
 const rewind = new Array<SyncMessage>();
+
 const activity = new Map<string, [number, boolean]>();
 let activityChanged = false;
+
+const users = new Map<string, [string, string]>();
 
 let backoff = 500;
 
@@ -104,15 +107,21 @@ const reconnect = () => new Promise((resolve) => {
     const msg = JSON.parse(e.data) as AblyWorkerMessage;
     backoff = 500; // only reset after first successful message
     switch (msg.event) {
+      case "m":
+        break;
+      case "settings":
+        console.log("[*] Settings", msg.data);
+        break;
       case "sync":
         console.log("[*] Sync", msg.data);
         rewind.push(msg.data);
         if (rewind.length >= 256) rewind.shift();
         break;
-      case "settings":
-        console.log("[*] Settings", msg.data);
-        break;
-      case "m":
+      case "users":
+        console.log("[*] Users", msg.data);
+        if (msg.data.replace) users.clear();
+        Object.entries(msg.data.users).forEach(([k, v]) => users.set(k, v as any));
+        msg.data.delete?.forEach((k) => users.delete(k));
         break;
       default:
         console.warn("[*] Unknown", msg);
