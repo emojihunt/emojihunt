@@ -156,6 +156,10 @@ export type VoiceRoom = {
   name: string;
 };
 
+export type StatusMessage =
+  { event: "start", id: string; } |
+  { event: "activity", id: string, puzzle: number, active: boolean; };
+
 export type AblyWorkerMessage =
   { event: "sync"; data: SyncMessage; } |
   { event: "settings"; data: SettingsMessage; } |

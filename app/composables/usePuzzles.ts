@@ -4,6 +4,7 @@
 //
 type State = {
   connected: Ref<boolean>,
+  active: Ref<boolean>,
   discordCallback: Ref<((m: DiscordMessage) => void) | undefined>;
 
   settings: Settings;
@@ -96,7 +97,7 @@ const hydrateRound = (raw: Round, puzzles: Puzzle[]): AnnotatedRound => {
 //
 // https://github.com/vuejs/vue/issues/12678
 //
-export async function initializePuzzles(): Promise<State> {
+export async function initializePuzzles(pageId?: number): Promise<State> {
   if (inject(key, undefined)) {
     throw new Error("usePuzzles() may only be initialized once");
   }
@@ -242,10 +243,10 @@ export async function initializePuzzles(): Promise<State> {
   };
   const discordCallback = ref<(m: DiscordMessage) => void>();
   const onDiscord = (m: DiscordMessage) => discordCallback.value?.(m);
-  const connected = useAbly(onSync, onSettings, onDiscord);
+  const [connected, active] = useAbly(pageId, onSync, onSettings, onDiscord);
 
   const state: State = {
-    connected, discordCallback,
+    connected, active, discordCallback,
     settings, puzzles, rounds, voiceRooms,
     puzzleCount, solvedPuzzleCount, ordering,
     async addRound(data: NewRound) {

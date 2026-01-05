@@ -1,10 +1,14 @@
-import type { AblyWorkerMessage, ConnectionState, SyncMessage } from './utils/types';
+import type {
+  AblyWorkerMessage, ConnectionState, StatusMessage, SyncMessage,
+} from './utils/types';
 
 let state: ConnectionState = "disconnected";
 const updateState = (s: ConnectionState) =>
   (state = s, broadcast({ event: "client", state }));
 
 const rewind = new Array<SyncMessage>();
+const activity = new Map<string, [number, boolean]>();
+let activityChanged = false;
 
 let backoff = 500;
 
@@ -22,32 +26,61 @@ const broadcast = (m: AblyWorkerMessage) => ports.forEach(p => p.postMessage(m))
 
 self.addEventListener("connect", (e: any) => {
   for (const port of e.ports) {
-    port.addEventListener("message", (e: MessageEvent<string>) => {
-      const id = e.data;
-      console.log(`[${id}] Joined`);
-      ports.set(id, port);
-      navigator.locks.request(id, () => {
-        ports.delete(id);
-        console.log(`[${id}] Left`);
-      });
-      unicast(port, { event: "client", state });
-      rewind.forEach(data => unicast(port, { event: "sync", data }));
-    });
+    port.addEventListener("message", (e: MessageEvent<StatusMessage>) =>
+      handleStatusMessage(e, port));
     port.start();
   }
 });
 
 // Fallback: can be run as a non-shared Worker, for Chrome for Android.
-self.addEventListener("message", (e: MessageEvent<string>) => {
-  if (e.data === "start") {
-    console.log("Worker launched in dedicated scope");
-    const port = self as DedicatedWorkerGlobalScope;
-    ports.set(crypto.randomUUID(), port);
-    unicast(port, { event: "client", state });
-    rewind.forEach(data => unicast(port, { event: "sync", data }));
-  }
-});
+self.addEventListener("message", (e: MessageEvent<StatusMessage>) =>
+  handleStatusMessage(e, null)
+);
 
+const handleStatusMessage = (e: MessageEvent<StatusMessage>, port: any) => {
+  const { event, id } = e.data;
+  switch (event) {
+    case "start":
+      if (port) {
+        console.log(`[${id}] Joined`);
+        navigator.locks.request(id, () => {
+          ports.delete(id);
+          activity.delete(id);
+          activityChanged = true;
+          console.log(`[${id}] Left`);
+        });
+      } else { // dedicated worker fallback
+        console.log("Worker launched in dedicated scope");
+        port = self as DedicatedWorkerGlobalScope;
+      }
+      ports.set(id, port);
+      unicast(port, { event: "client", state });
+      rewind.forEach(data => unicast(port, { event: "sync", data }));
+      break;
+    case "activity":
+      const { puzzle, active } = e.data;
+      console.log(`[${id}]`, active ? "Active" : "Inactive", `(Puzzle #${puzzle})`);
+      activity.set(id, [puzzle, active]);
+      activityChanged = true;
+      break;
+    default:
+      console.error("Unexpected status event:", e.data);
+  }
+};
+
+const sendActivity = (socket: WebSocket) => {
+  const computed = new Map<number, boolean>();
+  activity.forEach(([puzzle, active]) =>
+    computed.set(puzzle, computed.get(puzzle) || active)
+  );
+  const raw = Object.fromEntries(computed);
+  console.log("[rx] Activity", raw);
+  socket.send(JSON.stringify({ event: "activity", activity: raw }));
+  activityChanged = false;
+};
+setInterval(() => (activityChanged && socket && sendActivity(socket)), 5_000);
+
+let socket: WebSocket | null = null;
 const reconnect = () => new Promise((resolve) => {
   let endpoint = origin.includes("localhost") // can't useAppConfig() here :(
     ? "ws://localhost:9090/rx"
@@ -63,6 +96,8 @@ const reconnect = () => new Promise((resolve) => {
     updateState("connected");
     clearTimeout(timer);
     backoff = 500;
+    socket = ws;
+    sendActivity(ws);
   });
   ws.addEventListener("close", (e) => resolve(e));
   ws.addEventListener("error", (e) => resolve(e));
@@ -93,8 +128,9 @@ console.log("Live worker initialized");
 (async () => {
   while (true) {
     const error = await reconnect();
-    updateState("disconnected");
+    socket = null;
     backoff = Math.min(backoff * 2, 4_000);
+    updateState("disconnected");
     if (error === null) {
       console.warn("[rx] Timed out");
       // no sleep, we've already been waiting

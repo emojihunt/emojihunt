@@ -14,10 +14,10 @@ useHead({
   ],
 });
 const route = useRoute();
-const { puzzles, rounds, voiceRooms, settings } = await initializePuzzles();
+const id = parseInt(route.params.id as string);
+const { active, puzzles, rounds, voiceRooms, settings } = await initializePuzzles(id);
 
 const puzzle = computed(() => {
-  const id = parseInt(route.params.id as string);
   const puzzle = puzzles.get(id);
   if (!puzzle) {
     throw createError({
@@ -90,13 +90,13 @@ onMounted(() => {
 
 <template>
   <div>
-    <main>
+    <main width="100%" height="100dvh">
       <NuxtLink :to="applink" class="applink" v-if="!!applink">
         Open in Google Sheets &nbsp;
       </NuxtLink>
-      <iframe :src="spreadsheetURL"></iframe>
+      <iframe :src="spreadsheetURL" height="100dvh"></iframe>
     </main>
-    <div class="overlay">
+    <div :class="['overlay', active || 'inactive']">
       <nav @keydown="(e) => e.key === 'Escape' && (open = undefined)">
         <section>
           <ETooltip :text="`Status: ${StatusLabel(puzzle.status)}`" side="top"
@@ -144,6 +144,7 @@ onMounted(() => {
           @close="() => (open = undefined)" />
         <InsetDiscord ref="discord" :id="puzzle.id"
           @open="() => nextTick(() => insets?.scrollTo({ top: 99999 }))" />
+        <InsetSnooze v-if="!active" />
       </span>
     </div>
   </div>
@@ -204,8 +205,12 @@ main,
   user-select: none;
 }
 
+.inactive nav {
+  filter: grayscale(100%);
+}
+
 nav {
-  background-color: #f8f8f8;
+  background-color: #f9fbfd;
   border-left: 1px solid #e1e3e1;
 }
 
