@@ -32,7 +32,7 @@ func (s *Server) Receive(c echo.Context) error {
 	}
 
 	// Look up snowflake from cookie
-	snowflake, _ := s.cookie.GetUserID(c)
+	user, _ := s.cookie.GetUserID(c)
 
 	// Access global state (no blocking or returns!)
 	s.mutex.Lock()
@@ -64,13 +64,8 @@ func (s *Server) Receive(c echo.Context) error {
 	// ...add ourselves to the global client list...
 	s.cctr += 1
 	var id = s.cctr
-	if _, ok := s.userIds[snowflake]; !ok {
-		s.uctr += 1
-		s.userIds[snowflake] = s.uctr
-	}
-	var uid = s.userIds[snowflake]
-	log.Printf("rx[%04d]: connect %s/%d", id, snowflake, uid)
-	s.clients[id] = &Client{ch, make(map[int64]bool), uid}
+	log.Printf("rx[%04d]: connect %s", id, user)
+	s.clients[id] = &Client{ch, make(map[int64]bool), user}
 	defer func() {
 		s.mutex.Lock()
 		log.Printf("rx[%04d]: close", id)

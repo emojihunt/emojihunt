@@ -42,12 +42,9 @@ type Server struct {
 	clients map[int64]*Client
 	server  bool // is the api server attached
 
-	uctr    int16 // each user gets a unique short-id
-	users   map[string][2]string
-	userIds map[string]int16
-
 	settings *client.SettingsMessage  // cache the last settings message
 	rewind   []*state.AblySyncMessage // cache recent sync messages
+	users    map[string][2]string
 
 	activityChanged bool
 }
@@ -55,7 +52,7 @@ type Server struct {
 type Client struct {
 	ch       chan state.LiveMessage
 	activity map[int64]bool // puzzle -> active/backgrounded
-	uid      int16          // user short-id
+	user     string         // discord id
 }
 
 var (
@@ -109,7 +106,6 @@ func main() {
 			},
 		},
 		clients: make(map[int64]*Client),
-		userIds: make(map[string]int16),
 		users:   make(map[string][2]string),
 	}
 	go func() {

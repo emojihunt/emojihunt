@@ -4,7 +4,7 @@ import (
 	"github.com/emojihunt/emojihunt/state"
 )
 
-type ActivityMessage map[int64]map[int16]bool // puzzle -> usr -> active
+type ActivityMessage map[int64]map[string]bool // puzzle -> usr -> active
 
 func (m ActivityMessage) EventType() state.EventType {
 	return state.EventTypeActivity
@@ -18,10 +18,10 @@ func (s *Server) SendActivityUpdate() {
 	for _, client := range s.clients {
 		for puzzle, active := range client.activity {
 			if _, ok := msg[puzzle]; !ok {
-				msg[puzzle] = make(map[int16]bool)
+				msg[puzzle] = make(map[string]bool)
 			}
-			if !msg[puzzle][client.uid] {
-				msg[puzzle][client.uid] = active
+			if !msg[puzzle][client.user] {
+				msg[puzzle][client.user] = active
 			}
 		}
 	}
