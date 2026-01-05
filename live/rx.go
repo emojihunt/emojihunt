@@ -128,7 +128,9 @@ func (s *Server) Receive(c echo.Context) error {
 					}
 					continue // skip relaying nil message
 				}
-				if v, ok := msg.(state.AblySyncMessage); ok {
+				switch msg.EventType() {
+				case state.EventTypeSync:
+					var v = msg.(*state.AblySyncMessage)
 					if searching {
 						// Trying to fix a discontinuity
 						if v.ChangeID < latest {

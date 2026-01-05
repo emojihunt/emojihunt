@@ -148,12 +148,13 @@ func (c *Client) watch(ctx context.Context) error {
 		for {
 			select {
 			case msg := <-c.state.LiveMessage:
-				if s, ok := msg.(state.AblySyncMessage); ok {
-					if s.ChangeID <= latest {
-						log.Printf("out-of-order sync: %#v@%d", s, latest)
+				if msg.EventType() == state.EventTypeSync {
+					var v = msg.(state.AblySyncMessage)
+					if v.ChangeID <= latest {
+						log.Printf("out-of-order sync: %#v@%d", v, latest)
 						continue
 					}
-					latest = s.ChangeID
+					latest = v.ChangeID
 				}
 				err := WriteMessage(ws, msg)
 				if err != nil {

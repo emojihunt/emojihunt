@@ -45,8 +45,8 @@ type Server struct {
 	uctr    int16 // each user gets a unique short-id
 	userIds map[string]int16
 
-	settings *client.SettingsMessage // cache the last settings message
-	rewind   []state.AblySyncMessage // cache recent sync messages
+	settings *client.SettingsMessage  // cache the last settings message
+	rewind   []*state.AblySyncMessage // cache recent sync messages
 
 	activityChanged bool
 }
