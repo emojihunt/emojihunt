@@ -13,6 +13,11 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
+type SyncMessage struct {
+	Event    string         `json:"event"`
+	Activity map[int64]bool `json:"activity"`
+}
+
 func (s *Server) Receive(c echo.Context) error {
 	// Parse `after` GET parameter
 	var after int64
@@ -24,6 +29,9 @@ func (s *Server) Receive(c echo.Context) error {
 			return echo.NewHTTPError(http.StatusBadRequest, "param `after`: not a number")
 		}
 	}
+
+	// Look up user from cookie
+	user, _ := s.cookie.GetUserID(c)
 
 	// Access global state (no blocking or returns!)
 	s.mutex.Lock()
@@ -47,10 +55,13 @@ func (s *Server) Receive(c echo.Context) error {
 	s.counter += 1
 	var id = s.counter
 	log.Printf("rx[%04d]: connect", id)
-	s.clients[id] = ch
+	s.clients[id] = &Client{ch, make(map[int64]bool), user}
 	defer func() {
 		s.mutex.Lock()
 		log.Printf("rx[%04d]: close", id)
+		if len(s.clients[id].activity) > 0 {
+			s.activityChanged = true
+		}
 		delete(s.clients, id)
 		s.mutex.Unlock()
 	}()
@@ -81,12 +92,25 @@ func (s *Server) Receive(c echo.Context) error {
 	erg, ctx := errgroup.WithContext(c.Request().Context())
 	erg.Go(func() error {
 		for {
-			_, _, err := ws.ReadMessage()
+			var msg SyncMessage
+			err := ws.ReadJSON(&msg)
 			if err != nil {
 				return err
 			}
+
+			log.Printf("rx[%04d]: %v", id, msg)
+			switch msg.Event {
+			case "activity":
+				s.mutex.Lock()
+				s.clients[id].activity = msg.Activity
+				s.activityChanged = true
+				s.mutex.Unlock()
+			default:
+				log.Printf("rx[%04d]: unknown event type: %s", id, msg.Event)
+			}
 		}
 	})
+
 	erg.Go(func() error {
 		var latest int64
 		var searching = false
@@ -119,7 +143,7 @@ func (s *Server) Receive(c echo.Context) error {
 					} else {
 						// Relaying messages normally
 						if v.ChangeID <= latest {
-							log.Printf("rx[%04d]: out of order: %#v@%d", id, msg, latest)
+							log.Printf("rx[%04d]: out of order: %v@%d", id, msg, latest)
 							continue
 						}
 						latest = v.ChangeID // happy path!

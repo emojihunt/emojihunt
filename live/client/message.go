@@ -2,11 +2,11 @@ package client
 
 import (
 	"encoding/json"
-	"log"
 
 	"github.com/emojihunt/emojihunt/discord"
 	"github.com/emojihunt/emojihunt/state"
 	"github.com/gorilla/websocket"
+	"golang.org/x/xerrors"
 )
 
 func ReadMessage(ws *websocket.Conn) (state.LiveMessage, error) {
@@ -28,7 +28,7 @@ func ReadMessage(ws *websocket.Conn) (state.LiveMessage, error) {
 	case state.EventTypeSync:
 		dst = new(state.AblySyncMessage)
 	default:
-		log.Panicf("unhandled event type: %#v", raw.Event)
+		return nil, xerrors.Errorf("unhandled event type: %#v", raw.Event)
 	}
 	err = json.Unmarshal(raw.Data, &dst)
 	return dst.(state.LiveMessage), err

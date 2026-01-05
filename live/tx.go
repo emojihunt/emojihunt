@@ -46,8 +46,8 @@ func (s *Server) Transmit(c echo.Context) error {
 		s.mutex.Lock()
 		s.server = false
 		s.rewind = nil
-		for _, ch := range s.clients {
-			ch <- nil // sentinel indicating a potential discontinuity
+		for _, client := range s.clients {
+			client.ch <- nil // sentinel indicating a potential discontinuity
 		}
 		s.mutex.Unlock()
 		log.Printf("tx: close")
@@ -69,7 +69,7 @@ func (s *Server) Transmit(c echo.Context) error {
 }
 
 func (s *Server) handle(msg state.LiveMessage) {
-	log.Printf("tx: %#v", msg)
+	log.Printf("tx: %v", msg)
 	txMessages.WithLabelValues(string(msg.EventType())).Inc()
 
 	s.mutex.Lock()
@@ -94,7 +94,7 @@ func (s *Server) handle(msg state.LiveMessage) {
 		}
 	}
 
-	for _, ch := range s.clients {
-		ch <- msg
+	for _, client := range s.clients {
+		client.ch <- msg
 	}
 }

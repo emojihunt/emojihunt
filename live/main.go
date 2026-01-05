@@ -38,12 +38,20 @@ type Server struct {
 	upgrader *websocket.Upgrader
 
 	mutex   sync.Mutex // hold while accessing everything below
-	counter int64
-	clients map[int64](chan state.LiveMessage)
-	server  bool
+	counter int64      // unique client ids, not reused
+	clients map[int64]*Client
+	server  bool // is the api server attached
 
 	settings *client.SettingsMessage // cache the last settings message
 	rewind   []state.AblySyncMessage // cache recent sync messages
+
+	activityChanged bool
+}
+
+type Client struct {
+	ch       chan state.LiveMessage
+	activity map[int64]bool // puzzle -> active/backgrounded
+	user     string
 }
 
 var (
@@ -96,7 +104,7 @@ func main() {
 				return false
 			},
 		},
-		clients: make(map[int64](chan state.LiveMessage)),
+		clients: make(map[int64]*Client),
 	}
 	go func() {
 		for {
@@ -146,6 +154,19 @@ func main() {
 		err := s.echo.Start(":9090")
 		if !errors.Is(err, http.ErrServerClosed) {
 			log.Panicf("echo.Start: %s", err)
+		}
+	}()
+	go func() {
+		for {
+			select {
+			case <-time.After(5 * time.Second):
+				if s.activityChanged {
+					s.SendActivityUpdate()
+					s.activityChanged = false
+				}
+			case <-ctx.Done():
+				return
+			}
 		}
 	}()
 
