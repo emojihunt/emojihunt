@@ -96,7 +96,6 @@ const reconnect = () => new Promise((resolve) => {
     updateState("connected");
     clearTimeout(timer);
     socket = ws;
-    sendActivity(ws);
   });
   ws.addEventListener("close", (e) => resolve(e));
   ws.addEventListener("error", (e) => resolve(e));
