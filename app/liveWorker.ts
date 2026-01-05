@@ -95,7 +95,6 @@ const reconnect = () => new Promise((resolve) => {
     console.log("[rx] ...connected!");
     updateState("connected");
     clearTimeout(timer);
-    backoff = 500;
     socket = ws;
     sendActivity(ws);
   });
@@ -104,6 +103,7 @@ const reconnect = () => new Promise((resolve) => {
 
   ws.addEventListener("message", (e) => {
     const msg = JSON.parse(e.data) as AblyWorkerMessage;
+    backoff = 500; // only reset after first successful message
     switch (msg.event) {
       case "sync":
         console.log("[*] Sync", msg.data);
