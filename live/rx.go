@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/emojihunt/emojihunt/discord"
 	"github.com/emojihunt/emojihunt/live/client"
 	"github.com/emojihunt/emojihunt/state"
 	"github.com/gorilla/websocket"
@@ -37,12 +38,12 @@ func (s *Server) Receive(c echo.Context) error {
 	s.mutex.Lock()
 
 	// ...set up channel and queue initial messages...
-	var ch = make(chan state.LiveMessage, 257)
-	var found = false
-	var hasRewind = len(s.rewind) > 0
+	var ch = make(chan state.LiveMessage, 384)
 	if s.settings != nil {
 		ch <- *s.settings
 	}
+	var found = false
+	var hasRewind = len(s.rewind) > 0
 	for _, msg := range s.rewind {
 		if msg.ChangeID == after {
 			found = true
@@ -50,6 +51,15 @@ func (s *Server) Receive(c echo.Context) error {
 			ch <- msg
 		}
 	}
+
+	var msg = discord.UsersMessage{
+		Users:   make(map[string][2]string),
+		Replace: true,
+	}
+	for k, v := range s.users {
+		msg.Users[k] = v
+	}
+	ch <- &msg
 
 	// ...add ourselves to the global client list...
 	s.cctr += 1

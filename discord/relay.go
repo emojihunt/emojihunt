@@ -22,6 +22,16 @@ var (
 	})
 )
 
+type UsersMessage struct {
+	Users   map[string][2]string `json:"users"`
+	Delete  []string             `json:"delete,omitempty"`
+	Replace bool                 `json:"replace,omitempty"`
+}
+
+func (m *UsersMessage) EventType() state.EventType {
+	return state.EventTypeUsers
+}
+
 // Message Handling
 
 type AblyMessage struct {
@@ -122,12 +132,27 @@ func (c *Client) DisplayAvatar(u *discordgo.User) string {
 	return u.AvatarURL("")
 }
 
+func (c *Client) UserList() map[string][2]string {
+	c.mutex.Lock()
+	defer c.mutex.Unlock()
+	var result = make(map[string][2]string)
+	for id, member := range c.memberCache {
+		result[id] = [2]string{member.DisplayName(), member.AvatarURL("")}
+	}
+	return result
+}
+
 func (c *Client) handleGuildMemberAdd(
 	ctx context.Context, g *discordgo.GuildMemberAdd,
 ) error {
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
 	c.memberCache[g.User.ID] = g.Member
+	c.state.LiveMessage <- &UsersMessage{
+		Users: map[string][2]string{
+			g.User.ID: {g.Member.DisplayName(), g.Member.AvatarURL("")},
+		},
+	}
 	log.Printf("discord: member added: %q", g.User.GlobalName)
 	return nil
 }
@@ -138,6 +163,11 @@ func (c *Client) handleGuildMemberUpdate(
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
 	c.memberCache[g.User.ID] = g.Member
+	c.state.LiveMessage <- &UsersMessage{
+		Users: map[string][2]string{
+			g.User.ID: {g.Member.DisplayName(), g.Member.AvatarURL("")},
+		},
+	}
 	log.Printf("discord: member updated: %q", g.User.GlobalName)
 	return nil
 }
@@ -148,6 +178,9 @@ func (c *Client) handleGuildMemberRemove(
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
 	delete(c.memberCache, g.User.ID)
+	c.state.LiveMessage <- &UsersMessage{
+		Delete: []string{g.User.ID},
+	}
 	log.Printf("discord: member removed: %q", g.User.GlobalName)
 	return nil
 }

@@ -115,12 +115,21 @@ func (c *Client) watch(ctx context.Context) error {
 		}
 	})
 
-	// Forward current discovery state
+	// Forward current global state
 	config, err := c.state.DiscoveryConfig(ctx)
 	if err != nil {
 		return err
 	}
 	err = WriteMessage(ws, c.ComputeMeta(config))
+	if err != nil {
+		return err
+	}
+
+	users := discord.UsersMessage{
+		Users:   c.discord.UserList(),
+		Replace: true,
+	}
+	err = WriteMessage(ws, &users)
 	if err != nil {
 		return err
 	}

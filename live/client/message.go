@@ -27,6 +27,8 @@ func ReadMessage(ws *websocket.Conn) (state.LiveMessage, error) {
 		dst = new(SettingsMessage)
 	case state.EventTypeSync:
 		dst = new(state.AblySyncMessage)
+	case state.EventTypeUsers:
+		dst = new(discord.UsersMessage)
 	default:
 		return nil, xerrors.Errorf("unhandled event type: %#v", raw.Event)
 	}

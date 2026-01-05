@@ -43,6 +43,7 @@ type Server struct {
 	server  bool // is the api server attached
 
 	uctr    int16 // each user gets a unique short-id
+	users   map[string][2]string
 	userIds map[string]int16
 
 	settings *client.SettingsMessage  // cache the last settings message
@@ -109,6 +110,7 @@ func main() {
 		},
 		clients: make(map[int64]*Client),
 		userIds: make(map[string]int16),
+		users:   make(map[string][2]string),
 	}
 	go func() {
 		for {

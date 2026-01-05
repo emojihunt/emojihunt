@@ -80,6 +80,7 @@ const (
 	EventTypeDiscord  = "m"
 	EventTypeSettings = "settings"
 	EventTypeSync     = "sync"
+	EventTypeUsers    = "users"
 )
 
 type LiveMessage interface {

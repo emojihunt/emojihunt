@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/emojihunt/emojihunt/discord"
 	"github.com/emojihunt/emojihunt/live/client"
 	"github.com/emojihunt/emojihunt/state"
 	"github.com/labstack/echo/v4"
@@ -69,9 +70,6 @@ func (s *Server) Transmit(c echo.Context) error {
 }
 
 func (s *Server) handle(msg state.LiveMessage) {
-	log.Printf("tx: %v", msg)
-	txMessages.WithLabelValues(string(msg.EventType())).Inc()
-
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
 
@@ -79,19 +77,41 @@ func (s *Server) handle(msg state.LiveMessage) {
 	defer func() {
 		handleLatency.Observe(time.Since(start).Seconds())
 	}()
+	txMessages.WithLabelValues(string(msg.EventType())).Inc()
 
 	switch v := msg.(type) {
 	case *client.SettingsMessage:
+		log.Printf("tx: %#v", msg)
 		s.settings = v
 	case *state.AblySyncMessage:
+		if v.Puzzle != nil {
+			log.Printf("tx: puzzle: %d %s %#v", v.ChangeID, v.Kind, v.Puzzle)
+		} else {
+			log.Printf("tx: round: %d %s %#v", v.ChangeID, v.Kind, v.Round)
+		}
 		if len(s.rewind) > 0 && v.ChangeID <= s.rewind[len(s.rewind)-1].ChangeID {
 			log.Printf("tx: out-of-order from %d", s.rewind[len(s.rewind)-1].ChangeID)
 		} else {
-			s.rewind = append(s.rewind, *v)
+			s.rewind = append(s.rewind, v)
 			if len(s.rewind) > 256 {
 				s.rewind = s.rewind[len(s.rewind)-256:]
 			}
 		}
+	case *discord.UsersMessage:
+		log.Printf("tx: %#v", v)
+		if v.Replace {
+			for k := range s.users {
+				delete(s.users, k)
+			}
+		}
+		for uid, user := range v.Users {
+			s.users[uid] = user
+		}
+		for _, uid := range v.Delete {
+			delete(s.users, uid)
+		}
+	default:
+		log.Printf("tx: unknown: %#v", v)
 	}
 
 	for _, client := range s.clients {
