@@ -14,7 +14,7 @@ export default function (
   discord: (m: DiscordMessage) => void,
 ): [Ref<boolean>, Ref<boolean>] {
   const connected = ref<boolean>(false);
-  const active = ref<boolean>(false);
+  const active = ref<boolean>(true);
   let poisoned = false;
 
   const onMessage = (e: MessageEvent<AblyWorkerMessage>) => {
@@ -80,7 +80,7 @@ export default function (
           port.postMessage({ event: "activity", id, puzzle, active: newActive });
         }
       };
-      checkActivity(); // will set to true
+      port.postMessage({ event: "activity", id, puzzle, active: active.value });
       setInterval(checkActivity, ACTIVITY_CHECK_INTERVAL);
 
       const onActivity = (ts: number) => {
