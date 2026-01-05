@@ -17,23 +17,26 @@ const route = useRoute();
 const id = parseInt(route.params.id as string);
 const { active, puzzles, rounds, voiceRooms, settings } = await initializePuzzles(id);
 
+let lastSpreadsheetId = "";
 const puzzle = computed(() => {
   const puzzle = puzzles.get(id);
-  if (!puzzle) {
-    throw createError({
-      fatal: true,
-      message: `Puzzle #${id} could not be found`,
-      statusCode: 404,
-    });
+  if (!puzzle || !puzzle.spreadsheet_id) {
+    if (lastSpreadsheetId) {
+      console.warn("Lost puzzle or spreadsheet from database, redirecting...");
+      window.location.replace(
+        `https://docs.google.com/spreadsheets/d/${lastSpreadsheetId}`
+      );
+    } else {
+      throw createError({
+        fatal: true,
+        message: puzzle ? `Puzzle #${id} does not have a spreadsheet`
+          : `Puzzle #${id} could not be found`,
+        statusCode: 404,
+      });
+    }
   };
-  if (!puzzle.spreadsheet_id) {
-    throw createError({
-      fatal: true,
-      message: `Puzzle #${id} does not have a spreadsheet`,
-      statusCode: 404,
-    });
-  }
-  return puzzle;
+  lastSpreadsheetId = puzzle!.spreadsheet_id;
+  return puzzle!;
 });
 const round = computed(() =>
   puzzle.value && rounds.get(puzzle.value.round)
