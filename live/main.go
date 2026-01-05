@@ -38,9 +38,12 @@ type Server struct {
 	upgrader *websocket.Upgrader
 
 	mutex   sync.Mutex // hold while accessing everything below
-	counter int64      // unique client ids, not reused
+	cctr    int64      // unique client ids, not reused
 	clients map[int64]*Client
 	server  bool // is the api server attached
+
+	uctr    int16 // each user gets a unique short-id
+	userIds map[string]int16
 
 	settings *client.SettingsMessage // cache the last settings message
 	rewind   []state.AblySyncMessage // cache recent sync messages
@@ -51,7 +54,7 @@ type Server struct {
 type Client struct {
 	ch       chan state.LiveMessage
 	activity map[int64]bool // puzzle -> active/backgrounded
-	user     string
+	uid      int16          // user short-id
 }
 
 var (
@@ -105,6 +108,7 @@ func main() {
 			},
 		},
 		clients: make(map[int64]*Client),
+		userIds: make(map[string]int16),
 	}
 	go func() {
 		for {
