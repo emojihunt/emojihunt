@@ -2,41 +2,65 @@ import AblySharedWorker from "~/ablyWorker?sharedworker";
 import AblyDedicatedWorker from "~/ablyWorker?worker";
 import LiveSharedWorker from "~/liveWorker?sharedworker";
 import LiveDedicatedWorker from "~/liveWorker?worker";
-import type { AblyWorkerMessage, DiscordMessage, SettingsMessage, SyncMessage } from "~/utils/types";
+import type {
+  AblyWorkerMessage, DiscordMessage, SettingsMessage, SyncMessage, UsersMessage,
+} from "~/utils/types";
 
 const INACTIVITY_TIMEOUT = 15 * 60 * 1000; // 15 minutes
 const ACTIVITY_CHECK_INTERVAL = 60 * 1000; // 60 seconds
 
 export default function (
   puzzle: number | undefined,
-  sync: (m: SyncMessage) => void,
-  settings: (m: SettingsMessage) => void,
+  activity: (m: ActivityMessage) => void,
   discord: (m: DiscordMessage) => void,
+  settings: (m: SettingsMessage) => void,
+  sync: (m: SyncMessage) => void,
+  users: (m: UsersMessage) => void,
 ): [Ref<boolean>, Ref<boolean>] {
   const connected = ref<boolean>(false);
   const active = ref<boolean>(true);
   let poisoned = false;
 
   const onMessage = (e: MessageEvent<AblyWorkerMessage>) => {
-    if (e.data.event === "sync") {
-      sync(e.data.data);
-    } else if (e.data.event === "settings") {
-      settings(e.data.data);
-    } else if (e.data.event === "m") {
-      discord(e.data.data);
-    } else if (e.data.event === "client") {
-      if (e.data.state === "connected") {
-        if (poisoned) window.location.reload();
-        else connected.value = true;
-      } else if (e.data.state === "disconnected") {
-        connected.value = false;
-      } else if (e.data.state === "dead") {
-        console.warn("Live server got too far ahead. Reloading page...");
-        window.location.reload();
-      } else { // "broken" (Ably only)
-        console.warn("Connection lost. Will reload page when next online...");
-        poisoned = true;
-      }
+    switch (e.data.event) {
+      case "_":
+        switch (e.data.state) {
+          case "connected":
+            if (poisoned) window.location.reload();
+            else connected.value = true;
+            break;
+          case "disconnected":
+            connected.value = false;
+            break;
+          case "dead":
+            console.warn("Live server got too far ahead. Reloading page...");
+            window.location.reload();
+            break;
+          case "broken": // Ably only
+            console.warn("Connection lost. Will reload page when next online...");
+            poisoned = true;
+            break;
+          default:
+            ((x: never) => console.warn("Unknown client state:", x))(e.data.state);
+        }
+        break;
+      case "activity":
+        activity(e.data.data);
+        break;
+      case "m":
+        discord(e.data.data);
+        break;
+      case "settings":
+        settings(e.data.data);
+        break;
+      case "sync":
+        sync(e.data.data);
+        break;
+      case "users":
+        users(e.data.data);
+        break;
+      default:
+        ((x: never) => console.warn("Unknown event:", (x as any).event))(e.data);
     }
   };
   const onError = (e: Event) => console.warn("Worker Error:", e);

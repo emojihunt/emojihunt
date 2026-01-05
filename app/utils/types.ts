@@ -156,18 +156,21 @@ export type VoiceRoom = {
   name: string;
 };
 
-export type ConnectionState = "disconnected" | "connected" | "broken" | "dead";
+export type ConnectionState = "connected" | "disconnected" | "broken" | "dead";
 
 export type StatusMessage =
   | { event: "start", id: string; }
   | { event: "activity", id: string, puzzle: number, active: boolean; };
 
 export type AblyWorkerMessage =
-  | { event: "client"; state: ConnectionState; }
+  | { event: "_"; state: ConnectionState; }
+  | { event: "activity", data: ActivityMessage; }
   | { event: "m"; data: DiscordMessage; }
   | { event: "settings"; data: SettingsMessage; }
   | { event: "sync"; data: SyncMessage; }
   | { event: "users"; data: UsersMessage; };
+
+export type ActivityMessage = Record<number, Record<number, boolean>>;
 
 export type DiscordMessage = {
   id: string;
@@ -184,7 +187,7 @@ export type SyncMessage = {
   round?: Round;
 };
 export type UsersMessage = {
-  users: any;
+  users: Record<string, [string, string]>;
   delete?: string[];
   replace?: boolean;
 };

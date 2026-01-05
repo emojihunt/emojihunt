@@ -9,7 +9,7 @@ self.addEventListener("connect", (e: any) => {
   console.log("Client connected");
   for (const port of e.ports) {
     ports.push(port);
-    port.postMessage({ event: "client", state });
+    port.postMessage({ event: "_", state });
     rewind.forEach(r => port.postMessage(r));
   }
 });
@@ -85,12 +85,12 @@ discord.subscribe("m", (e: any) => {
 client.connection.on("connected", () => {
   console.log("Connected");
   state = "connected";
-  broadcast({ event: "client", state });
+  broadcast({ event: "_", state });
 });
 client.connection.on("disconnected", () => {
   console.log("Disconnected");
   state = "disconnected";
-  broadcast({ event: "client", state });
+  broadcast({ event: "_", state });
 });
 
 // After about two minutes offline, uninterrupted in-order message delivery is
@@ -99,7 +99,7 @@ client.connection.on("disconnected", () => {
 client.connection.on("suspended", () => {
   console.log("Terminating...");
   state = "broken";
-  broadcast({ event: "client", state });
+  broadcast({ event: "_", state });
   client.close();
   close();
 });

@@ -7,7 +7,10 @@ type State = {
   active: Ref<boolean>,
   discordCallback: Ref<((m: DiscordMessage) => void) | undefined>;
 
+  activity: Map<number, Map<string, boolean>>;
   settings: Settings;
+  users: Map<string, User>;
+
   puzzles: Map<number, Puzzle>;
   rounds: Map<number, AnnotatedRound>;
   voiceRooms: Map<string, VoiceRoom>;
@@ -36,6 +39,11 @@ type Settings = {
   huntCredentials: string;
   logisticsURL: string;
   nextHunt: Date | null;
+};
+
+type User = {
+  username: string;
+  avatarUrl: string;
 };
 
 type Optimistic = (
@@ -108,10 +116,13 @@ export async function initializePuzzles(pageId?: number): Promise<State> {
     });
   }
 
+  const activity = reactive(new Map<number, Map<string, boolean>>());
   const settings: Settings = reactive({
     discordGuild: "", hangingOut: "", huntName: "", huntURL: "",
     huntCredentials: "", logisticsURL: "", nextHunt: null,
   });
+  const users = reactive(new Map<string, User>());
+
   const _puzzles = new Map<number, Puzzle>();
   const _rounds = new Map<number, Round>();
   const puzzles = reactive(new Map<number, Puzzle>());
@@ -241,13 +252,27 @@ export async function initializePuzzles(pageId?: number): Promise<State> {
     const ids = new Set<string>(Object.keys(msg.voice_rooms));
     voiceRooms.forEach((_, i) => !ids.has(i) && voiceRooms.delete(i));
   };
+  const onActivity = (m: ActivityMessage) => {
+    Object.entries(m).forEach(
+      ([k, v]) => activity.set(parseInt(k), new Map(Object.entries(v)))
+    );
+    activity.forEach((_, k) => Object.hasOwn(m, k.toString()) || activity.delete(k));
+  };
   const discordCallback = ref<(m: DiscordMessage) => void>();
   const onDiscord = (m: DiscordMessage) => discordCallback.value?.(m);
-  const [connected, active] = useAbly(pageId, onSync, onSettings, onDiscord);
+  const onUsers = (m: UsersMessage) => {
+    if (m.replace) users.clear();
+    Object.entries(m.users).forEach(
+      ([k, [username, avatarUrl]]) => users.set(k, { username, avatarUrl })
+    );
+    m.delete?.forEach((k) => users.delete(k));
+  };
+  const [connected, active] = useAbly(pageId, onActivity, onDiscord, onSettings, onSync, onUsers);
 
   const state: State = {
     connected, active, discordCallback,
-    settings, puzzles, rounds, voiceRooms,
+    activity, settings, users,
+    puzzles, rounds, voiceRooms,
     puzzleCount, solvedPuzzleCount, ordering,
     async addRound(data: NewRound) {
       const [round, changeId] = await updateRequest<Round>("/rounds", data);

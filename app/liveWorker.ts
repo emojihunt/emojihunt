@@ -4,14 +4,11 @@ import type {
 
 let state: ConnectionState = "disconnected";
 const updateState = (s: ConnectionState) =>
-  (state = s, broadcast({ event: "client", state }));
+  (state = s, broadcast({ event: "_", state }));
 
 const rewind = new Array<SyncMessage>();
-
 const activity = new Map<string, [number, boolean]>();
 let activityChanged = false;
-
-const users = new Map<string, [string, string]>();
 
 let backoff = 500;
 
@@ -57,7 +54,7 @@ const handleStatusMessage = (e: MessageEvent<StatusMessage>, port: any) => {
         port = self as DedicatedWorkerGlobalScope;
       }
       ports.set(id, port);
-      unicast(port, { event: "client", state });
+      unicast(port, { event: "_", state });
       rewind.forEach(data => unicast(port, { event: "sync", data }));
       break;
     case "activity":
@@ -107,6 +104,13 @@ const reconnect = () => new Promise((resolve) => {
     const msg = JSON.parse(e.data) as AblyWorkerMessage;
     backoff = 500; // only reset after first successful message
     switch (msg.event) {
+      case "_":
+        console.error("[*] Invalid", msg);
+        break;
+      case "activity":
+        // TODO: cache and offer to new clients
+        console.log("[*] Activity", msg.data);
+        break;
       case "m":
         break;
       case "settings":
@@ -118,13 +122,11 @@ const reconnect = () => new Promise((resolve) => {
         if (rewind.length >= 256) rewind.shift();
         break;
       case "users":
+        // TODO: cache and offer to new clients
         console.log("[*] Users", msg.data);
-        if (msg.data.replace) users.clear();
-        Object.entries(msg.data.users).forEach(([k, v]) => users.set(k, v as any));
-        msg.data.delete?.forEach((k) => users.delete(k));
         break;
       default:
-        console.warn("[*] Unknown", msg);
+        ((x: never) => console.warn("[*] Unknown", x))(msg);
     }
     broadcast(msg);
   });
