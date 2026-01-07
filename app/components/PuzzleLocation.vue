@@ -2,7 +2,7 @@
 const { id } = defineProps<{ id: number; }>();
 const toast = useToast();
 
-const { puzzles, voiceRooms, updatePuzzleOptimistic } = usePuzzles();
+const { puzzles, users, voiceRooms, updatePuzzleOptimistic } = usePuzzles();
 const puzzle = puzzles.get(id)!;
 const room = computed(() => voiceRooms.get(puzzle.voice_room));
 
@@ -42,8 +42,7 @@ const saveRoom = (updated: string) => {
 const items = computed(() => {
   const array = [...[...voiceRooms.values()].map((v => ({ ...v, right: false })))];
   if (!puzzle.location) {
-    const label =
-      array.push({ id: "", emoji: "", name: puzzle.voice_room ? "Add In-Person" : "In-Person", right: true });
+    array.push({ id: "", emoji: "", name: puzzle.voice_room ? "Add In-Person" : "In-Person", right: true });
   }
   return array;
 });
@@ -85,17 +84,63 @@ const select = (option: string) => {
         @click="() => saveRoom('')" tabindex="-1">Clear</button>
       <Spinner v-if="savingText || savingRoom" class="spinner" />
     </div>
-    <OptionPane v-if="expanded === id" :items="items" @select="select" />
+    <div class="row presence">
+      <template v-if="puzzle.id === 37">
+        <ETooltip v-for="user of [...users.values()].reverse()" :text="user.username"
+          side="top" :offset="0">
+          <img :src="user.avatarUrl" />
+        </ETooltip>
+      </template>
+      <template v-if="puzzle.id === 260">
+        <ETooltip
+          v-for="user of [...users.values()].filter(u => u.username !== 'huntbot-dev').reverse()"
+          :text="user.username" side="top" :offset="0">
+          <img :src="user.avatarUrl" />
+        </ETooltip>
+        <ETooltip
+          v-for="user of [...users.values()].filter(u => u.username !== 'huntbot-dev').reverse()"
+          :text="user.username" side="top" :offset="0">
+          <img :src="user.avatarUrl" />
+        </ETooltip>
+        <ETooltip v-for="user of [...users.values()].reverse().slice(0, 4)"
+          :text="user.username" side="top" :offset="0">
+          <img :src="user.avatarUrl" />
+        </ETooltip>
+        <!-- <ETooltip text="... ... ..." side="top" :offset="0">
+          <span>+12</span> TODO: handle overflow!
+        </ETooltip> -->
+      </template>
+    </div>
+    <div class="row">
+      <OptionPane v-if="expanded === id" :items="items" @select="select" />
+    </div>
   </div>
 </template>
 
 <style scoped>
 /* Layout */
 .cell {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.row {
+  display: flex;
+  flex-shrink: 0;
+}
+
+.row:first-child {
+  flex-grow: 1;
+  max-width: 100%;
+}
+
+.row:last-child {
+  flex-basis: 100%;
+  display: flex;
   flex-direction: column;
 }
 
-.row,
 button.room {
   display: flex;
 }
@@ -111,21 +156,20 @@ button.expand {
 }
 
 button.clear {
-  width: 0;
-  padding: 0;
-  border-radius: 0;
+  padding: 0 0.33rem;
   color: oklch(60% 0.15 245deg);
+  display: none;
 }
 
 .cell:hover button.clear,
 button.clear:hover,
 button.clear:focus {
-  width: auto;
-  padding: 0 0.33rem;
+  display: block;
 }
 
 .description {
   padding: 3px 0.33rem;
+  white-space: preserve nowrap;
 }
 
 .spinner {
@@ -164,5 +208,29 @@ button.room:focus-visible {
 button.clear {
   line-height: 22px;
   font-size: 12.5px;
+}
+
+.presence {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  align-self: flex-start;
+
+  margin: 0 7px;
+  padding: 1px 0;
+}
+
+.presence>div {
+  flex-shrink: 0;
+  margin-right: -7px;
+}
+
+.presence img {
+  width: 24px;
+  height: 24px;
+
+  border-radius: 50%;
+  border: 1.5px solid white;
+  background-color: white;
 }
 </style>

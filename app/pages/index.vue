@@ -103,7 +103,7 @@ const navMargin = computed(() => puzzleCount.value >= 42 ? "4.5rem" : "2vw");
   padding: var(--header-stop) 0.5vw 0.5rem calc(env(safe-area-inset-left) + var(--nav-margin));
   min-width: 1024px;
   display: grid;
-  grid-template-columns: 8rem 6fr 5fr 4fr 8fr;
+  grid-template-columns: 8rem 6fr 5fr 5fr 7fr;
   column-gap: 0.66rem;
 }
 
