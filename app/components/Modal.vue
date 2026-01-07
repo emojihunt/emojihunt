@@ -25,7 +25,7 @@ footer {
 
   display: flex;
   justify-content: center;
-  z-index: 40;
+  z-index: 80;
 }
 
 section {

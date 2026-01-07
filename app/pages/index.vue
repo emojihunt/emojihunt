@@ -114,7 +114,7 @@ const navMargin = computed(() => puzzleCount.value >= 42 ? "4.5rem" : "2vw");
   top: var(--header-height-outer);
   margin: 0 0 -100dvh -0.33rem;
 
-  z-index: 12;
+  z-index: 40;
 }
 
 .rule.first {

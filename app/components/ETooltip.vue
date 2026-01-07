@@ -27,6 +27,6 @@ div {
 }
 
 :deep(div[data-popper-placement]) {
-  z-index: 8;
+  z-index: 35;
 }
 </style>

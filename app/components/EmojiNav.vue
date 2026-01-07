@@ -89,7 +89,7 @@ nav {
   gap: 0.2rem;
 
   /* tooltip needs to appear above round pills */
-  z-index: 25;
+  z-index: 100;
   overflow-y: scroll;
 }
 

@@ -83,7 +83,7 @@ header {
   width: 100%;
   height: var(--header-height);
   position: fixed;
-  z-index: 15;
+  z-index: 50;
 
   padding: 0.75rem max(env(safe-area-inset-right), 1rem) 0.5rem;
 

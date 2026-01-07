@@ -103,7 +103,7 @@ const copy = async (): Promise<void> => {
 
   position: sticky;
   top: var(--header-stop);
-  z-index: 20;
+  z-index: 60;
 
   height: var(--pill-height);
   line-height: 2.375rem;
@@ -146,7 +146,7 @@ const copy = async (): Promise<void> => {
 
   position: sticky;
   top: calc(var(--header-stop) + 0.1rem);
-  z-index: 20;
+  z-index: 60;
 
   pointer-events: none;
   visibility: hidden;

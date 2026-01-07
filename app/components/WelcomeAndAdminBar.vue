@@ -78,7 +78,7 @@ defineExpose({ focus });
 section {
   grid-column: 1 / 6;
   margin: 2rem 0 0 0;
-  z-index: 20;
+  z-index: 60;
 
   display: grid;
   grid-template-columns: subgrid;
