@@ -35,7 +35,7 @@ const keydown = (e: KeyboardEvent) => {
 <template>
   <div class="bubble" @keydown="keydown">
     <ETooltip v-if="!answering" v-for="status of Object.values(Status)"
-      :text="StatusLabel(status)" side="top" :side-offset="4">
+      :text="StatusLabel(status)" side="top">
       <button :disabled="puzzle?.status === status" @click="() => set(status)">
         {{ StatusEmoji(status) || "❎" }}
       </button>

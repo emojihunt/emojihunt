@@ -33,25 +33,25 @@ onMounted(() => setTimeout(() => ably.value?.classList.add("ready"), 2500));
     <div class="flex-spacer"></div>
     <section>
       <div class="row">
-        <ETooltip :text="settings.huntCredentials || ''" side="bottom" :side-offset="8">
+        <ETooltip :text="settings.huntCredentials || ''" side="bottom" :offset="8">
           <NuxtLink :to="settings.huntURL" target="_blank" class="hunt">
             {{ settings.huntName || 'Mystery Hunt' }}
           </NuxtLink>
         </ETooltip>
         <p class="dot"></p>
-        <ETooltip text="Big Logistics Email" side="bottom" :side-offset="8">
+        <ETooltip text="Big Logistics Email" side="bottom" :offset="8">
           <NuxtLink :to="settings.logisticsURL" target="_blank">
             <UIcon name="i-heroicons-question-mark-circle" size="16px" />
           </NuxtLink>
         </ETooltip>
         <p class="dot"></p>
-        <ETooltip text="Discord" side="bottom" :side-offset="8">
+        <ETooltip text="Discord" side="bottom" :offset="8">
           <NuxtLink :to="discordURL" :target="discordTarget">
             <UIcon name="i-heroicons-chat-bubble-left-right" size="16px" />
           </NuxtLink>
         </ETooltip>
         <p class="dot"></p>
-        <ETooltip text="Log Out" side="bottom" :side-offset="8">
+        <ETooltip text="Log Out" side="bottom" :offset="8">
           <NuxtLink to="/" @click="logout">
             <UIcon name="i-heroicons-arrow-right-start-on-rectangle" size="16px" />
           </NuxtLink>
@@ -69,8 +69,7 @@ onMounted(() => setTimeout(() => ably.value?.classList.add("ready"), 2500));
       </div>
       <div class="flex-spacer"></div>
       <div class="ably" ref="ably">
-        <ETooltip v-if="!connected" text="Live updates paused. Connecting..." side="left"
-          :side-offset="4">
+        <ETooltip v-if="!connected" text="Live updates paused. Connecting..." side="left">
           <Icon name="i-heroicons-bolt-slash" />
         </ETooltip>
       </div>

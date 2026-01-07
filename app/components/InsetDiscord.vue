@@ -58,19 +58,19 @@ defineExpose({
 <template>
   <div class="discord" v-if="open" @keydown="escape">
     <span class="links">
-      <ETooltip text="Close" side="top" :side-offset="4">
+      <ETooltip text="Close" side="top">
         <button @click="() => (open = false)">
           🔻
         </button>
       </ETooltip>
       &bull;
-      <ETooltip :text="mute ? 'Unmute' : 'Mute'" side="top" :side-offset="4">
+      <ETooltip :text="mute ? 'Unmute' : 'Mute'" side="top">
         <button @click="() => setMute(!mute)">
           {{ mute ? "🔕" : "🔔" }}
         </button>
       </ETooltip>
       &bull;
-      <ETooltip text="Open in Discord" side="top" :side-offset="4">
+      <ETooltip text="Open in Discord" side="top">
         <NuxtLink :to="discordURL" :target="discordTarget">
           👉
         </NuxtLink>

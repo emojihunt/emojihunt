@@ -65,16 +65,16 @@ const select = (option: string) => {
       <button :class="['room', !(puzzle.location || answering) && 'expand']"
         :data-tabsequence="7" @click="() => expanded = (expanded === id ? 0 : id)">
         <template v-if="room">
-          <ETooltip v-if="room" :text="`in ${room.name}`" :side-offset="6">
+          <ETooltip v-if="room" :text="`in ${room.name}`" :offset="6">
             <span class="emoji">{{ room.emoji }}</span>
           </ETooltip>
           <span class="description" v-if="!(puzzle.location || answering)">{{
             room.name }}</span>
         </template>
-        <ETooltip v-else-if="puzzle.location" text="Add a Voice Room" :side-offset="6">
+        <ETooltip v-else-if="puzzle.location" text="Add a Voice Room" :offset="6">
           <span class="emoji">📍</span>
         </ETooltip>
-        <ETooltip v-else text="Set a Voice Room" :side-offset="4">
+        <ETooltip v-else text="Set a Voice Room" :offset="6">
           <span class="emoji empty">📻</span>
         </ETooltip>
       </button>

@@ -1,21 +1,21 @@
 <script setup lang="ts">
 const {
   text,
-  delayDuration = 250,
+  delay = 250,
   side = "right",
-  sideOffset = 0,
+  offset = 4,
 } = defineProps<{
   text: string;
-  delayDuration?: number;
+  delay?: number;
   side?: "top" | "bottom" | "right" | "left";
-  sideOffset?: number;
+  offset?: number;
 }>();
 </script>
 
 <template>
   <div>
-    <UTooltip :text="text" :delay-duration="delayDuration"
-      :content="{ side, sideOffset }">
+    <UTooltip :text="text" :delay-duration="delay"
+      :content="{ side, sideOffset: offset }">
       <slot></slot>
     </UTooltip>
   </div>

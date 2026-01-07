@@ -102,14 +102,12 @@ onMounted(() => {
     <div :class="['overlay', active || 'inactive']">
       <nav @keydown="(e) => e.key === 'Escape' && (open = undefined)">
         <section>
-          <ETooltip :text="`Status: ${StatusLabel(puzzle.status)}`" side="top"
-            :side-offset="4">
+          <ETooltip :text="`Status: ${StatusLabel(puzzle.status)}`" side="top">
             <button @click="() => toggle('status')">
               {{ StatusEmoji(puzzle.status) || " ‼️" }} </button>
           </ETooltip>
           <ETooltip :text="voiceRoom ? `Voice Room: ${voiceRoom.name}` : puzzle.location ?
-            `In-person: ${puzzle.location}` : 'No Voice Room'" side="top"
-            :side-offset="4">
+            `In-person: ${puzzle.location}` : 'No Voice Room'" side="top">
             <button :class="!voiceRoom && !puzzle.location && 'unset'"
               @click="() => toggle('voice')">
               {{ voiceRoom?.emoji || (puzzle.location ? "📍" : "📻") }}
@@ -117,12 +115,12 @@ onMounted(() => {
           </ETooltip>
         </section>
         <section>
-          <ETooltip text="Puzzle Page" side="top" :side-offset="4">
+          <ETooltip text="Puzzle Page" side="top">
             <NuxtLink :to="puzzle.puzzle_url" target="_blank">
               🌎
             </NuxtLink>
           </ETooltip>
-          <ETooltip text="Discord Channel" side="top" :side-offset="4">
+          <ETooltip text="Discord Channel" side="top">
             <NuxtLink :to="discordURL" :target="discordTarget" :ok="!!discordURL"
               @click="toggleDiscord">
               👾
@@ -130,7 +128,7 @@ onMounted(() => {
           </ETooltip>
         </section>
         <section>
-          <ETooltip :text="`Round: ${round?.name}`" side="top" :side-offset="4">
+          <ETooltip :text="`Round: ${round?.name}`" side="top">
             <span>{{ round?.emoji }}</span>
           </ETooltip>
         </section>
