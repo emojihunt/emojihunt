@@ -41,11 +41,6 @@ type Settings = {
   nextHunt: Date | null;
 };
 
-type User = {
-  username: string;
-  avatarUrl: string;
-};
-
 type Optimistic = (
   ({ type: "puzzle"; } & Partial<Puzzle>) |
   ({ type: "round"; } & Partial<Round>) |

@@ -1,5 +1,5 @@
 import type {
-  AblyWorkerMessage, ConnectionState, StatusMessage, SyncMessage,
+  AblyWorkerMessage, ActivityMessage, ConnectionState, StatusMessage, SyncMessage, User,
 } from './utils/types';
 
 let state: ConnectionState = "disconnected";
@@ -9,6 +9,9 @@ const updateState = (s: ConnectionState) =>
 const rewind = new Array<SyncMessage>();
 const activity = new Map<string, [number, boolean]>();
 let activityChanged = false;
+
+let latestActivityReport: ActivityMessage | undefined;
+const users = new Map<string, User>();
 
 let backoff = 500;
 
@@ -56,6 +59,17 @@ const handleStatusMessage = (e: MessageEvent<StatusMessage>, port: any) => {
       ports.set(id, port);
       unicast(port, { event: "_", state });
       rewind.forEach(data => unicast(port, { event: "sync", data }));
+      unicast(port, {
+        event: "users", data: {
+          users: Object.fromEntries(
+            users.entries().map(([s, u]) => [s, [u.username, u.avatarUrl]])
+          ),
+          replace: true,
+        }
+      });
+      if (latestActivityReport) {
+        unicast(port, { event: "activity", data: latestActivityReport });
+      }
       break;
     case "activity":
       const { puzzle, active } = e.data;
@@ -68,7 +82,7 @@ const handleStatusMessage = (e: MessageEvent<StatusMessage>, port: any) => {
   }
 };
 
-const sendActivity = (socket: WebSocket) => {
+const reportActivity = (socket: WebSocket) => {
   const computed = new Map<number, boolean>();
   activity.forEach(([puzzle, active]) =>
     computed.set(puzzle, computed.get(puzzle) || active)
@@ -78,7 +92,7 @@ const sendActivity = (socket: WebSocket) => {
   socket.send(JSON.stringify({ event: "activity", activity: raw }));
   activityChanged = false;
 };
-setInterval(() => (activityChanged && socket && sendActivity(socket)), 5_000);
+setInterval(() => (activityChanged && socket && reportActivity(socket)), 5_000);
 
 let socket: WebSocket | null = null;
 const reconnect = () => new Promise((resolve) => {
@@ -108,8 +122,8 @@ const reconnect = () => new Promise((resolve) => {
         console.error("[*] Invalid", msg);
         break;
       case "activity":
-        // TODO: cache and offer to new clients
         console.log("[*] Activity", msg.data);
+        latestActivityReport = msg.data;
         break;
       case "m":
         break;
@@ -122,8 +136,12 @@ const reconnect = () => new Promise((resolve) => {
         if (rewind.length >= 256) rewind.shift();
         break;
       case "users":
-        // TODO: cache and offer to new clients
         console.log("[*] Users", msg.data);
+        if (msg.data.replace) users.clear();
+        Object.entries(msg.data.users).forEach(
+          ([k, [username, avatarUrl]]) => users.set(k, { username, avatarUrl })
+        );
+        msg.data.delete?.forEach((k) => users.delete(k));
         break;
       default:
         ((x: never) => console.warn("[*] Unknown", x))(msg);

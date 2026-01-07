@@ -150,6 +150,11 @@ export type ScrapedPuzzle = {
   puzzle_url: string;
 };
 
+export type User = {
+  username: string;
+  avatarUrl: string;
+};
+
 export type VoiceRoom = {
   id: string;
   emoji: string;
