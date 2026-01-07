@@ -21,7 +21,7 @@ const (
 
 func AppOrigins(prod bool) []string {
 	if prod {
-		return []string{"https://www.emojihunt.org", "https://static.emojihunt.org"}
+		return []string{"https://www.emojihunt.org", "https://backup.emojihunt.org"}
 	} else {
 		return []string{"http://localhost:3000"}
 	}
