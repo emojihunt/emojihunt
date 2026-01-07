@@ -60,7 +60,7 @@ const select = (option: string) => {
 
 <template>
   <div class="cell">
-    <div class="row">
+    <div class="row" :class="(expanded === id) && 'open'">
       <button :class="['room', !(puzzle.location || answering) && 'expand']"
         :data-tabsequence="7" @click="() => expanded = (expanded === id ? 0 : id)">
         <template v-if="room">
@@ -161,7 +161,8 @@ button.clear {
   display: none;
 }
 
-.cell:hover button.clear,
+.row:first-child:hover button.clear,
+.open button.clear,
 button.clear:hover,
 button.clear:focus {
   display: block;

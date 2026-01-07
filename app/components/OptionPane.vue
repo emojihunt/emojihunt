@@ -73,7 +73,7 @@ fieldset {
 
 fieldset button {
   border: 1px solid oklch(66% 0 0deg);
-  border-radius: 3px;
+  border-radius: 2px;
   outline-offset: 1px;
 }
 
