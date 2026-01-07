@@ -2,7 +2,7 @@
 const { id } = defineProps<{ id: number; }>();
 const toast = useToast();
 
-const { puzzles, users, voiceRooms, updatePuzzleOptimistic } = usePuzzles();
+const { presence, puzzles, users, voiceRooms, updatePuzzleOptimistic } = usePuzzles();
 const puzzle = puzzles.get(id)!;
 const room = computed(() => voiceRooms.get(puzzle.voice_room));
 
@@ -56,6 +56,20 @@ const select = (option: string) => {
     nextTick(() => location.value?.focus());
   }
 };
+
+const MAX_AVATARS = 13;
+const present = computed(() => {
+  const raw = presence.get(puzzle.id);
+  if (!raw) return [];
+  const present = [...raw.entries()]
+    .filter(([user, _]) => users.has(user))
+    .map(([user, active]) => ({ ...users.get(user)!, active }));
+  present.sort((a, b) => {
+    if (a.active !== b.active) return a.active ? -1 : 1;
+    return a.username.localeCompare(b.username);
+  });
+  return present;
+});
 </script>
 
 <template>
@@ -85,31 +99,14 @@ const select = (option: string) => {
       <Spinner v-if="savingText || savingRoom" class="spinner" />
     </div>
     <div class="row presence">
-      <template v-if="puzzle.id === 37">
-        <ETooltip v-for="user of [...users.values()].reverse()" :text="user.username"
-          side="top" :offset="0">
-          <img :src="user.avatarUrl" />
-        </ETooltip>
-      </template>
-      <template v-if="puzzle.id === 260">
-        <ETooltip
-          v-for="user of [...users.values()].filter(u => u.username !== 'huntbot-dev').reverse()"
-          :text="user.username" side="top" :offset="0">
-          <img :src="user.avatarUrl" />
-        </ETooltip>
-        <ETooltip
-          v-for="user of [...users.values()].filter(u => u.username !== 'huntbot-dev').reverse()"
-          :text="user.username" side="top" :offset="0">
-          <img :src="user.avatarUrl" />
-        </ETooltip>
-        <ETooltip v-for="user of [...users.values()].reverse().slice(0, 4)"
-          :text="user.username" side="top" :offset="0">
-          <img :src="user.avatarUrl" />
-        </ETooltip>
-        <!-- <ETooltip text="... ... ..." side="top" :offset="0">
-          <span>+12</span> TODO: handle overflow!
-        </ETooltip> -->
-      </template>
+      <ETooltip v-for="[i, user] of present.slice(0, MAX_AVATARS).entries()"
+        :text="user.username" side="top" :offset="2" :style="`--sequence: ${i}`">
+        <img :src="user.avatarUrl" :class="user.active || 'inactive'" />
+      </ETooltip>
+      <ETooltip v-if="present.length > MAX_AVATARS" side="top" :offset="2"
+        :text="present.slice(MAX_AVATARS).map(x => x.username).join(', ')">
+        <span>+{{ present.length - MAX_AVATARS }}</span>
+      </ETooltip>
     </div>
     <div class="row">
       <OptionPane v-if="expanded === id" :items="items" @select="select" />
@@ -156,7 +153,9 @@ button.expand {
 }
 
 button.clear {
-  padding: 0 0.33rem;
+  padding: 3px 0.33rem;
+  align-self: flex-start;
+
   color: oklch(60% 0.15 245deg);
   display: none;
 }
@@ -215,23 +214,46 @@ button.clear {
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  align-self: flex-start;
 
-  margin: 0 7px;
   padding: 1px 0;
 }
 
 .presence>div {
   flex-shrink: 0;
   margin-right: -7px;
-}
+  z-index: calc(32 - var(--sequence));
 
-.presence img {
   width: 24px;
   height: 24px;
+  padding: 1.5px;
 
   border-radius: 50%;
-  border: 1.5px solid white;
   background-color: white;
+  overflow: hidden;
+}
+
+.presence>div:last-of-type {
+  margin-right: 0;
+}
+
+.presence img,
+.presence span {
+  border-radius: 50%;
+}
+
+.presence img.inactive {
+  opacity: 50%;
+}
+
+.presence span {
+  display: block;
+  width: 100%;
+  height: 100%;
+
+  background: oklch(92.5% 0 0deg);
+  line-height: 22px;
+  font-size: 10px;
+  font-weight: 500;
+  text-align: center;
 }
 </style>
