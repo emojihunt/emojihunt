@@ -46,12 +46,12 @@ type Server struct {
 	rewind   []*state.AblySyncMessage // cache recent sync messages
 	users    map[string][2]string
 
-	activityChanged bool
+	presenceChanged bool
 }
 
 type Client struct {
 	ch       chan state.LiveMessage
-	activity map[int64]bool // puzzle -> active/backgrounded
+	presence map[int64]bool // puzzle -> active/backgrounded
 	user     string         // discord id
 }
 
@@ -162,9 +162,9 @@ func main() {
 		for {
 			select {
 			case <-time.After(5 * time.Second):
-				if s.activityChanged {
-					s.SendActivityUpdate()
-					s.activityChanged = false
+				if s.presenceChanged {
+					s.SendPresenceUpdate()
+					s.presenceChanged = false
 				}
 			case <-ctx.Done():
 				return

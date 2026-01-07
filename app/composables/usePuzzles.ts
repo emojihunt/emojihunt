@@ -7,7 +7,7 @@ type State = {
   active: Ref<boolean>,
   discordCallback: Ref<((m: DiscordMessage) => void) | undefined>;
 
-  activity: Map<number, Map<string, boolean>>;
+  presence: Map<number, Map<string, boolean>>;
   settings: Settings;
   users: Map<string, User>;
 
@@ -111,7 +111,7 @@ export async function initializePuzzles(pageId?: number): Promise<State> {
     });
   }
 
-  const activity = reactive(new Map<number, Map<string, boolean>>());
+  const presence = reactive(new Map<number, Map<string, boolean>>());
   const settings: Settings = reactive({
     discordGuild: "", hangingOut: "", huntName: "", huntURL: "",
     huntCredentials: "", logisticsURL: "", nextHunt: null,
@@ -247,11 +247,11 @@ export async function initializePuzzles(pageId?: number): Promise<State> {
     const ids = new Set<string>(Object.keys(msg.voice_rooms));
     voiceRooms.forEach((_, i) => !ids.has(i) && voiceRooms.delete(i));
   };
-  const onActivity = (m: ActivityMessage) => {
+  const onPresence = (m: PresenceMessage) => {
     Object.entries(m).forEach(
-      ([k, v]) => activity.set(parseInt(k), new Map(Object.entries(v)))
+      ([k, v]) => presence.set(parseInt(k), new Map(Object.entries(v)))
     );
-    activity.forEach((_, k) => Object.hasOwn(m, k.toString()) || activity.delete(k));
+    presence.forEach((_, k) => Object.hasOwn(m, k.toString()) || presence.delete(k));
   };
   const discordCallback = ref<(m: DiscordMessage) => void>();
   const onDiscord = (m: DiscordMessage) => discordCallback.value?.(m);
@@ -262,11 +262,11 @@ export async function initializePuzzles(pageId?: number): Promise<State> {
     );
     m.delete?.forEach((k) => users.delete(k));
   };
-  const [connected, active] = useAbly(pageId, onActivity, onDiscord, onSettings, onSync, onUsers);
+  const [connected, active] = useAbly(pageId, onDiscord, onPresence, onSettings, onSync, onUsers);
 
   const state: State = {
     connected, active, discordCallback,
-    activity, settings, users,
+    presence, settings, users,
     puzzles, rounds, voiceRooms,
     puzzleCount, solvedPuzzleCount, ordering,
     async addRound(data: NewRound) {

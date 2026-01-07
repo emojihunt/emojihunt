@@ -1,5 +1,5 @@
 import type {
-  AblyWorkerMessage, ActivityMessage, ConnectionState, StatusMessage, SyncMessage, User,
+  AblyWorkerMessage, PresenceMessage, ConnectionState, StatusMessage, SyncMessage, User,
 } from './utils/types';
 
 let state: ConnectionState = "disconnected";
@@ -10,7 +10,7 @@ const rewind = new Array<SyncMessage>();
 const activity = new Map<string, [number, boolean]>();
 let activityChanged = false;
 
-let latestActivityReport: ActivityMessage | undefined;
+let latestPresence: PresenceMessage | undefined;
 const users = new Map<string, User>();
 
 let backoff = 500;
@@ -67,8 +67,8 @@ const handleStatusMessage = (e: MessageEvent<StatusMessage>, port: any) => {
           replace: true,
         }
       });
-      if (latestActivityReport) {
-        unicast(port, { event: "activity", data: latestActivityReport });
+      if (latestPresence) {
+        unicast(port, { event: "presence", data: latestPresence });
       }
       break;
     case "activity":
@@ -121,11 +121,11 @@ const reconnect = () => new Promise((resolve) => {
       case "_":
         console.error("[*] Invalid", msg);
         break;
-      case "activity":
-        console.log("[*] Activity", msg.data);
-        latestActivityReport = msg.data;
-        break;
       case "m":
+        break;
+      case "presence":
+        console.log("[*] Presence", msg.data);
+        latestPresence = msg.data;
         break;
       case "settings":
         console.log("[*] Settings", msg.data);

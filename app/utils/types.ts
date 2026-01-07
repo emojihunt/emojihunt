@@ -169,13 +169,13 @@ export type StatusMessage =
 
 export type AblyWorkerMessage =
   | { event: "_"; state: ConnectionState; }
-  | { event: "activity", data: ActivityMessage; }
   | { event: "m"; data: DiscordMessage; }
+  | { event: "presence", data: PresenceMessage; }
   | { event: "settings"; data: SettingsMessage; }
   | { event: "sync"; data: SyncMessage; }
   | { event: "users"; data: UsersMessage; };
 
-export type ActivityMessage = Record<number, Record<number, boolean>>;
+export type PresenceMessage = Record<number, Record<number, boolean>>;
 
 export type DiscordMessage = {
   id: string;

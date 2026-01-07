@@ -4,19 +4,19 @@ import (
 	"github.com/emojihunt/emojihunt/state"
 )
 
-type ActivityMessage map[int64]map[string]bool // puzzle -> usr -> active
+type PresenceMessage map[int64]map[string]bool // puzzle -> usr -> active
 
-func (m ActivityMessage) EventType() state.EventType {
-	return state.EventTypeActivity
+func (m PresenceMessage) EventType() state.EventType {
+	return state.EventTypePresence
 }
 
-func (s *Server) SendActivityUpdate() {
+func (s *Server) SendPresenceUpdate() {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
 
-	var msg = make(ActivityMessage)
+	var msg = make(PresenceMessage)
 	for _, client := range s.clients {
-		for puzzle, active := range client.activity {
+		for puzzle, active := range client.presence {
 			if _, ok := msg[puzzle]; !ok {
 				msg[puzzle] = make(map[string]bool)
 			}

@@ -76,8 +76,8 @@ func (change *RoundChange) SyncMessage() AblySyncMessage {
 type EventType string
 
 const (
-	EventTypeActivity = "activity"
 	EventTypeDiscord  = "m"
+	EventTypePresence = "presence"
 	EventTypeSettings = "settings"
 	EventTypeSync     = "sync"
 	EventTypeUsers    = "users"

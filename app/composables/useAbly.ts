@@ -11,8 +11,8 @@ const ACTIVITY_CHECK_INTERVAL = 60 * 1000; // 60 seconds
 
 export default function (
   puzzle: number | undefined,
-  activity: (m: ActivityMessage) => void,
   discord: (m: DiscordMessage) => void,
+  presence: (m: PresenceMessage) => void,
   settings: (m: SettingsMessage) => void,
   sync: (m: SyncMessage) => void,
   users: (m: UsersMessage) => void,
@@ -44,11 +44,11 @@ export default function (
             ((x: never) => console.warn("Unknown client state:", x))(e.data.state);
         }
         break;
-      case "activity":
-        activity(e.data.data);
-        break;
       case "m":
         discord(e.data.data);
+        break;
+      case "presence":
+        presence(e.data.data);
         break;
       case "settings":
         settings(e.data.data);

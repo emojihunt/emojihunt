@@ -69,8 +69,8 @@ func (s *Server) Receive(c echo.Context) error {
 	defer func() {
 		s.mutex.Lock()
 		log.Printf("rx[%04d]: close", id)
-		if len(s.clients[id].activity) > 0 {
-			s.activityChanged = true
+		if len(s.clients[id].presence) > 0 {
+			s.presenceChanged = true
 		}
 		delete(s.clients, id)
 		s.mutex.Unlock()
@@ -112,8 +112,8 @@ func (s *Server) Receive(c echo.Context) error {
 			switch msg.Event {
 			case "activity":
 				s.mutex.Lock()
-				s.clients[id].activity = msg.Activity
-				s.activityChanged = true
+				s.clients[id].presence = msg.Activity
+				s.presenceChanged = true
 				s.mutex.Unlock()
 			default:
 				log.Printf("rx[%04d]: unknown event type: %s", id, msg.Event)
