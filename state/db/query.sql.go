@@ -82,12 +82,15 @@ func (q *Queries) CompleteDiscoveredRound(ctx context.Context, arg CompleteDisco
 }
 
 const countPuzzles = `-- name: CountPuzzles :one
-SELECT COUNT(*) AS total, COUNT(answer) AS solved FROM puzzles
+SELECT
+    COUNT(*) AS total,
+    SUM(answer != "") AS solved
+FROM puzzles
 `
 
 type CountPuzzlesRow struct {
-	Total  int64 `json:"total"`
-	Solved int64 `json:"solved"`
+	Total  int64           `json:"total"`
+	Solved sql.NullFloat64 `json:"solved"`
 }
 
 func (q *Queries) CountPuzzles(ctx context.Context) (CountPuzzlesRow, error) {

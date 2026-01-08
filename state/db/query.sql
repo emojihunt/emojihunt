@@ -37,7 +37,8 @@ ORDER BY rounds.special DESC, rounds.sort, rounds.id,
 COLLATE nocase;
 
 -- name: CountPuzzles :one
-SELECT COUNT(*) AS total, COUNT(answer) AS solved FROM puzzles;
+SELECT COUNT(*) AS total, SUM(answer != "") AS solved
+FROM puzzles;
 
 -- name: ListPuzzlesByRound :many
 SELECT
