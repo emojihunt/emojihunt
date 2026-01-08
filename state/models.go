@@ -1,6 +1,7 @@
 package state
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/emojihunt/emojihunt/state/db"
@@ -28,6 +29,14 @@ type Puzzle struct {
 	Meta           bool          `json:"meta"`
 	VoiceRoom      string        `json:"voice_room"`
 	Reminder       time.Time     `json:"reminder"`
+}
+
+func (p Puzzle) Mention() string {
+	if p.DiscordChannel == "" {
+		return fmt.Sprintf("%q", p.Name)
+	} else {
+		return fmt.Sprintf("<#%s>", p.DiscordChannel)
+	}
 }
 
 type PuzzleChange struct {

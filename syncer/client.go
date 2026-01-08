@@ -216,14 +216,14 @@ func (c *Client) TriggerPuzzle(ctx context.Context, change state.PuzzleChange) e
 
 	// Notify the puzzle channel and #more-eyes of significant status changes
 	if change.Before == nil {
-		if puzzle.DiscordChannel != "" {
+		if !puzzle.Round.Special { // skip Events round
 			return c.NotifyNewPuzzle(puzzle)
 		}
 	} else if !change.Before.Status.IsSolved() && puzzle.Status.IsSolved() {
 		// If the change was triggered by a bot, the bot's response will be visible
 		// in the puzzle channel so there's no need to send a solve notification
 		// there.
-		if change.BotComplete == nil {
+		if change.BotComplete == nil && puzzle.DiscordChannel != "" {
 			err := c.NotifySolveInPuzzleChannel(puzzle)
 			if err != nil {
 				return err
@@ -233,9 +233,7 @@ func (c *Client) TriggerPuzzle(ctx context.Context, change state.PuzzleChange) e
 		// channel.
 		return c.NotifySolveInHangingOut(puzzle)
 	} else if change.Before.Status == status.NotStarted && puzzle.Status == status.Working {
-		if puzzle.DiscordChannel != "" {
-			return c.NotifyPuzzleWorking(puzzle)
-		}
+		return c.NotifyPuzzleWorking(puzzle)
 	}
 	return nil
 }
