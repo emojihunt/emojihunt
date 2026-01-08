@@ -101,7 +101,8 @@ const present = computed(() => {
     <div class="row presence">
       <ETooltip v-for="[i, user] of present.slice(0, MAX_AVATARS).entries()"
         :text="user.username" side="top" :offset="2" :style="`--sequence: ${i}`">
-        <img :src="user.avatarUrl" :class="user.active || 'inactive'" />
+        <img :src="`https://cdn.discordapp.com/${user.avatarUrl}?size=64`"
+          :class="user.active || 'inactive'" />
       </ETooltip>
       <ETooltip v-if="present.length > MAX_AVATARS" side="top" :offset="2"
         :text="present.slice(MAX_AVATARS).map(x => x.username).join(', ')">
