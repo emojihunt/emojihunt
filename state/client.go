@@ -103,7 +103,9 @@ func (c *Client) HandleMetrics() {
 			log.Printf("state: CountPuzzles: %#v", err)
 		} else {
 			puzzlesUnlocked.Set(float64(stats.Total))
-			puzzlesSolved.Set(float64(stats.Solved))
+			if stats.Solved.Valid {
+				puzzlesSolved.Set(float64(stats.Solved.Float64))
+			}
 		}
 
 		rounds, err := c.queries.CountRounds(ctx)
