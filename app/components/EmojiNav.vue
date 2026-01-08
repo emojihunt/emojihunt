@@ -53,7 +53,7 @@ const keydown = (e: KeyboardEvent): void => {
   <nav ref="nav" @keydown="keydown">
     <div class="spacer"></div>
     <ETooltip text="Puzzles Open" class="stats">
-      {{ String(puzzleCount - solvedPuzzleCount).padStart(3, '0') }}
+      <span>{{ String(puzzleCount - solvedPuzzleCount).padStart(3, '0') }}</span>
     </ETooltip>
     <p class="dot"></p>
     <ETooltip v-for="round of ordering" :key="round.id" :text="round.name">
@@ -67,7 +67,7 @@ const keydown = (e: KeyboardEvent): void => {
     </ETooltip>
     <p class="dot"></p>
     <ETooltip text="Puzzles Solved" class="stats">
-      {{ String(solvedPuzzleCount).padStart(3, '0') }}
+      <span>{{ String(solvedPuzzleCount).padStart(3, '0') }}</span>
     </ETooltip>
     <div class="spacer"></div>
   </nav>
@@ -88,8 +88,8 @@ nav {
   justify-content: center;
   gap: 0.2rem;
 
-  /* tooltip needs to appear above round pills */
-  z-index: 100;
+  /* should *not* display under main header apron */
+  z-index: 50;
   overflow-y: scroll;
 }
 
@@ -113,6 +113,7 @@ p,
   display: block;
   text-align: center;
   height: 1em;
+  width: 100%;
 }
 
 p.dot {
