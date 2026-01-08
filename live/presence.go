@@ -10,9 +10,12 @@ func (m PresenceMessage) EventType() state.EventType {
 	return state.EventTypePresence
 }
 
-func (s *Server) SendPresenceUpdate() {
+func (s *Server) MaybeSendPresenceUpdate() {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
+	if !s.presenceChanged {
+		return
+	}
 
 	var msg = make(PresenceMessage)
 	for _, client := range s.clients {
@@ -29,4 +32,5 @@ func (s *Server) SendPresenceUpdate() {
 	for _, client := range s.clients {
 		client.ch <- msg
 	}
+	s.presenceChanged = false
 }

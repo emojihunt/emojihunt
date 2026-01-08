@@ -162,10 +162,7 @@ func main() {
 		for {
 			select {
 			case <-time.After(5 * time.Second):
-				if s.presenceChanged {
-					s.SendPresenceUpdate()
-					s.presenceChanged = false
-				}
+				s.MaybeSendPresenceUpdate()
 			case <-ctx.Done():
 				return
 			}
