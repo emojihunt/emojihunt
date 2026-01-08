@@ -9,8 +9,10 @@ import type {
 const INACTIVITY_TIMEOUT = 15 * 60 * 1000; // 15 minutes
 const ACTIVITY_CHECK_INTERVAL = 60 * 1000; // 60 seconds
 
+let previous = { set: false, puzzle: null as (number | null) };
+
 export default function (
-  puzzle: number | undefined,
+  puzzle: number | null,
   discord: (m: DiscordMessage) => void,
   presence: (m: PresenceMessage) => void,
   settings: (m: SettingsMessage) => void,
@@ -65,6 +67,11 @@ export default function (
   };
   const onError = (e: Event) => console.warn("Worker Error:", e);
   onMounted(() => {
+    if (previous.set && previous.puzzle !== puzzle) {
+      throw new Error(`useAbly: cannot change puzzle: ${previous} -> ${puzzle}`);
+    }
+    previous = { set: true, puzzle };
+
     const id = crypto.randomUUID();
     let port: Worker | MessagePort;
     const { newSyncBackend } = useAppConfig();
@@ -77,7 +84,7 @@ export default function (
         : new AblyDedicatedWorker({ name: "🌊🎨🎡 ·⚡" });
       worker.addEventListener("message", onMessage);
       worker.addEventListener("error", onError);
-      worker.postMessage({ event: "start", id });
+      worker.postMessage({ event: "start", id, puzzle });
       port = worker;
     } else {
       const worker = newSyncBackend
@@ -88,7 +95,7 @@ export default function (
       worker.port.start();
       port = worker.port;
       navigator.locks.request(id, () => new Promise(() =>
-        worker.port.postMessage({ event: "start", id })
+        worker.port.postMessage({ event: "start", id, puzzle })
       ));
     }
 
@@ -120,4 +127,4 @@ export default function (
     }
   });
   return [connected, active];
-}
+};

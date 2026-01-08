@@ -21,11 +21,16 @@ let backoff = 500;
 // generates a UUID, takes a lock with that ID, then sends us the ID. When we
 // succeed in acquiring the same lock, the client must be dead.
 //
-const ports: Map<string, MessagePort | DedicatedWorkerGlobalScope> = new Map();
-const unicast = (
-  p: MessagePort | DedicatedWorkerGlobalScope, m: AblyWorkerMessage,
-) => p.postMessage(m);
-const broadcast = (m: AblyWorkerMessage) => ports.forEach(p => p.postMessage(m));
+type AbstractPort = MessagePort | DedicatedWorkerGlobalScope;
+const ports: Map<string, [AbstractPort, number | null]> = new Map();
+const unicast = (p: AbstractPort, m: AblyWorkerMessage) => p.postMessage(m);
+const broadcast = (m: AblyWorkerMessage) => ports.forEach(([p, _]) => p.postMessage(m));
+const broadcastHome = (m: AblyWorkerMessage) => (
+  ports.forEach(([p, z]) => (z === null) && p.postMessage(m))
+);
+const broadcastPuzzles = (m: AblyWorkerMessage) => (
+  ports.forEach(([p, z]) => (z !== null) && p.postMessage(m))
+);
 
 self.addEventListener("connect", (e: any) => {
   for (const port of e.ports) {
@@ -40,11 +45,12 @@ self.addEventListener("message", (e: MessageEvent<StatusMessage>) =>
   handleStatusMessage(e, null)
 );
 
-const handleStatusMessage = (e: MessageEvent<StatusMessage>, port: any) => {
+const handleStatusMessage = (e: MessageEvent<StatusMessage>, port_: MessagePort | null) => {
   const { event, id } = e.data;
   switch (event) {
     case "start":
-      if (port) {
+      let port: AbstractPort;
+      if (port_) {
         console.log(`[${id}] Joined`);
         navigator.locks.request(id, () => {
           ports.delete(id);
@@ -52,11 +58,12 @@ const handleStatusMessage = (e: MessageEvent<StatusMessage>, port: any) => {
           activityChanged = true;
           console.log(`[${id}] Left`);
         });
+        port = port_;
       } else { // dedicated worker fallback
         console.log("Worker launched in dedicated scope");
         port = self as DedicatedWorkerGlobalScope;
       }
-      ports.set(id, port);
+      ports.set(id, [port, e.data.puzzle]);
       unicast(port, { event: "_", state });
       rewind.forEach(data => unicast(port, { event: "sync", data }));
       unicast(port, {
@@ -122,18 +129,22 @@ const reconnect = () => new Promise((resolve) => {
         console.error("[*] Invalid", msg);
         break;
       case "m":
+        broadcastPuzzles(msg);
         break;
       case "presence":
         console.log("[*] Presence", msg.data);
         latestPresence = msg.data;
+        broadcastHome(msg);
         break;
       case "settings":
         console.log("[*] Settings", msg.data);
+        broadcast(msg);
         break;
       case "sync":
         console.log("[*] Sync", msg.data);
         rewind.push(msg.data);
         if (rewind.length >= 256) rewind.shift();
+        broadcast(msg);
         break;
       case "users":
         console.log("[*] Users", msg.data);
@@ -142,11 +153,11 @@ const reconnect = () => new Promise((resolve) => {
           ([k, [username, avatarUrl]]) => users.set(k, { username, avatarUrl })
         );
         msg.data.delete?.forEach((k) => users.delete(k));
+        broadcastHome(msg);
         break;
       default:
         ((x: never) => console.warn("[*] Unknown", x))(msg);
     }
-    broadcast(msg);
   });
 
   console.log(`[rx] Connecting to ${endpoint}...`);

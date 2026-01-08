@@ -100,7 +100,7 @@ const hydrateRound = (raw: Round, puzzles: Puzzle[]): AnnotatedRound => {
 //
 // https://github.com/vuejs/vue/issues/12678
 //
-export async function initializePuzzles(pageId?: number): Promise<State> {
+export async function initializePuzzles(pageId: number | null): Promise<State> {
   if (inject(key, undefined)) {
     throw new Error("usePuzzles() may only be initialized once");
   }

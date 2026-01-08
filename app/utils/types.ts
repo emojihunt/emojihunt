@@ -164,7 +164,7 @@ export type VoiceRoom = {
 export type ConnectionState = "connected" | "disconnected" | "broken" | "dead";
 
 export type StatusMessage =
-  | { event: "start", id: string; }
+  | { event: "start", id: string; puzzle: number | null; }
   | { event: "activity", id: string, puzzle: number, active: boolean; };
 
 export type AblyWorkerMessage =

@@ -7,7 +7,7 @@ useHead({
     { name: "theme-color", content: "oklch(30% 0 0deg)" },
   ],
 });
-const { puzzleCount } = await initializePuzzles();
+const { puzzleCount } = await initializePuzzles(null);
 
 // It doesn't look great when the round headers stack up on top of one another.
 // We want each round header to disappear when it's covered by the next. Use CSS
