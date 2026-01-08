@@ -122,7 +122,6 @@ export type SettingsMessage = {
   hunt_credentials: string;
   logistics_url: string;
   discord_guild: string;
-  hanging_out: string;
   next_hunt: string;
   voice_rooms: Record<string, string>;
 };

@@ -214,7 +214,7 @@ func (c *Client) TriggerPuzzle(ctx context.Context, change state.PuzzleChange) e
 		}
 	}
 
-	// Notify the puzzle channel and #more-eyes of significant status changes
+	// Notify the puzzle channel and #progress of significant status changes
 	if change.Before == nil {
 		if !puzzle.Round.Special { // skip Events round
 			return c.NotifyNewPuzzle(puzzle)
@@ -231,7 +231,7 @@ func (c *Client) TriggerPuzzle(ctx context.Context, change state.PuzzleChange) e
 		}
 		// Always notify on solve, even if the puzzle doesn't have a Discord
 		// channel.
-		return c.NotifySolveInHangingOut(puzzle)
+		return c.NotifySolveInProgress(puzzle)
 	} else if change.Before.Status == status.NotStarted && puzzle.Status == status.Working {
 		return c.NotifyPuzzleWorking(puzzle)
 	}

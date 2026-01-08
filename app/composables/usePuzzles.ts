@@ -33,7 +33,6 @@ type SortedRound = AnnotatedRound & { puzzles: Puzzle[]; };
 
 type Settings = {
   discordGuild: string;
-  hangingOut: string;
   huntName: string;
   huntURL: string;
   huntCredentials: string;
@@ -113,8 +112,8 @@ export async function initializePuzzles(pageId: number | null): Promise<State> {
 
   const presence = reactive(new Map<number, Map<string, boolean>>());
   const settings: Settings = reactive({
-    discordGuild: "", hangingOut: "", huntName: "", huntURL: "",
-    huntCredentials: "", logisticsURL: "", nextHunt: null,
+    discordGuild: "", huntName: "", huntURL: "", huntCredentials: "",
+    logisticsURL: "", nextHunt: null,
   });
   const users = reactive(new Map<string, User>());
 
@@ -230,7 +229,6 @@ export async function initializePuzzles(pageId: number | null): Promise<State> {
     settings.huntCredentials = msg.hunt_credentials;
     settings.logisticsURL = msg.logistics_url;
     settings.discordGuild = msg.discord_guild;
-    settings.hangingOut = msg.hanging_out;
     settings.nextHunt = parseTimestamp(msg.next_hunt);
 
     Object.entries(msg.voice_rooms).forEach(([id, raw]) => {

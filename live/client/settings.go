@@ -14,7 +14,6 @@ type SettingsMessage struct {
 	LogisticsURL    string `json:"logistics_url"`
 
 	DiscordGuild string `json:"discord_guild"`
-	HangingOut   string `json:"hanging_out"`
 	NextHunt     string `json:"next_hunt"` // work around Ably bug
 
 	VoiceRooms map[string]string `json:"voice_rooms"`
@@ -32,7 +31,6 @@ func (c *Client) ComputeMeta(discovery state.DiscoveryConfig) SettingsMessage {
 		LogisticsURL:    discovery.LogisticsURL,
 
 		DiscordGuild: c.discord.Guild.ID,
-		HangingOut:   c.discord.HangingOutChannel.ID,
 		NextHunt:     nextHunt,
 
 		VoiceRooms: c.discord.ListVoiceChannels(),

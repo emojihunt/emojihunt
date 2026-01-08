@@ -2,8 +2,9 @@
 const { connected, settings, puzzleCount } = usePuzzles();
 
 const [discordBase, discordTarget] = useDiscordBase();
-const discordURL = computed(() => settings.discordGuild && settings.hangingOut ?
-  `${discordBase}/channels/${settings.discordGuild}/${settings.hangingOut}` : '');;
+const discordURL = computed(() =>
+  settings.discordGuild ? `${discordBase}/channels/${settings.discordGuild}` : '',
+);;
 
 const logout = async (e: MouseEvent) => {
   e.preventDefault();

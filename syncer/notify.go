@@ -7,11 +7,11 @@ import (
 	"github.com/emojihunt/emojihunt/state"
 )
 
-// NotifyNewPuzzle sends the "New puzzle!" message to #more-eyes.
+// NotifyNewPuzzle sends the "New puzzle!" message to #progress.
 func (c *Client) NotifyNewPuzzle(puzzle state.Puzzle) error {
 	log.Printf("sync: notifying for new puzzle %q", puzzle.Name)
 	_, err := c.discord.ChannelSend(
-		c.discord.MoreEyesChannel,
+		c.discord.ProgressChannel,
 		fmt.Sprintf(
 			"%s **New puzzle!** %s", puzzle.Round.Emoji, puzzle.Mention(),
 		),
@@ -19,11 +19,11 @@ func (c *Client) NotifyNewPuzzle(puzzle state.Puzzle) error {
 	return err
 }
 
-// NotifyPuzzleWorking sends the "Work started on puzzle" message to #more-eyes.
+// NotifyPuzzleWorking sends the "Work started on puzzle" message to #progress.
 func (c *Client) NotifyPuzzleWorking(puzzle state.Puzzle) error {
 	log.Printf("sync: notifying for working puzzle %q", puzzle.Name)
 	_, err := c.discord.ChannelSend(
-		c.discord.MoreEyesChannel, fmt.Sprintf(
+		c.discord.ProgressChannel, fmt.Sprintf(
 			"%s Work started on puzzle %s", puzzle.Round.Emoji, puzzle.Mention(),
 		),
 	)
@@ -43,17 +43,15 @@ func (c *Client) NotifySolveInPuzzleChannel(puzzle state.Puzzle) error {
 	)
 }
 
-// NotifySolveInHangingOut sends the same message as above to #hanging-out.
-// Unlike all of the other methods in this file, it does *not* require a puzzle
-// channel to exist.
-func (c *Client) NotifySolveInHangingOut(puzzle state.Puzzle) error {
-	log.Printf("sync: notifying for solved puzzle %q in #hanging-out", puzzle.Name)
+// NotifySolveInProgress sends the same message as above to #progress.
+func (c *Client) NotifySolveInProgress(puzzle state.Puzzle) error {
+	log.Printf("sync: notifying for solved puzzle %q in #progress", puzzle.Name)
 	kind := "Puzzle"
 	if puzzle.Meta {
 		kind = "Meta"
 	}
 	_, err := c.discord.ChannelSend(
-		c.discord.HangingOutChannel,
+		c.discord.ProgressChannel,
 		fmt.Sprintf(
 			"%s %s %s was **%s** Answer: `%s`.",
 			puzzle.Round.Emoji, kind, puzzle.Mention(), puzzle.Status.SolvedVerb(), puzzle.Answer,

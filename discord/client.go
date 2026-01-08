@@ -15,30 +15,27 @@ import (
 )
 
 type Config struct {
-	GuildID             string
-	QMRoleID            string
-	QMChannelID         string
-	HangingOutChannelID string
-	MoreEyesChannelID   string
-	TeamCategoryID      string
+	GuildID           string
+	QMRoleID          string
+	QMChannelID       string
+	ProgressChannelID string
+	TeamCategoryID    string
 }
 
 var DevConfig = Config{
-	GuildID:             "1058090773582721214",
-	QMRoleID:            "1058092621475614751",
-	QMChannelID:         "1058092560926646282",
-	HangingOutChannelID: "1058090774488678532",
-	MoreEyesChannelID:   "1058092531688157266",
-	TeamCategoryID:      "1058090774488678530",
+	GuildID:           "1058090773582721214",
+	QMRoleID:          "1058092621475614751",
+	QMChannelID:       "1058092560926646282",
+	ProgressChannelID: "1058092531688157266",
+	TeamCategoryID:    "1058090774488678530",
 }
 
 var ProdConfig = Config{
-	GuildID:             "793599987694436374",
-	QMRoleID:            "793618399322046515",
-	QMChannelID:         "795780814846689321",
-	HangingOutChannelID: "793599987694436377",
-	MoreEyesChannelID:   "793607709022748683",
-	TeamCategoryID:      "925929203537416293",
+	GuildID:           "793599987694436374",
+	QMRoleID:          "793618399322046515",
+	QMChannelID:       "795780814846689321",
+	ProgressChannelID: "793607709022748683",
+	TeamCategoryID:    "925929203537416293",
 }
 
 const ablyChannelName = "discord"
@@ -48,13 +45,12 @@ type Client struct {
 	s     *discordgo.Session
 	state *state.Client
 
-	Guild             *discordgo.Guild
-	Application       *discordgo.Application
-	QMChannel         *discordgo.Channel // for puzzle maintenance
-	HangingOutChannel *discordgo.Channel // for solves, to celebrate
-	MoreEyesChannel   *discordgo.Channel // for verbose puzzle updates
-	TeamCategoryID    string             // for safety
-	QMRole            *discordgo.Role    // so QMs show up in the sidebar
+	Guild           *discordgo.Guild
+	Application     *discordgo.Application
+	QMChannel       *discordgo.Channel // for maintenance issues
+	ProgressChannel *discordgo.Channel // for puzzle updates
+	TeamCategoryID  string             // for relay safety
+	QMRole          *discordgo.Role    // so QMs show up in the sidebar
 
 	botsByCommand map[string]*botRegistration
 
@@ -151,8 +147,7 @@ func Connect(ctx context.Context, prod bool, state *state.Client,
 		}
 	})
 
-	// Load channels; find and configure HangingOutChannel, MoreEyesChannel,
-	// QMChannel, and channelCache.
+	// Load channels; find and configure ProgressChannel, QMChannel, channelCache.
 	wg.Go(func() {
 		channels, err := discord.s.GuildChannels(config.GuildID)
 		if err != nil {
@@ -165,22 +160,17 @@ func Connect(ctx context.Context, prod bool, state *state.Client,
 		for _, channel := range channels {
 			discord.channelCache[channel.ID] = channel
 			switch channel.ID {
-			case config.HangingOutChannelID:
-				discord.HangingOutChannel = channel
-			case config.MoreEyesChannelID:
-				discord.MoreEyesChannel = channel
+			case config.ProgressChannelID:
+				discord.ProgressChannel = channel
 			case config.QMChannelID:
 				discord.QMChannel = channel
 			}
 		}
-		if discord.HangingOutChannel == nil {
-			log.Panicf("failed to load hanging-out channel %q: %s",
-				config.HangingOutChannelID, err)
-		} else if discord.MoreEyesChannel == nil {
-			log.Panicf("failed to load more-eyes channel %q: %s",
-				config.MoreEyesChannelID, err)
-		} else if discord.QMChannel == nil {
+		if discord.QMChannel == nil {
 			log.Panicf("failed to load qm channel %q: %s", config.QMChannelID, err)
+		} else if discord.ProgressChannel == nil {
+			log.Panicf("failed to load progress channel %q: %s",
+				config.ProgressChannelID, err)
 		}
 	})
 
