@@ -114,16 +114,24 @@ export default function (
       port.postMessage({ event: "activity", id, puzzle, active: active.value });
       setInterval(checkActivity, ACTIVITY_CHECK_INTERVAL);
 
-      const onActivity = (ts: number) => {
-        lastActivity = ts;
-        if (!active.value) checkActivity();
+      const onActivity = (ts: number, strong: boolean) => {
+        // Mouse movement keeps us active, but stops counting once we're
+        // inactive -- we need a click or keypress to wake.
+        if (active.value) {
+          lastActivity = ts;
+        } else if (strong) {
+          lastActivity = ts;
+          // When waking up, notify pages immediately to make the UI responsive
+          // (notifies the server, too).
+          checkActivity();
+        }
       };
       window.addEventListener("blur", (e) => setTimeout(() =>
-        (document.activeElement?.nodeName === "IFRAME") && onActivity(e.timeStamp), 250)
+        (document.activeElement?.nodeName === "IFRAME") && onActivity(e.timeStamp, false), 250)
       );
-      window.addEventListener("mousemove", (e) => onActivity(e.timeStamp));
-      window.addEventListener("click", (e) => onActivity(e.timeStamp));
-      window.addEventListener("keydown", (e) => onActivity(e.timeStamp));
+      window.addEventListener("mousemove", (e) => onActivity(e.timeStamp, false));
+      window.addEventListener("click", (e) => onActivity(e.timeStamp, true));
+      window.addEventListener("keydown", (e) => onActivity(e.timeStamp, true));
     }
   });
   return [connected, active];
