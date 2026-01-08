@@ -36,6 +36,9 @@ ORDER BY rounds.special DESC, rounds.sort, rounds.id,
     p.meta, p.reminder, p.name
 COLLATE nocase;
 
+-- name: CountPuzzles :one
+SELECT COUNT(*) AS total, COUNT(answer) AS solved FROM puzzles;
+
 -- name: ListPuzzlesByRound :many
 SELECT
     p.id, p.name, p.answer, sqlc.embed(rounds), p.status, p.note,
@@ -88,6 +91,9 @@ WHERE id = ? LIMIT 1;
 SELECT * FROM rounds
 ORDER BY special DESC, sort, id
 COLLATE nocase;
+
+-- name: CountRounds :one
+SELECT COUNT(*) AS total FROM rounds;
 
 -- name: CreateRound :one
 INSERT INTO rounds (

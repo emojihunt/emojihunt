@@ -81,6 +81,33 @@ func (q *Queries) CompleteDiscoveredRound(ctx context.Context, arg CompleteDisco
 	return err
 }
 
+const countPuzzles = `-- name: CountPuzzles :one
+SELECT COUNT(*) AS total, COUNT(answer) AS solved FROM puzzles
+`
+
+type CountPuzzlesRow struct {
+	Total  int64 `json:"total"`
+	Solved int64 `json:"solved"`
+}
+
+func (q *Queries) CountPuzzles(ctx context.Context) (CountPuzzlesRow, error) {
+	row := q.db.QueryRowContext(ctx, countPuzzles)
+	var i CountPuzzlesRow
+	err := row.Scan(&i.Total, &i.Solved)
+	return i, err
+}
+
+const countRounds = `-- name: CountRounds :one
+SELECT COUNT(*) AS total FROM rounds
+`
+
+func (q *Queries) CountRounds(ctx context.Context) (int64, error) {
+	row := q.db.QueryRowContext(ctx, countRounds)
+	var total int64
+	err := row.Scan(&total)
+	return total, err
+}
+
 const createChangelog = `-- name: CreateChangelog :exec
 INSERT INTO changelog (
     id, kind, puzzle, round

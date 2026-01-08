@@ -64,6 +64,18 @@ var (
 		Name: "live_tx_clients",
 		Help: "The total number of active Tx connections",
 	})
+	activityPings = promauto.NewCounter(prometheus.CounterOpts{
+		Name: "activity_pings",
+		Help: "A running count of activity pings received from clients",
+	})
+	presencePuzzles = promauto.NewGauge(prometheus.GaugeOpts{
+		Name: "presence_puzzles",
+		Help: "The total number of puzzles being worked on",
+	})
+	presenceUserPuzzles = promauto.NewGauge(prometheus.GaugeOpts{
+		Name: "presence_user_puzzles",
+		Help: "The total number of users*puzzles being worked on",
+	})
 )
 
 func main() {
@@ -108,19 +120,7 @@ func main() {
 		clients: make(map[int64]*Client),
 		users:   make(map[string][2]string),
 	}
-	go func() {
-		for {
-			s.mutex.Lock()
-			rxConnections.Set(float64(len(s.clients)))
-			if s.server {
-				txConnections.Set(1)
-			} else {
-				txConnections.Set(0)
-			}
-			s.mutex.Unlock()
-			time.Sleep(5 * time.Second)
-		}
-	}()
+	go s.HandleMetrics()
 
 	s.echo.HideBanner = true
 	s.echo.Use(util.SentryMiddleware)
@@ -212,5 +212,30 @@ func (s *Server) ErrorHandler(err error, c echo.Context) {
 
 		// Don't invoke DefaultHTTPErrorHandler, since we've probably already upgraded
 		// the connection.
+	}
+}
+
+func (s *Server) HandleMetrics() {
+	for {
+		s.mutex.Lock()
+		rxConnections.Set(float64(len(s.clients)))
+		if s.server {
+			txConnections.Set(1)
+		} else {
+			txConnections.Set(0)
+		}
+
+		var userPuzzles int
+		var puzzles = make(map[int64]bool)
+		for _, client := range s.clients {
+			for puzzle := range client.presence {
+				puzzles[puzzle] = true
+				userPuzzles += 1
+			}
+		}
+		presencePuzzles.Set(float64(len(puzzles)))
+		presenceUserPuzzles.Set(float64(userPuzzles))
+		s.mutex.Unlock()
+		time.Sleep(5 * time.Second)
 	}
 }

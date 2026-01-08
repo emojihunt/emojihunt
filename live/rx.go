@@ -115,6 +115,7 @@ func (s *Server) Receive(c echo.Context) error {
 				s.clients[id].presence = msg.Activity
 				s.presenceChanged = true
 				s.mutex.Unlock()
+				activityPings.Inc()
 			default:
 				log.Printf("rx[%04d]: unknown event type: %s", id, msg.Event)
 			}

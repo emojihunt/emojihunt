@@ -92,6 +92,7 @@ func main() {
 	go syncer.Watch(ctx)
 	go discovery.SyncWorker(ctx)
 	go discovery.Watch(ctx)
+	go state.HandleMetrics()
 
 	log.Printf("starting web server")
 	var server = server.Start(ctx, *prod, ably, discord, live, state, syncer)

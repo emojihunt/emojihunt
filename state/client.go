@@ -7,11 +7,34 @@ import (
 	"fmt"
 	"os"
 	"sync"
+	"time"
 
 	_ "embed"
 
 	"github.com/emojihunt/emojihunt/state/db"
+	"github.com/labstack/gommon/log"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promauto"
 	"golang.org/x/xerrors"
+)
+
+var (
+	changeId = promauto.NewGauge(prometheus.GaugeOpts{
+		Name: "change_id",
+		Help: "The current change ID",
+	})
+	puzzlesUnlocked = promauto.NewGauge(prometheus.GaugeOpts{
+		Name: "puzzles_unlocked",
+		Help: "The total number of puzzles unlocked",
+	})
+	puzzlesSolved = promauto.NewGauge(prometheus.GaugeOpts{
+		Name: "puzzles_solved",
+		Help: "The total number of puzzles solved",
+	})
+	roundsAvailable = promauto.NewGauge(prometheus.GaugeOpts{
+		Name: "rounds",
+		Help: "The total number of rounds unlocked",
+	})
 )
 
 type Client struct {
@@ -67,4 +90,31 @@ type ValidationError struct {
 
 func (e ValidationError) Error() string {
 	return fmt.Sprintf("%s %s", e.Field, e.Message)
+}
+
+func (c *Client) HandleMetrics() {
+	for {
+		c.mutex.Lock()
+		ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
+		changeId.Set(float64(c.changeID))
+
+		stats, err := c.queries.CountPuzzles(ctx)
+		if err != nil {
+			log.Printf("state: CountPuzzles: %#v", err)
+		} else {
+			puzzlesUnlocked.Set(float64(stats.Total))
+			puzzlesSolved.Set(float64(stats.Solved))
+		}
+
+		rounds, err := c.queries.CountRounds(ctx)
+		if err != nil {
+			log.Printf("state: CountRounds: %#v", err)
+		} else {
+			roundsAvailable.Set(float64(rounds))
+		}
+
+		cancel()
+		c.mutex.Unlock()
+		time.Sleep(30 * time.Second)
+	}
 }
