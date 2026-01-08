@@ -82,9 +82,7 @@ func (q *Queries) CompleteDiscoveredRound(ctx context.Context, arg CompleteDisco
 }
 
 const countPuzzles = `-- name: CountPuzzles :one
-SELECT
-    COUNT(*) AS total,
-    SUM(answer != "") AS solved
+SELECT COUNT(*) AS total, SUM(answer != "") AS solved
 FROM puzzles
 `
 
@@ -101,7 +99,7 @@ func (q *Queries) CountPuzzles(ctx context.Context) (CountPuzzlesRow, error) {
 }
 
 const countRounds = `-- name: CountRounds :one
-SELECT COUNT(*) AS total FROM rounds
+SELECT COUNT(*) AS total FROM rounds WHERE NOT special
 `
 
 func (q *Queries) CountRounds(ctx context.Context) (int64, error) {

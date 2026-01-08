@@ -94,7 +94,7 @@ ORDER BY special DESC, sort, id
 COLLATE nocase;
 
 -- name: CountRounds :one
-SELECT COUNT(*) AS total FROM rounds;
+SELECT COUNT(*) AS total FROM rounds WHERE NOT special;
 
 -- name: CreateRound :one
 INSERT INTO rounds (
