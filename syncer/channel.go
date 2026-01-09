@@ -117,13 +117,9 @@ func (c *Client) UpdateDiscordChannel(ctx context.Context, fields DiscordChannel
 	// The Discord rate limit on channel renames is fairly restrictive (2 per 10
 	// minutes per channel), so finish renaming the channel asynchronously if we
 	// get rate-limited.
-	var title = fields.PuzzleName
-	if fields.IsSolved {
-		title = "✅ " + title
-	}
 	ch := make(chan error)
 	go func() {
-		ch <- c.discord.SetChannelName(fields.PuzzleChannel, title, position)
+		ch <- c.discord.SetChannelName(fields.PuzzleChannel, fields.PuzzleName, position)
 	}()
 	select {
 	case err := <-ch:
@@ -141,7 +137,7 @@ func (c *Client) UpdateDiscordChannel(ctx context.Context, fields DiscordChannel
 			// NotifySolveInPuzzleChannel.
 			time.Sleep(4 * time.Second)
 			msg := fmt.Sprintf(":snail: Hit Discord's rate limit on channel renaming. Channel will be "+
-				"renamed to %q in %s.", title, time.Until(*rateLimit).Round(time.Second))
+				"renamed to %q in %s.", fields.PuzzleName, time.Until(*rateLimit).Round(time.Second))
 			c.discord.ChannelSendRawID(fields.PuzzleChannel, msg)
 		}()
 		return nil
