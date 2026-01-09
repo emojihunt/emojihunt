@@ -39,6 +39,10 @@ func (p Puzzle) Mention() string {
 	}
 }
 
+type PuzzleRoundChange interface {
+	SyncMessage() AblySyncMessage
+}
+
 type PuzzleChange struct {
 	Before *Puzzle
 	After  *Puzzle
@@ -51,7 +55,7 @@ type PuzzleChange struct {
 	BotComplete chan error
 }
 
-func (change *PuzzleChange) SyncMessage() AblySyncMessage {
+func (change PuzzleChange) SyncMessage() AblySyncMessage {
 	var msg = AblySyncMessage{ChangeID: change.ChangeID}
 	if change.After == nil {
 		msg.Kind = status.AblyKindDelete
@@ -70,7 +74,7 @@ type RoundChange struct {
 	ChangeID int64
 }
 
-func (change *RoundChange) SyncMessage() AblySyncMessage {
+func (change RoundChange) SyncMessage() AblySyncMessage {
 	var msg = AblySyncMessage{ChangeID: change.ChangeID}
 	if change.After == nil {
 		msg.Kind = status.AblyKindDelete

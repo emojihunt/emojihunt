@@ -82,13 +82,10 @@ func Start(ctx context.Context, prod bool, ably *ably.Realtime,
 
 	e.GET("/", func(c echo.Context) error {
 		return c.JSON(http.StatusOK, map[string]interface{}{
-			"instance": os.Getenv("FLY_MACHINE_VERSION"),
-			"status":   "healthy",
-			"sync_queues": map[string]interface{}{
-				"puzzle": len(s.state.PuzzleChange),
-				"round":  len(s.state.RoundChange),
-				"live":   len(s.state.LiveMessage),
-			},
+			"instance":   os.Getenv("FLY_MACHINE_VERSION"),
+			"status":     "healthy",
+			"sync_queue": len(s.state.PuzzleRoundChange),
+			"live_queue": len(s.state.LiveMessage),
 		})
 	})
 	e.GET("/robots.txt", func(c echo.Context) error {

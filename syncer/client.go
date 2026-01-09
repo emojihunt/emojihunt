@@ -74,19 +74,24 @@ func (c *Client) Watch(ctx context.Context) {
 		case <-c.state.DiscoveryChange:
 			err = c.TriggerDiscovery(ctx)
 			c.RestartDiscovery <- true
-		case change := <-c.state.PuzzleChange:
-			err = c.TriggerPuzzle(ctx, change)
-			if change.BotComplete != nil {
-				change.BotComplete <- err
+		case change := <-c.state.PuzzleRoundChange:
+			switch chg := change.(type) {
+			case state.PuzzleChange:
+				err = c.TriggerPuzzle(ctx, chg)
+				if chg.BotComplete != nil {
+					chg.BotComplete <- err
+				}
+			case state.RoundChange:
+				err = c.TriggerRound(ctx, chg)
+			default:
+				log.Panicf("unhandled PuzzleRoundChange variant: %T", change)
 			}
-		case change := <-c.state.RoundChange:
-			err = c.TriggerRound(ctx, change)
 		case <-ctx.Done():
 			return
 		}
 		if err != nil {
 			sentry.GetHubFromContext(ctx).CaptureException(err)
-		} else if len(c.state.PuzzleChange) == 0 && len(c.state.RoundChange) == 0 {
+		} else if len(c.state.PuzzleRoundChange) == 0 {
 			log.Printf("sync: up to date!")
 		}
 	}

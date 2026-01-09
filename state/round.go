@@ -109,7 +109,7 @@ func (c *Client) UpdateRound(ctx context.Context, id int64,
 	for _, puzzle := range puzzles {
 		var pre, post = Puzzle(puzzle), Puzzle(puzzle)
 		pre.Round = before
-		c.PuzzleChange <- PuzzleChange{&pre, &post, 0, nil}
+		c.PuzzleRoundChange <- PuzzleChange{&pre, &post, 0, nil}
 	}
 	return after, change.ChangeID, nil
 }

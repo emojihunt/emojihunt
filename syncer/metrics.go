@@ -8,16 +8,12 @@ import (
 )
 
 var (
-	puzzleQueueLen = promauto.NewGauge(prometheus.GaugeOpts{
-		Name: "sync_puzzle_queue",
-		Help: "The length of the puzzle-sync queue",
-	})
-	roundQueueLen = promauto.NewGauge(prometheus.GaugeOpts{
-		Name: "sync_round_queue",
-		Help: "The length of the round-sync queue",
+	syncQueueLen = promauto.NewGauge(prometheus.GaugeOpts{
+		Name: "sync_queue",
+		Help: "The length of the puzzle/round-sync queue",
 	})
 	liveQueueLen = promauto.NewGauge(prometheus.GaugeOpts{
-		Name: "sync_live_queue",
+		Name: "live_queue",
 		Help: "The length of the live-message queue",
 	})
 
@@ -37,8 +33,7 @@ var (
 
 func (c *Client) HandleMetrics() {
 	for {
-		puzzleQueueLen.Set(float64(len(c.state.PuzzleChange)))
-		roundQueueLen.Set(float64(len(c.state.RoundChange)))
+		syncQueueLen.Set(float64(len(c.state.PuzzleRoundChange)))
 		liveQueueLen.Set(float64(len(c.state.LiveMessage)))
 		time.Sleep(1 * time.Second)
 	}

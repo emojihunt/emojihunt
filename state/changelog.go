@@ -61,7 +61,7 @@ func (c *Client) LogPuzzleChange(ctx context.Context, before *Puzzle,
 		return PuzzleChange{}, xerrors.Errorf("PruneChangelog: %w", err)
 	}
 
-	c.PuzzleChange <- change
+	c.PuzzleRoundChange <- change
 	return change, nil
 }
 
@@ -90,6 +90,6 @@ func (c *Client) LogRoundChange(ctx context.Context, before *Round,
 		return RoundChange{}, xerrors.Errorf("PruneChangelog: %w", err)
 	}
 
-	c.RoundChange <- change
+	c.PuzzleRoundChange <- change
 	return change, nil
 }

@@ -19,10 +19,6 @@ import (
 )
 
 var (
-	changeId = promauto.NewGauge(prometheus.GaugeOpts{
-		Name: "change_id",
-		Help: "The current change ID",
-	})
 	puzzlesUnlocked = promauto.NewGauge(prometheus.GaugeOpts{
 		Name: "puzzles_unlocked",
 		Help: "The total number of puzzles unlocked",
@@ -40,10 +36,9 @@ var (
 type Client struct {
 	// Important: to avoid deadlocks, do not send to this channel while holding
 	// the lock below.
-	DiscoveryChange chan bool
-	PuzzleChange    chan PuzzleChange
-	RoundChange     chan RoundChange
-	LiveMessage     chan LiveMessage
+	DiscoveryChange   chan bool
+	PuzzleRoundChange chan PuzzleRoundChange
+	LiveMessage       chan LiveMessage
 
 	queries  *db.Queries
 	mutex    sync.Mutex // used to serialize database writes
@@ -67,11 +62,10 @@ func New(ctx context.Context, path string) *Client {
 		}
 	}
 	var client = Client{
-		DiscoveryChange: make(chan bool, 8),
-		PuzzleChange:    make(chan PuzzleChange, 256),
-		RoundChange:     make(chan RoundChange, 256),
-		LiveMessage:     make(chan LiveMessage, 256),
-		queries:         db.New(dbx),
+		DiscoveryChange:   make(chan bool, 8),
+		PuzzleRoundChange: make(chan PuzzleRoundChange, 256),
+		LiveMessage:       make(chan LiveMessage, 256),
+		queries:           db.New(dbx),
 	}
 	epoch, err := client.IncrementSyncEpoch(ctx)
 	if err != nil {
@@ -96,7 +90,6 @@ func (c *Client) HandleMetrics() {
 	for {
 		c.mutex.Lock()
 		ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
-		changeId.Set(float64(c.changeID))
 
 		stats, err := c.queries.CountPuzzles(ctx)
 		if err != nil {
@@ -117,6 +110,6 @@ func (c *Client) HandleMetrics() {
 
 		cancel()
 		c.mutex.Unlock()
-		time.Sleep(30 * time.Second)
+		time.Sleep(15 * time.Second)
 	}
 }
