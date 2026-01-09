@@ -1,8 +1,11 @@
 <script setup lang="ts">
+import { Remarkable } from "remarkable";
+import { linkify } from 'remarkable/linkify';
+
 const { id } = defineProps<{ id: number; }>();
 const emit = defineEmits<{ (e: "open"): void; }>();
 
-const { discordCallback, puzzles, settings } = usePuzzles();
+const { discordCallback, puzzles, settings, users } = usePuzzles();
 const [discordBase, discordTarget] = useDiscordBase();
 const puzzle = computed(() => puzzles.get(id)!);
 
@@ -21,7 +24,13 @@ const input = useTemplateRef("input");
 const draft = ref("");
 
 const filtered = computed(() =>
-  [...messages.values()].sort((a, b) => a.t - b.t)
+  [...messages.values()].sort((a, b) => a.t - b.t).map(m => {
+    let n = { ...m };
+    for (const [id, user] of users.entries()) {
+      n.msg = n.msg.replaceAll(`<@${id}>`, "@" + user.username);
+    }
+    return n;
+  })
 );
 watch(() => filtered.value?.length, () => {
   if (!filtered.value?.length) {
@@ -53,6 +62,12 @@ defineExpose({
     };
   },
 });
+
+const md = new Remarkable({
+  html: false,
+  breaks: true,
+}).use(linkify);
+md.inline.ruler.disable(["footnote_ref", "htmltag", "entity"]);
 </script>
 
 <template>
@@ -77,7 +92,8 @@ defineExpose({
       </ETooltip>
     </span>
     <p v-for="message of filtered">
-      <b>{{ message.u }} &centerdot;</b> {{ message.msg }}
+      <b>{{ message.u }} &centerdot;</b> <span
+        v-html="md.renderInline(message.msg)"></span>
     </p>
     <input ref="input" type=text v-model="draft" placeholder="Reply..." @keydown="send" />
   </div>
@@ -111,6 +127,10 @@ input {
 
 p:hover {
   max-height: unset;
+}
+
+p :deep(a) {
+  color: oklch(80% 0.15 245deg);
 }
 
 .links {

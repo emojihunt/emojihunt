@@ -154,7 +154,7 @@ const reconnect = () => new Promise((resolve) => {
           ([k, [username, avatarUrl]]) => users.set(k, { username, avatarUrl })
         );
         msg.data.delete?.forEach((k) => users.delete(k));
-        broadcastHome(msg);
+        broadcast(msg);
         break;
       default:
         ((x: never) => console.warn("[*] Unknown", x))(msg);
