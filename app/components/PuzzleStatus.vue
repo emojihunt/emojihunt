@@ -70,25 +70,32 @@ const select = (status: Status) => {
 
 <template>
   <div class="cell">
-    <div v-if="puzzle.answer || answering" class="answer">
-      <EditableSpan ref="input" :value="puzzle.answer" :tabsequence="5"
-        :sticky="!!answering" @save="save" @cancel="cancel" :readonly="saving" />
-      <ETooltip :text="answering || puzzle.status" side="left">
-        <button :data-tabsequence="6"
+    <div class="row">
+      <EditableSpan v-if="puzzle.answer || answering" ref="input" class="answer"
+        :value="puzzle.answer" :tabsequence="5" :sticky="!!answering" @save="save"
+        @cancel="cancel" :readonly="saving" />
+      <button v-else ref="button" class="status" :data-tabsequence="56"
+        @click="() => expanded = (expanded === id ? 0 : id)">
+        <span class="highlight" :class="puzzle.meta && 'meta'">
+          {{ StatusEmoji(puzzle.status) }} {{ StatusLabel(puzzle.status) }}
+        </span>
+      </button>
+
+      <Spinner v-if="saving" />
+
+      <ETooltip v-if="puzzle.answer || answering" :text="answering || puzzle.status"
+        side="left" class="right">
+        <button :data-tabsequence="6" class="solve"
           @click="() => answering ? (answering = null, expanded = id) : expanded = (expanded === id ? 0 : id)">
-          <span>{{ StatusEmoji(answering || puzzle.status) }}</span>
+          {{ StatusEmoji(answering || puzzle.status) }}
         </button>
       </ETooltip>
-      <div v-if="answering" class="hint">🎉 Press Enter to record answer</div>
-      <Spinner v-if="saving" />
+      <ETooltip v-else-if="false" text="Last edit: ..." side="left" class="right">
+        <div class="sheet-active"></div>
+        <div class="sheet-recent">30</div>
+      </ETooltip>
     </div>
-    <button v-else ref="button" class="status" :data-tabsequence="56"
-      @click="() => expanded = (expanded === id ? 0 : id)">
-      <span class="highlight" :class="puzzle.meta && 'meta'">
-        {{ StatusEmoji(puzzle.status) }} {{ StatusLabel(puzzle.status) }}
-      </span>
-      <Spinner v-if="saving" />
-    </button>
+    <div v-if="answering" class="hint">🎉 Press Enter to record answer</div>
     <OptionPane v-if="expanded === id" :items="items" double @select="select" />
   </div>
 </template>
@@ -99,44 +106,46 @@ const select = (status: Status) => {
   flex-direction: column;
 }
 
-.answer {
-  display: grid;
-  grid-template-columns: 5fr 1.5rem;
-}
-
-.answer div {
+.row {
   display: flex;
 }
 
-.answer button {
-  flex-grow: 1;
-  text-align: center;
-  align-self: flex-start;
-}
-
-.answer button span {
-  display: inline-block;
-}
-
 .status {
+  flex-grow: 1;
   line-height: 1.75rem;
   padding: 0 0.33rem;
   text-align: left;
 }
 
 .spinner {
-  position: absolute;
-  top: 5px;
-  right: 0.4rem;
+  align-self: center;
 }
 
-.answer .spinner {
-  right: 1.75rem;
+.right {
+  display: flex;
+  justify-content: center;
+  width: 1.5rem;
+}
+
+.sheet-active {
+  width: 10px;
+  height: 10px;
+
+  border-radius: 3.5px;
+  align-self: center;
+}
+
+.sheet-recent {
+  font-size: 9px;
+  font-weight: 500;
+  line-height: 8px;
+
+  border-radius: 3.5px;
+  align-self: center;
 }
 
 .hint {
-  grid-column: 1 / 3;
-  padding: 0.2rem 0.2rem 0.1rem;
+  padding: 0.2rem;
 }
 
 /* Theming */
@@ -144,31 +153,10 @@ const select = (status: Status) => {
   font-size: 0.875rem;
 }
 
-.answer span {
+.answer {
   font-family: "IBM Plex Mono", "Noto Color Emoji", monospace;
   font-weight: 600;
   text-transform: uppercase;
-}
-
-.answer button {
-  height: 28.33px;
-  line-height: 28px;
-  filter: opacity(90%);
-  border-radius: 0;
-}
-
-.answer button:focus-visible {
-  /* make Chrome use square outline */
-  outline: 2px solid black;
-}
-
-.answer button:hover {
-  filter: none;
-}
-
-.answer button:hover span {
-  transform: scale(110%);
-  filter: drop-shadow(0 1px 1px oklch(85% 0 0deg));
 }
 
 .status {
@@ -194,6 +182,41 @@ const select = (status: Status) => {
       oklch(91% 0 0deg / 70%) 4%,
       oklch(91% 0 0deg / 30%) 92%,
       oklch(91% 0 0deg / 0%));
+}
+
+.solve {
+  height: 28.33px;
+  line-height: 28px;
+  filter: opacity(90%);
+  border-radius: 0;
+}
+
+.solve:focus-visible {
+  /* make Chrome use square outline */
+  outline: 2px solid black;
+}
+
+.solve:hover {
+  filter: none;
+}
+
+.solve:hover span {
+  transform: scale(110%);
+  filter: drop-shadow(0 1px 1px oklch(85% 0 0deg));
+}
+
+.sheet-active {
+  background-color: oklch(70% 0.17 150);
+  border-bottom: 1.5px solid oklch(60% 0.25 150);
+}
+
+.sheet-recent {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'ss01', 'zero';
+
+  padding: 3px 3px 2px;
+  border: 1.5px solid oklch(66% 0.17 150);
+  color: oklch(60% 0.17 150);
 }
 
 .hint {
