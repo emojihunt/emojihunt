@@ -5,10 +5,12 @@ COPY . .
 RUN apk add --no-cache build-base
 # Flags are a workaround for https://github.com/mattn/go-sqlite3/issues/1164
 RUN CGO_CFLAGS="-D_LARGEFILE64_SOURCE" go build -ldflags="-w -s" .
+RUN go build -ldflags="-w -s" ./discord/deleter
 
 FROM alpine
 RUN apk add --no-cache tzdata
 COPY --from=build /build/emojihunt /bin/huntbot
+COPY --from=build /build/deleter /bin/deleter
 
 USER root
 WORKDIR /state
