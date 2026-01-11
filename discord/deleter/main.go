@@ -1,23 +1,26 @@
 package main
 
 import (
+	"bufio"
 	"flag"
-	"log"
+	"fmt"
 	"os"
+	"strings"
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/emojihunt/emojihunt/discord"
-	"golang.org/x/xerrors"
 )
 
 var (
-	prod     = flag.Bool("prod", false, "selects development or production")
-	category = flag.String("category", "", "name of category to delete from")
-	dryRun   = flag.Bool("dry_run", true, "whether to run in dry run mode or not")
+	prod = flag.Bool("prod", false, "selects development or production")
 )
 
+func init() {
+	flag.Parse()
+}
+
 func main() {
-	// Create Discord client and get channel list
+	var reader = bufio.NewReader(os.Stdin)
 	token, ok := os.LookupEnv("DISCORD_TOKEN")
 	if !ok {
 		panic("DISCORD_TOKEN is required")
@@ -31,54 +34,72 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	guildID := discord.DevConfig.GuildID
+	var cfg = discord.DevConfig
 	if *prod {
-		guildID = discord.ProdConfig.GuildID
+		cfg = discord.ProdConfig
 	}
-	chs, err := dg.GuildChannels(guildID)
+	chs, err := dg.GuildChannels(cfg.GuildID)
 	if err != nil {
 		panic(err)
 	}
 
-	// Print results
-	var categoryID = ""
-	log.Printf("Listing Categories")
 	for _, ch := range chs {
-		if ch.Type == discordgo.ChannelTypeGuildCategory {
-			if ch.Name == *category {
-				log.Printf(" * %s", ch.Name)
-				categoryID = ch.ID
-			} else {
-				log.Printf(" - %s", ch.Name)
+		if ch.Type != discordgo.ChannelTypeGuildCategory {
+			continue
+		}
+		fmt.Printf("category %q\n", ch.Name)
+		if ch.ID == cfg.TeamCategoryID {
+			fmt.Printf(" - skip (team category)\n")
+			continue
+		}
+		var ntext, nvoice int
+		for _, c := range chs {
+			if c.ParentID != ch.ID {
+				continue
+			}
+			switch c.Type {
+			case discordgo.ChannelTypeGuildText:
+				ntext += 1
+			case discordgo.ChannelTypeGuildVoice:
+				nvoice += 1
+			}
+		}
+		if nvoice > 0 {
+			fmt.Printf(" - skip (voice category)\n")
+			continue
+		}
+		var solved = strings.Contains(ch.Name, "Solved")
+		if solved && ntext == 0 {
+			fmt.Printf(" - skip (empty)\n")
+			continue
+		} else if solved {
+			fmt.Printf(" - clear? [y/n] ")
+		} else {
+			fmt.Printf(" - clear & delete? [y/n] ")
+		}
+		ans, err := reader.ReadString('\n')
+		if err != nil {
+			panic(err)
+		} else if strings.TrimSpace(strings.ToLower(ans)) != "y" {
+			fmt.Printf(" - skip\n")
+			continue
+		}
+		for _, c := range chs {
+			if c.ParentID != ch.ID {
+				continue
+			}
+			fmt.Printf(" - delete channel %q\n", c.Name)
+			_, err = dg.ChannelDelete(c.ID)
+			if err != nil {
+				panic(err)
+			}
+		}
+		if !solved {
+			fmt.Printf(" - delete category %q\n", ch.Name)
+			_, err = dg.ChannelDelete(ch.ID)
+			if err != nil {
+				panic(err)
 			}
 		}
 	}
-	if categoryID == "" {
-		panic(xerrors.Errorf("could not find category %q", *category))
-	}
-
-	var action = "real"
-	if *dryRun {
-		action = "dry run"
-	}
-	log.Printf("Deleting Channels (%s)", action)
-	for _, ch := range chs {
-		if ch.ParentID == categoryID {
-			log.Printf(" * %s", ch.Name)
-			if !*dryRun {
-				dg.ChannelDelete(ch.ID)
-			}
-		}
-	}
-
-	log.Printf(" * %s", *category)
-	if !*dryRun {
-		dg.ChannelDelete(categoryID)
-	}
-
-	log.Printf("Done!")
-}
-
-func init() {
-	flag.Parse()
 }
