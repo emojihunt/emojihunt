@@ -80,12 +80,6 @@
   scroll-padding-top: calc(var(--header-stop) + var(--pill-height-outer) + var(--scroll-fudge));
 }
 
-:root ::selection {
-  /* Undo Nuxt UI changes. https://stackoverflow.com/a/33449830 */
-  background-color: highlight !important;
-  color: highlighttext !important;
-}
-
 html,
 body.fullscreen,
 body.fullscreen #__nuxt,
