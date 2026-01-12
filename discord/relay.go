@@ -133,10 +133,11 @@ func (c *Client) DisplayAvatar(u *discordgo.User) string {
 	return u.AvatarURL("")
 }
 
-func OptimizedAvatarURL(m *discordgo.Member) string {
+func OptimizedAvatarURL(m *discordgo.Member, guild *discordgo.Guild) string {
 	// Gets the user's avatar, preferring WebP where available.
 	if m.Avatar != "" {
-		return fmt.Sprintf("guilds/%s/users/%s/avatars/%s.webp", m.GuildID, m.User.ID, m.Avatar)
+		// Sometimes m.GuildID is blank?
+		return fmt.Sprintf("guilds/%s/users/%s/avatars/%s.webp", guild.ID, m.User.ID, m.Avatar)
 	} else if m.User.Avatar != "" {
 		return fmt.Sprintf("avatars/%s/%s.webp", m.User.ID, m.User.Avatar)
 	} else {
@@ -149,7 +150,7 @@ func (c *Client) UserList() map[string][2]string {
 	defer c.mutex.Unlock()
 	var result = make(map[string][2]string)
 	for id, member := range c.memberCache {
-		result[id] = [2]string{member.DisplayName(), OptimizedAvatarURL(member)}
+		result[id] = [2]string{member.DisplayName(), OptimizedAvatarURL(member, c.Guild)}
 	}
 	return result
 }
@@ -162,7 +163,7 @@ func (c *Client) handleGuildMemberAdd(
 	c.memberCache[g.User.ID] = g.Member
 	c.state.LiveMessage <- &UsersMessage{
 		Users: map[string][2]string{
-			g.User.ID: {g.Member.DisplayName(), OptimizedAvatarURL(g.Member)},
+			g.User.ID: {g.Member.DisplayName(), OptimizedAvatarURL(g.Member, c.Guild)},
 		},
 	}
 	log.Printf("discord: member added: %q", g.User.GlobalName)
@@ -177,7 +178,7 @@ func (c *Client) handleGuildMemberUpdate(
 	c.memberCache[g.User.ID] = g.Member
 	c.state.LiveMessage <- &UsersMessage{
 		Users: map[string][2]string{
-			g.User.ID: {g.Member.DisplayName(), OptimizedAvatarURL(g.Member)},
+			g.User.ID: {g.Member.DisplayName(), OptimizedAvatarURL(g.Member, c.Guild)},
 		},
 	}
 	log.Printf("discord: member updated: %q", g.User.GlobalName)
