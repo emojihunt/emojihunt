@@ -61,7 +61,7 @@ onMounted(() => setTimeout(() => ably.value?.classList.add("ready"), 2500));
         </ETooltip>
         <p class="dot"></p>
         <NuxtLink to="/" :external="true" class="logo">
-          <span>🌊🎨🎡</span>
+          <span>✈️🎟️💸</span>
         </NuxtLink>
       </div>
       <div class="row" v-if="puzzleCount >= 21">
