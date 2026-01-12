@@ -374,7 +374,7 @@ export async function initializePuzzles(pageId: number | null): Promise<State> {
     throw error.value;
   }
   latestChangeId = data.value.change_id;
-  if (latestChangeId > 0) {
+  if (latestChangeId > 3000) { // initial change id
     searching = true;
   }
   data.value.puzzles.forEach((p) => _puzzles.set(p.id, p));

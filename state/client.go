@@ -68,13 +68,14 @@ func New(ctx context.Context, path string) *Client {
 		queries:           db.New(dbx),
 	}
 	raw, err := client.queries.GetLastChangeID(ctx)
-	if errors.Is(err, sql.ErrNoRows) {
-		client.changeID = 3000 // no writes yet!
-	} else if err != nil {
+	if err != nil {
 		panic(xerrors.Errorf("GetLastChangeID"))
+	} else if raw == nil {
+		client.changeID = 3000 // no writes yet!
 	} else {
 		client.changeID = raw.(int64)
 	}
+
 	return &client
 }
 
