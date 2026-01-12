@@ -4,13 +4,16 @@ import (
 	"context"
 	"encoding/base64"
 	"errors"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
+	"strings"
 	"time"
 
 	"golang.org/x/xerrors"
 	"google.golang.org/api/drive/v3"
+	"google.golang.org/api/driveactivity/v2"
 	"google.golang.org/api/googleapi"
 	"google.golang.org/api/option"
 	"google.golang.org/api/sheets/v4"
@@ -22,9 +25,10 @@ const (
 )
 
 type Client struct {
-	drive        *drive.Service
-	sheets       *sheets.Service
-	rootFolderID string
+	drive         *drive.Service
+	driveActivity *driveactivity.Service
+	sheets        *sheets.Service
+	rootFolderID  string
 }
 
 func NewClient(ctx context.Context, prod bool) *Client {
@@ -56,10 +60,16 @@ func NewClient(ctx context.Context, prod bool) *Client {
 		log.Panicf("no such Google Drive item: %s", rootFolderID)
 	}
 
+	driveActivityService, err := driveactivity.NewService(ctx, option.WithCredentialsJSON(credentials))
+	if err != nil {
+		log.Panicf("driveactivity.NewService: %s", err)
+	}
+
 	return &Client{
-		drive:        driveService,
-		sheets:       sheetsService,
-		rootFolderID: rootFolderID,
+		drive:         driveService,
+		driveActivity: driveActivityService,
+		sheets:        sheetsService,
+		rootFolderID:  rootFolderID,
 	}
 }
 
@@ -142,6 +152,65 @@ func (c *Client) SetFolderName(ctx context.Context, folderID, name string) error
 		}).EnforceSingleParent(true).AddParents(c.rootFolderID).Context(ctx).Do()
 	})
 	return err
+}
+
+func (c *Client) QueryActivity(ctx context.Context) (map[string]time.Time, error) {
+	var pageToken string
+	var result = make(map[string]time.Time)
+	var limit = time.Now().Add(-100 * time.Minute)
+	for range 16 {
+		raw, err := withRetry("drive.Activity.Query", func() (*driveactivity.QueryDriveActivityResponse, error) {
+			return c.driveActivity.Activity.Query(
+				&driveactivity.QueryDriveActivityRequest{
+					AncestorName: "items/" + c.rootFolderID,
+					ConsolidationStrategy: &driveactivity.ConsolidationStrategy{
+						Legacy: &driveactivity.Legacy{},
+					},
+					Filter:    fmt.Sprintf("time > %d AND detail.action_detail_case:(EDIT COMMENT)", limit.UnixMilli()),
+					PageSize:  512,
+					PageToken: pageToken,
+				},
+			).Context(ctx).Do()
+		})
+		if err != nil {
+			return nil, err
+		}
+
+		for _, activity := range raw.Activities {
+			var ts string
+			if activity.Timestamp != "" {
+				ts = activity.Timestamp
+			} else if activity.TimeRange != nil {
+				ts = activity.TimeRange.EndTime
+			} else {
+				log.Printf("drive: no timestamp found on activity")
+				continue
+			}
+			timestamp, err := time.Parse(time.RFC3339, ts)
+			if err != nil {
+				return nil, err
+			}
+
+			for _, target := range activity.Targets {
+				if target.DriveItem == nil {
+					continue
+				}
+				id, found := strings.CutPrefix(target.DriveItem.Name, "items/")
+				if !found {
+					log.Printf("drive: unrecognized drive name %q", target.DriveItem.Name)
+					continue
+				}
+				if previous, ok := result[id]; !ok || timestamp.After(previous) {
+					result[id] = timestamp
+				}
+			}
+		}
+		if raw.NextPageToken == "" {
+			break
+		}
+		pageToken = raw.NextPageToken
+	}
+	return result, nil
 }
 
 func withRetry[T any](name string, request func() (T, error)) (result T, err error) {
