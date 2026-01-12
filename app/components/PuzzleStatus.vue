@@ -131,6 +131,10 @@ const select = (status: Status) => {
   width: 1.5rem;
 }
 
+.solve {
+  width: 100%;
+}
+
 .sheet-active {
   width: 10px;
   height: 10px;

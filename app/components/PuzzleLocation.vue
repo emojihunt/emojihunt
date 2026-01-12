@@ -184,14 +184,18 @@ button.clear:focus {
   font-size: 0.8125rem;
 }
 
+.cell:focus-within {
+  /* make Chrome use square outline */
+  outline: 2px solid black;
+}
+
 button.room {
   height: 28.33px;
   line-height: 28px;
 }
 
 button.room:focus-visible {
-  /* make Chrome use square outline */
-  outline: 2px solid black;
+  outline: none;
 }
 
 .emoji {
