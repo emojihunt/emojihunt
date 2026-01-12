@@ -249,7 +249,7 @@ label {
 }
 
 :deep(input#puzzle-answer) {
-  font-family: "IBM Plex Mono", "Noto Color Emoji", monospace;
+  font-family: var(--monospace-fonts);
   text-transform: uppercase;
 }
 </style>

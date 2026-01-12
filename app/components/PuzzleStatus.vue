@@ -158,7 +158,7 @@ const select = (status: Status) => {
 }
 
 .answer {
-  font-family: "IBM Plex Mono", "Noto Color Emoji", monospace;
+  font-family: var(--monospace-fonts);
   font-weight: 600;
   text-transform: uppercase;
 }

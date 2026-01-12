@@ -61,11 +61,8 @@
 
 /* Defaults */
 :root {
-  font-family: "Inter Variable", "Noto Color Emoji", sans-serif;
-  font-optical-sizing: auto;
-
-  /* header gradient on black produces a bad effect */
-  overscroll-behavior-x: none;
+  --sans-serif-fonts: "Inter Variable", "Noto Color Emoji", sans-serif;
+  --monospace-fonts: "IBM Plex Mono", "Noto Color Emoji", monospace;
 
   --default-border-radius: 2px;
   --header-height: 6rem;
@@ -77,7 +74,20 @@
   --pill-height-outer: calc(var(--pill-height) + (2 * var(--pill-border)));
   --scroll-fudge: 8.5px;
 
+  font-family: var(--sans-serif-fonts);
+  font-optical-sizing: auto;
+
+  /* header gradient on black produces a bad effect */
+  overscroll-behavior-x: none;
+
   scroll-padding-top: calc(var(--header-stop) + var(--pill-height-outer) + var(--scroll-fudge));
+}
+
+@supports (font: -apple-system-body) {
+  :root {
+    --sans-serif-fonts: "Inter Variable", sans-serif;
+    --monospace-fonts: "IBM Plex Mono", monospace;
+  }
 }
 
 html,

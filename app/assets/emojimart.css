@@ -34,7 +34,7 @@
 }
 
 .emoji-type-native {
-  font-family: "Noto Color Emoji";
+  font-family: "Noto Color Emoji", sans-serif;
   word-break: keep-all;
 }
 

@@ -71,7 +71,7 @@ button[disabled] {
 }
 
 input {
-  font-family: "IBM Plex Mono", "Noto Color Emoji", monospace;
+  font-family: var(--monospace-fonts);
   text-transform: uppercase;
   width: 125px;
 }
