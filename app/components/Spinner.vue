@@ -12,8 +12,8 @@
 
   position: relative;
 
-  opacity: 80%;
-  animation: spinner 3s ease-in-out infinite;
+  animation: spinner 3s ease-in-out infinite,
+    spinner-fade 500ms forwards ease-in;
 }
 
 @keyframes spinner {
@@ -29,6 +29,16 @@
   80%,
   100% {
     transform: rotate(-360deg);
+  }
+}
+
+@keyframes spinner-fade {
+  0% {
+    opacity: 0%;
+  }
+
+  100% {
+    opacity: 80%;
   }
 }
 </style>
