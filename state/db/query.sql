@@ -129,6 +129,9 @@ WHERE id NOT IN (
     LIMIT 256
 );
 
+-- name: GetLastChangeID :one
+SELECT max(id) FROM changelog;
+
 
 -- name: GetSetting :one
 SELECT value from settings

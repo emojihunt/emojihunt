@@ -15,7 +15,6 @@ const (
 	discoveryConfigSetting = "discovery_config"
 	enabledSetting         = "discovery_enabled"
 	reminderSetting        = "reminder_timestamp"
-	syncEpochSetting       = "sync_epoch"
 )
 
 func (c *Client) IsEnabled(ctx context.Context) bool {
@@ -66,22 +65,6 @@ func (c *Client) SetReminderTimestamp(ctx context.Context, reminder time.Time) e
 	// Concurrency rule: this setting is only written from the reminder bot's
 	// worker goroutine.
 	return c.writeSetting(ctx, reminderSetting, reminder)
-}
-
-func (c *Client) IncrementSyncEpoch(ctx context.Context) (int64, error) {
-	// Concurrency rule: this setting is only written on startup.
-	data, err := c.readSetting(ctx, syncEpochSetting)
-	if err != nil {
-		return 0, err
-	}
-	var epoch int64 = 1 //default
-	if len(data) > 0 {
-		err = json.Unmarshal(data, &epoch)
-		if err != nil {
-			return 0, xerrors.Errorf("IncrementSyncEpoch unmarshal: %w", err)
-		}
-	}
-	return epoch, c.writeSetting(ctx, syncEpochSetting, epoch+1)
 }
 
 func (c *Client) readSetting(ctx context.Context, key string) ([]byte, error) {

@@ -67,13 +67,14 @@ func New(ctx context.Context, path string) *Client {
 		LiveMessage:       make(chan LiveMessage, 256),
 		queries:           db.New(dbx),
 	}
-	epoch, err := client.IncrementSyncEpoch(ctx)
-	if err != nil {
-		panic(err)
+	raw, err := client.queries.GetLastChangeID(ctx)
+	if errors.Is(err, sql.ErrNoRows) {
+		client.changeID = 3000 // no writes yet!
+	} else if err != nil {
+		panic(xerrors.Errorf("GetLastChangeID"))
+	} else {
+		client.changeID = raw.(int64)
 	}
-	// Allow for 4 billion writes per restart. Note: Javascript can safely
-	// represent numbers up to ~2^53.
-	client.changeID = epoch << 32
 	return &client
 }
 

@@ -313,6 +313,17 @@ func (q *Queries) GetDiscoveredRound(ctx context.Context, name string) (Discover
 	return i, err
 }
 
+const getLastChangeID = `-- name: GetLastChangeID :one
+SELECT max(id) FROM changelog
+`
+
+func (q *Queries) GetLastChangeID(ctx context.Context) (interface{}, error) {
+	row := q.db.QueryRowContext(ctx, getLastChangeID)
+	var max interface{}
+	err := row.Scan(&max)
+	return max, err
+}
+
 const getPuzzle = `-- name: GetPuzzle :one
 SELECT
     p.id, p.name, p.answer, rounds.id, rounds.name, rounds.emoji, rounds.hue, rounds.sort, rounds.special, rounds.drive_folder, rounds.discord_category, p.status, p.note,
