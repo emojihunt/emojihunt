@@ -40,12 +40,14 @@ onMounted(() => setTimeout(() => ably.value?.classList.add("ready"), 2500));
           </NuxtLink>
         </ETooltip>
         <p class="dot"></p>
-        <ETooltip text="Big Logistics Email" side="bottom" :offset="8">
-          <NuxtLink :to="settings.logisticsURL" target="_blank">
-            <UIcon name="i-heroicons-question-mark-circle" size="16px" />
-          </NuxtLink>
-        </ETooltip>
-        <p class="dot"></p>
+        <template v-if="settings.logisticsURL">
+          <ETooltip text="Big Logistics Email" side="bottom" :offset="8">
+            <NuxtLink :to="settings.logisticsURL" target="_blank">
+              <UIcon name="i-heroicons-question-mark-circle" size="16px" />
+            </NuxtLink>
+          </ETooltip>
+          <p class="dot"></p>
+        </template>
         <ETooltip text="Discord" side="bottom" :offset="8">
           <NuxtLink :to="discordURL" :target="discordTarget">
             <UIcon name="i-heroicons-chat-bubble-left-right" size="16px" />
