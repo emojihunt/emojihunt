@@ -30,7 +30,7 @@ type State = {
   deletePuzzle: (id: number) => Promise<void>;
 };
 
-type SortedRound = AnnotatedRound & { puzzles: Puzzle[]; };
+export type SortedRound = AnnotatedRound & { puzzles: Puzzle[]; };
 
 type Settings = {
   discordGuild: string;

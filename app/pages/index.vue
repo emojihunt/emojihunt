@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import CommandPalette from '~/components/CommandPalette.vue';
+
 useHead({
   htmlAttrs: { lang: "en" },
   title: "Puzzle Tracker",
@@ -7,7 +9,7 @@ useHead({
     { name: "theme-color", content: "oklch(30% 0 0deg)" },
   ],
 });
-const { puzzleCount } = await initializePuzzles(null);
+const { ordering, puzzleCount } = await initializePuzzles(null);
 
 // It doesn't look great when the round headers stack up on top of one another.
 // We want each round header to disappear when it's covered by the next. Use CSS
@@ -72,6 +74,26 @@ onMounted(() => window.addEventListener("keydown",
 
 const showNav = computed(() => puzzleCount.value >= 42);
 const navMargin = computed(() => puzzleCount.value >= 42 ? "4.5rem" : "2vw");
+
+const overlay = useOverlay();
+const palette = overlay.create(CommandPalette);
+
+onMounted(() => window.addEventListener("keydown", (e) => {
+  if (e.ctrlKey && e.key === 'k' && !e.metaKey && !e.shiftKey) {
+    e.preventDefault();
+    palette.open({ ordering: (ordering as any) })
+      .result.then((i) => {
+        if (!i) return;
+        table.value?.navigate();
+        const row = document.querySelector(`.puzzle[data-puzzle='${i}']`);
+        row?.scrollIntoView({
+          block: "start", inline: "nearest", behavior: "instant",
+        });
+        row?.querySelector<HTMLElement>("[data-tabsequence='3']")?.focus();
+      });
+  }
+}));
+
 </script>
 
 <template>
