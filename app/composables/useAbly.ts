@@ -45,7 +45,7 @@ export default function (
             poisoned = true;
             break;
           default:
-            ((x: never) => console.warn("Unknown client state:", x))(e.data.state);
+            ((x: never) => console.error("Unknown client state:", x))(e.data.state);
         }
         break;
       case "m":
@@ -67,10 +67,10 @@ export default function (
         users(e.data.data);
         break;
       default:
-        ((x: never) => console.warn("Unknown event:", (x as any).event))(e.data);
+        ((x: never) => console.error("Unknown event:", (x as any).event))(e.data);
     }
   };
-  const onError = (e: Event) => console.warn("Worker Error:", e);
+  const onError = (e: Event) => console.error("Worker Error:", e);
   onMounted(() => {
     if (previous.set && previous.puzzle !== puzzle) {
       throw new Error(`useAbly: cannot change puzzle: ${previous} -> ${puzzle}`);

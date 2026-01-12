@@ -215,14 +215,17 @@ export async function initializePuzzles(pageId: number | null): Promise<State> {
       if (key <= change_id) optimistic.delete(key);
     }
     latestChangeId = change_id;
-    if (kind === "upsert") {
-      if (puzzle) _puzzles.set(puzzle.id, puzzle);
-      if (round) _rounds.set(round.id, round);
-    } else if (kind === "delete") {
-      if (puzzle) _puzzles.delete(puzzle.id);
-      if (round) _rounds.delete(round.id);
-    } else {
-      console.error(`unknown update kind: ${kind}`);
+    switch (kind) {
+      case "upsert":
+        if (puzzle) _puzzles.set(puzzle.id, puzzle);
+        if (round) _rounds.set(round.id, round);
+        break;
+      case "delete":
+        if (puzzle) _puzzles.delete(puzzle.id);
+        if (round) _rounds.delete(round.id);
+        break;
+      default:
+        ((x: never) => console.error("Unknown update kind:", x))(kind);
     }
     refresh();
   };
@@ -271,7 +274,6 @@ export async function initializePuzzles(pageId: number | null): Promise<State> {
       else sheets.delete(k);
     }
     sheets.forEach((_, k) => _sheets.has(k) || sheets.delete(k));
-    console.warn(sheets);
   };
   onMounted(() => setInterval(recomputeSheets, 10_000));
   const onUsers = (m: UsersMessage) => {
