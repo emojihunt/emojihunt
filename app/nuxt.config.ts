@@ -7,7 +7,7 @@ export default defineNuxtConfig({
     newSyncBackend: true,
   },
   build: {
-    transpile: ["emoji-mart-vue-fast"],
+    transpile: ["emoji-mart-vue-fast", "linkify", "remarkable"],
   },
   colorMode: {
     preference: "light",
