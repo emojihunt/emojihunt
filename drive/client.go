@@ -191,6 +191,21 @@ func (c *Client) QueryActivity(ctx context.Context) (map[string]time.Time, error
 				return nil, err
 			}
 
+			var editedByHuman bool
+			for _, user := range activity.Actors {
+				if user.User == nil {
+					continue // ???
+				} else if user.User.KnownUser != nil && user.User.KnownUser.IsCurrentUser {
+					continue // skip our own (huntbot's) edits
+				} else {
+					editedByHuman = true
+					break
+				}
+			}
+			if !editedByHuman {
+				continue
+			}
+
 			for _, target := range activity.Targets {
 				if target.DriveItem == nil {
 					continue
