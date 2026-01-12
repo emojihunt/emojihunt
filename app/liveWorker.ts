@@ -1,5 +1,6 @@
 import type {
-  AblyWorkerMessage, PresenceMessage, ConnectionState, StatusMessage, SyncMessage, User,
+  AblyWorkerMessage, PresenceMessage, ConnectionState, StatusMessage,
+  SyncMessage, User,
 } from './utils/types';
 
 let state: ConnectionState = "disconnected";
@@ -11,6 +12,7 @@ const activity = new Map<string, [number, boolean]>();
 let activityChanged = false;
 
 let latestPresence: PresenceMessage | undefined;
+const sheets = new Map<string, number>();
 const users = new Map<string, User>();
 
 let backoff = 500;
@@ -74,8 +76,16 @@ const handleStatusMessage = (e: MessageEvent<StatusMessage>, port_: MessagePort 
           replace: true,
         }
       });
-      if (latestPresence) {
-        unicast(port, { event: "presence", data: latestPresence });
+      if (!e.data.puzzle) {
+        if (latestPresence) {
+          unicast(port, { event: "presence", data: latestPresence });
+        }
+        unicast(port, {
+          event: "sheets", data: {
+            sheets: Object.fromEntries(sheets.entries()),
+            replace: true,
+          }
+        });
       }
       break;
     case "activity":
@@ -140,6 +150,14 @@ const reconnect = () => new Promise((resolve) => {
       case "settings":
         console.log("[*] Settings", msg.data);
         broadcast(msg);
+        break;
+      case "sheets":
+        console.log("[*] Sheets", msg.data);
+        if (msg.data.replace) sheets.clear();
+        Object.entries(msg.data.sheets).forEach(
+          ([k, v]) => sheets.set(k, v)
+        );
+        broadcastHome(msg);
         break;
       case "sync":
         console.log("[*] Sync", msg.data);

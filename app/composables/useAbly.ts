@@ -3,7 +3,8 @@ import AblyDedicatedWorker from "~/ablyWorker?worker";
 import LiveSharedWorker from "~/liveWorker?sharedworker";
 import LiveDedicatedWorker from "~/liveWorker?worker";
 import type {
-  AblyWorkerMessage, DiscordMessage, SettingsMessage, SyncMessage, UsersMessage,
+  AblyWorkerMessage, DiscordMessage, SettingsMessage, SyncMessage,
+  SheetsMessage, UsersMessage,
 } from "~/utils/types";
 
 const INACTIVITY_TIMEOUT = 15 * 60 * 1000; // 15 minutes
@@ -16,6 +17,7 @@ export default function (
   discord: (m: DiscordMessage) => void,
   presence: (m: PresenceMessage) => void,
   settings: (m: SettingsMessage) => void,
+  sheets: (m: SheetsMessage) => void,
   sync: (m: SyncMessage) => void,
   users: (m: UsersMessage) => void,
 ): [Ref<boolean>, Ref<boolean>] {
@@ -54,6 +56,9 @@ export default function (
         break;
       case "settings":
         settings(e.data.data);
+        break;
+      case "sheets":
+        sheets(e.data.data);
         break;
       case "sync":
         sync(e.data.data);

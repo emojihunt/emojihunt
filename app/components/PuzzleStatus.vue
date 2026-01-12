@@ -2,8 +2,11 @@
 const { id } = defineProps<{ id: number; }>();
 const toast = useToast();
 
-const { puzzles, updatePuzzleOptimistic } = usePuzzles();
+const { puzzles, sheets, updatePuzzleOptimistic } = usePuzzles();
 const puzzle = puzzles.get(id)!;
+const sheetActivity = computed(() =>
+  sheets.has(puzzle.spreadsheet_id) ? sheets.get(puzzle.spreadsheet_id) : null,
+);
 
 const input = useTemplateRef("input");
 const button = useTemplateRef("button");
@@ -90,9 +93,10 @@ const select = (status: Status) => {
           {{ StatusEmoji(answering || puzzle.status) }}
         </button>
       </ETooltip>
-      <ETooltip v-else-if="false" text="Last edit: ..." side="left" class="right">
-        <div class="sheet-active"></div>
-        <div class="sheet-recent">30</div>
+      <ETooltip v-else-if="sheetActivity !== null" side="left" class="right"
+        :text="sheetActivity === 0 ? 'Recently edited' : `Edited ${sheetActivity}m ago`">
+        <div v-if="sheetActivity === 0" class="sheet-active"></div>
+        <div v-else class="sheet-recent">{{ sheetActivity }}</div>
       </ETooltip>
     </div>
     <div v-if="answering" class="hint">🎉 Press Enter to record answer</div>

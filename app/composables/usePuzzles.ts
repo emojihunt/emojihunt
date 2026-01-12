@@ -9,6 +9,7 @@ type State = {
 
   presence: Map<number, Map<string, boolean>>;
   settings: Settings;
+  sheets: Map<string, number>;
   users: Map<string, User>;
 
   puzzles: Map<number, Puzzle>;
@@ -115,6 +116,8 @@ export async function initializePuzzles(pageId: number | null): Promise<State> {
     discordGuild: "", huntName: "", huntURL: "", huntCredentials: "",
     logisticsURL: "", nextHunt: null,
   });
+  const _sheets = new Map<string, number>(); // sheet ID -> lastmod (unix seconds)
+  const sheets = reactive(new Map<string, number>()); // sheet ID -> minutes ago
   const users = reactive(new Map<string, User>());
 
   const _puzzles = new Map<number, Puzzle>();
@@ -253,6 +256,24 @@ export async function initializePuzzles(pageId: number | null): Promise<State> {
   };
   const discordCallback = ref<(m: DiscordMessage) => void>();
   const onDiscord = (m: DiscordMessage) => discordCallback.value?.(m);
+  const onSheets = (m: SheetsMessage) => {
+    if (m.replace) _sheets.clear();
+    Object.entries(m.sheets).forEach(
+      ([k, v]) => _sheets.set(k, v),
+    );
+    recomputeSheets();
+  };
+  const recomputeSheets = () => {
+    const now = Date.now() / 1000;
+    for (const [k, v] of _sheets) {
+      const mins = Math.floor((now - v) / 600) * 10;
+      if (mins < 100) sheets.set(k, mins);
+      else sheets.delete(k);
+    }
+    sheets.forEach((_, k) => _sheets.has(k) || sheets.delete(k));
+    console.warn(sheets);
+  };
+  onMounted(() => setInterval(recomputeSheets, 10_000));
   const onUsers = (m: UsersMessage) => {
     if (m.replace) users.clear();
     Object.entries(m.users).forEach(
@@ -260,11 +281,13 @@ export async function initializePuzzles(pageId: number | null): Promise<State> {
     );
     m.delete?.forEach((k) => users.delete(k));
   };
-  const [connected, active] = useAbly(pageId, onDiscord, onPresence, onSettings, onSync, onUsers);
+  const [connected, active] = useAbly(
+    pageId, onDiscord, onPresence, onSettings, onSheets, onSync, onUsers,
+  );
 
   const state: State = {
     connected, active, discordCallback,
-    presence, settings, users,
+    presence, settings, sheets, users,
     puzzles, rounds, voiceRooms,
     puzzleCount, solvedPuzzleCount, ordering,
     async addRound(data: NewRound) {

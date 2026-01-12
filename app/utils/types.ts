@@ -171,6 +171,7 @@ export type AblyWorkerMessage =
   | { event: "m"; data: DiscordMessage; }
   | { event: "presence", data: PresenceMessage; }
   | { event: "settings"; data: SettingsMessage; }
+  | { event: "sheets"; data: SheetsMessage; }
   | { event: "sync"; data: SyncMessage; }
   | { event: "users"; data: UsersMessage; };
 
@@ -182,6 +183,11 @@ export type DiscordMessage = {
   u: string;
   t: number;
   msg: string;
+};
+
+export type SheetsMessage = {
+  sheets: Record<string, number>;
+  replace?: boolean;
 };
 
 export type SyncMessage = {
