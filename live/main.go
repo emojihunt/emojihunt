@@ -14,6 +14,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/emojihunt/emojihunt/drive"
 	"github.com/emojihunt/emojihunt/live/client"
 	"github.com/emojihunt/emojihunt/state"
 	"github.com/emojihunt/emojihunt/util"
@@ -32,6 +33,7 @@ var prod = flag.Bool("prod", false, "selects development or production")
 func init() { flag.Parse() }
 
 type Server struct {
+	drive    *drive.Client
 	echo     *echo.Echo
 	cookie   *util.SessionCookie
 	token    string
@@ -44,6 +46,7 @@ type Server struct {
 
 	settings *client.SettingsMessage  // cache the last settings message
 	rewind   []*state.AblySyncMessage // cache recent sync messages
+	sheets   map[string]time.Time
 	users    map[string][2]string
 
 	presenceChanged bool
@@ -101,6 +104,7 @@ func main() {
 	// Start web server
 	var appOrigins = util.AppOrigins(*prod)
 	var s = &Server{
+		drive:  drive.NewClient(ctx, *prod),
 		echo:   echo.New(),
 		cookie: util.NewSessionCookie(),
 		token:  util.HuntbotToken(),
@@ -163,6 +167,23 @@ func main() {
 			select {
 			case <-time.After(5 * time.Second):
 				s.MaybeSendPresenceUpdate()
+			case <-ctx.Done():
+				return
+			}
+		}
+	}()
+	go func() {
+		hub := sentry.CurrentHub().Clone()
+		hub.ConfigureScope(func(scope *sentry.Scope) {
+			scope.SetTag("task", "sheets")
+		})
+		for {
+			select {
+			case <-time.After(20 * time.Second):
+				err := s.MaybeSendSheetsUpdate()
+				if err != nil {
+					hub.CaptureException(err)
+				}
 			case <-ctx.Done():
 				return
 			}

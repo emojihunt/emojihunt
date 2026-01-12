@@ -92,6 +92,7 @@ const (
 	EventTypeDiscord  = "m"
 	EventTypePresence = "presence"
 	EventTypeSettings = "settings"
+	EventTypeSheets   = "sheets"
 	EventTypeSync     = "sync"
 	EventTypeUsers    = "users"
 )

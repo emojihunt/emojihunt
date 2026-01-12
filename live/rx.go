@@ -2,6 +2,7 @@ package main
 
 import (
 	"log"
+	"maps"
 	"net/http"
 	"strconv"
 	"time"
@@ -52,14 +53,21 @@ func (s *Server) Receive(c echo.Context) error {
 		}
 	}
 
-	var msg = discord.UsersMessage{
-		Users:   make(map[string][2]string),
+	var users = make(map[string][2]string)
+	maps.Copy(users, s.users)
+	ch <- &discord.UsersMessage{
+		Users:   users,
 		Replace: true,
 	}
-	for k, v := range s.users {
-		msg.Users[k] = v
+
+	var sheets = make(map[string]int64)
+	for k, v := range s.sheets {
+		sheets[k] = v.Unix()
 	}
-	ch <- &msg
+	ch <- &SheetsMessage{
+		Sheets:  sheets,
+		Replace: true,
+	}
 
 	// ...add ourselves to the global client list...
 	s.cctr += 1
