@@ -48,7 +48,7 @@ self.addEventListener("message", (e: MessageEvent<StatusMessage>) =>
 );
 
 const handleStatusMessage = (e: MessageEvent<StatusMessage>, port_: MessagePort | null) => {
-  const { event, id } = e.data;
+  const { event, id, puzzle } = e.data;
   switch (event) {
     case "start":
       let port: AbstractPort;
@@ -56,8 +56,9 @@ const handleStatusMessage = (e: MessageEvent<StatusMessage>, port_: MessagePort 
         console.log(`[${id}] Joined`);
         navigator.locks.request(id, () => {
           ports.delete(id);
-          activity.delete(id);
-          activityChanged = true;
+          if (activity.delete(id)) {
+            activityChanged = true;
+          }
           console.log(`[${id}] Left`);
         });
         port = port_;
@@ -76,7 +77,7 @@ const handleStatusMessage = (e: MessageEvent<StatusMessage>, port_: MessagePort 
           replace: true,
         }
       });
-      if (!e.data.puzzle) {
+      if (!puzzle) {
         if (latestPresence) {
           unicast(port, { event: "presence", data: latestPresence });
         }
@@ -89,7 +90,7 @@ const handleStatusMessage = (e: MessageEvent<StatusMessage>, port_: MessagePort 
       }
       break;
     case "activity":
-      const { puzzle, active } = e.data;
+      const { active } = e.data;
       console.log(`[${id}]`, active ? "Active" : "Inactive", `(Puzzle #${puzzle})`);
       activity.set(id, [puzzle, active]);
       activityChanged = true;
@@ -127,7 +128,9 @@ const reconnect = () => new Promise((resolve) => {
     updateState("connected");
     clearTimeout(timer);
     socket = ws;
-    reportActivity(ws);
+    if (activity.size > 0) {
+      reportActivity(ws);
+    }
   });
   ws.addEventListener("close", (e) => resolve(e));
   ws.addEventListener("error", (e) => resolve(e));
