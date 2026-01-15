@@ -15,7 +15,7 @@ let latestPresence: PresenceMessage | undefined;
 const sheets = new Map<string, number>();
 const users = new Map<string, User>();
 
-let backoff = 500;
+let backoff = 1500;
 
 // Keep a list of connected clients.
 //
@@ -137,7 +137,7 @@ const reconnect = () => new Promise((resolve) => {
 
   ws.addEventListener("message", (e) => {
     const msg = JSON.parse(e.data) as AblyWorkerMessage;
-    backoff = 500; // only reset after first successful message
+    backoff = 1500; // only reset after first successful message
     switch (msg.event) {
       case "_":
         console.error("[*] Invalid", msg);
@@ -190,7 +190,7 @@ console.log("Live worker initialized");
   while (true) {
     const error = await reconnect();
     socket = null;
-    backoff = Math.min(backoff * 2, 4_000);
+    backoff = Math.min(backoff * 2, 6_000);
     updateState("disconnected");
     if (error === null) {
       console.warn("[rx] Timed out");
