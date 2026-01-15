@@ -20,6 +20,10 @@ import (
 const (
 	ProdLiveURL = "ws://huntlive.internal:9090/tx"
 	DevLiveURL  = "ws://localhost:9090/tx"
+
+	WriteWait  = 10 * time.Second
+	PingPeriod = 20 * time.Second
+	PongWait   = 90 * time.Second
 )
 
 func LiveURL(prod bool) string {
@@ -106,6 +110,13 @@ func (c *Client) watch(ctx context.Context) error {
 
 	// Per the docs, we need to read messages in order for ping/pong/close
 	// handling to work.
+	ping := ws.PingHandler()
+	ws.SetReadDeadline(time.Now().Add(PongWait))
+	ws.SetPingHandler(func(appData string) error {
+		log.Printf("client: ping %x", appData) // TODO: remove me!
+		ws.SetReadDeadline(time.Now().Add(PongWait))
+		return ping(appData)
+	})
 	erg.Go(func() error {
 		for {
 			_, _, err := ws.NextReader()

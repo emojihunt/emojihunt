@@ -8,9 +8,11 @@ import (
 	"github.com/emojihunt/emojihunt/discord"
 	"github.com/emojihunt/emojihunt/live/client"
 	"github.com/emojihunt/emojihunt/state"
+	"github.com/gorilla/websocket"
 	"github.com/labstack/echo/v4"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
+	"golang.org/x/sync/errgroup"
 )
 
 var (
@@ -60,13 +62,41 @@ func (s *Server) Transmit(c echo.Context) error {
 	}
 	defer ws.Close()
 
-	for {
-		msg, err := client.ReadMessage(ws)
-		if err != nil {
-			return err
+	erg, ctx := errgroup.WithContext(c.Request().Context())
+	ping := ws.PingHandler()
+	ws.SetPingHandler(func(appData string) error {
+		log.Printf("tx: ping %x", appData) // TODO: remove me!
+		return ping(appData)
+	})
+	ws.SetReadDeadline(time.Now().Add(client.PongWait))
+	ws.SetPongHandler(func(appData string) error {
+		log.Printf("tx: pong") // TODO: remove me!
+		ws.SetReadDeadline(time.Now().Add(client.PongWait))
+		return nil
+	})
+	erg.Go(func() error {
+		for {
+			select {
+			case <-time.After(client.PingPeriod):
+				err := ws.WriteControl(websocket.PingMessage, []byte{}, time.Now().Add(client.WriteWait))
+				if err != nil {
+					return err
+				}
+			case <-ctx.Done():
+				return nil
+			}
 		}
-		s.handle(msg)
-	}
+	})
+	erg.Go(func() error {
+		for {
+			msg, err := client.ReadMessage(ws)
+			if err != nil {
+				return err
+			}
+			s.handle(msg)
+		}
+	})
+	return erg.Wait()
 }
 
 func (s *Server) handle(msg state.LiveMessage) {

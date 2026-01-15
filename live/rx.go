@@ -93,17 +93,6 @@ func (s *Server) Receive(c echo.Context) error {
 	}
 	defer ws.Close()
 
-	// By default, Go sends TCP keepalives every 15 seconds and closes the socket
-	// after 9 (?) are missed. However, those keepalives probably go to the Fly
-	// proxy, which has its own idle behavior: it supposedly closes connections
-	// after 60 seconds of inactivity, although the closures we've observed have
-	// actually been 90-300 seconds later, or often not at all.
-	ping := ws.PingHandler()
-	ws.SetPingHandler(func(appData string) error {
-		log.Printf("[rx%04d]: ping %x", id, appData)
-		return ping(appData)
-	})
-
 	// We have to return errors over the socket rather than via HTTP status codes
 	// because the browser doesn't expose those :(
 	if after > 0 && !found {
@@ -113,12 +102,42 @@ func (s *Server) Receive(c echo.Context) error {
 		} else {
 			msg = websocket.FormatCloseMessage(4005, "no tx server connected")
 		}
-		return ws.WriteControl(websocket.CloseMessage, msg, time.Now().Add(10*time.Second))
+		return ws.WriteControl(websocket.CloseMessage, msg, time.Now().Add(client.WriteWait))
 	}
+
+	// By default, Go sends TCP keepalives every 15 seconds and closes the socket
+	// after 9 (?) are missed. However, those keepalives probably go to the Fly
+	// proxy, which has its own idle behavior: it supposedly closes connections
+	// after 60 seconds of inactivity, although the closures we've observed have
+	// actually been 90-300 seconds later, or often not at all.
+	erg, ctx := errgroup.WithContext(c.Request().Context())
+	ping := ws.PingHandler()
+	ws.SetPingHandler(func(appData string) error {
+		log.Printf("[rx%04d]: ping %x", id, appData) // TODO: remove me!
+		return ping(appData)
+	})
+	ws.SetReadDeadline(time.Now().Add(client.PongWait))
+	ws.SetPongHandler(func(appData string) error {
+		log.Printf("rx[%04d]: pong", id) // TODO: remove me!
+		ws.SetReadDeadline(time.Now().Add(client.PongWait))
+		return nil
+	})
+	erg.Go(func() error {
+		for {
+			select {
+			case <-time.After(client.PingPeriod):
+				err := ws.WriteControl(websocket.PingMessage, []byte{}, time.Now().Add(client.WriteWait))
+				if err != nil {
+					return err
+				}
+			case <-ctx.Done():
+				return nil
+			}
+		}
+	})
 
 	// Per the docs, we need to read messages in order for ping/pong/close
 	// handling to work.
-	erg, ctx := errgroup.WithContext(c.Request().Context())
 	erg.Go(func() error {
 		for {
 			var msg SyncMessage

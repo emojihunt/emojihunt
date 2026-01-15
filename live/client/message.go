@@ -2,6 +2,7 @@ package client
 
 import (
 	"encoding/json"
+	"time"
 
 	"github.com/emojihunt/emojihunt/discord"
 	"github.com/emojihunt/emojihunt/state"
@@ -37,6 +38,7 @@ func ReadMessage(ws *websocket.Conn) (state.LiveMessage, error) {
 }
 
 func WriteMessage(ws *websocket.Conn, msg state.LiveMessage) error {
+	ws.SetWriteDeadline(time.Now().Add(WriteWait))
 	return ws.WriteJSON(
 		struct {
 			Event state.EventType `json:"event"`
