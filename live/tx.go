@@ -63,14 +63,8 @@ func (s *Server) Transmit(c echo.Context) error {
 	defer ws.Close()
 
 	erg, ctx := errgroup.WithContext(c.Request().Context())
-	ping := ws.PingHandler()
-	ws.SetPingHandler(func(appData string) error {
-		log.Printf("tx: ping %x", appData) // TODO: remove me!
-		return ping(appData)
-	})
 	ws.SetReadDeadline(time.Now().Add(client.PongWait))
 	ws.SetPongHandler(func(appData string) error {
-		log.Printf("tx: pong") // TODO: remove me!
 		ws.SetReadDeadline(time.Now().Add(client.PongWait))
 		return nil
 	})

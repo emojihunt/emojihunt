@@ -116,7 +116,6 @@ func (c *Client) watch(ctx context.Context) error {
 	ping := ws.PingHandler()
 	ws.SetReadDeadline(time.Now().Add(PongWait))
 	ws.SetPingHandler(func(appData string) error {
-		log.Printf("client: ping %x", appData) // TODO: remove me!
 		ws.SetReadDeadline(time.Now().Add(PongWait))
 		return ping(appData)
 	})

@@ -111,14 +111,8 @@ func (s *Server) Receive(c echo.Context) error {
 	// after 60 seconds of inactivity, although the closures we've observed have
 	// actually been 90-300 seconds later, or often not at all.
 	erg, ctx := errgroup.WithContext(c.Request().Context())
-	ping := ws.PingHandler()
-	ws.SetPingHandler(func(appData string) error {
-		log.Printf("[rx%04d]: ping %x", id, appData) // TODO: remove me!
-		return ping(appData)
-	})
 	ws.SetReadDeadline(time.Now().Add(client.PongWait))
 	ws.SetPongHandler(func(appData string) error {
-		log.Printf("rx[%04d]: pong", id) // TODO: remove me!
 		ws.SetReadDeadline(time.Now().Add(client.PongWait))
 		return nil
 	})

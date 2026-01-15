@@ -4,6 +4,7 @@
     "search.exclude": {
         "**/bun.lock": true,
         "app/assets/*.json": true,
+        "email/worker-configuration.d.ts": true,
         "emojiname/*.json": true,
         "go.sum": true
     },
