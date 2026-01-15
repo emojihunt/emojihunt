@@ -93,6 +93,17 @@ func (s *Server) Receive(c echo.Context) error {
 	}
 	defer ws.Close()
 
+	// By default, Go sends TCP keepalives every 15 seconds and closes the socket
+	// after 9 (?) are missed. However, those keepalives probably go to the Fly
+	// proxy, which has its own idle behavior: it supposedly closes connections
+	// after 60 seconds of inactivity, although the closures we've observed have
+	// actually been 90-300 seconds later, or often not at all.
+	ping := ws.PingHandler()
+	ws.SetPingHandler(func(appData string) error {
+		log.Printf("[rx%04d]: ping %x", id, appData)
+		return ping(appData)
+	})
+
 	// We have to return errors over the socket rather than via HTTP status codes
 	// because the browser doesn't expose those :(
 	if after > 0 && !found {
