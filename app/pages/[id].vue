@@ -11,11 +11,6 @@ useHead({
   meta: [
     { name: "viewport", content: "width=device-width, initial-scale=1, viewport-fit=cover" },
     { name: "theme-color", content: "oklch(30% 0 0deg)" },
-    { name: "apple-mobile-web-app-title", content: "🌊🎨🎡" },
-    { name: "apple-mobile-web-app-capable", content: "yes" },
-  ],
-  link: [
-    { rel: "apple-touch-icon", href: "/favicon.png" },
   ],
 });
 const route = useRoute();
