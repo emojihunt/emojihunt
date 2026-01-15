@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"log"
+	"net"
 	"net/http"
 	"syscall"
 	"time"
@@ -71,6 +72,8 @@ reconnect:
 		err := c.watch(ctx)
 		if _, ok := err.(*websocket.CloseError); ok {
 			log.Printf("live: disconnected")
+		} else if v, ok := err.(net.Error); ok && v.Timeout() {
+			log.Printf("live: timed out")
 		} else if err != nil {
 			log.Printf("live: %#v", err)
 			sentry.GetHubFromContext(ctx).CaptureException(err)

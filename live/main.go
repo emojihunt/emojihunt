@@ -6,6 +6,7 @@ import (
 	"errors"
 	"flag"
 	"log"
+	"net"
 	"net/http"
 	_ "net/http/pprof"
 	"os"
@@ -217,6 +218,8 @@ func (s *Server) HuntbotMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 func (s *Server) ErrorHandler(err error, c echo.Context) {
 	if _, ok := err.(*websocket.CloseError); ok {
 		// Ignore ordinary websocket closure
+	} else if v, ok := err.(net.Error); ok && v.Timeout() {
+		// Ignore ping-timed-out error
 	} else if _, ok := err.(*echo.HTTPError); ok {
 		// Handle 404s and similar errors
 		s.echo.DefaultHTTPErrorHandler(err, c)
