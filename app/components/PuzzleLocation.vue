@@ -60,7 +60,7 @@ const select = (option: string) => {
 const MAX_AVATARS = 13;
 const present = computed(() => {
   const raw = presence.get(puzzle.id);
-  if (!raw) return [];
+  if (!raw || puzzle.answer) return [];
   const present = [...raw.entries()]
     .filter(([user, _]) => users.has(user))
     .map(([user, active]) => ({ ...users.get(user)!, active }));
