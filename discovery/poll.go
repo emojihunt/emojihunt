@@ -350,12 +350,16 @@ func (p *Poller) OpenWebsocket(ctx context.Context) (*websocket.Conn, chan bool,
 	return ws, ch, nil
 }
 
-func collectText(n *html.Node, buf *bytes.Buffer) {
+func collectText(n *html.Node, buf *bytes.Buffer) bool {
 	// https://stackoverflow.com/a/18275336
-	if n.Type == html.TextNode {
+	if n.Type == html.TextNode && len(n.Data) > 0 {
 		buf.WriteString(n.Data)
+		return true
 	}
 	for c := n.FirstChild; c != nil; c = c.NextSibling {
-		collectText(c, buf)
+		if collectText(c, buf) {
+			return true
+		}
 	}
+	return false
 }
