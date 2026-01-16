@@ -16,7 +16,7 @@ var startTimes = []time.Time{
 	time.Date(2023, 1, 13, 12, 0, 0, 0, BostonTime),
 	time.Date(2024, 1, 12, 12, 0, 0, 0, BostonTime),
 	time.Date(2025, 1, 17, 13, 0, 0, 0, BostonTime),
-	time.Date(2026, 1, 16, 13, 0, 0, 0, BostonTime),
+	time.Date(2026, 1, 16, 13, 5, 0, 0, BostonTime),
 	time.Date(2027, 1, 15, 13, 0, 0, 0, BostonTime),
 	time.Date(2028, 1, 14, 13, 0, 0, 0, BostonTime),
 }
