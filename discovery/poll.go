@@ -144,6 +144,23 @@ reconnect:
 var roundSuffix = regexp.MustCompile(`\s+\(\d+\)$`)
 
 func (p *Poller) Scrape(ctx context.Context) (puz []state.ScrapedPuzzle, err error) {
+	puz, err = p.scrapeURL(ctx, p.puzzlesURL, "")
+	if err != nil {
+		return nil, err
+	}
+	tasksURL, err := url.Parse("https://puzzmon.world/research_tasks")
+	if err != nil {
+		return nil, err
+	}
+	puz2, err := p.scrapeURL(ctx, tasksURL, "[Task] ")
+	if err != nil {
+		return nil, err
+	}
+	puz = append(puz, puz2...)
+	return puz, nil
+}
+
+func (p *Poller) scrapeURL(ctx context.Context, url *url.URL, namePrefix string) (puz []state.ScrapedPuzzle, err error) {
 	defer func() {
 		if r := recover(); r != nil {
 			err = xerrors.Errorf("panic: %w", r)
@@ -151,8 +168,8 @@ func (p *Poller) Scrape(ctx context.Context) (puz []state.ScrapedPuzzle, err err
 	}()
 
 	// Download
-	log.Printf("discovery: scraping %q", p.puzzlesURL.String())
-	req, err := http.NewRequestWithContext(ctx, "GET", p.puzzlesURL.String(), nil)
+	log.Printf("discovery: scraping %q", url.String())
+	req, err := http.NewRequestWithContext(ctx, "GET", url.String(), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -269,7 +286,7 @@ func (p *Poller) Scrape(ctx context.Context) (puz []state.ScrapedPuzzle, err err
 				return nil, xerrors.Errorf("could not find puzzle url for puzzle: %#v", item)
 			}
 
-			url := p.puzzlesURL.ResolveReference(u).String()
+			url := url.ResolveReference(u).String()
 			puzzles = append(puzzles, state.ScrapedPuzzle{
 				Name:      strings.TrimSpace(puzzleBuf.String()),
 				RoundName: roundName,
