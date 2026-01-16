@@ -290,7 +290,7 @@ func (p *Poller) scrapeURL(ctx context.Context, targetURL *url.URL, namePrefix s
 
 			url := targetURL.ResolveReference(u).String()
 			puzzles = append(puzzles, state.ScrapedPuzzle{
-				Name:      strings.TrimSpace(puzzleBuf.String()),
+				Name:      namePrefix + strings.TrimSpace(puzzleBuf.String()),
 				RoundName: roundName,
 				PuzzleURL: url,
 			})
