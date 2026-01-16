@@ -10,6 +10,7 @@ import (
 	"log"
 	"net/http"
 	"net/url"
+	"regexp"
 	"strings"
 	"time"
 
@@ -139,6 +140,9 @@ reconnect:
 	}
 }
 
+// TODO: make this an option
+var roundSuffix = regexp.MustCompile(`\s+\(\d+\)$`)
+
 func (p *Poller) Scrape(ctx context.Context) (puz []state.ScrapedPuzzle, err error) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -181,7 +185,8 @@ func (p *Poller) Scrape(ctx context.Context) (puz []state.ScrapedPuzzle, err err
 
 			puzzleListNode := p.puzzleListSelector.MatchFirst(group)
 			if puzzleListNode == nil {
-				return nil, xerrors.Errorf("puzzle list node not found in group: %#v", group)
+				// TODO: option for whether to allow empty rounds?
+				// return nil, xerrors.Errorf("puzzle list node not found in group: %#v", group)
 			}
 			discovered = append(discovered, [2]*html.Node{nameNode, puzzleListNode})
 		}
@@ -236,7 +241,13 @@ func (p *Poller) Scrape(ctx context.Context) (puz []state.ScrapedPuzzle, err err
 		var roundBuf bytes.Buffer
 		collectText(nameNode, &roundBuf)
 		roundName := strings.TrimSpace(roundBuf.String())
+		// trim (8) puzzle count
+		roundName = roundSuffix.ReplaceAllString(roundName, "")
+		roundName = strings.Title(roundName)
 
+		if puzzleListNode == nil {
+			continue
+		}
 		puzzleItemNodes := p.puzzleItemSelector.MatchAll(puzzleListNode)
 		// if len(puzzleItemNodes) == 0 {
 		// 	return nil, xerrors.Errorf("no puzzle item nodes found in puzzle list: %#v", puzzleListNode)
