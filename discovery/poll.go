@@ -150,17 +150,19 @@ func (p *Poller) Scrape(ctx context.Context) (puz []state.ScrapedPuzzle, err err
 	}
 	tasksURL, err := url.Parse("https://puzzmon.world/research_tasks")
 	if err != nil {
-		return nil, err
+		log.Printf("discovery: failed to parse tasks URL: %v", err)
+		return puz, nil
 	}
 	puz2, err := p.scrapeURL(ctx, tasksURL, "[Task] ")
 	if err != nil {
-		return nil, err
+		log.Printf("discovery: failed to discover tasks: %v", err)
+		return puz, nil
 	}
 	puz = append(puz, puz2...)
 	return puz, nil
 }
 
-func (p *Poller) scrapeURL(ctx context.Context, url *url.URL, namePrefix string) (puz []state.ScrapedPuzzle, err error) {
+func (p *Poller) scrapeURL(ctx context.Context, targetURL *url.URL, namePrefix string) (puz []state.ScrapedPuzzle, err error) {
 	defer func() {
 		if r := recover(); r != nil {
 			err = xerrors.Errorf("panic: %w", r)
@@ -168,8 +170,8 @@ func (p *Poller) scrapeURL(ctx context.Context, url *url.URL, namePrefix string)
 	}()
 
 	// Download
-	log.Printf("discovery: scraping %q", url.String())
-	req, err := http.NewRequestWithContext(ctx, "GET", url.String(), nil)
+	log.Printf("discovery: scraping %q", targetURL.String())
+	req, err := http.NewRequestWithContext(ctx, "GET", targetURL.String(), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -286,7 +288,7 @@ func (p *Poller) scrapeURL(ctx context.Context, url *url.URL, namePrefix string)
 				return nil, xerrors.Errorf("could not find puzzle url for puzzle: %#v", item)
 			}
 
-			url := url.ResolveReference(u).String()
+			url := targetURL.ResolveReference(u).String()
 			puzzles = append(puzzles, state.ScrapedPuzzle{
 				Name:      strings.TrimSpace(puzzleBuf.String()),
 				RoundName: roundName,
