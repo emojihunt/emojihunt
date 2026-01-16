@@ -32,8 +32,7 @@ SELECT
     p.meta, p.voice_room, p.reminder
 FROM puzzles AS p
 INNER JOIN rounds ON p.round = rounds.id
-ORDER BY rounds.special DESC, rounds.sort, rounds.id,
-    p.meta, p.reminder, p.name
+ORDER BY rounds.special DESC, rounds.sort, rounds.id, p.meta, p.name
 COLLATE nocase;
 
 -- name: CountPuzzles :one
@@ -48,8 +47,7 @@ SELECT
 FROM puzzles AS p
 INNER JOIN rounds ON p.round = rounds.id
 WHERE p.round = ?
-ORDER BY rounds.special DESC, rounds.sort, rounds.id,
-    p.meta, p.reminder, p.name
+ORDER BY rounds.special DESC, rounds.sort, rounds.id, p.meta, p.name
 COLLATE nocase;
 
 -- name: ListPuzzlesByVoiceRoom :many
@@ -57,8 +55,7 @@ SELECT p.id, p.name, p.voice_room
 FROM puzzles as p
 INNER JOIN rounds ON p.round = rounds.id
 WHERE p.voice_room != ""
-ORDER BY p.voice_room, rounds.special DESC, rounds.sort, rounds.id,
-    p.meta, p.reminder, p.name
+ORDER BY p.voice_room, rounds.special DESC, rounds.sort, rounds.id, p.meta, p.name
 COLLATE nocase;
 
 -- name: CreatePuzzle :one

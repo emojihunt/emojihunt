@@ -169,16 +169,7 @@ export async function initializePuzzles(pageId: number | null): Promise<State> {
     for (const [_, puzzles] of grouped) {
       puzzles.sort((a, b) => {
         if (a.meta !== b.meta) return a.meta ? 1 : -1;
-        const ra = parseTimestamp(a.reminder);
-        const rb = parseTimestamp(b.reminder);
-        if (ra) {
-          if (rb) return ra.getTime() - rb.getTime();
-          if (rb) return a.name.localeCompare(b.name);
-          else return -1;
-        } else {
-          if (rb) return 1;
-          else return a.name.localeCompare(b.name);
-        }
+        return a.name.localeCompare(b.name);
       });
     }
 
