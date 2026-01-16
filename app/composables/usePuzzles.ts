@@ -85,7 +85,7 @@ const hydrateRound = (raw: Round, puzzles: Puzzle[]): AnnotatedRound => {
     ...raw,
     anchor: raw.name.trim().toLowerCase().replaceAll(/[^A-Za-z0-9]+/g, "-"),
     complete,
-    priority: !complete && !raw.special,
+    priority: !raw.special,
     displayName: `${raw.emoji}\uFE0F ${raw.name}`,
     solved: puzzles.filter((p) => p.answer).length,
     total: puzzles.length,
