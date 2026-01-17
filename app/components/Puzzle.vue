@@ -6,18 +6,12 @@ const { puzzles, rounds } = usePuzzles();
 const puzzle = puzzles.get(id)!;
 const hue = computed(() => rounds.get(puzzle.round)?.hue || 0);
 
-// Check if this round has only metas (so we don't filter them out)
-const roundHasOnlyMetas = computed(() => {
-  const roundPuzzles = [...puzzles.values()].filter(p => p.round === puzzle.round);
-  return roundPuzzles.length > 0 && roundPuzzles.every(p => p.meta);
-});
-
 // Puzzle is filterable (hidden when priority mode is on) if:
 // - It's a task (name starts with '[Task] '), OR
-// - It has an answer (is solved), unless it's a meta in a round with only metas
+// - It has an answer (is solved) AND is not a meta
 const isFilterable = computed(() => {
   if (puzzle.name.startsWith('[Task] ')) return true;
-  if (puzzle.answer && puzzle.meta && roundHasOnlyMetas.value) return false;
+  if (puzzle.meta) return false;  // Always show metas
   return !!puzzle.answer;
 });
 
