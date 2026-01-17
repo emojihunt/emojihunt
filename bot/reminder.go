@@ -3,6 +3,7 @@ package bot
 import (
 	"context"
 	"fmt"
+	"slices"
 	"time"
 
 	"github.com/bwmarrin/discordgo"
@@ -50,6 +51,9 @@ func (b *ReminderBot) Handle(ctx context.Context, input *discord.CommandInput) (
 			puzzles = append(puzzles, puzzle)
 		}
 	}
+	slices.SortFunc(puzzles, func(a, b state.Puzzle) int {
+		return a.Reminder.Compare(b.Reminder)
+	})
 
 	if len(puzzles) < 1 {
 		return ":zero: There are no puzzle reminders. Use the `Reminder` field in " +
