@@ -79,7 +79,6 @@ func Connect(ctx context.Context, prod bool, state *state.Client,
 	if err != nil {
 		panic(err)
 	}
-	s.Debug = true
 	s.Identify.Intents = discordgo.IntentsGuilds |
 		discordgo.IntentsGuildScheduledEvents |
 		discordgo.IntentsGuildMembers |
