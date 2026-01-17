@@ -40,7 +40,7 @@ type Poller struct {
 }
 
 const (
-	pollInterval       = 20 * time.Second
+	pollInterval       = 45 * time.Second
 	pollTimeout        = 90 * time.Second
 	roundCreationPause = 10 * time.Second
 	websocketBurst     = 3
