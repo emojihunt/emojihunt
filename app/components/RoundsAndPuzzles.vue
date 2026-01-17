@@ -5,9 +5,6 @@ const emit = defineEmits<{
 }>();
 const { ordering } = usePuzzles();
 
-const displayPuzzles = (round: SortedRound) =>
-  filter ? round.puzzles.filter((p) => !p.name.startsWith('[Task] ')) : round.puzzles;
-
 const focused = ref(3);
 const puzz = useTemplateRef("puzz");
 const updateTabIndex = (i: number) => {
@@ -116,7 +113,7 @@ defineExpose({
         @edit="() => emit('edit', 'round', round.id)" />
       <section :class="filter && !round.priority && 'invisible'"
         :style="`--round-hue: ${round.hue}`">
-        <Puzzle v-for="puzzle in displayPuzzles(round)" ref="puzz" :key="puzzle.id"
+        <Puzzle v-for="puzzle in round.puzzles" ref="puzz" :key="puzzle.id"
           :id="puzzle.id" @edit="() => emit('edit', 'puzzle', puzzle.id)" />
         <div class="empty" v-if="round.total === 0">
           🫙&hairsp; No Puzzles
