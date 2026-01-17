@@ -128,14 +128,14 @@ func (b *ReminderBot) notify(ctx context.Context, since time.Time) (*time.Time, 
 		for _, delay := range b.intervals {
 			target := puzzle.Reminder.Add(delay)
 			if target.Before(now) && target.After(since) {
-				msg = fmt.Sprintf(":hourglass_flowing_sand: Reminder: %q in %s",
-					puzzle.Name, time.Until(puzzle.Reminder).Round(time.Minute))
+				msg = fmt.Sprintf(":hourglass_flowing_sand: Reminder: %s in %s",
+					puzzle.Mention(), time.Until(puzzle.Reminder).Round(time.Minute))
 			}
 		}
 		if puzzle.Reminder.Before(now) && puzzle.Reminder.After(since) {
-			msg = fmt.Sprintf(":alarm_clock: It's time! Puzzle %q has a reminder set for "+
+			msg = fmt.Sprintf(":alarm_clock: It's time! %s has a reminder set for "+
 				"now (%s ET)",
-				puzzle.Name, puzzle.Reminder.In(huntyet.BostonTime).Format("Mon 3:04 PM"))
+				puzzle.Mention(), puzzle.Reminder.In(huntyet.BostonTime).Format("Mon 3:04 PM"))
 		}
 
 		if msg != "" {
