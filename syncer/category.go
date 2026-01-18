@@ -13,7 +13,7 @@ import (
 const (
 	roundCategoryPrefix  = "Round: "
 	solvedCategoryPrefix = "Solved "
-	solvedCategoryCount  = 4
+	solvedCategoryCount  = 5
 )
 
 // CreateDiscordCategory creates a new Discord category and returns its ID.
