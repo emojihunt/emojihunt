@@ -6,4 +6,3 @@ primary_region = "ewr"
   force_https = true
   auto_start_machines = true
   auto_stop_machines = "stop"
-  min_machines_running = 1
